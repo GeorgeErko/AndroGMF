@@ -1,0 +1,52 @@
+# Delphi / RAD Studio
+*.dcu
+*.rsm
+*.dsk
+*.~*
+*.identcache
+*.local
+*.dproj.local
+*.tvsconfig
+*.stat
+*.map
+*.drc
+*.exe
+*.dll
+*.bpl
+*.apk
+*.aab
+*.so
+*.jar
+*.class
+*.dex
+*.o
+*.obj
+*.lib
+*.a
+*.res
+*.rcc
+*.dcp
+*.dcpil
+*.deployproj
+*.deployproj.local
+
+# RAD Studio history / backups
+__history/
+*.bak
+
+# Android / FMX build outputs (common)
+Android/
+Android64/
+Android32/
+Win32/
+Win64/
+iOSDevice64/
+iOSSimulator/
+OSX32/
+OSX64/
+Linux64/
+
+# IDE / misc
+*.log
+*.tmp
+*.cache

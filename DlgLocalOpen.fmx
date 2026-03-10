@@ -1,0 +1,46 @@
+object localOpenForm: TlocalOpenForm
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 444
+  ClientWidth = 423
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnClose = FormClose
+  OnShow = FormShow
+  DesignerMasterStyle = 0
+  object ListView1: TListView
+    ItemAppearanceClassName = 'TListItemAppearance'
+    ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
+    HeaderAppearanceClassName = 'TListHeaderObjects'
+    FooterAppearanceClassName = 'TListHeaderObjects'
+    Position.X = 10.000000000000000000
+    Position.Y = 12.000000000000000000
+    Size.Width = 405.000000000000000000
+    Size.Height = 347.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    OnClick = ListView1Click
+  end
+  object btnOpen: TButton
+    Default = True
+    ModalResult = 1
+    Position.X = 196.000000000000000000
+    Position.Y = 386.000000000000000000
+    TabOrder = 1
+    Text = 'btnOpen'
+    TextSettings.Trimming = None
+    OnClick = btnOpenClick
+    object btnClose: TButton
+      Default = True
+      ModalResult = 2
+      Position.X = 104.000000000000000000
+      Position.Y = 1.000000000000000000
+      TabOrder = 1
+      Text = 'btnClose'
+      TextSettings.Trimming = None
+      OnClick = btnCloseClick
+    end
+  end
+end

@@ -1,0 +1,241 @@
+object MainForm: TMainForm
+  Left = 0
+  Top = 0
+  BorderStyle = None
+  Caption = 'Form2'
+  ClientHeight = 539
+  ClientWidth = 854
+  Position = Designed
+  Visible = True
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop, iPhone, iPad]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 3
+  object Memo1: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Bottom
+    Position.Y = 428.000000000000000000
+    Size.Width = 854.000000000000000000
+    Size.Height = 111.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Viewport.Width = 846.000000000000000000
+    Viewport.Height = 103.000000000000000000
+  end
+  object Splitter1: TSplitter
+    Align = Bottom
+    Cursor = crVSplit
+    MinSize = 20.000000000000000000
+    Position.Y = 420.000000000000000000
+    Size.Width = 854.000000000000000000
+    Size.Height = 8.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object Panel1: TPanel
+    Align = Top
+    Size.Width = 854.000000000000000000
+    Size.Height = 33.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object CornerButton1: TCornerButton
+      Images = ImageList1
+      ImageIndex = 0
+      Position.X = 8.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnOpenClick
+    end
+    object btnLocalOpen: TCornerButton
+      Images = ImageList1
+      ImageIndex = 2
+      Position.X = 44.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnLocalOpenClick
+      object CornerButton3: TCornerButton
+        Images = ImageList1
+        ImageIndex = 1
+        Position.X = 814.000000000000000000
+        Sides = [Top, Left, Bottom, Right]
+        Size.Width = 25.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        TextSettings.Trimming = None
+        XRadius = 3.000000000000000000
+        YRadius = 3.000000000000000000
+        OnClick = btnPaintClick
+      end
+    end
+    object btnPaint: TCornerButton
+      Images = ImageList1
+      ImageIndex = 1
+      Position.X = 814.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnPaintClick
+    end
+  end
+  object PanelPainter: TPanel
+    Align = Client
+    Size.Width = 854.000000000000000000
+    Size.Height = 387.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    object Painter: TPaintBox
+      Align = Client
+      Size.Width = 854.000000000000000000
+      Size.Height = 387.000000000000000000
+      Size.PlatformDefault = False
+      OnPaint = PainterPaint
+      object StatusBar: TStatusBar
+        Position.Y = 365.000000000000000000
+        ShowSizeGrip = True
+        Size.Width = 854.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+      end
+    end
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000001F849444154388D95934F4854
+              5114C67F777A15834D22144D21C194452E5282A0A9A4D954AB5666046D5C086D
+              24C8120437D1A2829C854142D06A681509B50992DA088545844954445A8F41FA
+              436636FAFECDBC774F8B9979E3530B3BAB73EF39E73BE77EE7BB8A15ACAEDB90
+              C5676BC8572BE501FC35F0BF40FFB4BA6E4376E41A642920406CB520F135EBD8
+              D5B679D95446D519EE8D45021D591D8E6B0DF9CAE4A7644E37F1911F1160A35A
+              DC7EDD4771230CDC918BD2B2AF393C1F1AFBC0A68604AD6D8D4C302D553E5458
+              EC0F108EA015C420D1D31FE9D6792ECDF7AF051E0DBF5BC2C1C215C4F3C0F3D0
+              6E114A1E782EF3D72E0170FC54335D3D873188B1677792CCB1A6F069650E3C07
+              0D8CDC1CC4B1DC48D75C1C3AEFBDE74CD77EB66DADE7E5AB3CA38F27C9C535F4
+              C6C400085C9B85D919D4DAF59C1C2820D613162FA81D4DA2EF040732295E8C7E
+              E657F635816FF3F072BAB205C725FF669C54CB418299DB48710AA8A94C80DFFD
+              E7A9BF3AC8D323AD04C138E6F3FB350EC4B3F9326592DC99465B79C4B1C1B110
+              C70A7DED58CC5D380B810FBECFDB91077464759903ED7858F30E1B366E41669F
+              855D6BA6D0951B29051014A33AF8664E92DC9E42EC39B46D2380421054E4B308
+              027E89D94F13518069D3A471EF5174218FB84E35B52C890A170228A5D0259FB1
+              BBB742A52A582EE3D55815E00F0C04E8D3894A73E40000000049454E44AE4260
+              82}
+            FileName = 'C:\!GEOMASTER\Office\open_document16_h.bmp'
+          end>
+        Name = 'open_document16_h'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000024849444154388D95934D4854
+              5118869F7BEFCCE4CF54E394D488BF509438A4995A19618BD0A4A4C245AB8C76
+              42E4AED62E0CDAD42A4B32827257E0A00651A40C48CDA2A9ACC534398D298C66
+              9165D7EB3833F7E7B410274B937C1707CEF7F13E7C3FE748B4140BFED652445A
+              9159211BC0E08D287A1C841024E371E6358D4A4F263BDD1B5114E59F66E95C09
+              3280A5819E1468D100564F256E5F0DE1E107A8AA8A699A6B562003C4CD145936
+              057BE032E5A50500A43E0D3231318EA66908B1B2CB3F00ADFE3DBCFCD68F4352
+              71B95C1CABDDCF26ED051F86AE118BC5989B9BC3308C554132C0E7F908578327
+              51658B8F9108562A45514E05335F6608BF7F47341A656A6A2ADDD27290BC74CE
+              A6E04E898BEF868781E7413A827978EADAE8EDF713783D46281462747494E9E9
+              6992C9641AA050EE6AA7701624185363D4375EE474D35DDCD93AB71E4608E5B7
+              D0E70B215B09DC99F32412091445212323832B8F3A17D7880908D8BED9C9F04C
+              0FBAF495F38D1D9CBDDE43F3090FC3CE06BA078324758D862A035DD7B12C0B4C
+              B158C1C1434E76E76EA52A2F0F87A230B910A5207B17D5055EFA7CCFA8ABDB8B
+              E6CCC13F34CE91320549A4D0759DFB01DFE20C0E14E6E3DD964B96C38EAEC8E8
+              0E3BA19F01CE34EEE04D7881406F1F0DDE2D941E3FCC6DBF0D9B231B55554133
+              90567DCACB653920DC46ADD749F5A926BA3B9F12E71ED8DE82B1B6F50F6DA8B9
+              299ADB87C4A5811F828AAEB4F33FBECB6FD9F7758AA3F5655876274FFA8330D2
+              2AD9D603D05F5D901E9B5DA2A8D89D8EC9EB010030D22A4DC666D3D75F6CA9F9
+              6D6BC955830000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\paint16.bmp'
+          end>
+        Name = 'paint16'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000019949444154388D8D92B1CAE2
+              401080BFFD091622B636B152880876DADA889D85956FA1B1CC23A44D67636F69
+              E70BD8A51241100B0946345888621034C95E7124A717EF7060D89D999D6F6696
+              117C10D334E5AB6D1886F8F40EE09F816F41FF05BC825455C575DD14E4E71B00
+              80A228944AA554574A7CB12CEB2DA0EB7A52C9300C619AA6ACD7EB69709C3C18
+              0C705DF7352655554D8CCD6643369B45D3344CD394F128224E761C27459F4C26
+              6F76ABD5E27ABD62DB76E2FB01D86EB7445194D25EAF0740A3D1A0DD6E2384A0
+              502850ABD592D11480300C0198CD66DCEFF7B7AA42086CDBA6D96C92CFE7D9ED
+              762C974B841058962515802008F07D9F4C2643BFDFE772B9A4C6198D4654AB55
+              56AB15C3E1902008188FC7241D388E43B95C66BFDF73BBDD52806EB7CB743AA5
+              52A9703E9F59AFD77FFE2008020E8703C56211DFF70982E0A3763A1DA4944829
+              592C16E8BA2EDE46C8E5729C4EA7547500297FAF491886445194F81500CFF350
+              5595C7E3C1F3F9FC0888215114E179DE3BE0783CA2695AD2FEDF494288E48CA2
+              88F97C9E6CAA80F41A7F2331E0177523ED2422FE75470000000049454E44AE42
+              6082}
+            FileName = 'C:\!GEOMASTER\Office\open_document16_d.bmp'
+          end>
+        Name = 'open_document16_d'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'open_document16_h'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'paint16'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'open_document16_d'
+          end>
+      end>
+    Left = 200
+    Top = 49
+  end
+end

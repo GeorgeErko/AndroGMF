@@ -1,0 +1,30 @@
+inherited MainForm_XLgXhdpiTb: TMainForm_XLgXhdpiTb
+  ClientHeight = 1280
+  ClientWidth = 800
+  DesignerMasterStyle = 3
+  inherited Memo1: TMemo
+    Position.Y = 1169.000000000000000000
+    Size.Width = 800.000000000000000000
+    Viewport.Width = 800.000000000000000000
+    Viewport.Height = 111.000000000000000000
+  end
+  inherited Splitter1: TSplitter
+    Position.Y = 1161.000000000000000000
+    Size.Width = 800.000000000000000000
+  end
+  inherited Panel1: TPanel
+    Size.Width = 800.000000000000000000
+  end
+  inherited PanelPainter: TPanel
+    Size.Width = 800.000000000000000000
+    Size.Height = 1128.000000000000000000
+    inherited Painter: TPaintBox
+      Size.Width = 800.000000000000000000
+      Size.Height = 1128.000000000000000000
+      inherited StatusBar: TStatusBar
+        Position.Y = 1106.000000000000000000
+        Size.Width = 800.000000000000000000
+      end
+    end
+  end
+end

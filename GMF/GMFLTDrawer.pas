@@ -1,0 +1,591 @@
+unit GMFLTDrawer;
+
+interface uses Classes, SysUtils, Lines3, circle_di, Collect,
+               newSelector, intervals, maths_basic,
+               FMX.Graphics, ogcBasic;
+
+const
+// игнорировать рисование оевой/левой/правой линии
+// при рисовании двойной комплексной линии
+ gmfIgnoreLineDrawing = $FF;
+
+// Рисование сложных типов линий в режиме совместимости с форматом GMF
+// в качестве обертки старого объекта TGeoLine с параметрами TLineStruct
+// используется TgmfLineType
+// Необходимо выполнить перенос TGeoLine -> TgmfLineType (см. GMFGeometry)
+procedure DrawGeoLine(Drawer: TogsDrawer; GL: TGeoLine; ogsLine: PCollection;
+                      Ko: Single; LineWidth: Single; Dx: Single; Selected: Boolean; Color: Integer);
+
+implementation uses Lib, newProcs, Polygons, ogcMathUtils;
+
+{ Локальные проуедуры модуля --------------------------------------------- }
+
+Function Atan2(dx, dy: double): double;
+var u: double;
+begin
+if dx = 0 then begin
+	 if dy > 0 then Atan2 := Pi/2 else Atan2 := Pi*3/2;
+         exit;
+	end;
+if dy = 0 then begin
+	 if dx > 0 then Atan2 := 0 else Atan2 := Pi;
+         exit;
+	end;
+u:=arctan(dy/dx);
+Atan2 := U;
+if (dx < 0) and (dy < 0) then Atan2 := U + Pi;
+if (dx < 0) and (dy > 0) then Atan2 := U + Pi;
+if (dx > 0) and (dy < 0) then Atan2 := U + 2*Pi;
+end;
+
+Function CutLine(Coord: PCollection; dNext, dPrev: Double): PCollection;
+var I, J, K:Integer;
+    D, D1: TlDot;
+    X, Y: Double;
+    LineLength, AllLength, Angle:Double;
+begin
+ Result:=nil;
+ K:=-1;AllLength:=0;
+ For I:=0 to Coord.Count-2 do begin
+   D:=Coord.List[I];D1:=Coord.List[I+1];
+    LineLength:=Distance(D.XDot,D.YDot,D1.XDot,D1.YDot);
+    AllLength:=AllLength+LineLength;
+    if K=-1 then begin
+     If dNext>LineLength then begin
+       dNext:=dNext-LineLength;
+     end else begin K:=I;Angle:=Atan2(D1.XDot-D.XDot,D1.YDot-D.YDot);end;
+    end;// if K=-1
+ end;
+  if (K<>-1) and (dNext+dPrev<AllLength) then begin
+   Result:=PCollection.Create(Coord.Count);
+   // получив точку вставляем все остальные в коллекцию
+   For I:=K to Coord.Count-1 do Result.Insert(TlDot.CreateAs(Coord[I]));
+   D:=Result.List[0];
+   D.XDot:=D.XDot+dNext*cos(Angle);D.YDot:=D.YDot+dNext*sin(Angle);
+    For I:=Result.Count-1 downto 1 do begin
+     D:=Result.List[I];D1:=Result.List[I-1];
+     LineLength:=Distance(D.XDot,D.YDot,D1.XDot,D1.YDot);
+     if dPrev>LineLength then begin
+      dPrev:=dPrev-LineLength;Result.AtDelete(I); end else
+      begin Angle:=Atan2(D1.XDot-D.XDot,D1.YDot-D.YDot);break;end;
+    end;
+   D:=Result.List[Result.List.Count-1];
+   D.XDot:=D.XDot+dPrev*cos(Angle);D.YDot:=D.YDot+dPrev*sin(Angle);
+  end;
+end;
+
+Function LenPoints(Points: PCollection): Double;
+var I:Integer;D,D1:TlDot;
+begin
+ Result:=0;
+ For I:=0 to Points.Count-2 do
+  begin
+   D:=Points[I];D1:=Points[I+1];
+   Result:=Result+Distance(D.XDot,D.YDot,D1.XDot,D1.YDot);
+  end;
+end;
+
+Procedure DrawLine(Drawer: TogsDrawer; Coord1: PCollection; PS: TLineStruct;
+                   Ko: Double; Dx: Double; rOfs: Single);
+var I,J,K:Integer;D1,D2:TlDot;
+    Angle:Double; // дир. угол текущего отрезка
+    dNext,dPrev,dDop{поперечное смещение}:Double; // остаток длины переходящий в след отрезок
+    X1,Y1,X2,Y2:Double; // координаты штриха
+    LineLength,PolyLength:Double; // длина линии и полилинии
+    ScanLength:Double; // длина от начала линии до рассчитанной точки штриха
+    Scan,Scan1,Space:Double; // длина штриха и пробела
+    DrawingScan:boolean; // дорисовывать окончание
+    BeginDrawing:boolean;
+    Coord,Coord2:PCollection;
+    B:Boolean;
+    CLines:Integer;
+    TS: TDateTime;
+    Counter: Integer;
+begin
+ Counter := 0;
+// dNext:=PS.Param3*Ko;dPrev:=PS.Param3*Ko;B:=False;
+// TS := GetTickCount;
+ dNext := RealScaleLength(Drawer, PS.Param3, Ko);
+ dPrev := RealScaleLength(Drawer, PS.Param3, Ko);
+ dDop  := RealScaleLength(Drawer, PS.lVOrign, Ko);
+ B:=False;
+ If dNext+dPrev<>0 then begin // отсечение ломаной
+  Coord:=CutLine(Coord1,dNext,dPrev);
+  B:=True;
+ end else
+ If (PS.DRawState and ls_dblLine=0) and (dDop<>0) then begin
+  Coord:=CutLine(Coord1,0,dDop);
+  B:=True;
+ end else Coord:=Coord1;
+  // процедура отрисовки одинарной линии
+  if Coord<>nil then
+   begin
+    If PS.DrawState and ls_solid1 <> 0 then
+     begin // рисуем сплошную линию с отсечением
+      For I:=0 to Coord.Count-2 do
+       With TlDot(Coord.List[I]) do
+        begin
+         D1:=Coord.List[I+1];
+         Drawer.DrawLine(XDot,YDot,D1.XDot,D1.YDot);
+        end;
+     end else
+     begin // рисуем пунктирную линию с отсечением штрихов
+      // просчитываем все начальные и конечные точки пунктирной линии
+      Scan:=RealScaleLength(Drawer, PS.Param2, Ko);
+      Space:=RealScaleLength(Drawer, PS.Param0 - PS.Param2, Ko);
+      K:=0;
+      If Dx<>0 then begin // учитываем смещение вдоль ломаной
+        if Dx>0 then While Dx>0 do Dx:=Dx-(Scan+Space) else // вычисление отрицательного смещения
+        If Dx<0 then While Dx+(Scan+Space)<0 do Dx:=Dx+(Scan+Space);
+        if Dx<>0 then begin // продолжаем, если смещение не <> 0
+         Dx:=Dx+(Scan); // смещение со штрихом
+         If Dx>0 then begin // рисуем штрих
+         {}
+           For K:=0 to Coord.List.Count-2 do
+            With TlDot(Coord.List[K]) do begin
+              D1:=Coord.List[K+1];
+              LineLength:=Distance(XDot,YDot,D1.XDot,D1.YDot);
+               If Dx>LineLength then begin
+                 Dx:=Dx-LineLength;
+                 Drawer.DrawLine(D1.XDot,D1.YDot,XDot,YDot);
+                end else break;
+             end;
+          {}
+         if Coord.List.Count>K+1 then begin
+          D2:=Coord.List[K];D1:=Coord.List[K+1];
+          Angle:=Atan2(D1.XDot-D2.XDot,D1.YDot-D2.YDot);
+          X1:=D2.XDot+Dx*cos(Angle);Y1:=D2.YDot+Dx*sin(Angle);
+          Drawer.DrawLine(D2.XDot,D2.YDot,X1,Y1);
+         end;
+          Dx:=Dx+Space;
+         end else Dx:=Dx+Space;
+        end;
+       end;
+      DrawingScan:=False;
+      dNext:=Dx;
+      CLines:=0;
+      For I:=K to Coord.List.Count-2 do
+       With TlDot(Coord.List[I]) do
+         begin
+          D1:=Coord.List[I+1];
+          LineLength:=Distance(XDot,YDot,D1.XDot,D1.YDot);
+          if (dNext>LineLength) then begin
+            if DrawingScan then Drawer.DrawLine(XDot,YDot,D1.XDot,D1.YDot);
+            dNext:=dNext-LineLength;continue;
+          end;
+          Angle:=Atan2(D1.XDot-XDot,D1.YDot-YDot);// считаем дир угол в радианах
+          X1:=XDot+dNext*cos(Angle);Y1:=YDot+dNext*sin(Angle);
+          if DrawingScan then begin // дорисовка окончания
+           Inc(CLines);
+           Drawer.DrawLine(XDot,YDot,X1,Y1);DrawingScan:=False;
+          end else DrawingScan:=True;
+          X2:=X1;Y2:=Y1;
+          // рисуем штрихи в пределах линии с переносом на след. линию
+          Counter :=0;
+           While True do
+            begin // получаем вторую точку штриха
+             Inc(Counter);
+             If DrawingScan then begin
+              Scan1:=Scan;
+              If BeginDrawing then begin {if dNext=0 then Scan1:=Scan/2;}BeginDrawing:=False; end;
+              X2:=X1+Scan1*cos(Angle);Y2:=Y1+Scan1*sin(Angle);
+              ScanLength:=Distance(XDot,YDot,X2,Y2);
+              If ScanLength>LineLength then begin // если остаточная длина больше чем длина текущего
+                Inc(CLines);
+                dNext:=ScanLength-LineLength;
+                Drawer.DrawLine(X1,Y1,D1.XDot,D1.YDot);
+              //  Drawer.DrawMarker(X1, Y1);
+                DrawingScan:=True;
+                break;
+              end;
+               Inc(CLines);
+               Drawer.DrawLine(X1,Y1,X2,Y2);
+             //  Drawer.DrawMarker(X1, Y1);
+             end;
+              DrawingScan:=False;
+             X1:=X2+Space*cos(Angle);Y1:=Y2+Space*sin(Angle);
+             ScanLength:=Distance(XDot,YDot,X1,Y1);
+              If ScanLength>LineLength then begin// если остаточная длина больше чем длина текущего
+                dNext:=ScanLength-LineLength;X2:=D1.XDot;Y2:=D1.YDot;DrawingScan:=False;break;
+              end else DrawingScan:=True;
+            end;
+         end;
+     end;
+     If B then Coord.Free;
+    end;
+//   WRiteln('Clines=',CLines);
+end;
+
+Procedure DrawDoubleLine(Drawer: TogsDrawer; Coord: PCollection; PS: TLineStruct;
+                         LWK, Ko: Double; LWByLayer: Boolean; ROfs, LOfs: Single; Dx: Double);
+var Delta,Delta1:Double;X,Y,X1,Y1:Double;D1,D2,D3,D4,DC:TlDot;
+    Angle,RevAngle,DimAngle,Angle1,Angle2,Angle3:Double;
+    Coord1,Coord2:PCollection;
+    I:Integer;
+    PS1:TLineStruct;// дополнительный стиль для второго отрезка
+    LWK1:Single;
+    rOfs1,lOfs1,rOfs2,lOfs2:Single;
+    timeStart: TDateTime;
+begin
+// timeStart := GetTickCount;
+ Coord1:=PCollection.Create(Coord.Count);Coord2:=PCollection.Create(Coord.Count);
+ Delta:=RealScaleLength(Drawer, PS.Param4/2, Ko);
+ lOfs1:=RealScaleLength(Drawer, lOfs, Ko);
+ rOfs1:=RealScaleLength(Drawer, rOfs, Ko);
+ D1:=Coord.List[0];D2:=Coord.List[1];
+ Angle:=Atan2(D2.XDot-D1.XDot,D2.YDot-D1.YDot);
+ X:=D1.XDot+(Delta+lOfs1)*Cos(Angle+Pi/2);Y:=D1.YDot+(Delta+lOfs1)*Sin(Angle+Pi/2);
+ Coord1.Insert(TlDot.Create(X,Y));
+ X1:=D1.XDot+(Delta+rOfs1)*Cos(Angle-Pi/2);Y1:=D1.YDot+(Delta+rOfs1)*Sin(Angle-Pi/2);
+ Coord2.Insert(TlDot.Create(X1,Y1));
+ For I:=1 to Coord.List.Count-2 do begin
+   D1:=Coord.List[I-1];DC:=Coord.List[I];D3:=Coord.List[I+1];
+   Angle1:=Atan2(D1.XDot-DC.XDot,D1.YDot-DC.YDot);Angle2:=Atan2(D3.XDot-DC.XDot,D3.YDot-DC.YDot);
+   Angle3:=(Angle1)+Pi/2; // прямой угол
+   Angle:=Angle2-Angle1;If Angle<0 then Angle:=Pi*2+Angle;
+   Angle:=(Angle/2+Angle1);//Writeln(Angle1*180/Pi:8:2,' ',Angle*180/Pi:8:2);
+   Angle3:=Abs(Angle3-Angle);
+   Delta1:=abs(Delta/Cos(Angle3));//Writeln(Angle3*180/Pi:8:3,' ',' ',Sin(Angle3),' ' ,Delta1:8:3);
+   rOfs2:=rOfs1/Cos(Angle3);lOfs2:=lOfs1/Cos(Angle3);
+   X:=DC.XDot+(Delta1+rOfs2)*Cos(Angle);Y:=DC.YDot+(Delta1+rOfs2)*Sin(Angle);
+   X1:=DC.XDot-(Delta1+lOfs2)*Cos(Angle);Y1:=DC.YDot-(Delta1+lOfs2)*Sin(Angle);
+  // получаем дополнения до всего
+   Coord2.Insert(TlDot.Create(X,Y));Coord1.Insert(TlDot.Create(X1,Y1));
+ //    UDrawLine(X,Y,X1,Y1);
+  end;
+ D3:=Coord.List[Coord.List.Count-2];D4:=Coord.List[Coord.List.Count-1];
+ Angle:=Atan2(D4.XDot-D3.XDot,D4.YDot-D3.YDot);
+ X:=D4.XDot+(Delta+lOfs1)*Cos(Angle+Pi/2);Y:=D4.YDot+(Delta+lOfs1)*Sin(Angle+Pi/2);
+ Coord1.Insert(TlDot.Create(X,Y));
+ X1:=D4.XDot+(Delta+rOfs1)*Cos(Angle-Pi/2);Y1:=D4.YDot+(Delta+rOfs1)*Sin(Angle-Pi/2);
+ Coord2.Insert(TlDot.Create(X1,Y1));
+  PS1:=TLineStruct.Create();
+   PS1.Param0:=PS.Param5;PS1.Param1:=PS.Param6;PS1.Param2:=PS.Param7;PS1.Param3:=PS.Param8;
+   If PS.DrawState and ls_Solid2 = 0 then PS1.DrawState:=0;
+  // Толщина линии
+   If (LWK < 0)and(not LWBYLayer) then LWK1:=Abs(LWK) else LWK1:=LWK*PS.Param1;
+     //Pen:=SelectObject(Dc1,CreatePenSelector(round(LWK1),Color));
+   If lOfs <> gmfIgnoreLineDRawing then
+    DrawLine(Drawer, Coord1, PS, Ko, Dx, 0);
+    //DeleteObject(SelectObject(Dc1,Pen));
+    If (LWK < 0)and(not LWBYLayer) then LWK1:=Abs(LWK) else LWK1:=LWK*PS.Param1;
+     //Pen:=SelectObject(Dc1,CreatePenSelector(round(LWK1),Color));
+  If lOfs <> gmfIgnoreLineDrawing then
+   DrawLine(Drawer, Coord2, PS1, Ko, Dx, 0) else
+   DrawLine(Drawer, Coord2, PS, Ko, Dx, 0);
+  // DeleteObject(SelectObject(Dc1,Pen));
+  PS1.Free;
+ Coord1.Free;Coord2.Free;
+end;
+
+procedure DrawArc(Drawer: TogsDrawer; Coord1: PCollection; PS: TLineStruct;
+                  Ko, KoPoint: Double; Znak: TPoint_Sign; Dx: Single; Selected: Boolean);
+var I,J,K:Integer;D1,D2:TlDot;
+    Angle:Double; // дир. угол текущего отрезка
+    dNext,dPrev:Double; // остаток длины переходящий в след отрезок
+    X1,Y1:Double; // координаты кружка
+    LineLength,PolyLength:Double; // длина линии и полилинии
+    ScanLength:Double; // длина от начала линии до рассчитанной точки кружка
+    Scan,Scan1:Double; // расстояние между кружками
+    BeginDrawing:boolean;// начало рисовки
+    R,R2:TSect; // габариты кружка для отсечения
+    Coord:PCollection;B1:Boolean;
+Function Vis:boolean;
+begin
+{!!! проверить на FMX }
+ Result:=True;
+   With Drawer.ogsSelector.ActiveRect do
+       begin
+        If R2.Right < XMin then Result:=False else
+        If R2.Left > XMax then Result:=False else
+        If R2.Top > YMax then Result:=False else
+        If R2.Bottom < YMin then Result:=False;
+       end;
+end;
+Procedure DrawZnak;
+begin
+ Znak.X:=X1;
+ Znak.Y:=Y1;
+  if (PS.DrawState and ls_OrientOn)<>0 then Znak.Ugol:=Angle+PS.Param2 else Znak.Ugol:=PS.Param2;
+  With TSelector(Drawer.ogsSelector) do
+   Znak.Draw32(Drawer,GMS,GMS,Drawer.R,Drawer.G,Drawer.B,ZnakDrawMode,GPRect,KoPoint,(GGraphSet.ShowAttributes),False);
+end;
+begin
+// dNext:=PS.Param3*Ko;dPrev:=PS.Param8*Ko;B1:=False;
+dNext:=RealScaleLength(Drawer,PS.Param3,Ko);dPrev:=RealScaleLength(Drawer,PS.Param8,Ko);B1:=False;
+If dNext+dPrev<>0 then
+ begin // отсечение ломаной
+  Coord:=CutLine(Coord1,dNext,dPrev);
+  B1:=True;
+ end else Coord:=Coord1;
+ if Coord<>nil then
+  begin
+   // находим габариты кружка, нач. смещ. и расст. между кружками
+    R.Left:=-PS.Param2*Ko;R.Right:=PS.Param2*Ko;
+    R.Top:=R.Left;R.Bottom:=R.Right;
+   // If Ko=-1 then Scan:=XGeoRasst(Round(PS.Param0*GlobalMas)) else Scan:=PS.Param0*Ko;
+    Scan:=RealScaleLength(Drawer, PS.Param0,Ko);
+    K:=0;
+     If Dx<>0 then begin // учитываем смещение вдоль ломаной
+       if Dx>0 then While Dx>0 do Dx:=Dx-Scan else // вычисление отрицательного смещения
+       If Dx<0 then While Dx+(Scan)<0 do Dx:=Dx+(Scan);
+       if Dx<>0 then begin // продолжаем, если смещение не <> 0
+        Dx:=Dx+(Scan); // смещение со штрихом
+        If Dx>0 then begin // рисуем штрих
+        {}
+          For K:=0 to Coord.List.Count-2 do
+           With TlDot(Coord.List[K]) do begin
+             D1:=Coord.List[K+1];
+             LineLength:=Distance(XDot,YDot,D1.XDot,D1.YDot);
+              If Dx>LineLength then begin
+                Dx:=Dx-LineLength;
+               end else break;
+            end;
+         {}
+        if Coord.List.Count>K+1 then begin
+         D2:=Coord.List[K];D1:=Coord.List[K+1];
+         Angle:=Atan2(D1.XDot-D2.XDot,D1.YDot-D2.YDot);
+         X1:=D2.XDot+Dx*cos(Angle);Y1:=D2.YDot+Dx*sin(Angle);
+        // рисуем
+         R2.Left:=X1+R.Left;R2.Top:=Y1+R.Top;
+         R2.Right:=X1+R.Right;R2.Bottom:=Y1+R.Bottom;
+         If Znak<>nil then DrawZnak else
+         if Vis then
+          Drawer.DrawCircle(X1, Y1, (R2.Right - R2.Left)/2);
+         end;
+         Dx:=Dx+Scan;
+        end else Dx:=Dx+Scan;
+       end;
+       dNext:=Dx;
+      end else dNext:=0;
+  // с учетом начального смещения начинаем рисовку
+{      if dNext<>0 then begin // просчитываем начальное смещение на ломаной
+      For K:=0 to Coord.List.Count-2 do
+       With TlDot(Coord.List[K]) do
+        begin
+         D1:=Coord.List[K+1];
+         LineLength:=Distance(XDot,YDot,D1.XDot,D1.YDot);
+          If dNext>LineLength then begin
+            dNext:=dNext-LineLength;
+           end else break;
+        end;
+     end; // if dNext<>0}
+    // вперед
+ //    Index:=0
+     For I:=K to Coord.List.Count-2 do
+      With TlDot(Coord.List[I]) do
+       begin
+         D1:=Coord.List[I+1];
+         LineLength:=Distance(XDot,YDot,D1.XDot,D1.YDot);
+         if (dNext>LineLength) then begin
+           dNext:=dNext-LineLength;continue;
+         end;
+         Angle:=Atan2(D1.XDot-XDot,D1.YDot-YDot);// считаем дир угол в радианах
+         X1:=XDot+dNext*cos(Angle);Y1:=YDot+dNext*sin(Angle);
+         R2.Left:=X1+R.Left;R2.Top:=Y1+R.Top;
+         R2.Right:=X1+R.Right;R2.Bottom:=Y1+R.Bottom;
+         If Znak<>nil then DrawZnak else
+         if Vis then
+          Drawer.DrawCircle(X1, Y1, (R2.Right - R2.Left)/2);
+         // рисуем кружки переносом на след. линию
+          While True do
+           begin // получаем вторую точку штриха
+            X1:=X1+Scan*cos(Angle);Y1:=Y1+Scan*sin(Angle);
+            ScanLength:=Distance(XDot,YDot,X1,Y1);
+             If ScanLength>LineLength then begin // если остаточная длина больше чем длина текущего
+               dNext:=ScanLength-LineLength;
+               break;
+             end else begin
+                       R2.Left:=X1+R.Left;R2.Top:=Y1+R.Top;
+                       R2.Right:=X1+R.Right;R2.Bottom:=Y1+R.Bottom;
+                       If Znak<>nil then DrawZnak else
+                       if Vis then
+                        Drawer.DrawCircle(X1, Y1, (R2.Right - R2.Left)/2);
+                      end;
+           end;
+       end;
+    if B1 then Coord.Free;
+  end;
+end;
+
+Procedure DrawSymbol(Drawer: TogsDrawer; Coord: PCollection; PS: TLineStruct;
+                     Ko, KoPoint: Double; Znak: TPoint_Sign; Dx:Single; Selected: Boolean);
+var D1, D2: TlDot;
+    I, J: Integer;
+    B1: Boolean;
+    dNext, DPrev: Double;
+    X, Y, Angle: Double;
+Procedure DrawZnak;
+begin
+ Znak.X:=X;
+ Znak.Y:=Y;
+  if (PS.DrawState and ls_OrientOn)<>0 then Znak.Ugol:=Angle+PS.Param2 else Znak.Ugol:=PS.Param2;
+  With TSelector(Drawer.ogsSelector) do
+  Znak.Draw32(Drawer,GMS,GMS,Drawer.R,Drawer.G,Drawer.B,ZnakDrawMode,GPRect,KoPoint,(GGraphSet.ShowAttributes),False);
+end;
+begin
+// если ставим знак только в середине сегментов
+  If PS.Param7=1 then
+   begin
+    For J:=0 to Coord.Count-2 do
+     With TlDot(Coord.List[J]) do
+      begin
+       D2 := Coord.List[J+1];
+       X:= (XDot+D2.XDot)/2;
+       Y:= (YDot+D2.YDot)/2;
+        if (PS.DrawState and ls_ToNext)<>0 then
+          Angle := Atan2(D2.XDot-XDot,D2.YDot-YDot) else
+        if (PS.DrawState and ls_ToPred)<>0 then
+           Angle := Atan2(XDot - D2.XDot, YDot - D2.YDot) else Angle := PS.Param2;
+      {}
+       DrawZnak;
+     end;
+   end else
+  If PS.Param6=1 then
+   begin
+    D1:=Coord.List[0];D2:=Coord.List[1];
+    X:=D1.XDot;Y:=D1.YDot;
+      Angle:=PS.Param2;
+      if (PS.DrawState and ls_ToNext)<>0 then
+         Angle:=Atan2(D2.XDot-D1.XDot,D2.YDot-D1.YDot) else
+      if (PS.DrawState and ls_ToPred)<>0 then
+         Angle:=Atan2(D1.XDot-D2.XDot,D1.YDot-D2.YDot);
+      DrawZnak;
+   end else
+  If PS.Param6=2 then
+   begin
+    D1:=Coord.List[Coord.List.Count-2];D2:=Coord.List[Coord.List.Count-1];
+    X :=D2.XDot;Y:=D2.YDot;
+    Angle := PS.Param2;
+      if (PS.DrawState and ls_ToNext)<>0 then
+         Angle := Atan2(D2.XDot-D1.XDot,D2.YDot-D1.YDot) else
+      if (PS.DrawState and ls_ToPred)<>0 then
+         Angle := Atan2(D1.XDot-D2.XDot,D1.YDot-D2.YDot);
+      DrawZnak;
+   end else
+  If PS.DrawState and ls_OnlyInDot<>0 then
+   begin
+    If ((PS.DrawState and ls_ToNext)=0) and ((PS.DrawState and ls_ToPred)=0) then
+    For J:=0 to Coord.Count-2 do
+     With TlDot(Coord.List[J]) do
+      begin
+       D2:=Coord.List[J+1];
+       X:=XDot;
+       Y:=YDot;
+       Angle := PS.Param2;
+       DrawZnak;
+      end else
+    For J:=0 to Coord.Count-2 do
+     With TlDot(Coord.List[J]) do
+      begin
+       D2:=Coord.List[J+1];
+       X:=XDot;
+       Y:=YDot;
+        if (PS.DrawState and ls_ToNext)<>0 then
+         Angle:=Atan2(D2.XDot-XDot,D2.YDot-YDot) else Angle:=PS.Param2;
+       DrawZnak;
+      {}
+        X:=D2.XDot;
+        Y:=D2.YDot;
+        if (PS.DrawState and ls_ToPred)<>0 then
+         Angle:=Atan2(XDot-D2.XDot,YDot-D2.YDot) else Angle:=PS.Param2;
+       DrawZnak;
+      {}
+      end;
+// оисование знвка интервалами вдоль полилинии
+   end else begin
+    DrawArc(Drawer, Coord, PS, Ko, Ko, Znak, Dx, Selected);
+   end;
+end;
+
+procedure DrawGeoLine(Drawer: TogsDrawer; GL: TGeoLine; ogsLine: PCollection;
+                      Ko: Single; LineWidth: Single; Dx: Single; Selected: Boolean; Color: Integer);
+var I, Index: Integer; PS: TLineStruct;
+    LWK,LWK1,Ko1:Double;// коэффициент утолщения линий
+    Znak:TPoint_Sign; R,G,B:Byte;
+    D1,D2:TlDot;
+    LWByLayer:Boolean;
+   // Brush: TLogBrush; // ранее был выбор типа рисования концов утолщенных линий
+    FLE:Byte;
+    PCTwig: PCollection;
+begin
+// переводим полилинию в систему координат ogsMatrix
+ PCTwig := PCollection.Create(1);
+ For I := 0 to ogsLine.Count - 1 do begin
+  PCTwig.Insert(TlDot.Create(TlDot(ogsLine[I]).XDot, TlDot(ogsLine[I]).YDot));
+ end;
+ LWByLayer:=False;
+ try
+  If Ko<0 then begin
+   Ko1:=abs(Ko) * Drawer.ogsSelector.fScale;
+   If LineWidth=-1 then LWByLayer:=True else LWK:=-(LineWidth * Drawer.ogsSelector.fScale);
+  end else begin
+   Ko1:=KO;LWK:=KO1 * Drawer.ogsSelector.fScale;
+   If LineWidth<>-1 then LWK:=-(LineWidth * Drawer.ogsSelector.fScale) else LWByLayer:=True;
+  end;
+  // LWK:=KO1*GMS; // установка коэффициента для толщины линии
+  ZnakDrawMode:=0;
+ //
+  If LWK = 0 then Exit;
+ //If BlockGlobalWidth then begin LWK:=0;LWK1:=0;end;
+ // R:=GetRValue(Color);G:=GetGValue(Color);B:=GetBValue(Color);
+// WriteIn(['GL = nil', GL = nil, GL.NameOf]);
+  For I:=0 to GL.Structura.Count-1 do
+   begin
+    PS:=GL.Structura.At(I);
+     case PS.BitOf of
+       bt_Line  :begin
+                  try
+                  // FLE:=GGraphSet.FlatLineEnd;
+                   If GL.Layer<>nil then begin
+                   // If GL.Layer.Standart=0 then GGraphSet.FlatLineEnd:=GL.Layer.FlatLineEnd;
+                   end;
+                   If PS.DRawState and ls_dblLine=0 then begin // рисуем одинарную линию
+                    // вычисляем коэффициент
+                    If LWK < 0 then LWK1:=LWK else LWK1:=LWK*PS.Param1;
+                    //If Ko<0 then Pen:=SelectObject(Dc,CreatePen(ps_Solid,round(LWK),Color))else
+ //                   Writeln(GL.IdNum,' ',PS.lVOrign);
+ //                  If GL.IdNum = 21022 then
+                    If PS.lVorign = 0 then begin
+                   //  Pen:=SelectObject(Dc,CreatePen(ps_Solid,round(LWK1),Color));
+                    // Brush.lbStyle:=BS_Solid; Brush.lbColor:=Color;
+                    // Pen:=SelectObject(Dc,CreatePenSelector(round(LWK1),Color));
+                    //  Drawer.penColor := Color;
+                    //  Drawer.penWidth := Abs(round(LWK1));
+                      DrawLine(Drawer, PCTwig, PS, Ko, PS.lVorign, Dx);
+                    // DeleteObject(SelectObject(Dc,Pen));
+                    end else begin
+                     DrawDoubleLine(Drawer, PCTwig, PS, LWK, Ko, LWByLayer, PS.lVorign,gmfIgnoreLineDrawing, Dx);
+                    end;
+                   end else begin
+                     DrawDoubleLine(Drawer, PCTwig, PS, LWK, Ko, LWByLayer, PS.lVorign, PS.rVOrign, Dx);
+                   end;
+                  finally {GGraphSet.FlatLineEnd:=FLE;} end;
+                 end;
+       bt_Arc   :begin
+                  If LWK < 0 then LWK1:=LWK else LWK1:=LWK*PS.Param1;
+                 // Pen:=SelectObject(Dc,CreatePen(ps_Solid,round(LWK1),Color));
+                   //Drawer.penColor := Color;
+                   //Drawer.penWidth := Abs(round(LWK1));
+                   DrawArc(Drawer, PCTwig, PS, Ko1, Ko1, nil, Dx, Selected);
+                 // DeleteObject(SelectObject(Dc,Pen));
+                 end;
+       bt_Custom:begin
+                   Znak:=GL.Points.List[I];
+                   If Znak<>@ZnakNil then begin
+                  // Pen:=SelectObject(Dc,CreatePen(ps_Solid,0,Color{Rgb(0,255,0)}));
+                  // Writeln('Ko=',Ko);   Gmx:=1;GMy:=1;
+                    If Ko<0 then DrawSymbol(Drawer, PCTwig, PS, Ko, Ko, Znak, Dx, Selected) else
+                                 DrawSymbol(Drawer, PCTwig, PS, Ko1, Ko1, Znak ,Dx, Selected);
+                  // DeleteObject(SelectObject(Dc,Pen));
+                  end;
+                 end;
+     end; // case PS.BitOf
+  end; // For I:=0 to GL.Structure.Count-1 ...
+ finally
+  PCTwig.Free;
+ end;
+end;
+
+end.
+

@@ -1,0 +1,37 @@
+object Frame1: TFrame1
+  Size.Width = 434.000000000000000000
+  Size.Height = 418.000000000000000000
+  Size.PlatformDefault = False
+  OnEnter = FrameEnter
+  object ListView1: TListView
+    ItemAppearanceClassName = 'TListItemAppearance'
+    ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
+    HeaderAppearanceClassName = 'TListHeaderObjects'
+    FooterAppearanceClassName = 'TListHeaderObjects'
+    Position.X = 14.000000000000000000
+    Position.Y = 10.000000000000000000
+    Size.Width = 405.000000000000000000
+    Size.Height = 347.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+  end
+  object btnOpen: TButton
+    Default = True
+    ModalResult = 1
+    Position.X = 218.000000000000000000
+    Position.Y = 374.000000000000000000
+    TabOrder = 1
+    Text = 'btnOpen'
+    TextSettings.Trimming = None
+    OnClick = btnOpenClick
+    object btnClose: TButton
+      Default = True
+      ModalResult = 2
+      Position.X = 104.000000000000000000
+      Position.Y = 1.000000000000000000
+      TabOrder = 1
+      Text = 'btnClose'
+      TextSettings.Trimming = None
+    end
+  end
+end
