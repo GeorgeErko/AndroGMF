@@ -21,14 +21,22 @@ type
     Painter: TPaintBox;
     btnPaint: TCornerButton;
     StatusBar: TStatusBar;
+    upm: TCornerButton;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure PainterPaint(Sender: TObject; Canvas: TCanvas);
     procedure btnPaintClick(Sender: TObject);
+    procedure upmClick(Sender: TObject);
   private
     StatusLabel: TLabel;
+    PanBitmap: TBitmap;
+    PanBitmapActive: Boolean;
+    PanStartPoint: TPointF;
+    PanShift: TPointF;
+    PanBaseDx: Double;
+    PanBaseDy: Double;
     procedure PainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure PainterMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
     procedure PainterMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -86,6 +94,8 @@ procedure TMainForm.FormCreate(Sender: TObject);
 begin
  LastCanvasScale := 1;
  Painter.AutoCapture := True;
+ PanBitmap := nil;
+ PanBitmapActive := False;
  if (StatusBar <> nil) and (StatusLabel = nil) then begin
   StatusLabel := TLabel.Create(StatusBar);
   StatusLabel.Parent := StatusBar;
@@ -95,6 +105,8 @@ end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
 begin
+ PanBitmap.Free;
+ PanBitmap := nil;
  Drawer.Free;
  Selector.Free;
  Drawer := nil;
@@ -145,6 +157,8 @@ begin
  ApplicationMainForm := Self;
  Stream.Selector:=Selector;
  try
+  FreeAndNil(TwgForm);
+ //
   TwgForm := TForm2(Stream.Get);
   Selector.GLineCol:=TwgForm.MkLib.LSLib;
   Selector.GSqwearCol:=TwgForm.MkLib.SSLib;
@@ -155,7 +169,7 @@ begin
   localSetGabarites;
   Selector.UpdateRects(True);
   objectRepaintAccess := True;
-  WriteIn(['TwgForm=', TwgForm.Twigs.TwigsCount, TwgForm.Twigs.LotsCount]);
+  WriteIn(['TwgForm=', TwgForm.Twigs.TwigsCount, TwgForm.Twigs.LotsCount, TwgForm.Twigs.AnyCount]);
   WriteIn(['Sel.Rect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  finally
   Stream.Free;
@@ -229,12 +243,17 @@ begin
  if Selector.fScale = 0 then Exit;
  XPix := X * LastCanvasScale;
  YPix := Y * LastCanvasScale;
- XGeo := Selector.fDx + (XPix / Selector.fScale);
- YGeo := Selector.fDy + (YPix / Selector.fScale);
- S := Format('XGeo=%.3f  YGeo=%.3f', [XGeo, YGeo]);
+ XGeo :=Selector.XGeo(Round(X));
+ YGeo :=Selector.YGeo(Round(Y));
+ S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  if StatusLabel <> nil then StatusLabel.Text := S;
 end;
 
+
+procedure TMainForm.upmClick(Sender: TObject);
+begin
+ Memo1.ScrollTo(0, Memo1.Lines.Count);
+end;
 
 procedure TMainForm.PainterDblClick(Sender: TObject);
 begin
@@ -256,6 +275,16 @@ begin
  ZoomActive := False;
  LastZoomDistance := 0;
  InteractionActive := True;
+ PanBitmapActive := False;
+ if (Drawer <> nil) and (Drawer.Bitmap <> nil) and (Drawer.Bitmap.Width > 0) and (Drawer.Bitmap.Height > 0) then begin
+  if PanBitmap = nil then PanBitmap := TBitmap.Create;
+  PanBitmap.Assign(Drawer.Bitmap);
+  PanStartPoint := PointF(X, Y);
+  PanShift := PointF(0, 0);
+  PanBaseDx := Selector.fDx;
+  PanBaseDy := Selector.fDy;
+  PanBitmapActive := True;
+ end;
  if BaseScale = 0 then begin
   BaseDx := Selector.fDx;
   BaseDy := Selector.fDy;
@@ -273,6 +302,11 @@ begin
  UpdateStatusGeo(X, Y);
  if ZoomActive then Exit;
  if not PanActive then Exit;
+ if PanBitmapActive then begin
+  PanShift := PointF(X - PanStartPoint.X, Y - PanStartPoint.Y);
+  Painter.Repaint;
+  Exit;
+ end;
  if Selector.fScale = 0 then Exit;
  DxPix := (X - LastPanPoint.X) * LastCanvasScale;
  DyPix := (Y - LastPanPoint.Y) * LastCanvasScale;
@@ -281,12 +315,25 @@ begin
  DyGeo := DyPix / Selector.fScale;
  Selector.fDx := Selector.fDx - DxGeo;
  Selector.fDy := Selector.fDy - DyGeo;
+ Selector.UpdateRects(False);
  SceneDirty := True;
  Painter.Repaint;
 end;
 
 procedure TMainForm.PainterMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var
+ DxPix, DyPix: Double;
+ DxGeo, DyGeo: Double;
 begin
+ if PanBitmapActive and (Selector <> nil) and (Selector.fScale <> 0) then begin
+  DxPix := PanShift.X * LastCanvasScale;
+  DyPix := PanShift.Y * LastCanvasScale;
+  DxGeo := DxPix / Selector.fScale;
+  DyGeo := DyPix / Selector.fScale;
+  Selector.fDx := PanBaseDx - DxGeo;
+  Selector.fDy := PanBaseDy - DyGeo;
+ end;
+ PanBitmapActive := False;
  ResetInteractionState;
  SceneDirty := True;
  Painter.Repaint;
@@ -300,6 +347,8 @@ var
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
+ PanBitmapActive := False;
+ PanActive := False;
  if EventInfo.Distance <= 0 then begin
   ResetInteractionState;
   SceneDirty := True;
@@ -349,6 +398,7 @@ begin
  if Drawer = nil then Exit;
  if TwgForm = nil then Exit;
  if not objectRepaintAccess then Exit;
+ GLines := nil;
  NeedW := Round(Painter.Width * Canvas.Scale);
  NeedH := Round(Painter.Height * Canvas.Scale);
  if (Drawer.Width <> NeedW) or (Drawer.Height <> NeedH) then begin
@@ -365,7 +415,12 @@ begin
     If FillLot = 1 then begin
      For I := 0 to TwgForm.Twigs.IndexCount - 1 do begin
       Lot := TwgForm.Twigs.LAtIndex(I);
-      If (Lot.TypeLot <> 254) and (Lot.Closed = 1) then Lot.Draw32(TwgForm.Twigs);
+      try
+       If (Lot.TypeLot <> 254) and (Lot.Closed = 1) then Lot.Draw32(TwgForm.Twigs);
+      except
+      // Lot.Draw32(TwgForm.Twigs);
+       exit;
+      end;
      end;
     end;
    end;
@@ -425,9 +480,24 @@ begin
 end;
 
 procedure TMainForm.PainterPaint(Sender: TObject; Canvas: TCanvas);
+var
+ SrcRect, DstRect: TRectF;
+ St: TCanvasSaveState;
 begin
  if Drawer = nil then Exit;
  LastCanvasScale := Canvas.Scale;
+ if PanBitmapActive and (PanBitmap <> nil) then begin
+  St := Canvas.SaveState;
+  try
+   Canvas.IntersectClipRect(Painter.LocalRect);
+   SrcRect := RectF(0, 0, PanBitmap.Width, PanBitmap.Height);
+   DstRect := RectF(Painter.LocalRect.Left + PanShift.X, Painter.LocalRect.Top + PanShift.Y, Painter.LocalRect.Right + PanShift.X, Painter.LocalRect.Bottom + PanShift.Y);
+   Canvas.DrawBitmap(PanBitmap, SrcRect, DstRect, 1, True);
+  finally
+   Canvas.RestoreState(St);
+  end;
+  Exit;
+ end;
  if SceneDirty and (TwgForm <> nil) and objectRepaintAccess then RenderSceneToBackbuffer(Canvas);
  Drawer.DrawTo(Canvas, Painter.LocalRect.Round);
 end;

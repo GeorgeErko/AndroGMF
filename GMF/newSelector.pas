@@ -242,6 +242,7 @@ var Sect: TSect;
 begin
  Sect := ActiveRect.Sect;
  Result := Sect;
+ Result.Bottom := Sect.Top; Result.Top := Sect.Bottom;
 end;
 
 function TSelector.LineVis(XX, YY, XX1, YY1: Double): Boolean;
@@ -285,7 +286,7 @@ Function TSelector.PointVis;
   With GRect do
    begin
     If (X>=Left) and (X<=Right) and
-       (Y>=Bottom) and (Y<=Top) then PointVis:=True else
+       (Y<=Bottom) and (Y>=Top) then PointVis:=True else
                                    PointVis:=False;
    end;
  end;

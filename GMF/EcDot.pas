@@ -1574,7 +1574,6 @@ end;
 function TPointDot.GetSect: TSect;
 var Sect:TSect;N:Integer;PZ:TPoint_Sign;
 begin
-Writein(['GetSect0']);
  With Result do begin
   Left:=XDot;Top:=YDot;Right:=XDot;Bottom:=YDot;
 //  If What =-1 then exit;
@@ -1582,14 +1581,11 @@ Writein(['GetSect0']);
   try
   if Selector.GPointCol<>nil then
    begin
-    Writein(['GetSect0000']);
     N:=SearchThis(Selector.GPointCol,(abs(What)));
      If N<>-1 then begin
        PZ:=Selector.GPointCol.At(N);
        PZ.X:=XDot;PZ.Y:=YDot;PZ.Ugol:=Ugol;
-      Writein(['GetSect1']);
      try  Sect:=PZ.GetRect(Koef); except exit;end;
-      Writein(['GetSect2']);
        Sect.Left:=Sect.Left+XDot;Sect.Right:=Sect.Right+XDot;
        Sect.Top:=Sect.Top+YDot;Sect.Bottom:=Sect.Bottom+YDot;
       // Rectangle(GCanvas.Handle,XPix(Sect.Left),YPix(Sect.Top),XPix(Sect.Right),YPix(Sect.Bottom));

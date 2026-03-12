@@ -4,6 +4,7 @@ object localOpenForm: TlocalOpenForm
   Caption = 'Form1'
   ClientHeight = 444
   ClientWidth = 423
+  Position = ScreenCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]

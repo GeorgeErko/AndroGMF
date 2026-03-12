@@ -3579,30 +3579,29 @@ Procedure DrawTwig(Twig: TTwig);
 var Ind: Integer;
     J: Integer;
     Pen: TogsPen;
+    NewPen: TogsPen;
 begin
  With  Selector do
  try
-  Pen := Drawer.SelectPen(TogsPen.Create(LotLineColor, 0, nil));
-   If (ClassHandle.Standart = 1) and (GGraphSet.ViewZnaks=1) then begin
+    If (ClassHandle.Standart = 1) and (GGraphSet.ViewZnaks=1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
       If Ind>-1 then begin
-        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
-        DrawGeoLine(Drawer,GLineCol.At(Ind),Twig.Coord,Twig.Koef{ClassHandle.ZnakKoef},Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
-      end else
-       For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+       TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
+        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
+     end else
+      For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
     end else
    If (ClassHandle.Standart = 0) and (ClassHandle.Znak = 1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
       If Ind>-1 then begin
-        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
-        DrawGeoLine(Drawer,GLineCol.At(Ind),Twig.Coord,Twig.Koef{ClassHandle.ZnakKoef},Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
-      end else
-       For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
-   end else
-    For J:=0 to Tw.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+       TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
+        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
+     end else
+      For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+  end else
+   For J:=0 to Tw.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
   // If GGraphSet.PointView = 1 then For J:=0 to Tw.Coord.Count-1 do TDot(Twig.Coord[J]).Draw32(Drawer, 0, 0, GMS, GMS);
  finally
-  Selector.Drawer.DeletePen(Drawer.SelectPen(Pen));
  end;
 end;
 begin
@@ -3614,13 +3613,14 @@ begin
   If (TypeLot=1) then With Selector, GRect do begin// ðèñóåì ëèíåéíûé
    If Inv = 1 then Pen := Selector. Drawer.SelectPen(TogsPen.Create(TAlphaColorRec.Lime, 0, nil)) else
     Pen := Selector.Drawer.SelectPen(TogsPen.Create(LotLineColor, 0, nil));
-    For I:=0 to Coord.Count-1 do
-    try
+   try
+    For I:=0 to Coord.Count-1 do begin
      Tw:=GetTwig(Twf,I);
       Tw.ArcView:=1;
-       DrawTwig(Tw);
+      DrawTwig(Tw);
      // For J:=0 to Tw.Coord.Count-2 do DrawLine(Tw[J].XDot,Tw[J].YDot,Tw[J+1].XDot,Tw[J+1].YDot);
       Tw.ArcView:=0;
+    end;
    finally
     Drawer.DeletePen(Drawer.SelectPen(Pen));
    end;
@@ -3637,10 +3637,9 @@ begin
       Points2.Add(TogsDot.Create(XDot, YDot, 0));
      Drawer.drawPolygon(Points2, nil);
     finally
-     Points2.Free;
+  //
     end;
-   //
-    For I:=0 to Coord.Count-1 do begin
+     For I:=0 to Coord.Count-1 do begin
      Tw:=GetTwig(Twf,I);
       Tw.ArcView:=1;
        DrawTwig(Tw);

@@ -240,7 +240,7 @@ begin
  Selector:=Buf.Selector;
  Buf.Read(Check,SizeOf(Check));
  Name:=Buf.ReadString;
- WriteIn(['LoadBlock=', Name]);
+ //WriteIn(['LoadBlock=', Name]);
 // If Name = 'ЛЕГЕНДА' then
 //  Writeln('Name=',Name);
  If Check=0 then begin
@@ -248,9 +248,9 @@ begin
 //  Writeln('EcConst=',Ecconst.Version);
 // WriteIn(['Form.Load=',Name]);
   BD:=BLOCK_DEBUG; BLOCK_DEBUG:=False;
-  WriteIn([1]);
+ // WriteIn([1]);
   TwgForm:=TForm2(Buf.Get);
-  WriteIn([2]);
+ // WriteIn([2]);
 //  WriteIn(['Form.Loaded=',Name]);
 // Oh
   useText:=0;
@@ -261,7 +261,7 @@ begin
     PP:=TwgForm.Twigs.AAt(I,B);
     If PP.ResetParams(param_idResetFontView,TwgForm.FontColEx) then Inc(useText);
    end;
-  WriteIn([3]);
+ // WriteIn([3]);
 ///
   Buf.Read(useUserParams,SizeOf(useUserParams));
   With Buf.ReadSect do begin blockRect.Left:=Left;blockRect.Top:=Top;blockRect.Right:=Right;blockRect.Bottom:=Bottom;end;
@@ -272,27 +272,27 @@ begin
   Buf.Read(AutoLayer,SizeOf(AutoLayer));
   Buf.Read(emptyBlock,SizeOf(emptyBlock));
   Buf.Read(Settings,SizeOf(Settings));
-  WriteIn([4]);
+ // WriteIn([4]);
 //  Writeln('EcConst=',Ecconst.Version);
   If newConsts.Version>37 then begin
    Properties:=TProperties(Buf.Get);
   end;
-    WriteIn([52]);
+  //  WriteIn([52]);
 BLOCK_DEBUG:=BD;
  // Buf.GPointCol:=nil;
    TwgForm.SetGabaritesPrivate;
-    WriteIn([6]);
+  //  WriteIn([6]);
   If newConsts.Version<39 then With TwgForm,blockRect do begin Left:=XXMin;Top:=YYMin;Right:=XXMax;Bottom:=YYMax;end;
   For I:=0 to TwgForm.Twigs.LotsCount-1 do begin
    TLot(TwgForm.Twigs.LAt(I)).SetFromTwig(TwgForm.Twigs);
   end;
  end;
-    WriteIn([7]);
+ //   WriteIn([7]);
 // WriteIn(['endOfBlock=',Name,SizeOf(N),' ',SizeOf(Self.Settings)]);
  If Name = 'MAF_OB_Skamya_sospin_met' then If Check=0 then begin
 //  WriteIn(['endOfBlock_DEBUG=',Name]);
  end;
- WriteIn(['LoadBlockEnd=', Name]);
+// WriteIn(['LoadBlockEnd=', Name]);
 end;
 
 procedure TGeoBlock.Store(Buf: TBufStream);
@@ -1082,6 +1082,7 @@ begin
  end;
 //
  Block_Drawing:=True; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
+ dePaint(XB,YB,Angle,XKoef,Ykoef);
  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
  If (Selector.XRasst(Width)<=GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=GGraphSet.fPntZnk) then exit;
  //dePaint(XB,YB,Angle,XKoef,Ykoef);
@@ -1094,6 +1095,7 @@ begin
      Lot.SetMinMax2(TwgForm.Twigs);
      Lot.Draw32(TwgForm.Twigs);
    end;
+   exit;
   For I:=0 to Twigs.AnyCount-1 do begin
    PD:=Twigs.AAt(I,B);
    If B=TWG_Point then begin

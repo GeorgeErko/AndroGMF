@@ -142,6 +142,7 @@ If N<>0 then begin
 end else Result:=S;
 end;
 begin
+ exit;
  if FFontIndex = - 1 then Exit;
  If FText='' then Exit;
   fv := GetParams(MXX,MYY,Ko,Ugol,X1,Y1,itsTest);

@@ -28,6 +28,7 @@ type
  public
   Bitmap: TBitmap;
   constructor Create(ogsSelector_: TogsSelector; Width_, Height_: Integer; OnPaint_:TNotifyEvent);
+  destructor Destroy; override;
   procedure Clear(AColor: Integer); override;
  //
   procedure UpdateImage;
@@ -100,9 +101,10 @@ begin
  inherited SetPen(AValue);
  Canvas.Stroke.Kind := TBrushKind.Solid;
  Canvas.Stroke.Color := EnsureOpaqueAlpha(AValue.penColor);
- if AValue.penWidth > 0 then
+ if AValue.penWidth > 0 then begin
+  Canvas.Stroke.Join:= TStrokeJoin.Round;// = (Miter, Round, Bevel);
   Canvas.Stroke.Thickness := AValue.penWidth
- else
+ end else
   Canvas.Stroke.Thickness := 1;
 end;
 
@@ -154,50 +156,70 @@ begin
  X_:=X; Y_:=Y; X1_:=X1; Y1_:=Y1;
  with ogsSelector, activeRect do
   If pointVisible(X, Y) and pointVisible(X1, Y1) then begin
-//   WriteIn(['allVis=',XPix(X_), YPix(Y_), XPix(X1_), YPix(Y1_), Image.Width, Image.Height]);
-//   If (XPix(X_) > Self.Width) or (XPix(X1_) > Self.Width) or (YPix(Y_) > Self.Height) or (YPix(Y1_) > Self.Height) then exit;
-//   If (XPix(X_)< 0) or (XPix(Y_)< 0) or (XPix(X1_)< 0) or (XPix(Y1_)< 0) then exit;
-
    Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
    Canvas.DrawLine(PointF(XPix(X_), YPix(Y_)), PointF(XPix(X1_), YPix(Y1_)), 1);
-//   WriteIn(['end']);
   end else
   If lineVisible(X, Y, X1, Y1) then
    If cutLine(XMin+C, YMin+C, XMax-C, YMax-C, X_,Y_,X1_,Y1_) then begin
-//    WriteIn(['Rect=', XMin, YMin, XMax, YMax, 'Coord=', XPix(X_), YPix(Y_), XPix(X1_), YPix(Y1_)]);
-//    WriteIn(['cut=', XPix(X_), YPix(Y_), XPix(X1_), YPix(Y1_), Image.Width, Image.Height]);
     If (XPix(X_) > Self.Width) or (XPix(X1_) > Self.Width) or (YPix(Y_) > Self.Height) or (YPix(Y1_) > Self.Height) then exit;
     Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
     Canvas.DrawLine(PointF(XPix(X_), YPix(Y_)), PointF(XPix(X1_), YPix(Y1_)), 1);
-   // WriteIn(['end']);
    end;
 end;
 
 procedure TogsDrawerCanvas.DrawPolyline(Points: TogsCollection; cutRequest: Boolean);
 var
  I: Integer;
- P0, P1: TDot;
+ P0: TDot;
+ Path: TPathData;
+ R: TogsRect;
 begin
- if (Points.Count < 2) then Exit;
- for I := 0 to Points.Count - 2 do begin
-  P0 := TDot(Points.Items[I]);
-  P1 := TDot(Points.Items[I + 1]);
-  DrawLine(P0.fX, P0.fY, P1.fX, P1.fY, cutRequest);
+ if (Points = nil) or (Points.Count < 2) then Exit;
+ if cutRequest then begin
+  R := TogsRect.Create;
+  try
+   for I := 0 to Points.Count - 1 do begin
+    P0 := TDot(Points.Items[I]);
+    R.Insert(P0.fX, P0.fY);
+   end;
+   if not ogsSelector.RectVisible(R) then Exit;
+  finally
+   R.Free;
+  end;
+ end;
+ Path := TPathData.Create;
+ try
+  P0 := TDot(Points.Items[0]);
+  Path.MoveTo(PointF(ogsSelector.XPix(P0.fX), ogsSelector.YPix(P0.fY)));
+  for I := 1 to Points.Count - 1 do begin
+   P0 := TDot(Points.Items[I]);
+   Path.LineTo(PointF(ogsSelector.XPix(P0.fX), ogsSelector.YPix(P0.fY)));
+  end;
+  Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
+  Canvas.DrawPath(Path, 1);
+ finally
+  Path.Free;
  end;
 end;
 
 procedure TogsDrawerCanvas.DrawPolygon(Points: TogsCollection; polyRect: TogsRect);
 var AllLin: TPolygon;
-    I: Integer;
+    I, XI, YI: Integer;
+    X, Y: Double;
 begin
  SetLength(AllLin, Points.Count);
  For I := 0 to Points.Count - 1 do
   With ogsSelector do
    With TlDot(Points[I]) do begin
     AllLin[I] := PointF(XPix(XDot), YPix(YDot));
+    XI := XPix(XDot);
+    YI := YPix(YDot);
+    X := TlDot(Points[I]).XDot;
+    Y := TlDot(Points[I]).YDot;
+    XPix(0);
 //    WriteIn(['Poly=',I, Alllin[I].X, Alllin[I].Y]);
    end;
- Canvas.Fill.Color := Brush.brColor;
+ Canvas.Fill.Color := EnsureOpaqueAlpha(Brush.brColor);
  Canvas.FillPolygon(AllLin, Points.Count);
 end;
 
@@ -231,6 +253,12 @@ begin
  finally
   Path.Free;
  end;
+end;
+
+destructor TogsDrawerCanvas.Destroy;
+begin
+ inherited;
+ Bitmap.Free;
 end;
 
 procedure TogsDrawerCanvas.DrawCircle(XA, YA, Radius: Double);

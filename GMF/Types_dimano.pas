@@ -13,6 +13,7 @@ interface uses Collect, Classes, FMX.Graphics;
   TDot1 = class( TTwgObject )
     X, Y : Double;
      Constructor Create( X1, Y1 : Double);
+     Constructor CreateAs(Dot: TDot1);
    end;
 
   TDot2 = class( TTwgObject )
@@ -272,6 +273,12 @@ begin
  Stream.Write(X,SizeOf(X));
  Stream.Write(Y,SizeOf(Y));
  Stream.Write(Z,SizeOf(Z));
+end;
+
+constructor TDot1.CreateAs(Dot: TDot1);
+begin
+ X := Dot.X;
+ Y := Dot.Y;
 end;
 
 initialization

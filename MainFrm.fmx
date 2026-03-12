@@ -99,6 +99,20 @@ object MainForm: TMainForm
       YRadius = 3.000000000000000000
       OnClick = btnPaintClick
     end
+    object upm: TCornerButton
+      Position.X = 742.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 49.000000000000000000
+      Size.Height = 23.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = 'mem'
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = upmClick
+    end
   end
   object PanelPainter: TPanel
     Align = Client

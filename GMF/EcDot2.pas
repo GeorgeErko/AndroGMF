@@ -1,7 +1,7 @@
 ﻿unit EcDot2;
 
 interface uses Collect, newFontScale, newSelector, TwgDraw, Classes,
-               SysUtils, EcDot;
+               SysUtils, EcDot, ogcBasic;
 
 const
  param_idResetFontView = 1;
@@ -59,6 +59,8 @@ type
   Procedure ChangeXYKoef(XK,YK:Double);override;
  //
   Procedure SetGabarites(MRect_:TMRect);override;
+ //
+  Procedure Draw32(Drawer: TogsDrawer;PntZnk:TSortedCollection;FontViewEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);override;
  end;
 
 var AlignStrings:TStrings;
@@ -259,6 +261,12 @@ begin
  inherited;
  Text.Free;
  GyperLink.Free;
+end;
+
+procedure TDotText.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection;
+  FontViewEx: TFontManagerEx; AlwaysShowAttr: Boolean);
+begin
+//
 end;
 
 procedure TDotText.Store(Stream: TBufStream);

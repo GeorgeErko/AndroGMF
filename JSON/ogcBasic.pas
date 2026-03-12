@@ -1,4 +1,4 @@
-unit ogcBasic;
+п»їunit ogcBasic;
 
 {$H+}
 
@@ -27,10 +27,10 @@ type
    procedure SetSign(AValue: Pointer); virtual;
    function GetAttribute: String; virtual;
    procedure SetAttribute(AValue: String); virtual;
-  // CreateEmpty - конструктор для создания пустого экземпляра объекта
-  // применяется для работы с копиями объектов KeepObjects
-  // при связи с атрибутами или генерализации при масштабированиии
-  // и динамической установке свойств в блоках
+  // CreateEmpty - РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂ РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РїСѓСЃС‚РѕРіРѕ СЌРєР·РµРјРїР»СЏСЂР° РѕР±СЉРµРєС‚Р°
+  // РїСЂРёРјРµРЅСЏРµС‚СЃСЏ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ РєРѕРїРёСЏРјРё РѕР±СЉРµРєС‚РѕРІ KeepObjects
+  // РїСЂРё СЃРІСЏР·Рё СЃ Р°С‚СЂРёР±СѓС‚Р°РјРё РёР»Рё РіРµРЅРµСЂР°Р»РёР·Р°С†РёРё РїСЂРё РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёРёРё
+  // Рё РґРёРЅР°РјРёС‡РµСЃРєРѕР№ СѓСЃС‚Р°РЅРѕРІРєРµ СЃРІРѕР№СЃС‚РІ РІ Р±Р»РѕРєР°С…
    constructor CreateEmpty; virtual;
    constructor CreateAs(ogsObject:TogsBasic); virtual;
    constructor KeepAs(ogsObject:TogsBasic); virtual;
@@ -55,7 +55,7 @@ type
   //
    function getogsRect: TogsRect; virtual; abstract;
    property ogsRect: TogsRect read getogsRect;
-  // временные свойства
+  // РІСЂРµРјРµРЅРЅС‹Рµ СЃРІРѕР№СЃС‚РІР°
    property Color: TColor read GetColor write SetColor;
    property Sign : Pointer read GetSign write SetSign;
    property Attribute: String read GetAttribute write SetAttribute;
@@ -73,7 +73,7 @@ type
   TCalcAction = (calcLength, calcbBox, calcSquare, calcRelation, calcSortBy);
   TCalcActionSet = set of TCalcAction;
 
- // параметры захвата примитивов TogsGeometry
+ // РїР°СЂР°РјРµС‚СЂС‹ Р·Р°С…РІР°С‚Р° РїСЂРёРјРёС‚РёРІРѕРІ TogsGeometry
   TCaptureKind = (ckPoint, ckLine, ckSinglePolygon, ckPolygon, ckMultiPolygon);
   TSetOfCapture = set of TCaptureKind;
 
@@ -81,16 +81,16 @@ type
 
   TCaptureRec = record
    CaptureMode: Byte;
-  // точка захвата
+  // С‚РѕС‡РєР° Р·Р°С…РІР°С‚Р°
    XCapture, YCapture: Double;
    CaptureObject: TogsGeometry;
-  // параметры захвата
-   CaptureParam: Integer; // максимально допустимое расстояние до примитива
-   CaptureFor: TSetOfCapture; // устанавливает, какие типы примитивов захватывать
-   ignoreHoles: Boolean; // игнорировать при захвате дырки (не проверять)
-  // возвращаемые результаты захвата
-   resCapture: Integer; // расстояние в пикселах -> возвращает функция
-                        // захвата примитива resObject
+  // РїР°СЂР°РјРµС‚СЂС‹ Р·Р°С…РІР°С‚Р°
+   CaptureParam: Integer; // РјР°РєСЃРёРјР°Р»СЊРЅРѕ РґРѕРїСѓСЃС‚РёРјРѕРµ СЂР°СЃСЃС‚РѕСЏРЅРёРµ РґРѕ РїСЂРёРјРёС‚РёРІР°
+   CaptureFor: TSetOfCapture; // СѓСЃС‚Р°РЅР°РІР»РёРІР°РµС‚, РєР°РєРёРµ С‚РёРїС‹ РїСЂРёРјРёС‚РёРІРѕРІ Р·Р°С…РІР°С‚С‹РІР°С‚СЊ
+   ignoreHoles: Boolean; // РёРіРЅРѕСЂРёСЂРѕРІР°С‚СЊ РїСЂРё Р·Р°С…РІР°С‚Рµ РґС‹СЂРєРё (РЅРµ РїСЂРѕРІРµСЂСЏС‚СЊ)
+  // РІРѕР·РІСЂР°С‰Р°РµРјС‹Рµ СЂРµР·СѓР»СЊС‚Р°С‚С‹ Р·Р°С…РІР°С‚Р°
+   resCapture: Integer; // СЂР°СЃСЃС‚РѕСЏРЅРёРµ РІ РїРёРєСЃРµР»Р°С… -> РІРѕР·РІСЂР°С‰Р°РµС‚ С„СѓРЅРєС†РёСЏ
+                        // Р·Р°С…РІР°С‚Р° РїСЂРёРјРёС‚РёРІР° resObject
    resObject : Pointer;
    resCaptureOf: TCaptureKind;
   end;
@@ -102,7 +102,7 @@ type
    function GetSquare: Double; virtual; abstract;
   public
   // root functions
- //  function ogsParent: TogsGeometry; virtual; abstract; //родительский эдемент
+ //  function ogsParent: TogsGeometry; virtual; abstract; //СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СЌРґРµРјРµРЅС‚
   // basic function
    class function GeometryType (): String; virtual; abstract;
    class function SRID (): Integer; virtual; abstract;
@@ -113,11 +113,11 @@ type
    function IsMeasured (): Integer; virtual; abstract;
    function Boundary (): TogsGeometry; virtual; abstract;
   // TobjCurve functions
-   function _Length (): Double; virtual; abstract; //- длина объекта Curve в его системе координат.
-   function StartPoint (): TogsDot; virtual; abstract; //- первая точка Curve.
-   function EndPoint (): TogsDot; virtual; abstract; //- последняя точка Curve.
-   function IsClosed (): Integer; virtual; abstract; //- возвращает 1 (TRUE), если [StartPoint() = EndPoint()].
-   function IsRing (): Integer; virtual; abstract; //- возвращает 1 (TRUE), если объект Curve замкнут и не проходит через одну и ту же точку дважды.
+   function _Length (): Double; virtual; abstract; //- РґР»РёРЅР° РѕР±СЉРµРєС‚Р° Curve РІ РµРіРѕ СЃРёСЃС‚РµРјРµ РєРѕРѕСЂРґРёРЅР°С‚.
+   function StartPoint (): TogsDot; virtual; abstract; //- РїРµСЂРІР°СЏ С‚РѕС‡РєР° Curve.
+   function EndPoint (): TogsDot; virtual; abstract; //- РїРѕСЃР»РµРґРЅСЏСЏ С‚РѕС‡РєР° Curve.
+   function IsClosed (): Integer; virtual; abstract; //- РІРѕР·РІСЂР°С‰Р°РµС‚ 1 (TRUE), РµСЃР»Рё [StartPoint() = EndPoint()].
+   function IsRing (): Integer; virtual; abstract; //- РІРѕР·РІСЂР°С‰Р°РµС‚ 1 (TRUE), РµСЃР»Рё РѕР±СЉРµРєС‚ Curve Р·Р°РјРєРЅСѓС‚ Рё РЅРµ РїСЂРѕС…РѕРґРёС‚ С‡РµСЂРµР· РѕРґРЅСѓ Рё С‚Сѓ Р¶Рµ С‚РѕС‡РєСѓ РґРІР°Р¶РґС‹.
   // geometry fuctions
    function Equals (ogsGeom: TogsGeometry): Integer; virtual; abstract;
    function Disjoint (ogsGeom: TogsGeometry): Integer; virtual; abstract;
@@ -138,16 +138,16 @@ type
    function Union (ogsGeom: TogsGeometry): TogsGeometry; virtual; abstract;
    function Difference (ogsGeom: TogsGeometry): TogsGeometry; virtual; abstract;
    function SymDifference (ogsGeom: TogsGeometry): TogsGeometry; virtual; abstract;
-  // видимость
+  // РІРёРґРёРјРѕСЃС‚СЊ
    function Visible(Rect: TogsRect): Boolean; virtual; abstract;
-  // расчет геометрических харкктеристик примитива
-  // возвращает значение (например: bool = [0,1]), кол-во, дескриптор, либо указатель
+  // СЂР°СЃС‡РµС‚ РіРµРѕРјРµС‚СЂРёС‡РµСЃРєРёС… С…Р°СЂРєРєС‚РµСЂРёСЃС‚РёРє РїСЂРёРјРёС‚РёРІР°
+  // РІРѕР·РІСЂР°С‰Р°РµС‚ Р·РЅР°С‡РµРЅРёРµ (РЅР°РїСЂРёРјРµСЂ: bool = [0,1]), РєРѕР»-РІРѕ, РґРµСЃРєСЂРёРїС‚РѕСЂ, Р»РёР±Рѕ СѓРєР°Р·Р°С‚РµР»СЊ
    function Calculate(Action: TCalcActionSet): Integer; virtual; abstract;
-  // отрисовка
-   procedure Draw(Drawer: TogsDrawer); virtual; abstract; // стандартное рисование
-   procedure DrawPoint(Drawer: TogsDrawer); virtual; abstract; // отрисовка точек примитива
-                                                               // или самой точки
-  // выделение
+  // РѕС‚СЂРёСЃРѕРІРєР°
+   procedure Draw(Drawer: TogsDrawer); virtual; abstract; // СЃС‚Р°РЅРґР°СЂС‚РЅРѕРµ СЂРёСЃРѕРІР°РЅРёРµ
+   procedure DrawPoint(Drawer: TogsDrawer); virtual; abstract; // РѕС‚СЂРёСЃРѕРІРєР° С‚РѕС‡РµРє РїСЂРёРјРёС‚РёРІР°
+                                                               // РёР»Рё СЃР°РјРѕР№ С‚РѕС‡РєРё
+  // РІС‹РґРµР»РµРЅРёРµ
    property Selected: boolean read GetSelected write SetSelected;
    function SelectByPoint(X, Y: Double; var Params: TCaptureRec): boolean; virtual; abstract;
   //
@@ -166,7 +166,7 @@ type
    Case shortInt of
     0:(XA, YA, XB, YB: Double);
     1:(XMin, YMin, XMax, YMax: Double);
-    3:(Left, Top, Right, Bottom: Double); // сохранено для совместимости (Top < Bottom)
+    3:(Left, Top, Right, Bottom: Double); // СЃРѕС…СЂР°РЅРµРЅРѕ РґР»СЏ СЃРѕРІРјРµСЃС‚РёРјРѕСЃС‚Рё (Top < Bottom)
   end;
 
   { TogsDot }
@@ -207,7 +207,7 @@ type
    function getSect: TSect;
    procedure setSect(AValue: TSect);
   public
-  // временно в паблике
+  // РІСЂРµРјРµРЅРЅРѕ РІ РїР°Р±Р»РёРєРµ
    XMin, YMin, XMax, YMax: Double;
    Iter:0..1;
  //
@@ -229,9 +229,9 @@ type
    function isVertical: Boolean;
    procedure Move(Dx, Dy: Double);
    procedure Scale(X, Y, Koef: Double);
-  // временная процедура, без обработки событиq OnChange, OnChanged для обновления в родительских оъектах
+  // РІСЂРµРјРµРЅРЅР°СЏ РїСЂРѕС†РµРґСѓСЂР°, Р±РµР· РѕР±СЂР°Р±РѕС‚РєРё СЃРѕР±С‹С‚Рёq OnChange, OnChanged РґР»СЏ РѕР±РЅРѕРІР»РµРЅРёСЏ РІ СЂРѕРґРёС‚РµР»СЊСЃРєРёС… РѕСЉРµРєС‚Р°С…
    function Inflate(deltaX, deltaY: Double): TogsRect;
-  // видимость
+  // РІРёРґРёРјРѕСЃС‚СЊ
    function PointIn(X, Y: Double): Boolean;
    function Visible(Sect_: TSect): Boolean;
    function VisibleIn(Rect: TogsRect): Boolean;
@@ -243,15 +243,15 @@ type
 
  { TogsCollection }
 
- // проверка на тип элементов в коллекции при вставке
- // для свойства TogsCollection.CheckTypeProc
+ // РїСЂРѕРІРµСЂРєР° РЅР° С‚РёРї СЌР»РµРјРµРЅС‚РѕРІ РІ РєРѕР»Р»РµРєС†РёРё РїСЂРё РІСЃС‚Р°РІРєРµ
+ // РґР»СЏ СЃРІРѕР№СЃС‚РІР° TogsCollection.CheckTypeProc
   TCheckTypeProc = function(P: TogsBasic): Boolean;
 
   TogsCollection = class(TogsGeometry)
   protected
   //
    fList: TList;
-  // статический метод для проверки типа добавляемых объектов
+  // СЃС‚Р°С‚РёС‡РµСЃРєРёР№ РјРµС‚РѕРґ РґР»СЏ РїСЂРѕРІРµСЂРєРё С‚РёРїР° РґРѕР±Р°РІР»СЏРµРјС‹С… РѕР±СЉРµРєС‚РѕРІ
    fcheckTypeProc: TCheckTypeProc;
    function GetCount: Integer;
    function GetItem(Index: Integer): Pointer;
@@ -263,7 +263,7 @@ type
    procedure Store(Stream: TogsStream); override;
  //
    property Count: Integer read GetCount;
- //!!! небезопасный доступ к fList
+ //!!! РЅРµР±РµР·РѕРїР°СЃРЅС‹Р№ РґРѕСЃС‚СѓРї Рє fList
    property List: TList read fList write fList;
    property Items[Index: Integer]: Pointer read GetItem write SetItem; default;
    property CheckTypeProc: TCheckTypeProc read fcheckTypeProc write fcheckTypeProc;
@@ -280,7 +280,7 @@ type
 
   { TogsSortedCollection }
 
-  // сортированная коллекция для реализации двоичного поиска
+  // СЃРѕСЂС‚РёСЂРѕРІР°РЅРЅР°СЏ РєРѕР»Р»РµРєС†РёСЏ РґР»СЏ СЂРµР°Р»РёР·Р°С†РёРё РґРІРѕРёС‡РЅРѕРіРѕ РїРѕРёСЃРєР°
   TogsSortedCollection = class(TogsCollection)
    fDuplicates: Boolean;
    fOnCompare: TListSortCompare;
@@ -299,12 +299,12 @@ type
 
  { TogsStream }
 
- // функции поиска классов и их ID в списках зарегистрированных классов на чтение/запись
- // т.к. для оптимизации поиска, таких списков может быть несколько
- // в TogsStream предусмотрена установка событий для вызова
- // поиска из различных списков
- // по умолчанию список регистрации для чтения/записи - ogsRegisteredClasses
- // ф-ции LinearSearchGet(ClassNum: Integer): TogsBasicClass;
+ // С„СѓРЅРєС†РёРё РїРѕРёСЃРєР° РєР»Р°СЃСЃРѕРІ Рё РёС… ID РІ СЃРїРёСЃРєР°С… Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹С… РєР»Р°СЃСЃРѕРІ РЅР° С‡С‚РµРЅРёРµ/Р·Р°РїРёСЃСЊ
+ // С‚.Рє. РґР»СЏ РѕРїС‚РёРјРёР·Р°С†РёРё РїРѕРёСЃРєР°, С‚Р°РєРёС… СЃРїРёСЃРєРѕРІ РјРѕР¶РµС‚ Р±С‹С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ
+ // РІ TogsStream РїСЂРµРґСѓСЃРјРѕС‚СЂРµРЅР° СѓСЃС‚Р°РЅРѕРІРєР° СЃРѕР±С‹С‚РёР№ РґР»СЏ РІС‹Р·РѕРІР°
+ // РїРѕРёСЃРєР° РёР· СЂР°Р·Р»РёС‡РЅС‹С… СЃРїРёСЃРєРѕРІ
+ // РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ СЃРїРёСЃРѕРє СЂРµРіРёСЃС‚СЂР°С†РёРё РґР»СЏ С‡С‚РµРЅРёСЏ/Р·Р°РїРёСЃРё - ogsRegisteredClasses
+ // С„-С†РёРё LinearSearchGet(ClassNum: Integer): TogsBasicClass;
  //       LinearSearchPut(objClassType: TogsBasicClass): Integer;
   TOnSearchGetProc = function (ClassNum: Integer): TogsBasicClass;
   TOnSearchPutProc = function (objClassType: TogsBasicClass): Integer;
@@ -319,7 +319,7 @@ type
    fOnSearchGetProc: TOnSearchGetProc;
    fOnSearchPutProc: TOnSearchPutProc;
   public
-   Version : Byte; // для механизма поддержки версий объектов
+   Version : Byte; // РґР»СЏ РјРµС…Р°РЅРёР·РјР° РїРѕРґРґРµСЂР¶РєРё РІРµСЂСЃРёР№ РѕР±СЉРµРєС‚РѕРІ
   //
    constructor Create; // TMemoryStream
    constructor CreateMemoryStream(Capacity_: Integer = 0; Selector_: TogsSelector = nil);
@@ -343,10 +343,10 @@ type
    function WriteString(const Buf : AnsiString): Longint;
    function Get: TogsBasic;
    procedure Put(ogsObject: TogsBasic);
-  // загрузка объекта из специализированного потока
-  // к примеру текстового файла JSON, используя методы чтения потока
-  // P - объект, в который производится запись, если P = nil
-  // объект создается в методе и возвращается вызывающему процессу
+  // Р·Р°РіСЂСѓР·РєР° РѕР±СЉРµРєС‚Р° РёР· СЃРїРµС†РёР°Р»РёР·РёСЂРѕРІР°РЅРЅРѕРіРѕ РїРѕС‚РѕРєР°
+  // Рє РїСЂРёРјРµСЂСѓ С‚РµРєСЃС‚РѕРІРѕРіРѕ С„Р°Р№Р»Р° JSON, РёСЃРїРѕР»СЊР·СѓСЏ РјРµС‚РѕРґС‹ С‡С‚РµРЅРёСЏ РїРѕС‚РѕРєР°
+  // P - РѕР±СЉРµРєС‚, РІ РєРѕС‚РѕСЂС‹Р№ РїСЂРѕРёР·РІРѕРґРёС‚СЃСЏ Р·Р°РїРёСЃСЊ, РµСЃР»Рё P = nil
+  // РѕР±СЉРµРєС‚ СЃРѕР·РґР°РµС‚СЃСЏ РІ РјРµС‚РѕРґРµ Рё РІРѕР·РІСЂР°С‰Р°РµС‚СЃСЏ РІС‹Р·С‹РІР°СЋС‰РµРјСѓ РїСЂРѕС†РµСЃСЃСѓ
    function LoadDefaultObject(P: Pointer): Pointer; virtual; abstract;
   end;
 
@@ -403,10 +403,10 @@ type
 
   TogsDrawer = class(TogsBasic)
   private
-  // событие для отрисовки на внешней канве методом TogsDrawer.DrawTo
+  // СЃРѕР±С‹С‚РёРµ РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё РЅР° РІРЅРµС€РЅРµР№ РєР°РЅРІРµ РјРµС‚РѕРґРѕРј TogsDrawer.DrawTo
    fOnPaint: TNotifyEvent;
    fOnPlayerEvent: TPlayerEvent;
-  // перо, кисть
+  // РїРµСЂРѕ, РєРёСЃС‚СЊ
    fPen: TogsPen;
    fBrush: TogsBrush;
    function GetcmdPlayerItem(Index: Integer): TogsBasic;
@@ -415,8 +415,8 @@ type
   protected
    fogsSelector: TogsSelector;
    fDrawerMode: TDrawerMode;
-  // сцена для отрисовки, состоящая из набора комманд - типа wmf, swg
-  // комманды могут быть как простыми, так и вложенными
+  // СЃС†РµРЅР° РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё, СЃРѕСЃС‚РѕСЏС‰Р°СЏ РёР· РЅР°Р±РѕСЂР° РєРѕРјРјР°РЅРґ - С‚РёРїР° wmf, swg
+  // РєРѕРјРјР°РЅРґС‹ РјРѕРіСѓС‚ Р±С‹С‚СЊ РєР°Рє РїСЂРѕСЃС‚С‹РјРё, С‚Р°Рє Рё РІР»РѕР¶РµРЅРЅС‹РјРё
    fcmdPlayer: TogsCollection;
   //
    function GetWidth: Integer; virtual; abstract;
@@ -437,18 +437,18 @@ type
    function DrawerMode: TDrawerMode; virtual;
   //
    procedure Clear(AColor: Integer); virtual;
- // рисованиев в системе координат объекта
+ // СЂРёСЃРѕРІР°РЅРёРµРІ РІ СЃРёСЃС‚РµРјРµ РєРѕРѕСЂРґРёРЅР°С‚ РѕР±СЉРµРєС‚Р°
    procedure DrawPoint(Point: TogsDot); virtual;
    procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); virtual;
    procedure DrawSect(Sect: TSect); virtual;
    procedure DrawCircle(XA, YA, Radius: Double); virtual;
    procedure DrawPolyLine(Points: TogsCollection; cutRequest: Boolean);virtual;
    procedure DrawPolygon(Points: TogsCollection; polyRect: TogsRect);virtual;
- //для сложных объектов рисования - var-параметр
+ //РґР»СЏ СЃР»РѕР¶РЅС‹С… РѕР±СЉРµРєС‚РѕРІ СЂРёСЃРѕРІР°РЅРёСЏ - var-РїР°СЂР°РјРµС‚СЂ
    procedure DrawPolyPolygon(Polygons: TogsCollection; polyRect: TogsRect); virtual;
    procedure DrawMarker(X, Y: Double; Text: String = ''); overload;
    procedure DrawMarker(Point: TogsDot; Text: String = ''); overload;
- // рисовагние в системе координат Canvas
+ // СЂРёСЃРѕРІР°РіРЅРёРµ РІ СЃРёСЃС‚РµРјРµ РєРѕРѕСЂРґРёРЅР°С‚ Canvas
    procedure MoveTo(X, Y: Integer); virtual;
    procedure LineTo(X, Y: Integer); virtual;
  //
@@ -456,7 +456,7 @@ type
    property Height: Integer read GetHeight write SetHeight;
    function geoWidth: Double; virtual; abstract;
    function geoHeight: Double; virtual; abstract;
- // события
+ // СЃРѕР±С‹С‚РёСЏ
    procedure MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean); virtual;
  //
    procedure BeginPaint; virtual;
@@ -468,17 +468,17 @@ type
    property Canvas: TCanvas read GetCanvas;
    property Pen: TogsPen read GetPen write SetPen;
    property Brush: TogsBrush read GetBrush write SetBrush;
- // управление пером и кистью
-   function SelectPen(Pen_: TogsPen): TogsPen; virtual; // возвращает предыдущий fPen
-  // удаляет текущее перо, для возврата к предыдущему используется
-  // конструкция :
+ // СѓРїСЂР°РІР»РµРЅРёРµ РїРµСЂРѕРј Рё РєРёСЃС‚СЊСЋ
+   function SelectPen(Pen_: TogsPen): TogsPen; virtual; // РІРѕР·РІСЂР°С‰Р°РµС‚ РїСЂРµРґС‹РґСѓС‰РёР№ fPen
+  // СѓРґР°Р»СЏРµС‚ С‚РµРєСѓС‰РµРµ РїРµСЂРѕ, РґР»СЏ РІРѕР·РІСЂР°С‚Р° Рє РїСЂРµРґС‹РґСѓС‰РµРјСѓ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ
+  // РєРѕРЅСЃС‚СЂСѓРєС†РёСЏ :
   //               oldPen := SelectPen(TogsPen.Create(<newPenParams>));
   //               ...
   //               DeletePen(SelectPen(oldPen));
    procedure DeletePen(Pen_: TogsPen);
    function  SelectBrush(Brush_: TogsBrush): TogsBrush; virtual;
    procedure DeleteBrush(Brush_: TogsBrush);
-  // проигрывать сцену - отрисовать все примитивы из fcmdSceneList
+  // РїСЂРѕРёРіСЂС‹РІР°С‚СЊ СЃС†РµРЅСѓ - РѕС‚СЂРёСЃРѕРІР°С‚СЊ РІСЃРµ РїСЂРёРјРёС‚РёРІС‹ РёР· fcmdSceneList
    property cmdPlayer: TogsCollection read fcmdPlayer write fcmdPlayer;
    property cmdPlayerItem[Index: Integer]: TogsBasic read GetcmdPlayerItem;
    property OnPlayerEvent: TPlayerEvent read fOnPlayerEvent write fOnPlayerEvent;
@@ -487,11 +487,11 @@ type
 
   {TogsSpacer}
 
- // класс для поддержки сложных составных объектов типа: блок, тип линии
- // может использоваться для:
- // рисования (унаследован от TDrawer)
- // захвата примитивов в составных объектах
- // экспорта в тайлы, метафайлы, передачи в сторонние форматы данных
+ // РєР»Р°СЃСЃ РґР»СЏ РїРѕРґРґРµСЂР¶РєРё СЃР»РѕР¶РЅС‹С… СЃРѕСЃС‚Р°РІРЅС‹С… РѕР±СЉРµРєС‚РѕРІ С‚РёРїР°: Р±Р»РѕРє, С‚РёРї Р»РёРЅРёРё
+ // РјРѕР¶РµС‚ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊСЃСЏ РґР»СЏ:
+ // СЂРёСЃРѕРІР°РЅРёСЏ (СѓРЅР°СЃР»РµРґРѕРІР°РЅ РѕС‚ TDrawer)
+ // Р·Р°С…РІР°С‚Р° РїСЂРёРјРёС‚РёРІРѕРІ РІ СЃРѕСЃС‚Р°РІРЅС‹С… РѕР±СЉРµРєС‚Р°С…
+ // СЌРєСЃРїРѕСЂС‚Р° РІ С‚Р°Р№Р»С‹, РјРµС‚Р°С„Р°Р№Р»С‹, РїРµСЂРµРґР°С‡Рё РІ СЃС‚РѕСЂРѕРЅРЅРёРµ С„РѕСЂРјР°С‚С‹ РґР°РЅРЅС‹С…
 
   TogsSpacer = class(TogsDrawer)
   private
@@ -499,7 +499,7 @@ type
   public
    constructor Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent); override;
    constructor CreateCapture(Selector: TogsSelector); virtual;
-  // выделение
+  // РІС‹РґРµР»РµРЅРёРµ
    function SelectByPoint(X, Y: Double; ogsObject: TogsGeometry): boolean; virtual;
    property Selected: boolean read GetSelected;
   end;
@@ -512,7 +512,7 @@ type
    fglobalRect: TogsRect;
    factiveRect: TogsRect;
    fPixelSize: Double;
-   mfs, mff: Integer; // начало -> конец замера memFree
+   mfs, mff: Integer; // РЅР°С‡Р°Р»Рѕ -> РєРѕРЅРµС† Р·Р°РјРµСЂР° memFree
                       // memFreeFinish = mff - mfs
    function getActiveRect: TogsRect;
    procedure setActiveRect(AValue: TogsRect);
@@ -525,8 +525,8 @@ type
   public
    fScale : Double;
    fDx, fDy: Double;
-   fSelectorMode: Byte; // временно. перенести в приват
-   memMgr: TMemoryManager; // для отладки - менеджер памяти
+   fSelectorMode: Byte; // РІСЂРµРјРµРЅРЅРѕ. РїРµСЂРµРЅРµСЃС‚Рё РІ РїСЂРёРІР°С‚
+   memMgr: TMemoryManager; // РґР»СЏ РѕС‚Р»Р°РґРєРё - РјРµРЅРµРґР¶РµСЂ РїР°РјСЏС‚Рё
    Name:String;
    constructor Create(Drawer_: TogsDrawer); virtual;
    destructor Destroy;override;
@@ -546,7 +546,7 @@ type
    function YGeo(Y: Integer): Double; virtual;
    function geoDist(Value: Double): Double; virtual;
    function pixDist(Value: Double): Integer; virtual;
-  // реальных единиц (мм) в пикселе -> масштаб
+  // СЂРµР°Р»СЊРЅС‹С… РµРґРёРЅРёС† (РјРј) РІ РїРёРєСЃРµР»Рµ -> РјР°СЃС€С‚Р°Р±
    property DevScale: Double read GetDevScale;
   //
    procedure Clear;
@@ -578,17 +578,17 @@ var
 // TCaptureRec functions
   
 function CRClearParams(CaptureDef: TSetOfCapture = [ckPoint, ckLine, ckPolygon]): TCaptureRec;
-// проверка: установлена точка захвата, или ее необходимо установить
+// РїСЂРѕРІРµСЂРєР°: СѓСЃС‚Р°РЅРѕРІР»РµРЅР° С‚РѕС‡РєР° Р·Р°С…РІР°С‚Р°, РёР»Рё РµРµ РЅРµРѕР±С…РѕРґРёРјРѕ СѓСЃС‚Р°РЅРѕРІРёС‚СЊ
 function CRnullPoint(CaptureRec: TCaptureRec): Boolean;
 procedure CRSetCapPoint(CaptureREc: TCaptureRec; X, Y: Double);
 
-// соритровка коллекции классов по разным признакам: номер, ранг
+// СЃРѕСЂРёС‚СЂРѕРІРєР° РєРѕР»Р»РµРєС†РёРё РєР»Р°СЃСЃРѕРІ РїРѕ СЂР°Р·РЅС‹Рј РїСЂРёР·РЅР°РєР°Рј: РЅРѕРјРµСЂ, СЂР°РЅРі
 function ogsListNumCompare(Item1, Item2: Pointer): Integer;
 function ogsListRankCompare(Item1, Item2: Pointer): Integer;
 
-// поиск экземляра класса по регистрационному номеру
+// РїРѕРёСЃРє СЌРєР·РµРјР»СЏСЂР° РєР»Р°СЃСЃР° РїРѕ СЂРµРіРёСЃС‚СЂР°С†РёРѕРЅРЅРѕРјСѓ РЅРѕРјРµСЂСѓ
 Function LinearSearchGet(ClassNum: Integer): TogsBasicClass;
-// поиск регистрационного номера по классу объекта
+// РїРѕРёСЃРє СЂРµРіРёСЃС‚СЂР°С†РёРѕРЅРЅРѕРіРѕ РЅРѕРјРµСЂР° РїРѕ РєР»Р°СЃСЃСѓ РѕР±СЉРµРєС‚Р°
 Function LinearSearchPut(objClassType: TogsBasicClass): Integer;
 
 type
@@ -611,7 +611,7 @@ function yMatrix(YBase, X_, Y_, Angle, Scale: Double): Double;
 
 implementation uses ogcMathUtils, Writer;
 
-// глобальная переменная - дескриптор Matrix
+// РіР»РѕР±Р°Р»СЊРЅР°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ - РґРµСЃРєСЂРёРїС‚РѕСЂ Matrix
 var activeMatrix : TogsMatrix = nil;
 
 function ogsListNumCompare(Item1, Item2: Pointer): Integer;
@@ -676,12 +676,12 @@ end;
 
 constructor TogsBasic.CreateEmpty;
 begin
-// заглушка во избежание EAbtractError
+// Р·Р°РіР»СѓС€РєР° РІРѕ РёР·Р±РµР¶Р°РЅРёРµ EAbtractError
 end;
 
 constructor TogsBasic.CreateAs(ogsObject: TogsBasic);
 begin
-// заглушка во избежание EAbtractError
+// Р·Р°РіР»СѓС€РєР° РІРѕ РёР·Р±РµР¶Р°РЅРёРµ EAbtractError
 end;
 
 constructor TogsBasic.KeepAs(ogsObject: TogsBasic);
@@ -811,7 +811,7 @@ function TogsSelector.GetDevScale: Double;
 var XMM, XM: Double;
     Dc: THandle;
 begin
-// !!! проверить на Unix
+// !!! РїСЂРѕРІРµСЂРёС‚СЊ РЅР° Unix
 {$IFDEF WIN64}
  If fDrawer <> nil then begin
 //  DC:=GetDC(0);
@@ -958,10 +958,10 @@ end;
 
 function TogsSelector.UpdateRects(fitView: boolean = False): boolean;
 begin
-// присваиваем габариты объекта
+// РїСЂРёСЃРІР°РёРІР°РµРј РіР°Р±Р°СЂРёС‚С‹ РѕР±СЉРµРєС‚Р°
 // WriteIn([fGlobalRect.XMin,fGlobalRect.YMin,fGlobalRect.XMax, fGlobalRect.YMax]);
  If fitView then ActiveRect := fglobalRect;
-// пересчитываем габариты окна
+// РїРµСЂРµСЃС‡РёС‚С‹РІР°РµРј РіР°Р±Р°СЂРёС‚С‹ РѕРєРЅР°
  factiveRect.XMin := XGeo(0); activeRect.YMin := YGeo(0);
  factiveRect.XMax := XGeo(ogsDrawer.Width); activeRect.YMax := YGeo(ogsDrawer.Height);
 // WriteIn(['Drawer.Width=======',ogsDrawer.Width,XGeo(ogsDrawer.Width)]);
@@ -972,7 +972,7 @@ end;
 procedure TogsSelector.Move(Dx, Dy: Double);
 begin
  activeRect.Move(Dx, Dy);
-// переустанавливаем локальные параметры ogsSelector
+// РїРµСЂРµСѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј Р»РѕРєР°Р»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ ogsSelector
  activeRect:=activeRect;
 end;
 
@@ -980,7 +980,7 @@ procedure TogsSelector.Scale(X, Y, Koef: Double);
 var pX, pY: Integer;
     gX, gY: Double;
 begin
-// фиксируем положение точки масштабирования
+// С„РёРєСЃРёСЂСѓРµРј РїРѕР»РѕР¶РµРЅРёРµ С‚РѕС‡РєРё РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёСЏ
  pX := XPix(X); pY := YPix(Y);
  activeRect := activeRect.Inflate(geoDist(10 * Koef), geoDist(10 * Koef));
  SetActiveRect(activeRect);
@@ -1000,7 +1000,7 @@ begin
  Result := fActiveRect.PointIn(X, Y) and fActiveRect.PointIn(X1, Y1);
  If Result then exit;
  mRect := TogsRect.Create;
-// если использовать TogsRect
+// РµСЃР»Рё РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ TogsRect
   mRect.Insert(X, Y); mRect.Insert(X1, Y1);
   If mRect.XMax < factiveRect.XMin then begin mRect.Free; exit;end;
   If mRect.XMin > factiveRect.XMax then begin mRect.Free; exit;end;
@@ -1017,6 +1017,10 @@ end;
 
 function TogsSelector.cutLine(X, Y, X1, Y1: Double; var X_, Y_, X1_, Y1_: Double ): Boolean;
 begin
+ if pointVisible(X_, Y_) and pointVisible(X1_, Y1_) then
+  Result := True
+ else
+  Result := clip_interval(X, Y, X1, Y1, X_,Y_,X1_,Y1_);
 end;
 
 procedure TogsSelector.BeginPaint;
@@ -1044,7 +1048,7 @@ begin
   penColor := TogsPen(ogsObject).penColor;
   penWidth := TogsPen(ogsObject).penWidth;
  // penStyle := TPenStyle.CreateAs(Pen.PenStyle);
- end else raise Exception.Create('Несоответствие типов TogsPen.CreateAs :' + ogsObject.ClassName);
+ end else raise Exception.Create('РќРµСЃРѕРѕС‚РІРµС‚СЃС‚РІРёРµ С‚РёРїРѕРІ TogsPen.CreateAs :' + ogsObject.ClassName);
 end;
 
 { TogsBrush }
@@ -1060,7 +1064,7 @@ begin
  If ogsObject is TogsBrush then begin
   brColor := TogsBrush(ogsObject).brColor;
  // brStyle := TBrushStyle.CfreateAs(Brush.brStyle);
- end else raise Exception.Create('Несоответствие типов TogsBrush.CreateAs :' + ogsObject.ClassName);
+ end else raise Exception.Create('РќРµСЃРѕРѕС‚РІРµС‚СЃС‚РІРёРµ С‚РёРїРѕРІ TogsBrush.CreateAs :' + ogsObject.ClassName);
 end;
 
 { TogsDrawer }
@@ -1095,7 +1099,7 @@ end;
 
 function TogsDrawer.GetCanvas: TCanvas;
 begin
-// абстрактный метод
+// Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РјРµС‚РѕРґ
 end;
 
 procedure TogsDrawer.SetogsSelector(Data: TogsSelector);
@@ -1460,7 +1464,7 @@ begin
  If Result <> 0 then FStream.Write(Buf[1], Result);
 end;
 
-// поиск класса по регистрациогному номеру
+// РїРѕРёСЃРє РєР»Р°СЃСЃР° РїРѕ СЂРµРіРёСЃС‚СЂР°С†РёРѕРіРЅРѕРјСѓ РЅРѕРјРµСЂСѓ
 
 Function LinearSearchGet(ClassNum: Integer): TogsBasicClass;
 var I: Integer; ogsRegObj: TogsRegisteredClass;
@@ -1475,7 +1479,7 @@ begin
  end;
 end;
 
-// поиск регистрационного номера по классу объекта
+// РїРѕРёСЃРє СЂРµРіРёСЃС‚СЂР°С†РёРѕРЅРЅРѕРіРѕ РЅРѕРјРµСЂР° РїРѕ РєР»Р°СЃСЃСѓ РѕР±СЉРµРєС‚Р°
 
 Function LinearSearchPut(objClassType: TogsBasicClass): Integer;
 var I: Integer; ogsRegObj: TogsRegisteredClass;
@@ -1496,7 +1500,7 @@ var objType: SmallInt;
 begin
  fStream.Read(objType, SizeOf(objType));
  If objType = 0 then begin Result := nil; exit;end;
- // ищем в ogsRegisteredObjects класс для загрузки объекта
+ // РёС‰РµРј РІ ogsRegisteredObjects РєР»Р°СЃСЃ РґР»СЏ Р·Р°РіСЂСѓР·РєРё РѕР±СЉРµРєС‚Р°
  ogsBasicClass:= fOnSearchGetProc(objType);
  if ogsBasicClass = nil then raise Exception.Create('(Stream.Get): ' + IntToStr(objType));
  Result := ogsBasicClass.Load(Self);
@@ -1510,7 +1514,7 @@ begin
   objType := 0; FStream.Write(objType, SizeOf(ObjType));
   exit;
  end;
- // ищем в ogsRegisteredObjects класс для сохранения объекта
+ // РёС‰РµРј РІ ogsRegisteredObjects РєР»Р°СЃСЃ РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ РѕР±СЉРµРєС‚Р°
  objType := fOnSearchPutProc(TogsBasicClass(ogsObject.ClassType));
  if objType = -1 then raise Exception.Create('(Stream.Put): ' + ogsObject.ClassName);
  Self.Write(objType, SizeOf(objType));
@@ -1577,14 +1581,14 @@ end;
 function TogsCollection.Add(Item_: Pointer): Integer;
 begin
  If @CheckTypeProc <> nil then
-  If not CheckTypeProc(TogsGeometry(Item_)) then raise Exception.Create('Тип объекта не соответствует типу элемента коллекции TogsCollection.Add');
+  If not CheckTypeProc(TogsGeometry(Item_)) then raise Exception.Create('РўРёРї РѕР±СЉРµРєС‚Р° РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ С‚РёРїСѓ СЌР»РµРјРµРЅС‚Р° РєРѕР»Р»РµРєС†РёРё TogsCollection.Add');
  Result := fList.Add(Item_);
 end;
 
 function TogsCollection.Insert(Index: Integer; Item_: Pointer): Integer;
 begin
  If @CheckTypeProc <> nil then
-  If not CheckTypeProc(TogsGeometry(Item_)) then raise Exception.Create('Тип объекта не соответствует типу элемента коллекции TogsCollection.Insert');
+  If not CheckTypeProc(TogsGeometry(Item_)) then raise Exception.Create('РўРёРї РѕР±СЉРµРєС‚Р° РЅРµ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ С‚РёРїСѓ СЌР»РµРјРµРЅС‚Р° РєРѕР»Р»РµРєС†РёРё TogsCollection.Insert');
  fList.Insert(Index, Item_);
  Result := Index;
 end;
@@ -1597,7 +1601,7 @@ end;
 function TogsCollection.Delete(Index: Integer): Integer;
 begin
  fList.Delete(Index);
-// возвращает -1 если Index >= Count
+// РІРѕР·РІСЂР°С‰Р°РµС‚ -1 РµСЃР»Рё Index >= Count
  If fList.Count < Index then Index := -1 else Result := Index;
 end;
 
@@ -1688,7 +1692,7 @@ end;
 
 function TogsDot.Visible(Rect: TogsRect): Boolean;
 begin
-// нет проверки Rect.Selector на nil
+// РЅРµС‚ РїСЂРѕРІРµСЂРєРё Rect.Selector РЅР° nil
  Result := (fX <= Rect.XMax) and (fX >= Rect.XMin) and
            (fY <= Rect.YMax) and (fY >= Rect.YMin);
 end;
@@ -1706,7 +1710,7 @@ end;
 function TogsDot.getogsRect: TogsRect;
 begin
  pointSect.XMin := X; pointSect.YMin := Y; pointSect.XMax := X; pointSect.YMax := Y;
- Result := TogsRect(@pointSect);  //!!! возвращает не объект, а указатель на TSect
+ Result := TogsRect(@pointSect);  //!!! РІРѕР·РІСЂР°С‰Р°РµС‚ РЅРµ РѕР±СЉРµРєС‚, Р° СѓРєР°Р·Р°С‚РµР»СЊ РЅР° TSect
 end;
 
 function TogsDot.WriteObj(Params: array of const): String;
@@ -1857,7 +1861,7 @@ end;
 
 procedure TogsRect.Scale(X, Y, Koef: Double);
 begin
- // масштабирование относительно точки
+ // РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёРµ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ С‚РѕС‡РєРё
 end;
 
 function TogsRect.Inflate(deltaX, deltaY: Double): TogsRect;
@@ -1926,7 +1930,7 @@ end;
 
 initialization
  ogsRegisteredClasses := TogsSortedCollection.Create(@RegisteredObjectsCompare, True);
-// регистрация классов
+// СЂРµРіРёСЃС‚СЂР°С†РёСЏ РєР»Р°СЃСЃРѕРІ
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsRegisteredClass, 102, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsSortedCollection, 101, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsCollection, 100, 1));

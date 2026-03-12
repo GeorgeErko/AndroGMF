@@ -217,7 +217,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    TwigsCount := Stream.ReadInt32;
    LotsCount  := Stream.ReadInt32;
    AnyCount   := Stream.ReadInt32;
-   WriteIn(['tc1=', Stream.Position]);
+//   WriteIn(['tc1=', Stream.Position]);
    Stream.Read(TwigsCol,SizeOf(TwigsCol));
    Stream.Read(LotsCol,SizeOf(LotsCol));
    Stream.Read(AnyCol,SizeOf(AnyCol));
@@ -226,17 +226,17 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
     For I:=0 to TwigsCol do begin
       Twigs[I]:=PCollection(Stream.Get);
     end;
-   WriteIn(['tc2=', Stream.Position]);
+  // WriteIn(['tc2=', Stream.Position]);
     gCountLots:=0;
     For I:=0 to LotsCol  do
      Lots[I]:=PCollection(Stream.Get);
-   WriteIn(['tc3=', Stream.Position]);
+  // WriteIn(['tc3=', Stream.Position]);
     gCountDots:=0;
     For I:=0 to AnyCol  do
      Any [I]:=PCollection(Stream.Get);
    For I:=0 to AnyCol  do
      PAny[I]:=PCollection(Stream.Get);
-   WriteIn(['tc4=', Stream.Position]);
+ //  WriteIn(['tc4=', Stream.Position]);
      Fonts:=PCollection.Create(1);
      FontSet:=PCollection.Create(1);
      ToLarge;
@@ -252,7 +252,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
        TaheoTwigs[I]:=PCollection(Stream.Get);
      end;
    end;
-   WriteIn(['Taheo=', Stream.Position]);
+  // WriteIn(['Taheo=', Stream.Position]);
    If Stream.GetPos<>Stream.GetSize then
     begin
      Fonts:=PCollection(Stream.Get);
@@ -269,7 +269,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    If Stream.GetPos<>Stream.GetSize then
      Bitmaps:=TBmpSet(Stream.Get) else
      Bitmaps:=TBmpSet.Create;
-   WriteIn(['Bitmap=', Stream.Position]);
+  // WriteIn(['Bitmap=', Stream.Position]);
 //     Bitmaps:=TBmpSet.Create;
    // загрузка тахеометрии
    TaheoIndexes:=TStringList.Create;
@@ -285,7 +285,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
        If Stream.GetPos<>Stream.GetSize then begin
        // If TwigsCount = 1285 then BLOCK_DEBUG:=True;
          BlockList:=TBlockList(Stream.Get);
-        WriteIn(['Blocks=', Stream.Position]);
+      //  WriteIn(['Blocks=', Stream.Position]);
 // If TwigsCount = 1285 then BLOCK_DEBUG:=False;
          //  WriteMsg(['BlockList.Pos=',Stream.Position,TwigsCount,LotsCount,'Size=',Stream.Size]);
         // BlockList.Blocks.FreeAll;

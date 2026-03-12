@@ -97,7 +97,7 @@ TDWG_Arc=Class(TTD)
    Procedure DrawTo(Geometry: TGeometryEvents);
  //
    Procedure Draw32(X,Y:Double;Selector: TSelector; MXX,MYY,ko,Ugol:Double;R,G,B:Byte;bkColor:Boolean);
-end;
+ end;
 
 { TDWG_Pie }
 
@@ -186,7 +186,8 @@ var Ar:Array[0..10000] of TPoint;
     DeviceHor,DeviceVert:Double;
 var
  GlobalPoint: TPoint_Sign;
-implementation Uses Types_Dimano, SysUtils, LConvEncoding, Writer, newProcs;
+implementation Uses Types_Dimano, SysUtils, LConvEncoding, Writer, newProcs,
+                    ogcMathUtils;
 
 { TGeoPoint }
 
@@ -389,21 +390,48 @@ type
 
 procedure TDWG_Arc.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
   Ugol: Double; R, G, B: Byte; bkColor: Boolean);
-var Col, Polygs: TogsCollection;
-    N: Integer;
-    xnc, ync: Single;
-    MRect: TogsRect;
+var Col: TogsCollection; I, N: Integer;
+    C, S: Double;
+    XP, YP: Double;
+    Brush: TogsBrush;
+    Pen: TogsPen;
+    D: TlDot;
 begin
  N := 25;
- Col := Arc_Rotate3(0, 0, 0, x_1, y_1, x_2, y_2,  xu_2, yu_2, xu_1, yu_1, N);
+ Col := Arc_Rotate3(0, 0, 0, x_1*ko, y_1* ko, x_2*ko, y_2*ko,  xu_2*ko, yu_2*ko, xu_1*ko, yu_1*ko, N);
  If N > 1 then begin
-  If Sqrt(Sqr(xu_1 - xu_2) + Sqr(yu_1 - yu_2)) <= 0.1 then begin
-   // формируем полигон
-   MRect := nil;
-   Selector.Drawer.DrawPolygon(Col, MRect);
-  end else
-   Selector.Drawer.DrawPolyline(Col, True);
+  C := Cos(Ugol);
+  S := Sin(Ugol);
+  For I:= 0 to Col.Count - 1 do begin
+   D:= Col[I];
+   XP := D.XDot;
+   YP := D.YDot;
+   D.XDot := XP * C - YP * S + X;
+   D.YDot := XP * S + YP * C + Y;
+  end;
+  With Selector do begin
+   if Sqrt(Sqr(xu_1 - xu_2) + Sqr(yu_1 - yu_2)) <= 0.1 then begin
+    if BkColor then begin
+     if UseFill then
+      Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
+     else
+      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+    //
+     Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end else begin
+     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+      Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end;
+   end;
+   //
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
+    Selector.Drawer.DrawPolyline(Col, True);
+    Drawer.DeletePen(Drawer.SelectPen(Pen));
+  end;
  end;
+//
  If Col <> nil then Col.Free;
 end;
 
@@ -459,9 +487,13 @@ end;
 
 procedure TDWG_Pie.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
   Ugol: Double; R, G, B: Byte; bkColor: Boolean);
-var Col: TogsCollection; N:Integer;
+var Col: TogsCollection; I, N:Integer;
     ox, oy: Double;
-    MRect: TogsRect;
+    C, S: Double;
+    XP, YP: Double;
+    Brush: TogsBrush;
+    Pen: TogsPen;
+    D: TlDot;
 begin
 // WriteIn(['dllPie']);
  N:= 25;
@@ -471,9 +503,39 @@ begin
   oy := y_1 + (y_2 - y_1) / 2;
   Col.Add(TDot1.Create(ox, oy));
   Col.Insert(0, TDot1.Create(ox, oy));
-  MRect := nil;
-  Selector.Drawer.DrawPolygon(Col, MRect);
+ //
+  C := Cos(Ugol);
+  S := Sin(Ugol);
+  For I:= 0 to Col.Count - 1 do begin
+   D:= Col[I];
+   XP := D.XDot;
+   YP := D.YDot;
+   D.XDot := XP * C - YP * S + X;
+   D.YDot := XP * S + YP * C + Y;
+  end;
+  With Selector do begin
+   if Sqrt(Sqr(xu_1 - xu_2) + Sqr(yu_1 - yu_2)) <= 0.1 then begin
+    if BkColor then begin
+     if UseFill then
+      Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
+     else
+      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+    //
+     Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end else begin
+     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+      Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end;
+   end;
+   //
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
+    Selector.Drawer.DrawPolyline(Col, True);
+    Drawer.DeletePen(Drawer.SelectPen(Pen));
+  end;
  end;
+ //
  If Col <> nil then Col.Free;
 end;
 
@@ -583,15 +645,44 @@ procedure TDWG_Poly.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
   Ugol: Double; R, G, B: Byte; bkColor: Boolean);
 var Col: TogsCollection;
     I, N: Integer;
-    MRect: TogsRect;
+    C, S, XP, YP: Double;
+    D: TlDot;
+    Pen: TogsPen;
+    Brush: TogsBrush;
 begin
 // WriteIn(['dllPoly']);
  Col := TogsCollection.Create(1);
- For I := 0 to Vertex.Count - 1 do Col.Add(TDot1.Create(TPn(Vertex[I]).X, TPn(Vertex[I]).Y));
- MRect := nil;
- Selector.Drawer.DrawPolygon(Col, MRect);
+ For I := 0 to Vertex.Count - 1 do Col.Add(TlDot.Create(TPn(Vertex[I]).X *ko, TPn(Vertex[I]).Y*ko));
+  C := Cos(Ugol);
+  S := Sin(Ugol);
+  For I:= 0 to Col.Count - 1 do begin
+   D:= Col[I];
+   XP := D.XDot;
+   YP := D.YDot;
+   D.XDot := XP * C - YP * S + X;
+   D.YDot := XP * S + YP * C + Y;
+  end;
+  With Selector do begin
+    If BkColor then begin
+     if UseFill then
+      Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
+     else
+      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+    //
+     Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end else begin
+     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+      Selector.Drawer.DrawPolygon(Col, nil);
+     Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
+    end;
+   //
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
+    Selector.Drawer.DrawPolyline(Col, True);
+    Drawer.DeletePen(Drawer.SelectPen(Pen));
+  end;
  //
- Col.Free;
+ If Col <> nil then Col.Free;
 end;
 
 procedure TDWG_Poly.DrawTo(Geometry: TGeometryEvents);
@@ -809,7 +900,7 @@ begin
  Sect:=GetRect1;
  GetRealSector(PP,Ko);
  With Selector do
-  Result:=not ((XMin>GRect.Right)or(XMax<GRect.Left)or(YMax<GRect.Bottom)or(YMin>GRect.Top));
+  Result:=not ((XMin>GRect.Right)or(XMax<GRect.Left)or(YMax>GRect.Bottom)or(YMin<GRect.Top));
  PP.Free;
 end;
 
@@ -902,6 +993,7 @@ end;
 		begin
      Sect:=GetRect(Abs(Ko));
          BB:=isVisible(Ko);
+      WriteIn([MyNameis]);
           BB:=True;
            if not BB {and not UseFont} then Exit;
            If (XRasst(XMax-XMin)<2) and (YRasst(YMax-YMin)<2) then begin
@@ -909,7 +1001,7 @@ end;
              If BB then begin
                If gGraphSet.FPntZnk>=2 then exit;
               // Writeln(1);
-                Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
+               // Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
                // Canvas.PenWidth:=round(Ko*Mxx*koefLine);
                 X1:=XPix(XMin);Y1:=YPix(YMin);
              //  Dc:=GCanvas.Handle;
@@ -935,8 +1027,8 @@ end;
              end;
             exit;
            end;
-      X:=XPIX(x);
-      Y:=YPIX(y);
+      X:=x;
+      Y:=y;
 		{KO:=KO*MX;}
 		end else
     begin

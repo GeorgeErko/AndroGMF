@@ -323,10 +323,10 @@ end;
        TP:=Twigs.AAt(I,W);
         If W=Twg_Point then
          begin
-          WriteIn(['GetS1 ', TP.XDot, TP.YDot, TP.ClassName]);
+         // WriteIn(['GetS1 ', TP.XDot, TP.YDot, TP.ClassName]);
 
           Sect := TP.GetSect;//(MRect);
-          WriteIn(['GetS2 ', TP.XDot, TP.YDot, TP.ClassName]);
+         // WriteIn(['GetS2 ', TP.XDot, TP.YDot, TP.ClassName]);
           // If XXMin>MRect.XMin then XXMin:=MRect.XMin;
           // If XXMax<MRect.YMax then XXMax:=MRect.YMax;
           // If YYMin>MRect.YMin then YYMin:=MRect.YMin;
@@ -506,7 +506,7 @@ end;
           {}
           end;
         Try
-       WriteIn(['LoadAbout=', Stream.Position]);
+       If not MirrorObject then WriteIn(['LoadAbout=', Stream.Position]);
         If Version>47 then begin
           If not MirrorObject then begin FontColEx:=TFontManagerEx(Stream.Get);
            For I:=0 to FontColEx.Count-1 do TFontViewEx(FontColEx[I]).RecreateLoadedFonts(Selector.GCanvas);
@@ -516,24 +516,24 @@ end;
           FontColEx:=TFontManagerEx.Create(1);
           If not MirrorObject then Selector.GFontColEx:=FontColEx;
          end;
-        WriteIn(['FontCol', Stream.Position]);
+        If not MirrorObject then  WriteIn(['FontCol', Stream.Position]);
 	       Twigs:=TTwigsCollect(Stream.Get);
-        WriteIn(['TwgCol', Stream.Position]);
+        If not MirrorObject then WriteIn(['TwgCol', Stream.Position]);
          Twigs.TwgForm:=Self;
          If not MirrorObject then begin
          end;
          if Version>20 then
           Stream.Read(fGraphSet,SizeOf(fGraphSet)) else fGraphSet:=GGraphSet;
-          WriteIn(['GraphSet', Stream.Position]);
+          If not MirrorObject then WriteIn(['GraphSet', Stream.Position]);
         GGraphSet:=fGraphSet;
         GGraphSet:=fGraphSet;
         If (Version>35) then begin
          If not MirrorObject then begin
           Settings:=TSettings.Load(Stream);
-           WriteIn(['Settings=', Stream.Position]);
+           If not MirrorObject then WriteIn(['Settings=', Stream.Position]);
            If Version>44 then begin
             TaheoFileName:=Stream.ReadString;
-            WriteIn(['TaheoFN=', Stream.Position]);
+            If not MirrorObject then WriteIn(['TaheoFN=', Stream.Position]);
            end else TaheoFileName:='';
          end;
         end else Settings:=TSettings.Create(500,'TForm.Load');

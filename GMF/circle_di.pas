@@ -93,7 +93,7 @@ interface
  function circle( x_c, y_c, r : double; var quants_number : integer ) : PCollection;
  function circle2( x_c, y_c, x1, y1, r : double; var quants_number : integer ) : PCollection;
 
-implementation
+implementation uses ogcMathUtils;
 
 function arc_circle1( x_c, y_c, r, alfa, beta : double;
                       var quants_number : integer ) : PCollection;
@@ -834,7 +834,7 @@ begin
        y_not_rotate := y_c + b * sin( -alfa );
        r_rotate( x_not_rotate, y_not_rotate, x_0, y_0, fi, x_rotate,
                                                            y_rotate );
-       res.Add( TDot1.Create( x_rotate, y_rotate ) );
+       res.Add( TlDot.Create( x_rotate, y_rotate ) );
        r_rotate( x_4, y_4, x_0, y_0, fi, x_4_rotate, y_4_rotate );
        for i := 1 to quants_number do
          begin
@@ -843,7 +843,7 @@ begin
            y_not_rotate := y_c + b * sin( -alfa );
            r_rotate( x_not_rotate, y_not_rotate, x_0, y_0, fi,
                                             x_rotate, y_rotate );
-           res.Add( TDot1.Create( x_rotate, y_rotate ) );
+           res.Add( TlDot.Create( x_rotate, y_rotate ) );
          end;
    fi := -fi;
    Result := res;
