@@ -32,6 +32,7 @@ type
 
 
  TFontManagerEx = class;
+
  TFontViewEx = class (TTwgObject)
   FontScales:PCollection;// коллекция символов
   Scale:Integer;

@@ -649,6 +649,7 @@ var Col: TogsCollection;
     D: TlDot;
     Pen: TogsPen;
     Brush: TogsBrush;
+  	XX,YY, XXE, YYE:Double;
 begin
 // WriteIn(['dllPoly']);
  Col := TogsCollection.Create(1);
@@ -662,8 +663,11 @@ begin
    D.XDot := XP * C - YP * S + X;
    D.YDot := XP * S + YP * C + Y;
   end;
+  XX:=TPn(Vertex.At(0)).X;YY:=TPn(Vertex.At(0)).Y;
+  XXE:=TPn(Vertex.At(Vertex.Count - 1)).X;YYE:=TPn(Vertex.At(Vertex.Count - 1)).Y;
   With Selector do begin
-    If BkColor then begin
+   if Sqrt(Sqr(XX - XXE) + Sqr(YY - YYE)) <= 0.1 then begin
+    if BkColor then begin
      if UseFill then
       Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
      else
@@ -676,12 +680,13 @@ begin
       Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end;
+   end;
    //
     Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
- //
+//
  If Col <> nil then Col.Free;
 end;
 

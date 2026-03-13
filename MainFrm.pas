@@ -22,6 +22,7 @@ type
     btnPaint: TCornerButton;
     StatusBar: TStatusBar;
     upm: TCornerButton;
+    Label1: TSkLabel;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -37,6 +38,13 @@ type
     PanShift: TPointF;
     PanBaseDx: Double;
     PanBaseDy: Double;
+    ZoomBitmapActive: Boolean;
+    ZoomStartDistance: Single;
+    ZoomFactor: Single;
+    ZoomPivot: TPointF;
+    ZoomBaseDx: Double;
+    ZoomBaseDy: Double;
+    ZoomBaseScale: Double;
     procedure PainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure PainterMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
     procedure PainterMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -45,6 +53,7 @@ type
     procedure PainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
     procedure PainterDblClick(Sender: TObject);
     procedure ResetInteractionState;
+    procedure FinalizeZoom;
     procedure UpdateStatusGeo(const X, Y: Single);
     procedure InitPainterInput;
     procedure SaveBackbufferToFile(const Tag: string);
@@ -68,8 +77,11 @@ type
 var
   MainForm: TMainForm;
 
+procedure  runFonts;
+
 implementation uses Collect, uExecRegisterClass,
                     System.IOUtils, Writer, newProcs,
+                    FMX.FontManager,
                     OpenForm, EcText, EcDot, EcDot2, EcLot,
                     RPrims, WPTwigs, DlgLocalOpen;
 
@@ -96,6 +108,9 @@ begin
  Painter.AutoCapture := True;
  PanBitmap := nil;
  PanBitmapActive := False;
+ ZoomBitmapActive := False;
+ ZoomStartDistance := 0;
+ ZoomFactor := 1;
  if (StatusBar <> nil) and (StatusLabel = nil) then begin
   StatusLabel := TLabel.Create(StatusBar);
   StatusLabel.Parent := StatusBar;
@@ -117,6 +132,44 @@ procedure TMainForm.OpenGmfFile(const LocalPath: string);
 var
  Stream: TBufStream;
  Path: String;
+ I: Integer;
+ B: Byte;
+ PP: TPointDot;
+ procedure RegisterFontsNearGmf(const GmfLocalPath: string);
+ var
+  Dir: string;
+  Files: TStringDynArray;
+  F: string;
+  I: Integer;
+ begin
+  Dir := ExtractFilePath(GmfLocalPath);
+  if Dir = '' then Exit;
+  try
+   Files := TDirectory.GetFiles(Dir, '*.ttf');
+   for F in Files do
+    try
+     TFontManager.AddCustomFontFromFile(F);
+     TSkDefaultProviders.RegisterTypeface(F);
+     RegisterSkiaTypefaceFromFile(F);
+     WriteIn(['addfnt=', F]);
+    except
+    end;
+  except
+  end;
+  try
+   Files := TDirectory.GetFiles(Dir, '*.otf');
+   for F in Files do
+    try
+     TFontManager.AddCustomFontFromFile(F);
+     TSkDefaultProviders.RegisterTypeface(F);
+     RegisterSkiaTypefaceFromFile(F);
+    except
+    end;
+  except
+  end;
+   For I := 0 to TFontManager.CustomFontInfoCount - 1 do
+    WriteIn(['fm=',TFontManager.CustomFontInfo[I].FamilyName]);
+ end;
  procedure localSetGabarites;
  var
   I, J: Integer;
@@ -150,6 +203,9 @@ begin
  if LocalPath = '' then begin WriteIn(['Path Space']); Exit; end;
  WriteIn(['Path=', ExtractFilePath(LocalPath), SizeOf(Single), SizeOf(Double)]);
  newProcs.MainPath := ExtractFilePath(LocalPath);
+//
+ RegisterFontsNearGmf(LocalPath);
+//
  Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
  Selector.GNForm := TControl(Self);
  Selector.GNForm := TControl(Self);
@@ -166,6 +222,13 @@ begin
   Selector.GFontCollect:=TwgForm.Twigs.FontS;
   Selector.GFontSet :=TwgForm.Twigs.FontSet;
   Selector.GGraphSet:=TwgForm.fGraphSet;
+  if TwgForm.FontColEx <> nil then
+   begin
+    for I := 0 to TwgForm.Twigs.AnyCount - 1 do begin
+      PP := TwgForm.Twigs.AAt(I, B);
+      PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
+    end;
+   end;
   localSetGabarites;
   Selector.UpdateRects(True);
   objectRepaintAccess := True;
@@ -232,6 +295,46 @@ begin
  LastZoomDistance := 0;
 end;
 
+procedure TMainForm.FinalizeZoom;
+var
+ PivotPix: TPointF;
+ NewScale: Double;
+ OldScale: Double;
+ K0, K1: Double;
+begin
+ if Selector = nil then Exit;
+ if not ZoomBitmapActive then Exit;
+ if ZoomStartDistance <= 0 then begin
+  ZoomBitmapActive := False;
+  ZoomStartDistance := 0;
+  ZoomFactor := 1;
+  Exit;
+ end;
+ if LastCanvasScale <= 0 then LastCanvasScale := 1;
+ OldScale := ZoomBaseScale;
+ if OldScale = 0 then OldScale := Selector.fScale;
+ if OldScale = 0 then Exit;
+ if ZoomFactor <= 0 then Exit;
+
+ PivotPix := PointF(ZoomPivot.X * LastCanvasScale, ZoomPivot.Y * LastCanvasScale);
+ NewScale := OldScale * ZoomFactor;
+ if NewScale = 0 then Exit;
+
+ K0 := 1 / OldScale;
+ K1 := 1 / NewScale;
+ Selector.fScale := NewScale;
+ Selector.fDx := ZoomBaseDx + PivotPix.X * (K0 - K1);
+ Selector.fDy := ZoomBaseDy + PivotPix.Y * (K0 - K1);
+ Selector.UpdateRects(False);
+ SceneDirty := True;
+
+ ZoomBitmapActive := False;
+ ZoomStartDistance := 0;
+ ZoomFactor := 1;
+ ZoomActive := False;
+ InteractionActive := False;
+end;
+
 procedure TMainForm.UpdateStatusGeo(const X, Y: Single);
 var
  XPix, YPix: Double;
@@ -270,6 +373,7 @@ end;
 procedure TMainForm.PainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
  if Selector = nil then Exit;
+ if ZoomBitmapActive or ZoomActive then Exit;
  UpdateStatusGeo(X, Y);
  PanActive := True;
  ZoomActive := False;
@@ -325,6 +429,7 @@ var
  DxPix, DyPix: Double;
  DxGeo, DyGeo: Double;
 begin
+ if ZoomBitmapActive and (Selector <> nil) then FinalizeZoom;
  if PanBitmapActive and (Selector <> nil) and (Selector.fScale <> 0) then begin
   DxPix := PanShift.X * LastCanvasScale;
   DyPix := PanShift.Y * LastCanvasScale;
@@ -332,6 +437,7 @@ begin
   DyGeo := DyPix / Selector.fScale;
   Selector.fDx := PanBaseDx - DxGeo;
   Selector.fDy := PanBaseDy - DyGeo;
+  Selector.UpdateRects(False);
  end;
  PanBitmapActive := False;
  ResetInteractionState;
@@ -340,41 +446,39 @@ begin
 end;
 
 procedure TMainForm.PainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
-var
- Delta: Single;
- WheelDelta: Integer;
- P: TPoint;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  PanBitmapActive := False;
  PanActive := False;
+ Handled := True;
  if EventInfo.Distance <= 0 then begin
+  FinalizeZoom;
   ResetInteractionState;
-  SceneDirty := True;
   Painter.Repaint;
   Exit;
  end;
  InteractionActive := True;
  ZoomActive := True;
  PanActive := False;
- if BaseScale = 0 then begin
-  BaseDx := Selector.fDx;
-  BaseDy := Selector.fDy;
-  BaseScale := Selector.fScale;
- end;
- Handled := True;
- if LastZoomDistance = 0 then begin
-  LastZoomDistance := EventInfo.Distance;
+ if (not ZoomBitmapActive) and (ZoomStartDistance = 0) then begin
+  ZoomStartDistance := EventInfo.Distance;
+  ZoomFactor := 1;
+  ZoomPivot := EventInfo.Location;
+  ZoomBaseDx := Selector.fDx;
+  ZoomBaseDy := Selector.fDy;
+  ZoomBaseScale := Selector.fScale;
+  if (Drawer.Bitmap <> nil) and (Drawer.Bitmap.Width > 0) and (Drawer.Bitmap.Height > 0) then begin
+   if PanBitmap = nil then PanBitmap := TBitmap.Create;
+   PanBitmap.Assign(Drawer.Bitmap);
+   ZoomBitmapActive := True;
+  end;
   Exit;
  end;
- Delta := EventInfo.Distance - LastZoomDistance;
- LastZoomDistance := EventInfo.Distance;
- if Abs(Delta) < 1 then Exit;
- if Delta > 0 then WheelDelta := 1 else WheelDelta := -1;
- P := Point(Round(EventInfo.Location.X * LastCanvasScale), Round(EventInfo.Location.Y * LastCanvasScale));
- SceneDirty := True;
- Drawer.MouseWheel(Sender, [], WheelDelta, P, Handled);
+ if ZoomStartDistance <= 0 then Exit;
+ ZoomFactor := EventInfo.Distance / ZoomStartDistance;
+ if ZoomFactor < 0.05 then ZoomFactor := 0.05;
+ if ZoomFactor > 20 then ZoomFactor := 20;
  Painter.Repaint;
 end;
 
@@ -483,6 +587,8 @@ procedure TMainForm.PainterPaint(Sender: TObject; Canvas: TCanvas);
 var
  SrcRect, DstRect: TRectF;
  St: TCanvasSaveState;
+ Pivot: TPointF;
+ F: Single;
 begin
  if Drawer = nil then Exit;
  LastCanvasScale := Canvas.Scale;
@@ -498,6 +604,23 @@ begin
   end;
   Exit;
  end;
+ if ZoomBitmapActive and (PanBitmap <> nil) then begin
+  Pivot := ZoomPivot;
+  F := ZoomFactor;
+  St := Canvas.SaveState;
+  try
+   Canvas.IntersectClipRect(Painter.LocalRect);
+   SrcRect := RectF(0, 0, PanBitmap.Width, PanBitmap.Height);
+   DstRect := RectF(Pivot.X + (Painter.LocalRect.Left - Pivot.X) * F,
+                    Pivot.Y + (Painter.LocalRect.Top - Pivot.Y) * F,
+                    Pivot.X + (Painter.LocalRect.Right - Pivot.X) * F,
+                    Pivot.Y + (Painter.LocalRect.Bottom - Pivot.Y) * F);
+   Canvas.DrawBitmap(PanBitmap, SrcRect, DstRect, 1, True);
+  finally
+   Canvas.RestoreState(St);
+  end;
+  Exit;
+ end;
  if SceneDirty and (TwgForm <> nil) and objectRepaintAccess then RenderSceneToBackbuffer(Canvas);
  Drawer.DrawTo(Canvas, Painter.LocalRect.Round);
 end;
@@ -507,4 +630,33 @@ begin
  PickGmfFile(OpenGmfFile);
 end;
 
-end.
+procedure  runFonts;
+ var
+  Dir: string;
+  Files: TStringDynArray;
+  F: string;
+  I: Integer;
+ begin
+  Dir := ExtractFilePath(TPath.GetDocumentsPath);
+  if Dir = '' then Exit;
+  try
+   Files := TDirectory.GetFiles(Dir, '*.ttf');
+   for F in Files do
+    try
+     TFontManager.AddCustomFontFromFile(F);
+    except
+    end;
+  except
+  end;
+  try
+   Files := TDirectory.GetFiles(Dir, '*.otf');
+   for F in Files do
+    try
+     TFontManager.AddCustomFontFromFile(F);
+    except
+    end;
+  except
+  end;
+ end;
+
+ end.

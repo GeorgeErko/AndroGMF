@@ -113,6 +113,17 @@ object MainForm: TMainForm
       YRadius = 3.000000000000000000
       OnClick = upmClick
     end
+    object Label1: TSkLabel
+      Position.X = 422.000000000000000000
+      Position.Y = 6.000000000000000000
+      Size.Width = 40.200000762939450000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      Words = <
+        item
+          Text = 'Label1'
+        end>
+    end
   end
   object PanelPainter: TPanel
     Align = Client
