@@ -15,6 +15,8 @@ type
   FOnUpdateImage: TNotifyEvent;
   FLastPoint: TPointF;
   FInScene: Boolean;
+  fControl: TControl;
+  FScale: Single;
   procedure SetOnUpdateImage(AValue: TNotifyEvent);
  //
   function GetHeight: Integer; override;
@@ -27,9 +29,10 @@ type
   function GetCanvas: TCanvas; override;
  public
   Bitmap: TBitmap;
-  constructor Create(ogsSelector_: TogsSelector; Width_, Height_: Integer; OnPaint_:TNotifyEvent);
+  constructor Create(ogsSelector_: TogsSelector; Control_: TControl; Scale_: Single;  OnPaint_:TNotifyEvent);
   destructor Destroy; override;
   procedure Clear(AColor: Integer); override;
+  procedure SyncToControl(Scale_: Single);
  //
   procedure UpdateImage;
   property OnUpdateImage: TNotifyEvent read FOnUpdateImage write SetOnUpdateImage;
@@ -43,8 +46,6 @@ type
   procedure MoveTo(X, Y: Integer); override;
   procedure LineTo(X, Y: Integer); override;
  //
-  property Width: Integer read GetWidth write SetWidth;
-  property Height: Integer read GetHeight write SetHeight;
   function geoWidth: Double; override;
   function geoHeight: Double; override;
  //
@@ -73,22 +74,24 @@ end;
 
 function TogsDrawerCanvas.GetHeight: Integer;
 begin
+// Result := fControl.BoundsRect.Round.Bottom - fControl.BoundsRect.Round.Top;
  Result := Bitmap.Height;
 end;
 
 function TogsDrawerCanvas.GetWidth: Integer;
 begin
+// Result := fControl.BoundsRect.Round.Right - fControl.BoundsRect.Round.Left;
  Result := Bitmap.Width;
 end;
 
 procedure TogsDrawerCanvas.SetHeight(AValue: Integer);
 begin
- Bitmap.Height := AValue;
+ //Bitmap.Height := AValue;
 end;
 
 procedure TogsDrawerCanvas.SetWidth(AValue: Integer);
 begin
- Bitmap.Width := AValue;
+ //Bitmap.Width := AValue;
 end;
 
 function TogsDrawerCanvas.GetCanvas: TCanvas;
@@ -114,12 +117,28 @@ begin
  Canvas.Fill.Color := EnsureOpaqueAlpha(AValue.brColor);
 end;
 
-constructor TogsDrawerCanvas.Create(ogsSelector_: TogsSelector; Width_, Height_: Integer; OnPaint_: TNotifyEvent);
+constructor TogsDrawerCanvas.Create(ogsSelector_: TogsSelector; Control_: TControl; Scale_: Single; OnPaint_: TNotifyEvent);
 begin
  inherited Create(ogsSelector_, OnPaint_);
+ fControl := Control_;
+ fScale := Scale_;
  Bitmap := TBitmap.Create;
- Bitmap.Width := Width_;
- Bitmap.Height := Height_;
+ SyncToControl(Scale_);
+end;
+
+procedure TogsDrawerCanvas.SyncToControl(Scale_: Single);
+var
+ W, H: Integer;
+begin
+ if Scale_ <= 0 then Exit;
+ fScale := Scale_;
+ if fControl = nil then Exit;
+ W := Round(fControl.Width * fScale);
+ H := Round(fControl.Height * fScale);
+ if W < 1 then W := 1;
+ if H < 1 then H := 1;
+ if (Bitmap.Width <> W) or (Bitmap.Height <> H) then
+  Bitmap.SetSize(W, H);
 end;
 
 procedure TogsDrawerCanvas.Clear(AColor: Integer);

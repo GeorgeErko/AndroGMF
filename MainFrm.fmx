@@ -21,7 +21,7 @@ object MainForm: TMainForm
     Size.Width = 854.000000000000000000
     Size.Height = 111.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 1
+    TabOrder = 2
     Viewport.Width = 846.000000000000000000
     Viewport.Height = 103.000000000000000000
   end
@@ -39,7 +39,7 @@ object MainForm: TMainForm
     Size.Width = 854.000000000000000000
     Size.Height = 33.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 0
+    TabOrder = 1
     object CornerButton1: TCornerButton
       Images = ImageList1
       ImageIndex = 0
@@ -124,28 +124,62 @@ object MainForm: TMainForm
           Text = 'Label1'
         end>
     end
+    object btnPlus: TCornerButton
+      Tag = 1
+      Images = ImageList1
+      ImageIndex = 3
+      Position.X = 306.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 5
+      Text = 'btnPlus'
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnPlusClick
+    end
+    object ptnMinus: TCornerButton
+      Tag = -1
+      Images = ImageList1
+      ImageIndex = 4
+      Position.X = 332.000000000000000000
+      Position.Y = 5.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 4
+      Text = 'CornerButton2'
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnPlusClick
+    end
   end
   object PanelPainter: TPanel
     Align = Client
     Size.Width = 854.000000000000000000
-    Size.Height = 387.000000000000000000
+    Size.Height = 364.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 4
+    TabOrder = 5
     object Painter: TPaintBox
       Align = Client
       Size.Width = 854.000000000000000000
-      Size.Height = 387.000000000000000000
+      Size.Height = 364.000000000000000000
       Size.PlatformDefault = False
       OnPaint = PainterPaint
-      object StatusBar: TStatusBar
-        Position.Y = 365.000000000000000000
-        ShowSizeGrip = True
-        Size.Width = 854.000000000000000000
-        Size.Height = 22.000000000000000000
-        Size.PlatformDefault = False
-        TabOrder = 0
-      end
     end
+  end
+  object StatusBar: TStatusBar
+    Position.Y = 397.000000000000000000
+    ShowSizeGrip = True
+    Size.Width = 854.000000000000000000
+    Size.Height = 23.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
   end
   object ImageList1: TImageList
     Source = <
@@ -240,6 +274,68 @@ object MainForm: TMainForm
             FileName = 'C:\!GEOMASTER\Office\open_document16_d.bmp'
           end>
         Name = 'open_document16_d'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000022449444154388D8D934F48D3
+              7118C63FDF5F6D6E56EA524AD3C8D2C368957F0E961EA24B5446904A10545014
+              95181E8220C82E45045D3CA51D92B00E49501414CAF21FD13F36CA8969360A1B
+              666A5B734EDD9C6EBFB74320419BFA5C5F3ECFFBC2F3BC8A25D4F0D821066520
+              C592824484A3FBF3D5BF73950804B077F5497E511E434633FE302447056D26C4
+              CF9EAF9CAE2A54005A22F8C9EB6FB277CF3692CD667CDD2E620F5AF0BB471093
+              09DB81EDD437754AC2CD8DF71CF26A2226DD3E91A66111E7B52B220588DBE590
+              5E11718BC8CB2F2302B0329E41FAA60C82310D4F878B4CC334EB22E3E8492B48
+              1B72615673CC6FB6B13ECBC29DFBEF25AE81C16C242050DA769322E72362660D
+              1D85E5C639B490E06D7C4A6467395AB21EFF82C85418930E23A55564965859D3
+              F70E93B30B0E9F818C0D18B76C25129E251A4890417DE35B79F13D240F3D220E
+              11F1DEBD2E511B3233F851E6E4AF3A5D439230056BAE91C0E030D9A9C22A2062
+              2D2678FC3CBF57A7320DF826C3383BFA81383D908E23E2CF3A49B3DDCF5C521A
+              BB0F9561C95E8B004AC0EBF6E219F8C189CA62F55F0A7A5BA5301DC2F7EC2263
+              C3BBB8D5D0AC2E795A24CF96436ABA85D989794E1D2B8CDF44BDB542D47C8CD1
+              CFBDB4070B98C9AAA1FAC2BE459BBA7081DE5A212A0AA3FD3DD8A78A086EACA3
+              B6BA64491840D39F1F14A5C3AF811EDAA77610CCBEBC6C18407B3396CBF8A70F
+              D8276D4CE65CA5B6A66CD9F082EACE964BC3ED459E6311FD0146B3F7DB8522EC
+              C60000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\zoomin16.bmp'
+          end>
+        Name = 'zoomin16'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000001E949444154388D9592CB6E12
+              011486BFE11A664AA0A540800ABD289A10B5A62E1A5D2831212E5CD095898FE0
+              C6952FE113D437314D5C698CC6D85889AD814A8A94ABA530C0C0946166DCA086
+              3A557B92B33AE7FB72F2E708FCA50A65C5FC56ED516D28A81A98860E8646FAD6
+              22972E4802807016BC93EF98BB85634E4627CC5D9CC79708303C56A97E69C140
+              E5DAE50037537382A5A05056CC0FB926E1908BBB6B514A2AEC75606C803403CD
+              F280FE5E853BEB316C56824A6380E9B0B17A23CA5087C33638DDA0EBD0EB417C
+              5944F0896CEF547058096ADF15A4F00C05156AF5110B4B2E3CC0ACFFF74EE26A
+              90E2EB92B560A01A48A28B66173EEEB6C83EAB4ECDF737D720E844B0D9AD05A2
+              DB863118E309413AAE937E1C9E9A4BC0515FC334746B41242471509109AECCD2
+              0E2E108B801F084C601DD82EC9F83C5887180B8B08638DE26799800F4663D080
+              FECFEE69348A320F1F24853F2E50F25BE638F704BBBAC1B03CE253ABCDF2F528
+              EE8893B6A2D12E77A9ED77588949C0A94752F25BA6F87593C35C8B978D14571E
+              3D4556DD54EA0A3A364C4327E47393CD247E710E2BF85D3D896331433838CF7A
+              DC7BE6B7C22483D3B09AB8CFEDEC3D96FE0103D8EA0705532C3E9F863732FF05
+              03388E86765EBCF5E2EDFACF0DC324C4576FDE9B035925995A3D170CF0039B4E
+              D8CCC6D7E0080000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\ZoomOut.bmp'
+          end>
+        Name = 'ZoomOut'
       end>
     Destination = <
       item
@@ -258,6 +354,18 @@ object MainForm: TMainForm
         Layers = <
           item
             Name = 'open_document16_d'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'zoomin16'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'ZoomOut'
           end>
       end>
     Left = 200

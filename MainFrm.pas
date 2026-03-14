@@ -7,7 +7,7 @@ uses System.SysUtils, System.Types, System.UITypes, System.Classes, System.Varia
      FMX.Controls.Presentation, FMX.StdCtrls, System.Skia, FMX.Skia,
      FMX.Memo.Types, FMX.ScrollBox, FMX.Memo, System.ImageList, FMX.ImgList,
      FMX.Objects,
-     WptForm2, newSelector, ogcDrawerCanvas;
+     WptForm2, newSelector, ogcDrawerCanvas, ogcBasic;
 
 type
   TMainForm = class(TForm)
@@ -20,9 +20,11 @@ type
     PanelPainter: TPanel;
     Painter: TPaintBox;
     btnPaint: TCornerButton;
-    StatusBar: TStatusBar;
     upm: TCornerButton;
     Label1: TSkLabel;
+    StatusBar: TStatusBar;
+    btnPlus: TCornerButton;
+    ptnMinus: TCornerButton;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -30,6 +32,7 @@ type
     procedure PainterPaint(Sender: TObject; Canvas: TCanvas);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
+    procedure btnPlusClick(Sender: TObject);
   private
     StatusLabel: TLabel;
     PanBitmap: TBitmap;
@@ -42,6 +45,7 @@ type
     ZoomStartDistance: Single;
     ZoomFactor: Single;
     ZoomPivot: TPointF;
+    ZoomBaseRect: TogsRect;
     ZoomBaseDx: Double;
     ZoomBaseDy: Double;
     ZoomBaseScale: Double;
@@ -95,6 +99,31 @@ begin
  Painter.Repaint;
 end;
 
+procedure TMainForm.btnPlusClick(Sender: TObject);
+var
+ Btn: TControl;
+ Koef: Double;
+ CenterLocal: TPointF;
+ CenterPix: TPointF;
+ PivotGeo: TPointF;
+begin
+ if Selector = nil then Exit;
+ if Painter = nil then Exit;
+ if Sender is TControl then Btn := TControl(Sender) else Btn := nil;
+ if LastCanvasScale <= 0 then LastCanvasScale := 1;
+
+ Koef := 1.20;
+ if (Btn <> nil) and (Btn.Tag < 0) then Koef := 1 / Koef;
+ if Koef <= 0 then Exit;
+
+ CenterLocal := PointF(Painter.Width * 0.5, Painter.Height * 0.5);
+ CenterPix := PointF(CenterLocal.X * LastCanvasScale, CenterLocal.Y * LastCanvasScale);
+ PivotGeo := PointF(Selector.XGeo(Round(CenterPix.X)), Selector.YGeo(Round(CenterPix.Y)));
+ Selector.Scale(PivotGeo.X, PivotGeo.Y, Koef);
+ SceneDirty := True;
+ Painter.Repaint;
+end;
+
 procedure TMainForm.btnLocalOpenClick(Sender: TObject);
 begin
  localOpenForm := TlocalOpenForm.Create(Self);
@@ -108,6 +137,7 @@ begin
  Painter.AutoCapture := True;
  PanBitmap := nil;
  PanBitmapActive := False;
+ ZoomBaseRect := nil;
  ZoomBitmapActive := False;
  ZoomStartDistance := 0;
  ZoomFactor := 1;
@@ -122,6 +152,8 @@ procedure TMainForm.FormDestroy(Sender: TObject);
 begin
  PanBitmap.Free;
  PanBitmap := nil;
+ ZoomBaseRect.Free;
+ ZoomBaseRect := nil;
  Drawer.Free;
  Selector.Free;
  Drawer := nil;
@@ -183,7 +215,7 @@ var
  end;
 begin
  If Drawer = nil then begin
-  Drawer := TogsDrawerCanvas.Create(nil, Round(Painter.Width * Canvas.Scale), Round(Painter.Height * Canvas.Scale), nil);
+  Drawer := TogsDrawerCanvas.Create(nil, PanelPainter, Canvas.Scale, nil);
   Selector:= TSelector.Create(Drawer);
   Drawer.ogsSelector := Selector;
   Drawer.Name := 'Drawer';
@@ -263,9 +295,9 @@ begin
  if Selector = nil then Exit;
  InteractionActive := True;
  if BaseScale = 0 then begin
-  BaseDx := Selector.fDx;
-  BaseDy := Selector.fDy;
-  BaseScale := Selector.fScale;
+  BaseDx := Selector.GetDx;
+  BaseDy := Selector.GetDy;
+  BaseScale := Selector.GetScale;
  end;
  if LastCanvasScale <= 0 then LastCanvasScale := 1;
  PF := Painter.AbsoluteToLocal(Screen.MousePos);
@@ -301,6 +333,9 @@ var
  NewScale: Double;
  OldScale: Double;
  K0, K1: Double;
+ PivotGeo: TPointF;
+ R: TogsRect;
+ K: Double;
 begin
  if Selector = nil then Exit;
  if not ZoomBitmapActive then Exit;
@@ -312,9 +347,12 @@ begin
  end;
  if LastCanvasScale <= 0 then LastCanvasScale := 1;
  OldScale := ZoomBaseScale;
- if OldScale = 0 then OldScale := Selector.fScale;
+ if OldScale = 0 then OldScale := Selector.GetScale;
  if OldScale = 0 then Exit;
  if ZoomFactor <= 0 then Exit;
+
+ if ZoomBaseRect = nil then Exit;
+ if not ZoomBaseRect.isRect then Exit;
 
  PivotPix := PointF(ZoomPivot.X * LastCanvasScale, ZoomPivot.Y * LastCanvasScale);
  NewScale := OldScale * ZoomFactor;
@@ -322,10 +360,11 @@ begin
 
  K0 := 1 / OldScale;
  K1 := 1 / NewScale;
- Selector.fScale := NewScale;
- Selector.fDx := ZoomBaseDx + PivotPix.X * (K0 - K1);
- Selector.fDy := ZoomBaseDy + PivotPix.Y * (K0 - K1);
- Selector.UpdateRects(False);
+ PivotGeo := PointF(Selector.XGeo(Round(PivotPix.X)), Selector.YGeo(Round(PivotPix.Y)));
+
+ // Как в !!!OLD\git\MainFrm.pas: зум всегда от базового состояния жеста
+ Selector.ActiveRect := ZoomBaseRect;
+ Selector.Scale(PivotGeo.X, PivotGeo.Y, ZoomFactor);
  SceneDirty := True;
 
  ZoomBitmapActive := False;
@@ -343,11 +382,11 @@ var
 begin
  if StatusBar = nil then Exit;
  if Selector = nil then Exit;
- if Selector.fScale = 0 then Exit;
+ if Selector.GetScale = 0 then Exit;
  XPix := X * LastCanvasScale;
  YPix := Y * LastCanvasScale;
- XGeo :=Selector.XGeo(Round(X));
- YGeo :=Selector.YGeo(Round(Y));
+ XGeo :=Selector.XGeo(Round(XPix));
+ YGeo :=Selector.YGeo(Round(YPix));
  S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  if StatusLabel <> nil then StatusLabel.Text := S;
 end;
@@ -385,14 +424,14 @@ begin
   PanBitmap.Assign(Drawer.Bitmap);
   PanStartPoint := PointF(X, Y);
   PanShift := PointF(0, 0);
-  PanBaseDx := Selector.fDx;
-  PanBaseDy := Selector.fDy;
+  PanBaseDx := Selector.GetDx;
+  PanBaseDy := Selector.GetDy;
   PanBitmapActive := True;
  end;
  if BaseScale = 0 then begin
-  BaseDx := Selector.fDx;
-  BaseDy := Selector.fDy;
-  BaseScale := Selector.fScale;
+  BaseDx := Selector.GetDx;
+  BaseDy := Selector.GetDy;
+  BaseScale := Selector.GetScale;
  end;
  LastPanPoint := PointF(X, Y);
 end;
@@ -411,15 +450,13 @@ begin
   Painter.Repaint;
   Exit;
  end;
- if Selector.fScale = 0 then Exit;
+ if Selector.GetScale = 0 then Exit;
  DxPix := (X - LastPanPoint.X) * LastCanvasScale;
  DyPix := (Y - LastPanPoint.Y) * LastCanvasScale;
  LastPanPoint := PointF(X, Y);
- DxGeo := DxPix / Selector.fScale;
- DyGeo := DyPix / Selector.fScale;
- Selector.fDx := Selector.fDx - DxGeo;
- Selector.fDy := Selector.fDy - DyGeo;
- Selector.UpdateRects(False);
+ DxGeo := DxPix / Selector.GetScale;
+ DyGeo := DyPix / Selector.GetScale;
+ Selector.Move(-DxGeo, -DyGeo);
  SceneDirty := True;
  Painter.Repaint;
 end;
@@ -430,14 +467,12 @@ var
  DxGeo, DyGeo: Double;
 begin
  if ZoomBitmapActive and (Selector <> nil) then FinalizeZoom;
- if PanBitmapActive and (Selector <> nil) and (Selector.fScale <> 0) then begin
+ if PanBitmapActive and (Selector <> nil) and (Selector.GetScale <> 0) then begin
   DxPix := PanShift.X * LastCanvasScale;
   DyPix := PanShift.Y * LastCanvasScale;
-  DxGeo := DxPix / Selector.fScale;
-  DyGeo := DyPix / Selector.fScale;
-  Selector.fDx := PanBaseDx - DxGeo;
-  Selector.fDy := PanBaseDy - DyGeo;
-  Selector.UpdateRects(False);
+  DxGeo := DxPix / Selector.GetScale;
+  DyGeo := DyPix / Selector.GetScale;
+  Selector.Move(-DxGeo, -DyGeo);
  end;
  PanBitmapActive := False;
  ResetInteractionState;
@@ -465,9 +500,12 @@ begin
   ZoomStartDistance := EventInfo.Distance;
   ZoomFactor := 1;
   ZoomPivot := EventInfo.Location;
-  ZoomBaseDx := Selector.fDx;
-  ZoomBaseDy := Selector.fDy;
-  ZoomBaseScale := Selector.fScale;
+  if ZoomBaseRect = nil then
+   ZoomBaseRect := TogsRect.Create;
+  ZoomBaseRect.Assign(Selector.ActiveRect);
+  ZoomBaseDx := Selector.GetDx;
+  ZoomBaseDy := Selector.GetDy;
+  ZoomBaseScale := Selector.GetScale;
   if (Drawer.Bitmap <> nil) and (Drawer.Bitmap.Width > 0) and (Drawer.Bitmap.Height > 0) then begin
    if PanBitmap = nil then PanBitmap := TBitmap.Create;
    PanBitmap.Assign(Drawer.Bitmap);
@@ -548,9 +586,9 @@ begin
    end;
   end;
   SceneDirty := False;
-  BaseDx := Selector.fDx;
-  BaseDy := Selector.fDy;
-  BaseScale := Selector.fScale;
+  BaseDx := Selector.GetDx;
+  BaseDy := Selector.GetDy;
+  BaseScale := Selector.GetScale;
   SaveBackbufferToFile('render');
  end;
 

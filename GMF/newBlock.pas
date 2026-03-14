@@ -240,7 +240,7 @@ begin
  Selector:=Buf.Selector;
  Buf.Read(Check,SizeOf(Check));
  Name:=Buf.ReadString;
- //WriteIn(['LoadBlock=', Name]);
+ WriteIn(['LoadBlock=', Name]);
 // If Name = 'ЛЕГЕНДА' then
 //  Writeln('Name=',Name);
  If Check=0 then begin
@@ -254,14 +254,14 @@ begin
 //  WriteIn(['Form.Loaded=',Name]);
 // Oh
   useText:=0;
-  TwgForm.FontColEx:=TSelector(Buf.Selector).GFontColEx;
-//  WriteIn(['FontColEx=',TwgForm.FontColEx]);
+  TwgForm.FontColEx := Selector.GFontColEx;
+  WriteIn(['FontColExBlock=',Name, ' ', TwgForm.FontColEx <> nil]);
   if TwgForm.FontColEx<>nil then
    For I:=0 to TwgForm.Twigs.AnyCount-1 do begin
     PP:=TwgForm.Twigs.AAt(I,B);
     If PP.ResetParams(param_idResetFontView,TwgForm.FontColEx) then Inc(useText);
    end;
- // WriteIn([3]);
+  WriteIn(['End FontColEx=', Name, Buf.Position]);
 ///
   Buf.Read(useUserParams,SizeOf(useUserParams));
   With Buf.ReadSect do begin blockRect.Left:=Left;blockRect.Top:=Top;blockRect.Right:=Right;blockRect.Bottom:=Bottom;end;
@@ -277,11 +277,13 @@ begin
   If newConsts.Version>37 then begin
    Properties:=TProperties(Buf.Get);
   end;
+  WriteIn(['Properties=', Name, Buf.Position]);
   //  WriteIn([52]);
 BLOCK_DEBUG:=BD;
  // Buf.GPointCol:=nil;
    TwgForm.SetGabaritesPrivate;
   //  WriteIn([6]);
+  WriteIn(['SetGabs=', Name, Buf.Position]);
   If newConsts.Version<39 then With TwgForm,blockRect do begin Left:=XXMin;Top:=YYMin;Right:=XXMax;Bottom:=YYMax;end;
   For I:=0 to TwgForm.Twigs.LotsCount-1 do begin
    TLot(TwgForm.Twigs.LAt(I)).SetFromTwig(TwgForm.Twigs);
@@ -1095,7 +1097,6 @@ begin
      Lot.SetMinMax2(TwgForm.Twigs);
      Lot.Draw32(TwgForm.Twigs);
    end;
-   exit;
   For I:=0 to Twigs.AnyCount-1 do begin
    PD:=Twigs.AAt(I,B);
    If B=TWG_Point then begin

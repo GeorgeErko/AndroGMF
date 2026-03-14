@@ -553,6 +553,8 @@ begin
         Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
         Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
 
+        Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
+
         Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
         Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
         Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
@@ -600,6 +602,12 @@ begin
       try
        TextBitmap.Canvas.Clear(TAlphaColor($00000000));
        L.RenderLayout(TextBitmap.Canvas);
+
+       TextBitmap.Canvas.Stroke.Kind := TBrushKind.Solid;
+       TextBitmap.Canvas.Stroke.Color := TAlphaColor($FFFF0000);
+       TextBitmap.Canvas.Stroke.Thickness := 2;
+       TextBitmap.Canvas.DrawLine(PointF(0, BaseLinePix), PointF(TextBitmap.Width, BaseLinePix), 1);
+       TextBitmap.Canvas.DrawRect(RectF(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), 0, 0, [], 1);
       finally
        TextBitmap.Canvas.EndScene;
       end;
@@ -790,22 +798,77 @@ begin
 end;
 
 function TDotText.GetSect: TSect;
-var P:PCollection;M:TMRect;I:Integer;S:TSect;D:Double;
+const
+ NominalPxHeight: Single = 100;
+var
+ GX, GY: Double;
+ SX, SY: Double;
+ XP, YP: Double;
+ OffX, OffY: Double;
+ W, H: Double;
+ X0, Y0, X1, Y1: Double;
+ X2, Y2, X3, Y3: Double;
+ C, S: Double;
+ M: TMRect;
+ RX, RY: Double;
+ N: Integer;
 begin
  If Text.FontView = nil then begin
   Result := inherited GetSect;
   exit;
  end;
+ if (TextBitmap = nil) or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+ begin
   Result := inherited GetSect;
-  WriteIn(['TDotText.Getsect =', Result.Left, Result.Top]);
-  exit;
- //
- M:=TMRect.Create;
- P:=Text.GetRotateRect(XDot,YDot,XKoef,Ugol,False);
-  For I:=0 to P.Count-1 do M.Insert(TDot1(P[I]).X,TDot1(P[I]).Y);
- Result:=M.Sect;D:=Result.Top;Result.Top:=Result.Bottom;Result.Bottom:=D;
- M.Free;
- P.Free;
+  Exit;
+ end;
+ try
+ N := 0;
+ GX := Text.Height / NominalPxHeight;
+ GY := Text.Height / NominalPxHeight;
+ SX := GX;
+ SY := GY;
+ if XKoef <> 0 then
+  SX := SX * XKoef;
+
+ W := TextBitmap.Width * SX;
+ H := TextBitmap.Height * SY;
+
+  N := 1;
+  Text.GetXPYP(XP, YP);
+   N := 2;
+ OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * XP) * SX;
+ if YP < 0 then
+  OffY := BaseLinePix * SY
+ else
+  OffY := (SymbolTopPix + SymbolHeightPix * YP) * SY;
+
+ X0 := -OffX;
+ Y0 := -OffY;
+ X1 := -OffX + W;
+ Y1 := -OffY;
+ X2 := -OffX + W;
+ Y2 := -OffY + H;
+ X3 := -OffX;
+ Y3 := -OffY + H;
+
+ C := Cos(Ugol);
+ S := Sin(Ugol);
+  N := 3;
+ M := TMRect.Create;
+ try
+  RX := X0 * C - Y0 * S; RY := X0 * S + Y0 * C; M.Insert(XDot + RX, YDot + RY);
+  RX := X1 * C - Y1 * S; RY := X1 * S + Y1 * C; M.Insert(XDot + RX, YDot + RY);
+  RX := X2 * C - Y2 * S; RY := X2 * S + Y2 * C; M.Insert(XDot + RX, YDot + RY);
+  RX := X3 * C - Y3 * S; RY := X3 * S + Y3 * C; M.Insert(XDot + RX, YDot + RY);
+  Result := M.Sect;
+   N := 4;
+ except
+  raise Exception.Create(Fmt(['Error Message = ', N]));
+ end;
+ finally
+  M.Free;
+ end;
 end;
 
 procedure TDotText.ChangeXYKoef(XK, YK: Double);

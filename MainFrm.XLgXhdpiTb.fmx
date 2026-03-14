@@ -17,14 +17,14 @@ inherited MainForm_XLgXhdpiTb: TMainForm_XLgXhdpiTb
   end
   inherited PanelPainter: TPanel
     Size.Width = 800.000000000000000000
-    Size.Height = 1128.000000000000000000
+    Size.Height = 1105.000000000000000000
     inherited Painter: TPaintBox
       Size.Width = 800.000000000000000000
-      Size.Height = 1128.000000000000000000
-      inherited StatusBar: TStatusBar
-        Position.Y = 1106.000000000000000000
-        Size.Width = 800.000000000000000000
-      end
+      Size.Height = 1105.000000000000000000
     end
+  end
+  inherited StatusBar: TStatusBar
+    Position.Y = 1138.000000000000000000
+    Size.Width = 800.000000000000000000
   end
 end

@@ -39,8 +39,6 @@ interface
  TStreamClass=Class of TTwgObject;
 
  TBufStream = Class(TTwgObject)
-  Private
-    FCloseFile  : Boolean;
   Public
     Status:Integer;
 //    Str:TStream;
@@ -83,7 +81,6 @@ interface
     property Size : Longint read GetSize;
     property Stream :TStream read FStream;
     property Handle : Longint read GetHandle;
-    property CloseFile : Boolean read FCloseFile write FCloseFile;
    {}
     Destructor Destroy;override;
   end;
@@ -269,8 +266,8 @@ end;
 
 destructor TBufStream.Destroy;
 begin
-  If FCloseFile and FStream.InheritsFrom(THandleStream) then
-   FileClose(THandleStream(FStream).Handle);
+//  If FStream.InheritsFrom(THandleStream) then
+//   FileClose(THandleStream(FStream).Handle);
  FStream.Free;
 end;
 

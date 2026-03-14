@@ -344,10 +344,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="MainFrm.pas">
-            <Form>MainForm</Form>
-            <FormType>fmx</FormType>
-        </DCCReference>
         <DCCReference Include="GMF\circle_di.pas"/>
         <DCCReference Include="GMF\Collect.pas"/>
         <DCCReference Include="GMF\dsolve.pas"/>
@@ -418,6 +414,10 @@
             <FormType>fmx</FormType>
         </DCCReference>
         <DCCReference Include="OpenForm.pas"/>
+        <DCCReference Include="MainFrm.pas">
+            <Form>MainForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

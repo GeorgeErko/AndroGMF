@@ -3,7 +3,6 @@ program testAndro;
 uses
   System.StartUpCopy,
   FMX.Forms,
-  MainFrm in 'MainFrm.pas' {MainForm},
   circle_di in 'GMF\circle_di.pas',
   Collect in 'GMF\Collect.pas',
   dsolve in 'GMF\dsolve.pas',
@@ -70,7 +69,8 @@ uses
   ogcMathUtils in 'JSON\ogcMathUtils.pas',
   GMFLTDrawer in 'GMF\GMFLTDrawer.pas',
   DlgLocalOpen in 'DlgLocalOpen.pas' {localOpenForm},
-  OpenForm in 'OpenForm.pas';
+  OpenForm in 'OpenForm.pas',
+  MainFrm in 'MainFrm.pas' {MainForm};
 
 {$R *.res}
 
@@ -85,4 +85,6 @@ Application.CreateForm(TForm1, Form1);
 
 Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TlocalOpenForm, localOpenForm);
+
+Application.CreateForm(TMainForm, MainForm);
 

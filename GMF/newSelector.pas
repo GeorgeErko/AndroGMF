@@ -69,21 +69,22 @@ Type
  TUpdateProc=Procedure(Check:boolean=False) of object;
 
  TSelector = class(TogsSelector)
-  GTwgForm:Pointer;
-  GMemMakeIndex:Integer;
-  GMemMake:AnsiString;
+  public
+   GTwgForm:Pointer;
+   GMemMakeIndex:Integer;
+   GMemMake:AnsiString;
  //
-  GNForm:TControl;
-  HObject,WObject:Double;
-  GGraphSet:TGraphSet;
-  GlobalSettings:TGlobalSettings;
-  GLineCol,GSqwearCol,GPointCol:TSortedCollection;
-  GFontColEx:Pointer;
-  FCurPos:TPointF;
-  STSDrawing:boolean;
+   GNForm:TControl;
+   HObject,WObject:Double;
+   GGraphSet:TGraphSet;
+   GlobalSettings:TGlobalSettings;
+   GLineCol,GSqwearCol,GPointCol:TSortedCollection;
+   GFontColEx:Pointer;
+   FCurPos:TPointF;
+   STSDrawing:boolean;
  //
-  GFontCollect:PCollection;
-  GFontSet    :PCollection;
+   GFontCollect:PCollection;
+   GFontSet    :PCollection;
  // Создание
   Constructor Create(Drawer: TogsDrawer);
   Destructor Destroy; override;
@@ -219,17 +220,17 @@ end;
 
 function TSelector.GDx: Double;
 begin
- Result := fDx;
+ Result := GetDx;
 end;
 
 function TSelector.GDy: Double;
 begin
- Result := fDy;
+ Result := GetDy;
 end;
 
 function TSelector.GMS: Double;
 begin
- Result := fScale;
+ Result := GetScale;
 end;
 
 function TSelector.GPRect: TRect;

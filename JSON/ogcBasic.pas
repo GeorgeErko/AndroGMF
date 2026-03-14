@@ -409,9 +409,12 @@ type
   // перо, кисть
    fPen: TogsPen;
    fBrush: TogsBrush;
+   fScale: Single;
    function GetcmdPlayerItem(Index: Integer): TogsBasic;
    function GetogsSelector: TogsSelector; override;
    procedure SetogsSelector(Data: TogsSelector); override;
+    function GetScale: Single;
+    procedure SetScale(const Value: Single);
   protected
    fogsSelector: TogsSelector;
    fDrawerMode: TDrawerMode;
@@ -452,6 +455,7 @@ type
    procedure MoveTo(X, Y: Integer); virtual;
    procedure LineTo(X, Y: Integer); virtual;
  //
+   property Scale: Single read GetScale write SetScale;
    property Width: Integer read GetWidth write SetWidth;
    property Height: Integer read GetHeight write SetHeight;
    function geoWidth: Double; virtual; abstract;
@@ -507,25 +511,24 @@ type
   { TogsSelector }
 
   TogsSelector = class(TogsBasic)
-  private
-   fDrawer: TogsDrawer;
-   fglobalRect: TogsRect;
-   factiveRect: TogsRect;
-   fPixelSize: Double;
-   mfs, mff: Integer; // начало -> конец замера memFree
+ private
+  fDrawer: TogsDrawer;
+  fglobalRect,factiveRect: TogsRect;
+  fPixelSize: Double;
+  mfs, mff: Integer; // начало -> конец замера memFree
                       // memFreeFinish = mff - mfs
-   function getActiveRect: TogsRect;
-   procedure setActiveRect(AValue: TogsRect);
-   function GetDrawer: TogsDrawer;
-   procedure SetDrawer(AValue: TogsDrawer);
+  fDx, fDy: Double;
+  function getActiveRect: TogsRect;
+  procedure setActiveRect(AValue: TogsRect);
+  function GetDrawer: TogsDrawer;
+  procedure SetDrawer(AValue: TogsDrawer);
   //
    procedure SetObjFlags(Index: Byte; AValue: boolean);
    function getogsRect: TogsRect; override;
    function GetDevScale: Double;
   public
-   fScale : Double;
-   fDx, fDy: Double;
    fSelectorMode: Byte; // временно. перенести в приват
+   fScale: Double;
    memMgr: TMemoryManager; // для отладки - менеджер памяти
    Name:String;
    constructor Create(Drawer_: TogsDrawer); virtual;
@@ -538,8 +541,13 @@ type
    function AddCoord(X, Y: Double): Boolean;
    function AddPrim(Prim: TogsBasic): boolean;
    property ActiveRect: TogsRect read getActiveRect write setActiveRect;
-   property GlobalRect: TogsRect read fGlobalRect;
+   property GlobalRect: TogsRect read fglobalRect;
    property PixelSize: Double read fPixelSize;
+  //
+   function GetScale: Double;
+   function GetDx: Double;
+   function GetDy: Double;
+  //
    function XPix(X: Double): Integer; virtual;
    function YPix(Y: Double): Integer; virtual;
    function XGeo(X: Integer): Double; virtual;
@@ -558,7 +566,7 @@ type
    function pointVisible(X, Y: Double): Boolean;
    function lineVisible(X, Y, X1, Y1: Double): Boolean;
    function RectVisible(Rect: TogsRect): Boolean;
-   function cutLine(X, Y, X1, Y1: Double; var X_,Y_,X1_,Y1_: Double): Boolean;
+   function cutLine(X, Y, X1, Y1: Double; var X_,Y_,X1_,Y1_: Double ): Boolean;
    procedure BeginPaint;
    procedure EndPaint;
   end;
@@ -576,7 +584,7 @@ var
   pointSect: TSect;
 
 // TCaptureRec functions
-  
+
 function CRClearParams(CaptureDef: TSetOfCapture = [ckPoint, ckLine, ckPolygon]): TCaptureRec;
 // проверка: установлена точка захвата, или ее необходимо установить
 function CRnullPoint(CaptureRec: TCaptureRec): Boolean;
@@ -609,7 +617,7 @@ function DeleteMatrix(Matrix: TogsMatrix): Boolean;
 function xMatrix(XBase, X_, Y_, Angle, Scale: Double): Double;
 function yMatrix(YBase, X_, Y_, Angle, Scale: Double): Double;
 
-implementation uses ogcMathUtils, Writer;
+implementation uses ogcMathUtils, Writer, Math;
 
 // глобальная переменная - дескриптор Matrix
 var activeMatrix : TogsMatrix = nil;
@@ -802,6 +810,16 @@ begin
  Result := fDrawer;
 end;
 
+function TogsSelector.GetDx: Double;
+begin
+ Result := fDx;
+end;
+
+function TogsSelector.GetDy: Double;
+begin
+ Result := fDy;
+end;
+
 function TogsSelector.getActiveRect: TogsRect;
 begin
  Result := factiveRect;
@@ -832,6 +850,11 @@ begin
  Result := fglobalRect;
 end;
 
+function TogsSelector.GetScale: Double;
+begin
+ Result := fScale;
+end;
+
 procedure TogsSelector.setActiveRect(AValue: TogsRect);
 var scaleX, scaleY: Double;
 begin
@@ -847,11 +870,12 @@ begin
  scaleX := {factiveRect.Width / fglobalRect.Width *} (fDrawer.Width / factiveRect.Width);
  scaleY := {factiveRect.Height / fglobalRect.Height *}  (fDrawer.Height / factiveRect.Height);
 // WriteIn(['Selector.Params',fdx,fdy,scaleX]);
- If fDrawer.Width > fDrawer.Height then
+ {If fDrawer.Width > fDrawer.Height then
      fScale := scaleY
     else
-     fScale := scaleX;
+     fScale := scaleX; }
 //
+fScale := Min(scaleX, scaleY);
 // SelectorMode[smLockedPaint] := fScale = 0;
 end;
 
@@ -878,7 +902,7 @@ end;
 destructor TogsSelector.Destroy;
 begin
  fglobalRect.Free;
- activeRect.Free;
+ factiveRect.Free;
 end;
 
 function TogsSelector.memFree: Integer;
@@ -977,16 +1001,41 @@ begin
 end;
 
 procedure TogsSelector.Scale(X, Y, Koef: Double);
-var pX, pY: Integer;
-    gX, gY: Double;
+var
+ pX, pY: Integer;
+ gX, gY: Double;
+ R: TogsRect;
+ K: Double;
 begin
-// фиксируем положение точки масштабирования
- pX := XPix(X); pY := YPix(Y);
- activeRect := activeRect.Inflate(geoDist(10 * Koef), geoDist(10 * Koef));
- SetActiveRect(activeRect);
- UpdateRects(False);
- gX := XGeo(pX); gY := YGeo(pY);
- Move(X - gX, Y- gY);
+ if Koef <= 0 then Exit;
+ if not factiveRect.isRect then Exit;
+
+ K := Koef;
+ if K < 0.05 then K := 0.05;
+ if K > 20 then K := 20;
+ if Abs(K - 1) < 0.000001 then Exit;
+
+  // фиксируем положение точки масштабирования (в пикселях Drawer)
+ pX := XPix(X);
+ pY := YPix(Y);
+
+ // масштабируем текущую апертуру вокруг pivot (X,Y) в geo
+ R := TogsRect.Create;
+ try
+  R.XMin := X - (X - factiveRect.XMin) / K;
+  R.XMax := X + (factiveRect.XMax - X) / K;
+  R.YMin := Y - (Y - factiveRect.YMin) / K;
+  R.YMax := Y + (factiveRect.YMax - Y) / K;
+  R.Iter := 1;
+  ActiveRect := R;
+ finally
+  R.Free;
+ end;
+
+ // компенсируем сдвиг так, чтобы pivot остался под тем же pX/pY
+ gX := XGeo(pX);
+ gY := YGeo(pY);
+ Move(X - gX, Y - gY);
 end;
 
 function TogsSelector.pointVisible(X, Y: Double): Boolean;
@@ -1078,6 +1127,7 @@ begin
  fBrush := TogsBrush.Create(0, nil);
  fDrawerMode := dmDraw;
  fcmdPlayer := TogsCollection.Create;
+ fScale := 1;
 end;
 
 destructor TogsDrawer.Destroy;
@@ -1116,9 +1166,19 @@ begin
   else fPen := AValue;
 end;
 
+procedure TogsDrawer.SetScale(const Value: Single);
+begin
+ fScale := Value;
+end;
+
 function TogsDrawer.GetPen: TogsPen;
 begin
  Result := fPen;
+end;
+
+function TogsDrawer.GetScale: Single;
+begin
+ Result := fScale;
 end;
 
 function TogsDrawer.GetBrush: TogsBrush;
