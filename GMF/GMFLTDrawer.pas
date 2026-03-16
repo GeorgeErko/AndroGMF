@@ -548,7 +548,9 @@ begin
  //                   Writeln(GL.IdNum,' ',PS.lVOrign);
  //                  If GL.IdNum = 21022 then
                     If PS.lVorign = 0 then begin
-                     Pen := Drawer.SelectPen(TogsPen.Create(Color, round(LWK1) + 1, nil));
+                     If LineWidth < 0 then
+                      Pen := Drawer.SelectPen(TogsPen.Create(Color, -LineWidth * PS.Param1 * Ko, nil)) else
+                      Pen := Drawer.SelectPen(TogsPen.Create(Color, LineWidth * PS.Param1 * Ko, nil));
                      Brush := Drawer.SelectBrush(TogsBrush.Create(Color, nil));
                     // Brush.lbStyle:=BS_Solid; Brush.lbColor:=Color;
                     // Pen:=SelectObject(Dc,CreatePenSelector(round(LWK1),Color));

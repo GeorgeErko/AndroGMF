@@ -285,15 +285,17 @@ end;
 procedure TDWG_Line.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
   Ugol: Double; bkColor: Boolean);
 var XX,YY,XX1,YY1:Double;
+    Pen: TogsPen;
 begin
 // Canvas.PenWidth:=round(Ko*Mxx*koefLine);
+ Pen := Selector.Drawer.SelectPen(TogsPen.Create(Color, Ko*0.1, nil));
  if not BkColor then Selector.Drawer.Canvas.Stroke.Color:= Color;
  XX:=x+(x_b*ko*cos(Ugol)-y_b*ko*sin(Ugol));
  YY:=y+(x_B*ko*sin(Ugol)+y_b*ko*cos(Ugol));
  XX1:=x+(x_e*ko*cos(Ugol)-y_e*ko*sin(Ugol));
  YY1:=y+(y_e *ko*cos(Ugol)+x_E*ko*sin(Ugol));
- With Selector do
-  Drawer.DrawLine(XX,YY,XX1,YY1);
+  Selector.Drawer.DrawLine(XX,YY,XX1,YY1);
+ Selector.Drawer.DeletePen(Selector.Drawer.SelectPen(Pen));
 end;
 
 procedure TDWG_Line.DrawTo(Geometry: TGeometryEvents);
@@ -426,8 +428,8 @@ begin
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
-    Selector.Drawer.DrawPolyline(Col, True);
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, Ko * 0.1, nil));
+     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
  end;
@@ -530,7 +532,7 @@ begin
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*0.1), nil));
     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
@@ -682,7 +684,7 @@ begin
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*Mxx*0.1), nil));
+    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*0.1), nil));
     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
@@ -905,7 +907,7 @@ begin
  Sect:=GetRect1;
  GetRealSector(PP,Ko);
  With Selector do
-  Result:=not ((XMin>GRect.Right)or(XMax<GRect.Left)or(YMax>GRect.Bottom)or(YMin<GRect.Top));
+  Result:=not ((XMin>GRect.Right)or(XMax<GRect.Left)or(YMax>GRect.Top)or(YMin<GRect.Bottom));
  PP.Free;
 end;
 
@@ -998,13 +1000,13 @@ end;
 		begin
      Sect:=GetRect(Abs(Ko));
          BB:=isVisible(Ko);
-      WriteIn([MyNameis]);
+     // WriteIn([MyNameis]);
           BB:=True;
            if not BB {and not UseFont} then Exit;
-           If (XRasst(XMax-XMin)<2) and (YRasst(YMax-YMin)<2) then begin
+           If (XRasst(XMax-XMin)<=2) and (YRasst(YMax-YMin)<=2) then begin
             If useLine then begin
              If BB then begin
-               If gGraphSet.FPntZnk>=2 then exit;
+               //If gGraphSet.FPntZnk>=2 then exit;
               // Writeln(1);
                // Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
                // Canvas.PenWidth:=round(Ko*Mxx*koefLine);

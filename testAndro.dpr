@@ -70,13 +70,16 @@ uses
   GMFLTDrawer in 'GMF\GMFLTDrawer.pas',
   DlgLocalOpen in 'DlgLocalOpen.pas' {localOpenForm},
   OpenForm in 'OpenForm.pas',
-  MainFrm in 'MainFrm.pas' {MainForm};
+  MainFrm in 'MainFrm.pas' {MainForm},
+  MainFrmSkia in 'MainFrmSkia.pas' {MainFormSkia},
+  ogcDrawerSkia in 'JSON\ogcDrawerSkia.pas',
+  MainFrm1 in 'MainFrm1.pas' {MainForm1};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-   Application.CreateForm(MainFrm.TMainForm, MainFrm.MainForm);
+   Application.CreateForm(TMainFormSkia, MainFormSkia);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;
 end.
@@ -87,4 +90,16 @@ Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TlocalOpenForm, localOpenForm);
 
 Application.CreateForm(TMainForm, MainForm);
+
+Application.CreateForm(TMainForm1, MainForm1);
+
+Application.CreateForm(TMainForm1, MainForm1);
+
+Application.CreateForm(TMainFormSkia, MainFormSkia);
+
+Application.CreateForm(TMainFormSkia, MainFormSkia);
+
+Application.CreateForm(TMainForm1, MainForm1);
+
+Application.CreateForm(TMainForm1, MainForm1);
 

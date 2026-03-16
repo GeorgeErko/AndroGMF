@@ -418,6 +418,15 @@
             <Form>MainForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
+        <DCCReference Include="MainFrmSkia.pas">
+            <Form>MainFormSkia</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="JSON\ogcDrawerSkia.pas"/>
+        <DCCReference Include="MainFrm1.pas">
+            <Form>MainForm1</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

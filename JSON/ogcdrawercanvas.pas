@@ -164,7 +164,7 @@ procedure TogsDrawerCanvas.DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean);
 const C = 0;
 var X_,Y_,X1_,Y1_:Double;
 begin
-//
+//ё
  If Disable then exit;
  If not cutRequest then With ogsSelector do begin
   Bitmap.Canvas.Stroke.Color := Pen.penColor;

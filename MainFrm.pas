@@ -75,7 +75,7 @@ type
     ZoomActive: Boolean;
     InteractionActive: Boolean;
     BaseDx, BaseDy, BaseScale: Double;
-   procedure OpenGmfFile(const LocalPath: string);
+   procedure OpenGmfFile(const LocalPath: string); virtual;
   end;
 
 var

@@ -772,8 +772,8 @@ end;
     begin
 		 If XMax<Left then begin Result:=False;Exit;end;
 		 If XMin>Right then begin Result:=False;Exit;end;
-     If YMin>Top then begin Result:=False;Exit;end;
-		 If YMax<Bottom then begin Result:=False;Exit;end;
+     If YMin<Bottom then begin Result:=False;Exit;end;
+		 If YMax>Top then begin Result:=False;Exit;end;
        end;
      If TypeLot=2 then
       With ClassHandle do
@@ -3587,7 +3587,7 @@ begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
       If Ind>-1 then begin
        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
-        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
+       DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
      end else
       For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
     end else

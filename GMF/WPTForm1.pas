@@ -325,16 +325,16 @@ end;
          begin
          // WriteIn(['GetS1 ', TP.XDot, TP.YDot, TP.ClassName]);
 
-          Sect := TP.GetSect;//(MRect);
+         //Sect := TP.GetSect;//(MRect);
          // WriteIn(['GetS2 ', TP.XDot, TP.YDot, TP.ClassName]);
           // If XXMin>MRect.XMin then XXMin:=MRect.XMin;
           // If XXMax<MRect.YMax then XXMax:=MRect.YMax;
           // If YYMin>MRect.YMin then YYMin:=MRect.YMin;
          //  If YYMax<MRect.YMax then YYMax:=MRect.YMax;
-           If XXMin>Sect.Left then XXMin:=Sect.Left;
-           If XXMax<Sect.Right then XXMax:=Sect.Right;
-           If YYMin>Sect.Top then YYMin:=Sect.Top;
-           If YYMax<Sect.Bottom then YYMax:=Sect.Bottom;
+         //  If XXMin>Sect.Left then XXMin:=Sect.Left;
+         //  If XXMax<Sect.Right then XXMax:=Sect.Right;
+         //  If YYMin>Sect.Top then YYMin:=Sect.Top;
+         //  If YYMax<Sect.Bottom then YYMax:=Sect.Bottom;
         //   With Sect do WriteIn(['mrect=',Left, Top, Right, Bottom]);
          end;// else
         if W=Twg_Font then

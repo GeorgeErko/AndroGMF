@@ -1,0 +1,20 @@
+inherited MainFormSkia: TMainFormSkia
+  Caption = 'MainFor'
+  DesignerMasterStyle = 3
+  inherited Memo1: TMemo
+    Viewport.Width = 854.000000000000000000
+    Viewport.Height = 111.000000000000000000
+  end
+  inherited PanelPainter: TPanel
+    inherited Painter: TPaintBox
+      Visible = False
+    end
+    object SkPainter: TSkPaintBox
+      Align = Client
+      HitTest = True
+      Size.Width = 854.000000000000000000
+      Size.Height = 364.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+end

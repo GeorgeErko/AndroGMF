@@ -3,6 +3,7 @@
 interface uses Collect, newFontScale, newSelector, TwgDraw, Classes,
                SysUtils, EcDot, ogcBasic,
                System.Types, System.UITypes, FMX.Graphics, FMX.TextLayout,
+               ogcDrawerSkia,
                System.Skia,
                System.Math.Vectors;
 
@@ -38,6 +39,7 @@ type
  TDotText = class(TPointDot)
   Text:TText;
   TextBitmap: TBitmap;
+  TextDirty: Boolean;
   BaseLinePix: Single;
   BaseLineXPix: Single;
   RightPadPix: Single;
@@ -294,8 +296,6 @@ begin
 end;
 
 
-{ TDotText }
-
 constructor TDotText.Create(X,Y:Double;Text_:AnsiString;H:Single;Color:Integer;Align_:Byte;Ugol_:Single;fontView_:TFontViewEx);
 begin
  inherited Create(X,Y,0);
@@ -304,12 +304,16 @@ begin
  XKoef:=1;
  What:=1;
  GyperLink:=TStringList.Create;
+ TextBitmap := nil;
+ TextDirty := True;
 end;
 
 constructor TDotText.CreateAsPoint_(P: TPointDot);
 begin
  inherited;
- Text:=TText.CreateAs(TDotText(P).Text);
+ Text := TText.CreateAs(TDotText(P).Text);
+ TextBitmap := nil;
+ TextDirty := True;
  GyperLink:=TStringList.Create;
  GyperLink.Text:=TDotText(P).GyperLink.Text;
  XKoef:=TDotText(P).XKoef;
@@ -317,31 +321,17 @@ begin
  Ugol:=TDotText(P).Ugol;
 end;
 
-constructor TDotText.CreateAsPointDot_(P: TPointDot; AddCollections: Boolean;CreateTreesCopy:boolean = True);
+constructor TDotText.CreateAsPointDot_(P: TPointDot; AddCollections: Boolean; CreateTreesCopy: boolean);
 begin
  inherited;
- Text:=TText.CreateAs(TDotText(P).Text);
+ Text := TText.CreateAs(TDotText(P).Text);
+ TextBitmap := nil;
+ TextDirty := True;
  GyperLink:=TStringList.Create;
  GyperLink.Text:=TDotText(P).GyperLink.Text;
  XKoef:=TDotText(P).XKoef;
  What:=TDotText(P).What;
  Ugol:=TDotText(P).Ugol;
-end;
-
-destructor TDotText.Destroy;
-begin
- inherited;
- Text.Free;
- if TextBitmap <> nil then
-  TextBitmap.Free;
- GyperLink.Free;
-end;
-
-procedure TDotText.Store(Stream: TBufStream);
-begin
- inherited;
- Stream.Put(Text);
- Stream.WriteString(GyperLink.Text);
 end;
 
 constructor TDotText.Load(Stream: TBufStream);
@@ -351,72 +341,20 @@ begin
  Text:=TText(Stream.Get);
  GyperLink:=TStringList.Create;
  GyperLink.Text:=Stream.ReadString;
-end;
-
-Procedure TDotText.Draw32(Drawer: TogsDrawer;PntZnk:TSortedCollection;FontViewEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);
-const
- NominalPxHeight: Single = 100;
-var
-  S: Single;
-  SX, SY: Single;
-  A: Integer;
-  W, H: Single;
-  OffX, OffY: Single;
-  AnchorPix: TPointF;
-  St: TCanvasSaveState;
-  Dst: TRectF;
-  XP, YP: Double;
-begin
- if Drawer = nil then Exit;
- if Drawer.Canvas = nil then Exit;
- if Selector = nil then Exit;
- if Text = nil then Exit;
- if TextBitmap = nil then Exit;
- if (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then Exit;
-
- H := Selector.XRasst(Text.Height);
- if H <= 0 then Exit;
-
- S := H / NominalPxHeight;
- SX := S;
- SY := S;
- if XKoef <> 0 then
-  SX := SX * XKoef;
-
- W := TextBitmap.Width * SX;
- H := TextBitmap.Height * SY;
-
- A := Text.Align;
- Text.GetXPYP(XP, YP);
-
- OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
- if YP < 0 then
-  OffY := BaseLinePix * SY
- else
-  OffY := (SymbolTopPix + SymbolHeightPix * Single(YP)) * SY;
-
- AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
- St := Drawer.Canvas.SaveState;
- try
-  Drawer.Canvas.MultiplyMatrix(TMatrix.CreateTranslation(AnchorPix.X, AnchorPix.Y));
-  Drawer.Canvas.MultiplyMatrix(TMatrix.CreateRotation(Ugol));
-  Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
-  Drawer.Canvas.DrawBitmap(TextBitmap, RectF(0, 0, TextBitmap.Width, TextBitmap.Height), Dst, 1, True);
- finally
-  Drawer.Canvas.RestoreState(St);
- end;
+ TextBitmap := nil;
+ TextDirty := True;
 end;
 
 function TDotText.ResetParams(ParamID:Integer;Params:Pointer):boolean;
 const
  NominalPxHeight: Integer = 100;
 var
- L: TTextLayout;
- R: TRectF;
- W: Integer;
- S: string;
- Style: TFontStyles;
- H: Double;
+  L: TTextLayout;
+  R: TRectF;
+  W: Integer;
+  S: string;
+  Style: TFontStyles;
+  H: Double;
  {$IFDEF ANDROID}
   Family: string;
   Candidate: string;
@@ -451,191 +389,196 @@ begin
       Text.fontIndex:=0;
      end;
      Text.FontView:=TFontManagerEx(Params)[Text.fontIndex];
-     if TextBitmap = nil then
-      TextBitmap := TBitmap.Create;
-
-     {$IFDEF ANDROID}
+     if Text.FontView <> nil then
      begin
-      Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-      S := string(Text.Text);
+      if TextBitmap = nil then
+       TextBitmap := TBitmap.Create;
 
-      Weight := TSkFontWeight.Normal;
-      if Text.FontView.Bl <> 0 then
-       Weight := TSkFontWeight.Bold;
-
-      Slant := TSkFontSlant.Upright;
-      if Text.FontView.It <> 0 then
-       Slant := TSkFontSlant.Italic;
-
-      Typeface := nil;
-      Candidate := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-
-      FileName := '';
-      if (SkiaFontFiles <> nil) and (Candidate <> '') then
+      if (not TextDirty) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
       begin
-       Idx := SkiaFontFiles.IndexOfName(Candidate);
-       if Idx >= 0 then
-        FileName := SkiaFontFiles.ValueFromIndex[Idx];
+       Result := True;
+       Exit;
       end;
 
-      if FileName <> '' then
-       Typeface := TSkTypeface.MakeFromFile(FileName);
+       {$IFDEF ANDROID}
+       begin
+        Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
+        S := string(Text.Text);
 
-      if (Typeface = nil) and (Candidate <> '') then
-       Typeface := TSkTypeface.MakeFromName(Candidate, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
+        Weight := TSkFontWeight.Normal;
+        if Text.FontView.Bl <> 0 then
+         Weight := TSkFontWeight.Bold;
 
-      if (Typeface = nil) and (Candidate <> '') then
-       for I := 0 to TFontManager.CustomFontInfoCount - 1 do
-        if SameText(TFontManager.CustomFontInfo[I].FamilyName, Candidate) then
+        Slant := TSkFontSlant.Upright;
+        if Text.FontView.It <> 0 then
+         Slant := TSkFontSlant.Italic;
+
+        Typeface := nil;
+        Candidate := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
+
+        FileName := '';
+        if (SkiaFontFiles <> nil) and (Candidate <> '') then
         begin
-         Typeface := TSkTypeface.MakeFromName(TFontManager.CustomFontInfo[I].FamilyName,
-           TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
-         if Typeface <> nil then
-          Break;
+         Idx := SkiaFontFiles.IndexOfName(Candidate);
+         if Idx >= 0 then
+          FileName := SkiaFontFiles.ValueFromIndex[Idx];
         end;
 
-      if Typeface = nil then
-       Typeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
-      FontSize := NominalPxHeight;
-      Font := TSkFont.Create(Typeface, FontSize);
+        if FileName <> '' then
+         Typeface := TSkTypeface.MakeFromFile(FileName);
 
-      Font.GetMetrics(Metrics);
-      if (-Metrics.Ascent) > 0.01 then
-      begin
-       ScaleK := NominalPxHeight / (-Metrics.Ascent);
-       FontSize := FontSize * ScaleK;
-       Font := TSkFont.Create(Typeface, FontSize);
-      end;
+        if (Typeface = nil) and (Candidate <> '') then
+         Typeface := TSkTypeface.MakeFromName(Candidate, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
 
-      BaseLineXPix := 2;
-      RightPadPix := 4;
+        if (Typeface = nil) and (Candidate <> '') then
+         for I := 0 to TFontManager.CustomFontInfoCount - 1 do
+          if SameText(TFontManager.CustomFontInfo[I].FamilyName, Candidate) then
+          begin
+           Typeface := TSkTypeface.MakeFromName(TFontManager.CustomFontInfo[I].FamilyName,
+             TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
+           if Typeface <> nil then
+            Break;
+          end;
 
-      W := Round(Length(S) * FontSize * 0.6);
-      W := W + Round(BaseLineXPix + RightPadPix);
-      if W < 2 then W := 2;
-      Font.GetMetrics(Metrics);
-      BaseLinePix := -Metrics.Ascent + 2;
-      SymbolTopPix := BaseLinePix + Metrics.Ascent;
-      SymbolHeightPix := -Metrics.Ascent;
-      H := (-Metrics.Ascent + Metrics.Descent) + 4;
-      TextBitmap.SetSize(W, Round(H));
+        if Typeface = nil then
+         Typeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
+        FontSize := NominalPxHeight;
+        Font := TSkFont.Create(Typeface, FontSize);
 
-      if TextBitmap.Map(TMapAccess.Write, D) then
-      try
-       ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-       Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-       if Surface <> nil then
-       begin
-        Paint := TSkPaint.Create;
-        Paint.AntiAlias := True;
-        Paint.Color := WinColorToAlphaColor(Text.Color);
-        Surface.Canvas.Clear(0);
+        Font.GetMetrics(Metrics);
+        if (-Metrics.Ascent) > 0.01 then
+        begin
+         ScaleK := NominalPxHeight / (-Metrics.Ascent);
+         FontSize := FontSize * ScaleK;
+         Font := TSkFont.Create(Typeface, FontSize);
+        end;
 
-        BaselineY := BaseLinePix;
+        BaseLineXPix := 2;
+        RightPadPix := 4;
 
-        Surface.Canvas.DrawSimpleText(S, 2, BaselineY, Font, Paint);
+        W := Round(Length(S) * FontSize * 0.6);
+        W := W + Round(BaseLineXPix + RightPadPix);
+        if W < 2 then W := 2;
+        Font.GetMetrics(Metrics);
+        BaseLinePix := -Metrics.Ascent + 2;
+        SymbolTopPix := BaseLinePix + Metrics.Ascent;
+        SymbolHeightPix := -Metrics.Ascent;
+        H := (-Metrics.Ascent + Metrics.Descent) + 4;
+        TextBitmap.SetSize(W, Round(H));
 
-        DebugPaint := TSkPaint.Create;
-        DebugPaint.AntiAlias := True;
-        DebugPaint.Color := TAlphaColor($FFFF0000);
-        DebugPaint.StrokeWidth := 2;
-        DebugPaint.Style := TSkPaintStyle.Stroke;
+        if TextBitmap.Map(TMapAccess.Write, D) then
+        try
+         ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+         Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
+         if Surface <> nil then
+         begin
+          Paint := TSkPaint.Create;
+          Paint.AntiAlias := True;
+          Paint.Color := WinColorToAlphaColor(Text.Color);
+          Surface.Canvas.Clear(0);
 
-        YTop := 0;
-        YBaseline := BaseLinePix;
-        YAscent := BaseLinePix + Metrics.Ascent;
-        YDescent := BaseLinePix + Metrics.Descent;
-        YBottom := TextBitmap.Height - 1;
+          BaselineY := BaseLinePix;
 
-        Surface.Canvas.DrawLine(0, YTop, TextBitmap.Width, YTop, DebugPaint);
-        Surface.Canvas.DrawLine(0, YAscent, TextBitmap.Width, YAscent, DebugPaint);
-        Surface.Canvas.DrawLine(0, YBaseline, TextBitmap.Width, YBaseline, DebugPaint);
-        Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
-        Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
+          Surface.Canvas.DrawSimpleText(S, 2, BaselineY, Font, Paint);
 
-        Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
+          DebugPaint := TSkPaint.Create;
+          DebugPaint.AntiAlias := True;
+          DebugPaint.Color := TAlphaColor($FFFF0000);
+          DebugPaint.StrokeWidth := 2;
+          DebugPaint.Style := TSkPaintStyle.Stroke;
 
-        Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
-        Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
-        Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
-        Surface.Canvas.DrawCircle(2, YDescent, 4, DebugPaint);
-        Surface.Canvas.DrawCircle(2, YBottom, 4, DebugPaint);
-       end
-      finally
-       TextBitmap.Unmap(D);
-      end;
+          YTop := 0;
+          YBaseline := BaseLinePix;
+          YAscent := BaseLinePix + Metrics.Ascent;
+          YDescent := BaseLinePix + Metrics.Descent;
+          YBottom := TextBitmap.Height - 1;
+
+          Surface.Canvas.DrawLine(0, YTop, TextBitmap.Width, YTop, DebugPaint);
+          Surface.Canvas.DrawLine(0, YAscent, TextBitmap.Width, YAscent, DebugPaint);
+          Surface.Canvas.DrawLine(0, YBaseline, TextBitmap.Width, YBaseline, DebugPaint);
+          Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
+          Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
+
+          Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
+
+          Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
+          Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
+          Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
+          Surface.Canvas.DrawCircle(2, YDescent, 4, DebugPaint);
+          Surface.Canvas.DrawCircle(2, YBottom, 4, DebugPaint);
+         end
+        finally
+         TextBitmap.Unmap(D);
+        end;
+       end;
+       {$ELSE}
+       L := TTextLayoutManager.DefaultTextLayout.Create;
+       try
+        S := string(Text.Text);
+        L.BeginUpdate;
+        try
+         L.Text := S;
+         L.WordWrap := False;
+         L.Font.Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
+         L.Font.Size := NominalPxHeight;
+         Style := [];
+         if Text.FontView.Bl <> 0 then Include(Style, TFontStyle.fsBold);
+         if Text.FontView.It <> 0 then Include(Style, TFontStyle.fsItalic);
+         if Text.FontView.Un <> 0 then Include(Style, TFontStyle.fsUnderline);
+         L.Font.Style := Style;
+         L.Color := WinColorToAlphaColor(Text.Color);
+         L.TopLeft := PointF(0, 0);
+         L.MaxSize := PointF(10000, NominalPxHeight * 2);
+        finally
+         L.EndUpdate;
+        end;
+
+        R := L.TextRect;
+        W := Trunc(R.Width);
+        if Frac(R.Width) > 0 then Inc(W);
+        W := W + 4;
+        if W < 2 then W := 2;
+        TextBitmap.SetSize(W, NominalPxHeight * 2);
+        BaseLinePix := NominalPxHeight;
+        BaseLineXPix := 0;
+        RightPadPix := 0;
+        SymbolTopPix := 0;
+        SymbolHeightPix := NominalPxHeight;
+        if TextBitmap.Canvas.BeginScene then
+        try
+         TextBitmap.Canvas.Clear(TAlphaColor($00000000));
+         L.RenderLayout(TextBitmap.Canvas);
+
+         TextBitmap.Canvas.Stroke.Kind := TBrushKind.Solid;
+         TextBitmap.Canvas.Stroke.Color := TAlphaColor($FFFF0000);
+         TextBitmap.Canvas.Stroke.Thickness := 2;
+         TextBitmap.Canvas.DrawLine(PointF(0, BaseLinePix), PointF(TextBitmap.Width, BaseLinePix), 1);
+         TextBitmap.Canvas.DrawRect(RectF(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), 0, 0, [], 1);
+        finally
+         TextBitmap.Canvas.EndScene;
+        end;
+       finally
+        L.Free;
+       end;
+       {$ENDIF}
+       TextDirty := False;
+       Result:=True;
      end;
-     {$ELSE}
-     L := TTextLayoutManager.DefaultTextLayout.Create;
-     try
-      S := string(Text.Text);
-      L.BeginUpdate;
-      try
-       L.Text := S;
-       L.WordWrap := False;
-       L.Font.Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-       L.Font.Size := NominalPxHeight;
-       Style := [];
-       if Text.FontView.Bl <> 0 then Include(Style, TFontStyle.fsBold);
-       if Text.FontView.It <> 0 then Include(Style, TFontStyle.fsItalic);
-       if Text.FontView.Un <> 0 then Include(Style, TFontStyle.fsUnderline);
-       L.Font.Style := Style;
-       L.Color := WinColorToAlphaColor(Text.Color);
-       L.TopLeft := PointF(0, 0);
-       L.MaxSize := PointF(10000, NominalPxHeight * 2);
-      finally
-       L.EndUpdate;
-      end;
-
-      R := L.TextRect;
-      W := Trunc(R.Width);
-      if Frac(R.Width) > 0 then Inc(W);
-      W := W + 4;
-      if W < 2 then W := 2;
-      TextBitmap.SetSize(W, NominalPxHeight * 2);
-      BaseLinePix := NominalPxHeight;
-      BaseLineXPix := 0;
-      RightPadPix := 0;
-      SymbolTopPix := 0;
-      SymbolHeightPix := NominalPxHeight;
-      if TextBitmap.Canvas.BeginScene then
-      try
-       TextBitmap.Canvas.Clear(TAlphaColor($00000000));
-       L.RenderLayout(TextBitmap.Canvas);
-
-       TextBitmap.Canvas.Stroke.Kind := TBrushKind.Solid;
-       TextBitmap.Canvas.Stroke.Color := TAlphaColor($FFFF0000);
-       TextBitmap.Canvas.Stroke.Thickness := 2;
-       TextBitmap.Canvas.DrawLine(PointF(0, BaseLinePix), PointF(TextBitmap.Width, BaseLinePix), 1);
-       TextBitmap.Canvas.DrawRect(RectF(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), 0, 0, [], 1);
-      finally
-       TextBitmap.Canvas.EndScene;
-      end;
-     finally
-      L.Free;
-     end;
-     {$ENDIF}
-     Result:=True;
     end;
- end;
+  end;
 end;
 
-function TDotText.GetDistance(X, Y: Double; Flag: Boolean): Double;
-var P:PCollection;I:Integer;
-{{ ... }
-begin
- Result:=100000000;
 { If (X<textSect.Left) or (Y<textSect.Bottom) or (X>textSect.Right) or (Y>textSect.Top) then begin
   exit;
  end;}
- P:=Text.GetRotateRect(XDot,YDot,XKoef,Ugol,False);
+// P:=Text.GetRotateRect(XDot,YDot,XKoef,Ugol,False);
 // For I:=0 to P.Count-1 do If I=0 then PMoveTo(TDot1(P[I]).X,TDot1(P[I]).Y) else PLineTo(TDot1(P[I]).X,TDot1(P[I]).Y);
-  If Point_and_Polygon(X,Y,P)>-1 then begin
-   If Text.GetTextPoint(X,Y,XDot,YDot,XKoef,Ugol) then Result:=0 else Result:=-1;
-  end else Result:=100000000;
+//  If Point_and_Polygon(X,Y,P)>-1 then begin
+//   If Text.GetTextPoint(X,Y,XDot,YDot,XKoef,Ugol) then Result:=0 else Result:=-1;
+//  end else Result:=100000000;
 //  WRiteln(Result);
- P.Free;
-end;
+// P.Free;
+//end;
 
 function TDotText.GetZnkFont(X, Y, Ko: Double; var What1: Integer): Integer;
 begin
@@ -736,10 +679,12 @@ begin
   Text.fontView.FontColEx:=FontColEx;
   Index:=Text.fontView.FontColEx.AddFont(0{GCanvas.Handle},propValue,0,0,Text.fontView.CharSet,Text.fontView.Bl,Text.fontView.It,Text.fontView.Un,Text.fontView.Scale);
   Text.fontView:=Text.fontView.FontColEx[Index];
+  TextDirty := True;
   Result:=True;
  end else
  If propName = 'Размер' then begin
   try Text.Height:=GStrToFloat(propValue);except end;
+  TextDirty := True;
   Result:=True;
  end else
  If propName = 'Стиль' then begin
@@ -749,6 +694,7 @@ begin
    FIt := ord((Style and tpItalic) <> 0);
   Index:=Text.fontView.FontColEx.AddFont(0{GCanvas.Handle},Text.fontView.FontName,0,0,Text.fontView.CharSet,FBl,FIt,FUn,Text.fontView.Scale);
   Text.fontView:=Text.fontView.FontColEx[Index];
+  TextDirty := True;
   Result:=True;
  end else
  If PropName = 'Прозрачность' then begin
@@ -758,11 +704,13 @@ begin
   If S = 'Нет' then Text.Transparent:=False else
   If S = 'Да' then Text.Transparent:=True else
   If S = byLayer then Text.TransParent:=ClassHandle.GlassFon;
+  TextDirty := True;
   Result:=True;
  end else
  If PropName = 'Текст' then begin
   If propValue=byLayer then exit;
   Text.Text:=propValue;
+  TextDirty := True;
   Result:=True;
  end else
  If PropName = 'Аттрибут' then begin
@@ -879,6 +827,122 @@ end;
 procedure TDotText.SetGabarites(MRect_: TMRect);
 begin
 //
+end;
+
+destructor TDotText.Destroy;
+begin
+ if TextBitmap <> nil then
+  TextBitmap.Free;
+ if GyperLink <> nil then
+  GyperLink.Free;
+ if Text <> nil then
+  Text.Free;
+ inherited;
+end;
+
+procedure TDotText.Store(Stream: TBufStream);
+begin
+ inherited;
+ Stream.Put(Text);
+ Stream.WriteString(GyperLink.Text);
+end;
+
+function TDotText.GetDistance(X, Y: Double; Flag: Boolean): Double;
+begin
+ Result := inherited GetDistance(X, Y, Flag);
+end;
+
+procedure TDotText.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection; FontViewEx: TFontManagerEx;
+ AlwaysShowAttr: Boolean);
+const
+ NominalPxHeight: Single = 100;
+var
+ S: Single;
+ SX, SY: Single;
+ H, W: Single;
+ OffX, OffY: Single;
+ AnchorPix: TPointF;
+ St: TCanvasSaveState;
+ Dst: TRectF;
+ XP, YP: Double;
+begin
+ if Drawer = nil then Exit;
+ if Selector = nil then Exit;
+ if Text = nil then Exit;
+
+ // Skia path: draw raster TextBitmap onto Skia canvas
+ if (Drawer is TogsDrawerSkia) and (TextBitmap <> nil) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
+ begin
+  if Selector.GetScale = 0 then Exit;
+  H := Selector.XRasst(Text.Height);
+  if H <= 0 then Exit;
+
+  S := H / NominalPxHeight;
+  SX := S;
+  SY := S;
+  if XKoef <> 0 then
+   SX := SX * XKoef;
+
+  W := TextBitmap.Width * SX;
+  H := TextBitmap.Height * SY;
+
+  Text.GetXPYP(XP, YP);
+  OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
+  if YP < 0 then
+   OffY := BaseLinePix * SY
+  else
+   OffY := (SymbolTopPix + SymbolHeightPix * Single(YP)) * SY;
+
+  if TogsDrawerSkia(Drawer).UseWorldCoords then
+  begin
+   AnchorPix := PointF(Single(XDot), Single(YDot));
+   W := W / Selector.GetScale;
+   H := H / Selector.GetScale;
+   OffX := OffX / Selector.GetScale;
+   OffY := OffY / Selector.GetScale;
+  end
+  else
+   AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
+
+  Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
+  TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, TextBitmap, Dst, Ugol);
+  Exit;
+ end;
+
+ // FMX canvas path (legacy)
+ if Drawer.Canvas = nil then Exit;
+ if TextBitmap = nil then Exit;
+ if (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then Exit;
+
+ H := Selector.XRasst(Text.Height);
+ if H <= 0 then Exit;
+
+ S := H / NominalPxHeight;
+ SX := S;
+ SY := S;
+ if XKoef <> 0 then
+  SX := SX * XKoef;
+
+ W := TextBitmap.Width * SX;
+ H := TextBitmap.Height * SY;
+
+ Text.GetXPYP(XP, YP);
+ OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
+ if YP < 0 then
+  OffY := BaseLinePix * SY
+ else
+  OffY := (SymbolTopPix + SymbolHeightPix * Single(YP)) * SY;
+
+ AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
+ St := Drawer.Canvas.SaveState;
+ try
+  Drawer.Canvas.MultiplyMatrix(TMatrix.CreateTranslation(AnchorPix.X, AnchorPix.Y));
+  Drawer.Canvas.MultiplyMatrix(TMatrix.CreateRotation(Ugol));
+  Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
+  Drawer.Canvas.DrawBitmap(TextBitmap, RectF(0, 0, TextBitmap.Width, TextBitmap.Height), Dst, 1, True);
+ finally
+  Drawer.Canvas.RestoreState(St);
+ end;
 end;
 
 
