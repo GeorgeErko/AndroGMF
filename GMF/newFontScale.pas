@@ -270,6 +270,7 @@ var I:Integer;
     HH:Double;
     FS1:TFontScaleEx;
 begin
+ FontName:=FName;Scale:=FS;
  {$IFDEF WIN64}
 // begW:=Trunc(FS*FW/FH);
  FontName:=FName;Scale:=FS;
@@ -340,7 +341,7 @@ begin
  FontScales.Free;
 end;
 
-procedure TFontViewEx.GetTextLen;
+procedure TFontViewEx.GetTextLen(X,Y:Integer;Koef,Angle:Double;Text:AnsiString;var DX,DY:Double);
 var F:TFontScaleEx;I:Integer;DDX:Double;
 begin
  DDX:=0;

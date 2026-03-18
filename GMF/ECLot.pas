@@ -768,6 +768,7 @@ end;
    begin
       begin
         Result:=True;
+    If GlobalRender then exit;
 	  With Selector.GRect do
     begin
 		 If XMax<Left then begin Result:=False;Exit;end;

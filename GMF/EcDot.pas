@@ -716,6 +716,8 @@ end;
 
 function TPointDot.isVisible: Boolean;
  begin
+  Result := True;
+  If GlobalRender then exit;
   With Selector do
   Result:=(XDot>Grect.Left-2) and (XDot<Grect.Right+2) and
       (YDot<Grect.Top+2) and (YDot>Grect.Bottom-2);
@@ -723,6 +725,8 @@ function TPointDot.isVisible: Boolean;
 
 function TPointDot.isVisible2: Boolean;
  begin
+ Result := True;
+ If GlobalRender then exit;
  With Selector do
   isVisible2:=(XDot>Grect.Left) and (XDot<Grect.Right) and
       (YDot<Grect.Top) and (YDot>Grect.Bottom);

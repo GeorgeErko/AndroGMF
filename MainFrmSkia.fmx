@@ -16,5 +16,19 @@ inherited MainFormSkia: TMainFormSkia
       Size.Height = 364.000000000000000000
       Size.PlatformDefault = False
     end
+    object SceneProgressOverlay: TLayout
+      Align = Client
+      Size.Width = 854.000000000000000000
+      Size.Height = 364.000000000000000000
+      Size.PlatformDefault = False
+      Visible = False
+      object SceneProgressBar: TProgressBar
+        Align = Center
+        Orientation = Horizontal
+        Size.Width = 200.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+      end
+    end
   end
 end

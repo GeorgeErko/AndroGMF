@@ -77,8 +77,18 @@ type
 
 var FontCol: TFontManager;
 
-implementation uses Writer, FMX.Dialogs;
+implementation uses Writer, FMX.Dialogs, ogcDrawerSkia, System.UITypes, newProcs, System.Skia;
 //uses ptmainform;
+
+function ColorToAlphaColor(const C: Integer): TAlphaColor;
+var
+  R, G, B: Integer;
+begin
+  R := (C and $FF);
+  G := (C shr 8) and $FF;
+  B := (C shr 16) and $FF;
+  Result := TAlphaColor($FF000000 or (R shl 16) or (G shl 8) or B);
+end;
 
 
 { TDWG_Text }
@@ -111,6 +121,7 @@ begin
  IsVisible:=True;
  If XF>X2 then begin XMax:=XF;XMin:=X2;end else begin XMax:=X2;XMin:=XF; end;
  If YF>Y2 then begin YMax:=YF;YMin:=Y2;end else begin YMax:=Y2;YMin:=YF; end;
+ If GlobalRender then exit;
   With Selector.GRect do
     begin
      If XMax<Left then begin IsVisible:=False;Exit;end;
@@ -132,21 +143,120 @@ var
     Col:Integer;
     G1:Double;
     Rect:PCollection;
+    Anchor: TPointF;
+    XP, YP: Double;
+    H: Single;
+    HBaseline: Single;
+    S: string;
+    Drawer: TObject;
+function SkiaBaselineFromFullHeight(const AFontName: string; const ABold, AItalic: Boolean;
+  const AFullHeightPix: Single): Single;
+var
+  Typeface: ISkTypeface;
+  ProbeFont: ISkFont;
+  FontStyle: TSkFontStyle;
+  Weight: TSkFontWeight;
+  Slant: TSkFontSlant;
+  LocalFontName: string;
+  CutPos: Integer;
+  FontFile: string;
+  M: TSkFontMetrics;
+  AscentAbs: Single;
+  Full: Single;
+begin
+  Result := AFullHeightPix;
+  if AFullHeightPix <= 0 then
+    Exit;
+
+  LocalFontName := Trim(AFontName);
+  if (LocalFontName <> '') and (LocalFontName[1] = '@') then
+    LocalFontName := Trim(Copy(LocalFontName, 2, MaxInt));
+  CutPos := Pos(',', LocalFontName);
+  if CutPos > 0 then
+    LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
+  CutPos := Pos('(', LocalFontName);
+  if CutPos > 0 then
+    LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
+
+  Weight := TSkFontWeight.Normal;
+  if ABold then
+    Weight := TSkFontWeight.Bold;
+  Slant := TSkFontSlant.Upright;
+  if AItalic then
+    Slant := TSkFontSlant.Italic;
+  FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
+
+  Typeface := nil;
+  FontFile := '';
+  if LocalFontName <> '' then
+    FontFile := GetRegisteredSkiaFontFile(LocalFontName);
+  if FontFile <> '' then
+    Typeface := TSkTypeface.MakeFromFile(FontFile);
+  if (Typeface = nil) and (LocalFontName <> '') then
+    Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+
+  ProbeFont := TSkFont.Create(Typeface, 100);
+  ProbeFont.GetMetrics(M);
+  AscentAbs := -M.Ascent;
+  Full := (-M.Ascent) + M.Descent;
+  if (AscentAbs > 0.01) and (Full > 0.01) then
+    Result := AFullHeightPix * (AscentAbs / Full);
+end;
 function GetS(S:String):string;
 var N:Integer;
 begin
-N:=Pos('\',S);
+N:=Pos('\\',S);
 If N<>0 then begin
  S[N]:=' ';
  Result:=S;
 end else Result:=S;
 end;
 begin
- exit;
+ if Selector = nil then Exit;
  if FFontIndex = - 1 then Exit;
- If FText='' then Exit;
-  fv := GetParams(MXX,MYY,Ko,Ugol,X1,Y1,itsTest);
-  If itsTest <> its_Printer then
+ if FText = '' then Exit;
+
+ fv := GetParams(MXX, MYY, Ko, Ugol, X1, Y1, itsTest);
+ if fv = nil then Exit;
+
+ Drawer := Selector.Drawer;
+ if (Drawer <> nil) and (Drawer is TogsDrawerSkia) then
+ begin
+ // if (not isVisible) and (itsTest <> its_Test) and (itsTest <> its_Printer) then
+ //  Exit;
+
+  // For DWG text we interpret FHeight as FULL glyph height (ascent+descent).
+  // DrawTextAlignedPix expects Top->Baseline height, so convert.
+  H := RealScaleLength(Selector.Drawer, FHeight, Ko);
+  if H <= 0 then Exit;
+  HBaseline := SkiaBaselineFromFullHeight(string(fv.FontName), fv.Bl <> 0, fv.It <> 0, H);
+
+  Anchor := PointF(Single(XF), Single(YF));
+  XP := FTextAlignX;
+  YP := FTextAlignY;
+  S := GetS(string(FText));
+
+  if useclasColor then
+   Col := RGBToCol(r, g, b)
+  else
+   Col := FColor;
+
+  TogsDrawerSkia(Drawer).DrawTextAlignedPix(
+    Anchor,
+    S,
+    ColorToAlphaColor(Col),
+    HBaseline,
+    Ugol,
+    XP, YP,
+    1,
+    string(fv.FontName),
+    fv.Bl <> 0,
+    fv.It <> 0
+  );
+  Exit;
+ end;
+
+  if itsTest <> its_Printer then
    {If (Round(DY * Selector.) < GGraphSet.FFonts) then} exit;
 // itsTest:=its_Test;
 //   If fText='157.69' then Writeln('CON=',XF:8:3,' ',YF:8:3,' ',X1:8:3,' ',Y1:8:3,' ',Ko);
@@ -211,6 +321,103 @@ function TDWG_Text.GetParams(MXX, MYY, ko, Ugol, X1,
   Y1: Double;ItsTest:Integer): TFontViewEx;
 var GM:Double;FDx,fDy:Double;ko2:Double;
     dd1, dd2: double;
+    R1, R2: Single;
+  function GetS(const S: string): string;
+  var
+    N: Integer;
+    T: string;
+  begin
+    T := S;
+    N := Pos('\\', T);
+    if N <> 0 then
+    begin
+      T[N] := ' ';
+      Result := T;
+    end
+    else
+      Result := T;
+  end;
+
+  procedure MeasureTextSkia(const AText: string; const AFontName: string;
+    const ABold, AItalic: Boolean; const AFontSizePix: Single;
+    out ADXPix, ADYPix: Double);
+  var
+    Paint: ISkPaint;
+    Typeface: ISkTypeface;
+    Font: ISkFont;
+    ProbeFont: ISkFont;
+    FontStyle: TSkFontStyle;
+    Weight: TSkFontWeight;
+    Slant: TSkFontSlant;
+    LocalFontName: string;
+    CutPos: Integer;
+    FontFile: string;
+    ProbeMetrics: TSkFontMetrics;
+    Metrics: TSkFontMetrics;
+    Bounds: TRectF;
+    ProbeSize: Single;
+    AscentRatio: Single;
+    Oversample: Single;
+    EffectiveFontSize: Single;
+    DrawerObj: TObject;
+  begin
+    ADXPix := 0;
+    ADYPix := 0;
+
+    if AText = '' then
+      Exit;
+
+    Oversample := 1;
+    DrawerObj := Selector.Drawer;
+    if (DrawerObj <> nil) and (DrawerObj is TogsDrawerSkia) and TogsDrawerSkia(DrawerObj).UseWorldCoords then
+      Oversample := 10;
+
+    Paint := TSkPaint.Create;
+    Paint.AntiAlias := True;
+
+    LocalFontName := Trim(AFontName);
+    if (LocalFontName <> '') and (LocalFontName[1] = '@') then
+      LocalFontName := Trim(Copy(LocalFontName, 2, MaxInt));
+    CutPos := Pos(',', LocalFontName);
+    if CutPos > 0 then
+      LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
+    CutPos := Pos('(', LocalFontName);
+    if CutPos > 0 then
+      LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
+
+    Weight := TSkFontWeight.Normal;
+    if ABold then
+      Weight := TSkFontWeight.Bold;
+    Slant := TSkFontSlant.Upright;
+    if AItalic then
+      Slant := TSkFontSlant.Italic;
+    FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
+
+    Typeface := nil;
+    FontFile := '';
+    if LocalFontName <> '' then
+      FontFile := GetRegisteredSkiaFontFile(LocalFontName);
+    if FontFile <> '' then
+      Typeface := TSkTypeface.MakeFromFile(FontFile);
+    if (Typeface = nil) and (LocalFontName <> '') then
+      Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+
+    ProbeSize := 100;
+    ProbeFont := TSkFont.Create(Typeface, ProbeSize);
+    ProbeFont.GetMetrics(ProbeMetrics);
+    if (-ProbeMetrics.Ascent) > 0.01 then
+      AscentRatio := (-ProbeMetrics.Ascent) / ProbeSize
+    else
+      AscentRatio := 1;
+
+    EffectiveFontSize := (AFontSizePix / AscentRatio) * Oversample;
+    Font := TSkFont.Create(Typeface, EffectiveFontSize);
+    Font.GetMetrics(Metrics);
+    Font.MeasureText(AText, Bounds, Paint);
+
+    ADXPix := Bounds.Width / Oversample;
+    ADYPix := (-Metrics.Ascent) / Oversample;
+  end;
 begin
  Result:=TFontViewEx(fontcol[FFontIndex]);
 // Writeln('FI=',FFontIndex,' ',Result.FontName);
@@ -226,20 +433,29 @@ begin
 }
 // Writeln('KoefText=',Ko,' ',fText);
  GM:=Result.Scale/(RealScaleLength(Selector.Drawer, fHeight, Ko)*Myy);
- Result.GetTextLen(0,0,1/GM,0,fText, fDX, fDY);
- Dx:=fDx;Dy:=fDy;
- If (itsTest=0){or(itsTest=its_Test)} then begin DX:=Selector.GeoDist(fDX);DY:=Selector.GeoDist(fDY);end else
+
+ if (Selector.Drawer <> nil) and (Selector.Drawer is TogsDrawerSkia) then
+ begin
+   MeasureTextSkia(GetS(string(fText)), string(Result.FontName), Result.Bl <> 0, Result.It <> 0,
+     RealScaleLength(Selector.Drawer, fHeight, Ko), fDX, fDY);
+ end
+ else
+   Result.GetTextLen(0,0,1/GM,0,fText, fDX, fDY);
+ Dx:=fDx * GM;Dy:=fDy * GM;
+ If (itsTest=0){or(itsTest=its_Test)} then begin DX:=Selector.GeoDist(fDX);DY:=Selector.GeoDist(fDY); end else
 {!!!}
- {If itsTest=its_Printer then begin
-  If Ko>0 then begin
+ If itsTest=its_Printer then begin
+ { If Ko>0 then begin
    ko2:=Ko/GPrn.Mas*1000;
    DX:=PrnXGeoRasst(fDX*ko2/ko);DY:=PrnYGeoRasst(fDY*ko2/ko);
   end else begin
    ko2:=Abs(Ko)/GPrn.Mas*1000;
    DX:=PrnXGeoRasst(fDX*ko2/Abs(ko));DY:=PrnYGeoRasst(fDY*ko2/Abs(ko));
-  end;
- end;}
+  end;}
+ end;
  If (Ko>0)or(ShiftX=0) then begin
+  R1 := RealScaleLength(Selector.Drawer,fx,ko);
+  R2 := RealScaleLength(Selector.Drawer,fx,ko);
   XF:=X1+(RealScaleLength(Selector.Drawer,fx,ko)*cos(Ugol)-RealScaleLength(Selector.Drawer,fy,ko)*sin(Ugol));
   YF:=Y1+(RealScaleLength(Selector.Drawer,fx,ko)*sin(Ugol)+RealScaleLength(Selector.Drawer,fy,ko)*cos(Ugol));
 //

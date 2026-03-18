@@ -16,6 +16,7 @@ uses
   ogcMathUtils;
 
 procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
+function GetRegisteredSkiaFontFile(const FamilyName: string): string;
 
 type
   TogsDrawerSkia = class(TogsSpacer)
@@ -74,7 +75,7 @@ type
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
   end;
 
-implementation uses Writer;
+implementation uses Writer, newProcs;
 
 var
   SkiaFontFiles: TStringList;
@@ -100,6 +101,18 @@ begin
     SkiaFontFiles.Delete(Idx);
     SkiaFontFiles.Add(FamilyName + '=' + FileName);
   end;
+end;
+
+function GetRegisteredSkiaFontFile(const FamilyName: string): string;
+var
+  Idx: Integer;
+begin
+  Result := '';
+  if (SkiaFontFiles = nil) or (FamilyName = '') then
+    Exit;
+  Idx := SkiaFontFiles.IndexOfName(FamilyName);
+  if Idx >= 0 then
+    Result := SkiaFontFiles.ValueFromIndex[Idx];
 end;
 
 function EnsureOpaqueAlpha(const C: TAlphaColor): TAlphaColor;
@@ -222,6 +235,8 @@ begin
   Y_ := Y;
   X1_ := X1;
   Y1_ := Y1;
+
+  If GlobalRender then cutRequest := False;
 
   if cutRequest then
     with ogsSelector, ActiveRect do
@@ -530,18 +545,21 @@ var
   Paint: ISkPaint;
   Typeface: ISkTypeface;
   Font: ISkFont;
+  ProbeFont: ISkFont;
   FontStyle: TSkFontStyle;
   Weight: TSkFontWeight;
   Slant: TSkFontSlant;
   Metrics: TSkFontMetrics;
-  Blob: ISkTextBlob;
+  ProbeMetrics: TSkFontMetrics;
   Bounds: TRectF;
   DrawX, DrawY: Single;
-  ScaleX: Single;
   LocalFontName: string;
   CutPos: Integer;
   FontFile: string;
-  Idx: Integer;
+  EffectiveFontSize: Single;
+  Oversample: Single;
+  ProbeSize: Single;
+  AscentRatio: Single;
 begin
   if (FSkCanvas = nil) or (Text = '') then
     Exit;
@@ -561,11 +579,39 @@ begin
   if CutPos > 0 then
     LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
 
-  // diagnostic: force default typeface
+  Weight := TSkFontWeight.Normal;
+  if Bold then
+    Weight := TSkFontWeight.Bold;
+  Slant := TSkFontSlant.Upright;
+  if Italic then
+    Slant := TSkFontSlant.Italic;
+  FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
 
-  Font := TSkFont.Create(nil, FontSizePix);
-  Font.MeasureText(Text, Bounds, Paint);
+  Typeface := nil;
+  FontFile := '';
+  if LocalFontName <> '' then
+    FontFile := GetRegisteredSkiaFontFile(LocalFontName);
+  if FontFile <> '' then
+    Typeface := TSkTypeface.MakeFromFile(FontFile);
+  if (Typeface = nil) and (LocalFontName <> '') then
+    Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+
+  Oversample := 1;
+  if UseWorldCoords then
+    Oversample := 10;
+
+  ProbeSize := 100;
+  ProbeFont := TSkFont.Create(Typeface, ProbeSize);
+  ProbeFont.GetMetrics(ProbeMetrics);
+  if (-ProbeMetrics.Ascent) > 0.01 then
+    AscentRatio := (-ProbeMetrics.Ascent) / ProbeSize
+  else
+    AscentRatio := 1;
+
+  EffectiveFontSize := (FontSizePix / AscentRatio) * Oversample;
+  Font := TSkFont.Create(Typeface, EffectiveFontSize);
   Font.GetMetrics(Metrics);
+  Font.MeasureText(Text, Bounds, Paint);
 
   DrawX := - (Bounds.Left + Single(XP) * Bounds.Width);
   if YP < 0 then
@@ -573,12 +619,19 @@ begin
   else
     DrawY := - (Metrics.Ascent + (-Metrics.Ascent) * Single(YP));
 
-  ScaleX := 1;
-  Blob := TSkTextBlob.MakeFromText('Ерько', Font);
-  if Blob <> nil then
-    FSkCanvas.DrawTextBlob(Blob, AnchorPix.X + DrawX, AnchorPix.Y + DrawY, Paint)
-  else
-    FSkCanvas.DrawSimpleText('Ерько', AnchorPix.X + DrawX, AnchorPix.Y + DrawY, Font, Paint);
+  FSkCanvas.Save;
+  try
+    FSkCanvas.Translate(AnchorPix.X, AnchorPix.Y);
+    if Abs(AngleRad) > 1e-6 then
+      FSkCanvas.Rotate(AngleRad * 180 / Pi);
+    if Abs(Oversample - 1) > 1e-6 then
+      FSkCanvas.Scale(1 / Oversample, 1 / Oversample);
+    if Abs(XKoef - 1) > 1e-6 then
+      FSkCanvas.Scale(Single(XKoef), 1);
+    FSkCanvas.DrawSimpleText(Text, DrawX, DrawY, Font, Paint);
+  finally
+    FSkCanvas.Restore;
+  end;
 end;
 
 procedure TogsDrawerSkia.DrawTo(Image_: TCanvas; Rect: TRect);

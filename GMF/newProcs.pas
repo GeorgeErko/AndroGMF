@@ -10,6 +10,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  {$ENDIF}
  var MainPath:AnsiString;
      ApplicationMainForm:TForm;
+     GlobalRender: Boolean = False;
      etcIniName:String = {$IFDEF UNIX}'etc'+ {$ENDIF}SLash+'Registry.ini';
 
 // Конвертация
@@ -30,6 +31,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  Function MessageInform(S:AnsiString):Word;
  Function MessageError(S:AnsiString):Word;
  Function MessageErrorYN(S:AnsiString):Word;
+ Procedure ShowMessage(S:AnsiString);
 // Чтение-запись реестра
  Function  GWriteString(Name:AnsiString;S:AnsiString):boolean;
  Function  GWriteInteger(Name:AnsiString;S:Integer):boolean;
@@ -59,7 +61,9 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  Function SetSlashCorrect(FN:AnsiString):AnsiString;
 // Консоль
 
-implementation uses IniFiles, Math, FMX.DialogService, System.Types,
+implementation uses IniFiles, Math, System.Types,
+                    FMX.DialogService,
+                    FMX.Types, FMX.Controls, FMX.StdCtrls, FMX.Controls.Presentation,
                     System.UIConsts;
 
 // Конвертация
@@ -195,52 +199,145 @@ function GStrToFloat(S: AnsiString): Double;
 
 // Окна сообщений
 
-  function MessageConfirm(S: AnsiString): Word;
-  var lResult: Word;
+  function _MessageDialogSync(const Msg: string; const DlgType: TMsgDlgType;
+    const Buttons: array of TMsgDlgBtn; const DefaultButton: TMsgDlgBtn): TModalResult;
+  var
+    F: TForm;
+    L: TLabel;
+    Btn: TButton;
+    BtnW: Single;
+    BtnH: Single;
+    I: Integer;
+    X0: Single;
+    Modal: TModalResult;
+    TitleText: string;
+    BtnText: string;
+    BtnResult: TModalResult;
+    BtnDefault: Boolean;
   begin
-   TDialogService.PreferredMode:=TDialogService.TPreferredMode.Platform;
-   TDialogService.MessageDialog(S,TMsgDlgType.mtConfirmation,[TMsgDlgBtn.mbYes,TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes,0,
-             procedure (const AResult: TModalResult)
-              begin
-                lResult := AResult;
-              end);
-   Result:= lResult;
+    F := TForm.CreateNew(nil);
+    try
+      F.Position := TFormPosition.ScreenCenter;
+      F.BorderStyle := TFmxFormBorderStyle.Sizeable;
+      F.Width := 420;
+      F.Height := 180;
+
+      TitleText := '';
+      case DlgType of
+        TMsgDlgType.mtWarning: TitleText := 'Warning';
+        TMsgDlgType.mtError: TitleText := 'Error';
+        TMsgDlgType.mtInformation: TitleText := 'Info';
+        TMsgDlgType.mtConfirmation: TitleText := 'Confirm';
+      end;
+      F.Caption := TitleText;
+
+      L := TLabel.Create(F);
+      L.Parent := F;
+      L.Position.X := 16;
+      L.Position.Y := 16;
+      L.Width := F.ClientWidth - 32;
+      L.Height := F.ClientHeight - 80;
+      L.WordWrap := True;
+      L.Text := Msg;
+
+      BtnW := 96;
+      BtnH := 36;
+      if Length(Buttons) > 0 then
+        X0 := (F.ClientWidth - (Length(Buttons) * BtnW + (Length(Buttons) - 1) * 12)) / 2
+      else
+        X0 := (F.ClientWidth - BtnW) / 2;
+
+      for I := 0 to High(Buttons) do
+      begin
+        case Buttons[I] of
+          TMsgDlgBtn.mbOK: begin BtnText := 'OK'; BtnResult := mrOk; end;
+          TMsgDlgBtn.mbCancel: begin BtnText := 'Cancel'; BtnResult := mrCancel; end;
+          TMsgDlgBtn.mbYes: begin BtnText := 'Yes'; BtnResult := mrYes; end;
+          TMsgDlgBtn.mbNo: begin BtnText := 'No'; BtnResult := mrNo; end;
+          else begin BtnText := 'OK'; BtnResult := mrOk; end;
+        end;
+
+        BtnDefault := Buttons[I] = DefaultButton;
+        Btn := TButton.Create(F);
+        Btn.Parent := F;
+        Btn.Text := BtnText;
+        Btn.Width := BtnW;
+        Btn.Height := BtnH;
+        Btn.Position.X := X0 + I * (BtnW + 12);
+        Btn.Position.Y := F.ClientHeight - BtnH - 16;
+        Btn.ModalResult := BtnResult;
+        Btn.Default := BtnDefault;
+      end;
+
+      Modal := F.ShowModal;
+      Result := Modal;
+    finally
+      F.Free;
+    end;
+  end;
+
+  function MessageConfirm(S: AnsiString): Word;
+  begin
+{$IFDEF ANDROID}
+    TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+    TDialogService.MessageDialog(string(S), TMsgDlgType.mtConfirmation,
+      [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes, 0, nil);
+    Result := mrNo;
+{$ELSE}
+    Result := _MessageDialogSync(string(S), TMsgDlgType.mtConfirmation,
+      [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes);
+{$ENDIF}
   end;
 
   function MessageInform(S: AnsiString): Word;
-  var lResult: Word;
   begin
-   TDialogService.PreferredMode:=TDialogService.TPreferredMode.Platform;
-   TDialogService.MessageDialog(S,TMsgDlgType.mtInformation,[TMsgDlgBtn.mbOk], TMsgDlgBtn.mbOk,0,
-             procedure (const AResult: TModalResult)
-              begin
-                lResult := AResult;
-              end);
-   Result:= lResult;
+{$IFDEF ANDROID}
+    TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+    TDialogService.MessageDialog(string(S), TMsgDlgType.mtInformation,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK, 0, nil);
+    Result := mrOk;
+{$ELSE}
+    Result := _MessageDialogSync(string(S), TMsgDlgType.mtInformation,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK);
+{$ENDIF}
   end;
 
   function MessageError(S: AnsiString): Word;
-   var lResult: Word;
   begin
-   TDialogService.PreferredMode:=TDialogService.TPreferredMode.Platform;
-   TDialogService.MessageDialog(S,TMsgDlgType.mtError,[TMsgDlgBtn.mbOk], TMsgDlgBtn.mbOk,0,
-             procedure (const AResult: TModalResult)
-              begin
-                lResult := AResult;
-              end);
-   Result:= lResult;
+{$IFDEF ANDROID}
+    TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+    TDialogService.MessageDialog(string(S), TMsgDlgType.mtError,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK, 0, nil);
+    Result := mrOk;
+{$ELSE}
+    Result := _MessageDialogSync(string(S), TMsgDlgType.mtError,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK);
+{$ENDIF}
   end;
 
   function MessageErrorYN(S: AnsiString): Word;
-   var lResult: Word;
   begin
-   TDialogService.PreferredMode:=TDialogService.TPreferredMode.Platform;
-   TDialogService.MessageDialog(S,TMsgDlgType.mtError,[TMsgDlgBtn.mbYes,TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes,0,
-             procedure (const AResult: TModalResult)
-              begin
-                lResult := AResult;
-              end);
-   Result:= lResult;
+{$IFDEF ANDROID}
+    TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+    TDialogService.MessageDialog(string(S), TMsgDlgType.mtError,
+      [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes, 0, nil);
+    Result := mrNo;
+{$ELSE}
+    Result := _MessageDialogSync(string(S), TMsgDlgType.mtError,
+      [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes);
+{$ENDIF}
+  end;
+
+  procedure ShowMessage(S: AnsiString);
+  begin
+{$IFDEF ANDROID}
+    TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+    TDialogService.MessageDialog(string(S), TMsgDlgType.mtInformation,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK, 0, nil);
+{$ELSE}
+    _MessageDialogSync(string(S), TMsgDlgType.mtInformation,
+      [TMsgDlgBtn.mbOK], TMsgDlgBtn.mbOK);
+{$ENDIF}
   end;
 
 

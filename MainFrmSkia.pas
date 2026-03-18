@@ -5,6 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
+  FMX.Layouts,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   ogcBasic, ogcDrawerSkia;
@@ -12,12 +13,15 @@ uses
 type
   TMainFormSkia = class(TMainForm)
     SkPainter: TSkPaintBox;
+    SceneProgressOverlay: TLayout;
+    SceneProgressBar: TProgressBar;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
   private
     FStatusLabel: TLabel;
     FDrawerSkia: TogsDrawerSkia;
     FCachedPicture: ISkPicture;
+    FBuildingScene: Boolean;
     PanBitmap: TBitmap;
     PanBitmapActive: Boolean;
     PanStartPoint: TPointF;
@@ -63,6 +67,10 @@ type
     procedure FinalizeZoom;
     procedure UpdateStatusGeo(const X, Y: Single);
     procedure BuildCachedPicture;
+
+    procedure SceneProgressShow(const AMax: Single);
+    procedure SceneProgressSet(const AValue: Single);
+    procedure SceneProgressHide;
   protected
     procedure Loaded; override;
   public
@@ -101,6 +109,8 @@ begin
 //
   LastCanvasScale := 1;
 
+  FBuildingScene := False;
+
   PanBitmap := nil;
   PanBitmapActive := False;
   ZoomBaseRect := nil;
@@ -130,6 +140,35 @@ begin
     CornerButton1.OnClick := btnOpenClickSkia;
 
   InitSkPainterInput;
+end;
+
+procedure TMainFormSkia.SceneProgressShow(const AMax: Single);
+begin
+  if SceneProgressOverlay <> nil then
+  begin
+    SceneProgressOverlay.Visible := True;
+    SceneProgressOverlay.BringToFront;
+  end;
+  if SceneProgressBar <> nil then
+  begin
+    SceneProgressBar.Min := 0;
+    SceneProgressBar.Max := AMax;
+    SceneProgressBar.Value := 0;
+  end;
+end;
+
+procedure TMainFormSkia.SceneProgressSet(const AValue: Single);
+begin
+  if (SceneProgressOverlay <> nil) and (not SceneProgressOverlay.Visible) then
+    Exit;
+  if SceneProgressBar <> nil then
+    SceneProgressBar.Value := AValue;
+end;
+
+procedure TMainFormSkia.SceneProgressHide;
+begin
+  if SceneProgressOverlay <> nil then
+    SceneProgressOverlay.Visible := False;
 end;
 
 procedure TMainFormSkia.Loaded;
@@ -384,6 +423,8 @@ var
   LCo: Integer;
   Error: Integer;
   X1, X2, X3, X4: Double;
+  Total: Single;
+  Prog: Single;
 begin
   Error := 1;
   if FDrawerSkia = nil then
@@ -397,6 +438,16 @@ begin
   FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
   FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
   FDrawerSkia.Clear(TAlphaColors.White);
+
+  Total := 0;
+  if TwgForm <> nil then
+    Total := TwgForm.Twigs.LotsCount + TwgForm.Twigs.AnyCount;
+  if Total < 1 then
+    Total := 1;
+  Prog := 0;
+  SceneProgressShow(Total);
+  SceneProgressSet(0);
+
   with Selector, GGraphset do
     try
       Error := 6;
@@ -405,14 +456,20 @@ begin
       begin
         if FillLot = 1 then
         begin
-          for I := 0 to TwgForm.Twigs.IndexCount - 1 do
+          for I := 0 to TwgForm.Twigs.LotsCount - 1 do
           begin
-            Lot := TwgForm.Twigs.LAtIndex(I);
+            Lot := TwgForm.Twigs.LAt(I);
             try
               if (Lot.TypeLot <> 254) and (Lot.Closed = 1) then
                 Lot.Draw32(TwgForm.Twigs);
             except
               Exit;
+            end;
+
+            Prog := Prog + 1;
+            if (I mod 25) = 0 then
+            begin
+              SceneProgressSet(Prog);
             end;
           end;
         end;
@@ -430,6 +487,12 @@ begin
           except
           end;
         end;
+
+        Prog := Prog + 1;
+        if (I mod 50) = 0 then
+        begin
+          SceneProgressSet(Prog);
+        end;
       end;
       Error := 16;
     finally
@@ -443,6 +506,9 @@ begin
   BaseDx := Selector.GetDx;
   BaseDy := Selector.GetDy;
   BaseScale := Selector.GetScale;
+
+  SceneProgressSet(Total);
+  SceneProgressHide;
 end;
 
 procedure TMainFormSkia.BuildCachedPicture;
@@ -453,6 +519,8 @@ var
   PrevWorld: Boolean;
   Pad: Single;
 begin
+  if FBuildingScene then
+    Exit;
   if FDrawerSkia = nil then
     Exit;
   if SkPainter = nil then
@@ -472,6 +540,7 @@ begin
   Recorder := TSkPictureRecorder.Create;
   RecCanvas := Recorder.BeginRecording(R);
   try
+    FBuildingScene := True;
     PrevWorld := FDrawerSkia.UseWorldCoords;
     FDrawerSkia.UseWorldCoords := True;
     try
@@ -486,6 +555,8 @@ begin
       FDrawerSkia.UseWorldCoords := PrevWorld;
     end;
   finally
+    FBuildingScene := False;
+    SceneProgressHide;
     FCachedPicture := Recorder.FinishRecording;
   end;
 end;
@@ -727,11 +798,15 @@ var
   Pivot: TPointF;
   F: Single;
   DebugPaint: ISkPaint;
+  DebugFont: ISkFont;
+  DebugTypeface: ISkTypeface;
+  Family: string;
+  FontFile: string;
   I: Integer;
   ViewScale: Single;
   Tx, Ty: Single;
 const
-  DebugDirectSkia = False;
+  DebugDirectSkia = false;
 begin
   if FDrawerSkia = nil then
     Exit;
@@ -744,6 +819,67 @@ begin
 
   if ACanvas <> nil then
     ACanvas.Clear(TAlphaColors.White);
+
+  if DebugDirectSkia and (ACanvas <> nil) then
+  begin
+    DebugPaint := TSkPaint.Create;
+    DebugPaint.AntiAlias := True;
+    DebugPaint.Color := $FF202020;
+
+    Family := 'Do431';
+    FontFile := GetRegisteredSkiaFontFile(Family);
+    DebugTypeface := nil;
+    if FontFile <> '' then
+      DebugTypeface := TSkTypeface.MakeFromFile(FontFile);
+    if (DebugTypeface = nil) and (Family <> '') then
+      DebugTypeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Normal);
+
+    DebugFont := TSkFont.Create(DebugTypeface, 24);
+
+    ACanvas.DrawSimpleText('Skia DebugDirectSkia: Do431 + XKoef + Angle', 20, 50, DebugFont, DebugPaint);
+
+    DebugFont := TSkFont.Create(DebugTypeface, 18);
+    ACanvas.Save;
+    try
+      ACanvas.Translate(20, 90);
+      ACanvas.Scale(0.7, 1);
+      ACanvas.DrawSimpleText('XKoef=0.7  1234567890', 0, 0, DebugFont, DebugPaint);
+    finally
+      ACanvas.Restore;
+    end;
+
+    ACanvas.Save;
+    try
+      ACanvas.Translate(20, 120);
+      ACanvas.Scale(1.0, 1);
+      ACanvas.DrawSimpleText('XKoef=1.0  1234567890', 0, 0, DebugFont, DebugPaint);
+    finally
+      ACanvas.Restore;
+    end;
+
+    ACanvas.Save;
+    try
+      ACanvas.Translate(20, 150);
+      ACanvas.Scale(1.4, 1);
+      ACanvas.DrawSimpleText('XKoef=1.4  1234567890', 0, 0, DebugFont, DebugPaint);
+    finally
+      ACanvas.Restore;
+    end;
+
+    ACanvas.Save;
+    try
+      ACanvas.Translate(420, 160);
+      ACanvas.Rotate(30);
+      ACanvas.Scale(1.2, 1);
+      ACanvas.DrawSimpleText('Angle=30deg      Do431', 0, 0, DebugFont, DebugPaint);
+    finally
+      ACanvas.Restore;
+    end;
+
+    DebugFont := TSkFont.Create(DebugTypeface, 14);
+    ACanvas.DrawSimpleText('Note: rotation uses canvas matrix (degrees).', 20, 210, DebugFont, DebugPaint);
+    Exit;
+  end;
 
   if (FCachedPicture = nil) or SceneDirty then
     BuildCachedPicture;
@@ -762,22 +898,6 @@ begin
       finally
         ACanvas.Restore;
       end;
-    end;
-  end;
-
-  if DebugDirectSkia and (ACanvas <> nil) then
-  begin
-    DebugPaint := TSkPaint.Create;
-    DebugPaint.AntiAlias := True;
-    DebugPaint.Style := TSkPaintStyle.Stroke;
-    DebugPaint.Color := $FFFF0000;
-    DebugPaint.StrokeWidth := 3;
-
-    for I := 0 to 24 do
-    begin
-      ACanvas.DrawLine(10 + I * 12, 10, 10 + I * 12, 250, DebugPaint);
-      ACanvas.DrawRect(TRectF.Create(300 + I * 6, 20 + I * 4, 420 + I * 6, 80 + I * 4), DebugPaint);
-      ACanvas.DrawCircle(160 + I * 6, 120 + I * 2, 25 + I * 0.5, DebugPaint);
     end;
   end;
 end;

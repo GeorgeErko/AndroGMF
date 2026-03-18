@@ -856,6 +856,7 @@ procedure TDotText.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection; FontVie
  AlwaysShowAttr: Boolean);
 const
  NominalPxHeight: Single = 100;
+ DebugDirectSkia = True;
 var
  S: Single;
  SX, SY: Single;
@@ -865,10 +866,40 @@ var
  St: TCanvasSaveState;
  Dst: TRectF;
  XP, YP: Double;
+ K: Single;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  if Text = nil then Exit;
+
+ // Skia direct text path (debug)
+ if DebugDirectSkia and (Drawer is TogsDrawerSkia) then
+ begin
+  if Selector.GetScale = 0 then Exit;
+  K := 1;
+  H := Text.Height * K;
+  if H <= 0 then Exit;
+
+  Text.GetXPYP(XP, YP);
+  if TogsDrawerSkia(Drawer).UseWorldCoords then
+   AnchorPix := PointF(Single(XDot), Single(YDot))
+  else
+   AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
+
+  TogsDrawerSkia(Drawer).DrawTextAlignedPix(
+    AnchorPix,
+    string(Text.Text),
+    WinColorToAlphaColor(Text.Color),
+    H,
+    Ugol,
+    XP, YP,
+    XKoef,
+    string(Text.FontView.FontName),
+    Text.FontView.Bl <> 0,
+    Text.FontView.It <> 0
+  );
+  Exit;
+ end;
 
  // Skia path: draw raster TextBitmap onto Skia canvas
  if (Drawer is TogsDrawerSkia) and (TextBitmap <> nil) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then

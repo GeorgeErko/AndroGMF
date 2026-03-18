@@ -603,6 +603,8 @@ var I:Integer;Vertex:PCollection;
     YYMax1:Double;
     XMin,YMin,XMax,YMax:Double;
 begin
+ Result := True;
+ If GlobalRender then exit;
  Vertex:=PCollection.Create(1);
  Dx:=XB-(X+TwgForm.XXMin);Dy:=YB-(Y+TwgForm.YYMin);
  With TwgForm do begin
@@ -1080,13 +1082,14 @@ var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
 begin
  // ïîäãîòàâëèâàåì àòðèáóòû (ñ÷èòûâàåì çíà÷åíèÿ ïîñëå çàïÿòîé)
  If not deVisible(XB,YB,Angle,XKoef,YKoef,Sect) then begin
- Result:=True;exit;
+  Result:=True;exit;
  end;
 //
  Block_Drawing:=True; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
  dePaint(XB,YB,Angle,XKoef,Ykoef);
  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
- If (Selector.XRasst(Width)<=GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=GGraphSet.fPntZnk) then exit;
+ If (Selector.XRasst(Width)<=GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=GGraphSet.fPntZnk)
+     and (not GlobalRender) then exit;
  //dePaint(XB,YB,Angle,XKoef,Ykoef);
  With TwgForm,GGraphSet do begin
   Dx:=XB-(X+TwgForm.XXMin);Dy:=YB-(Y+TwgForm.YYMin);

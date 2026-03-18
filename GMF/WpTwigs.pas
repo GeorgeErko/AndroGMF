@@ -716,8 +716,8 @@ function TTwig.IsVisible(R: TRect): boolean;
 var
  I: Integer;
 begin
+ If GlobalRender then begin Result := True; exit; end;
  { CLO }
-
  With Selector do
  begin
   If Rang <> 0 then
@@ -764,6 +764,7 @@ end;
 
 function TTwig.IsMinimal: boolean;
 begin
+ If GlobalRender then begin Result := False; exit; end;
  With Selector do
   if (Abs(XRasst(XMax - XMin)) < GGraphSet.FClipTwig) and
     (Abs(YRasst(YMax - YMin)) < GGraphSet.FClipTwig) then

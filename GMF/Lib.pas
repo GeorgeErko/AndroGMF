@@ -902,7 +902,8 @@ Function TPoint_Sign.GetRect1:TSect;
 function TPoint_Sign.isVisible;
 var PP:PCollection;
 begin
- Result:=False;
+ Result:=True;
+ If GlobalRender then exit;
  PP:=PCollection.Create(1);
  Sect:=GetRect1;
  GetRealSector(PP,Ko);
@@ -1003,7 +1004,7 @@ end;
      // WriteIn([MyNameis]);
           BB:=True;
            if not BB {and not UseFont} then Exit;
-           If (XRasst(XMax-XMin)<=2) and (YRasst(YMax-YMin)<=2) then begin
+           If (XRasst(XMax-XMin)<=2) and (YRasst(YMax-YMin)<=2) and (not GlobalRender) then begin
             If useLine then begin
              If BB then begin
                //If gGraphSet.FPntZnk>=2 then exit;

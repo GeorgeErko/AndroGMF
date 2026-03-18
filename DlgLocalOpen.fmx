@@ -44,4 +44,12 @@ object localOpenForm: TlocalOpenForm
       OnClick = btnCloseClick
     end
   end
+  object btnDelete: TButton
+    Position.X = 18.000000000000000000
+    Position.Y = 387.000000000000000000
+    TabOrder = 3
+    Text = 'btnDelete'
+    TextSettings.Trimming = None
+    OnClick = btnDeleteClick
+  end
 end
