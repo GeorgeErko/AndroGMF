@@ -9,6 +9,7 @@ uses
   System.UITypes,
   System.Math,
   System.Math.Vectors,
+  System.Generics.Collections,
   FMX.Graphics,
   FMX.Types,
   System.Skia,
@@ -19,6 +20,25 @@ procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
 function GetRegisteredSkiaFontFile(const FamilyName: string): string;
 
 type
+  TogsSkiaObject = class
+  private
+    FPicture: ISkPicture;
+    FId: Int64;
+    FUserObject: TObject;
+    FBoundsWorld: TRectF;
+  public
+    procedure Draw(const ACanvas: ISkCanvas);
+    property Picture: ISkPicture read FPicture write FPicture;
+    property Id: Int64 read FId write FId;
+    property UserObject: TObject read FUserObject write FUserObject;
+    property BoundsWorld: TRectF read FBoundsWorld write FBoundsWorld;
+  end;
+
+  TogsSkiaList = class(TObjectList<TogsSkiaObject>)
+  public
+    procedure DrawAll(const ACanvas: ISkCanvas);
+  end;
+
   TogsDrawerSkia = class(TogsSpacer)
   private
     FWidth: Integer;
@@ -28,6 +48,13 @@ type
     FSkCanvas: ISkCanvas;
     FDest: TRectF;
     FUseWorldCoords: Boolean;
+    FSkiaList: TogsSkiaList;
+    FPrimitiveRecorder: ISkPictureRecorder;
+    FPrimitiveCanvas: ISkCanvas;
+    FPrimitiveOldCanvas: ISkCanvas;
+    FPrimitiveId: Int64;
+    FPrimitiveUserObject: TObject;
+    FPrimitiveBoundsWorld: TRectF;
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
     procedure SetHeight(AValue: Integer); override;
@@ -71,8 +98,15 @@ type
 
     procedure DrawTo(Image_: TCanvas; Rect: TRect); override;
 
+    procedure ClearSkiaList;
+    procedure DrawSkiaList(const ACanvas: ISkCanvas);
+
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TObject = nil);
+    procedure EndPrimitive;
+
     property Bitmap: TBitmap read FBitmap;
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
+    property SkiaList: TogsSkiaList read FSkiaList;
   end;
 
 implementation uses Writer, newProcs;
@@ -134,13 +168,37 @@ begin
   FBitmap.SetSize(FWidth, FHeight);
   FInScene := False;
   FUseWorldCoords := False;
+  FSkiaList := TogsSkiaList.Create(True);
 end;
 
 destructor TogsDrawerSkia.Destroy;
 begin
+  FSkiaList.Free;
+  FSkiaList := nil;
   FBitmap.Free;
   FBitmap := nil;
   inherited;
+end;
+
+{ TogsSkiaObject }
+
+procedure TogsSkiaObject.Draw(const ACanvas: ISkCanvas);
+begin
+  if (ACanvas = nil) or (FPicture = nil) then
+    Exit;
+  ACanvas.DrawPicture(FPicture);
+end;
+
+{ TogsSkiaList }
+
+procedure TogsSkiaList.DrawAll(const ACanvas: ISkCanvas);
+var
+  I: Integer;
+begin
+  if ACanvas = nil then
+    Exit;
+  for I := 0 to Count - 1 do
+    Items[I].Draw(ACanvas);
 end;
 
 procedure TogsDrawerSkia.BeginFrame(const ACanvas: ISkCanvas; const ADest: TRectF);
@@ -160,6 +218,62 @@ begin
     FSkCanvas.Restore;
 
   FSkCanvas := nil;
+end;
+
+procedure TogsDrawerSkia.ClearSkiaList;
+begin
+  if FSkiaList <> nil then
+    FSkiaList.Clear;
+end;
+
+procedure TogsDrawerSkia.DrawSkiaList(const ACanvas: ISkCanvas);
+begin
+  if FSkiaList <> nil then
+    FSkiaList.DrawAll(ACanvas);
+end;
+
+procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TObject);
+begin
+  if FSkCanvas = nil then
+    Exit;
+  if FPrimitiveRecorder <> nil then
+    Exit;
+
+  FPrimitiveId := AId;
+  FPrimitiveUserObject := AUserObject;
+  FPrimitiveBoundsWorld := FDest;
+
+  FPrimitiveRecorder := TSkPictureRecorder.Create;
+  FPrimitiveCanvas := FPrimitiveRecorder.BeginRecording(FPrimitiveBoundsWorld);
+  FPrimitiveOldCanvas := FSkCanvas;
+  FSkCanvas := FPrimitiveCanvas;
+end;
+
+procedure TogsDrawerSkia.EndPrimitive;
+var
+  Obj: TogsSkiaObject;
+begin
+  if FPrimitiveRecorder = nil then
+    Exit;
+  try
+    Obj := TogsSkiaObject.Create;
+    Obj.Id := FPrimitiveId;
+    Obj.UserObject := FPrimitiveUserObject;
+    Obj.BoundsWorld := FPrimitiveBoundsWorld;
+    Obj.Picture := FPrimitiveRecorder.FinishRecording;
+    if (FSkiaList <> nil) and (Obj.Picture <> nil) then
+      FSkiaList.Add(Obj)
+    else
+      Obj.Free;
+  finally
+    FSkCanvas := FPrimitiveOldCanvas;
+    FPrimitiveOldCanvas := nil;
+    FPrimitiveCanvas := nil;
+    FPrimitiveRecorder := nil;
+    FPrimitiveUserObject := nil;
+    FPrimitiveId := 0;
+    FPrimitiveBoundsWorld := TRectF.Empty;
+  end;
 end;
 
 function TogsDrawerSkia.GetCanvas: TCanvas;

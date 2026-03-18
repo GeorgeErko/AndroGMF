@@ -5,6 +5,20 @@ inherited MainFormSkia: TMainFormSkia
     Viewport.Width = 854.000000000000000000
     Viewport.Height = 111.000000000000000000
   end
+  inherited Panel1: TPanel
+    inherited btnPaint: TCornerButton
+      Position.X = 178.000000000000000000
+    end
+    inherited upm: TCornerButton
+      Position.X = 211.000000000000000000
+    end
+    inherited btnPlus: TCornerButton
+      Position.X = 92.000000000000000000
+    end
+    inherited ptnMinus: TCornerButton
+      Position.X = 118.000000000000000000
+    end
+  end
   inherited PanelPainter: TPanel
     inherited Painter: TPaintBox
       Visible = False
@@ -26,7 +40,7 @@ inherited MainFormSkia: TMainFormSkia
         Align = Center
         Orientation = Horizontal
         Size.Width = 200.000000000000000000
-        Size.Height = 20.000000000000000000
+        Size.Height = 10.000000000000000000
         Size.PlatformDefault = False
       end
     end

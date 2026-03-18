@@ -317,7 +317,6 @@
         <Android_NotificationAccentColor>#000000</Android_NotificationAccentColor>
         <IncludeAndroid_VectorizedNotificationIcon>true</IncludeAndroid_VectorizedNotificationIcon>
         <DCC_IOChecking>false</DCC_IOChecking>
-        <DCC_FullBooleanEvaluations>true</DCC_FullBooleanEvaluations>
         <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <DCC_RangeChecking>false</DCC_RangeChecking>
     </PropertyGroup>
