@@ -59,6 +59,7 @@ begin
  finally
   ListView1.EndUpdate;
  end;
+ btnClose.Enabled := True;
 end;
 
 procedure TlocalOpenForm.Cancel;

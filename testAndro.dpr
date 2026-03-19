@@ -69,7 +69,6 @@ uses
   ogcMathUtils in 'JSON\ogcMathUtils.pas',
   GMFLTDrawer in 'GMF\GMFLTDrawer.pas',
   DlgLocalOpen in 'DlgLocalOpen.pas' {localOpenForm},
-  OpenForm in 'OpenForm.pas',
   MainFrm in 'MainFrm.pas' {MainForm},
   MainFrmSkia in 'MainFrmSkia.pas' {MainFormSkia},
   ogcDrawerSkia in 'JSON\ogcDrawerSkia.pas',

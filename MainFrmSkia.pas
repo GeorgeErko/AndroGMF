@@ -66,6 +66,7 @@ type
 
     procedure ResetInteractionState;
     procedure FinalizeZoom;
+    procedure SetSkPainterCapture(const ACapture: Boolean);
     procedure UpdateStatusGeo(const X, Y: Single);
     procedure BuildCachedPicture;
     procedure CapturePanBitmap;
@@ -252,6 +253,8 @@ var
   var
     I, J: Integer;
     Twig: TTwig;
+    PP: TPointDot;
+    B: Byte;
   begin
     for I := 1 to TwgForm.Twigs.TwigsCount - 1 do
     begin
@@ -259,7 +262,13 @@ var
       for J := 0 to Twig.Coord.Count - 1 do
         Selector.AddCoord(Twig[J].XDot, Twig[J].YDot);
     end;
+    for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+    begin
+      PP := TwgForm.Twigs.AAt(I, B);
+      Selector.AddCoord(PP.XDot, PP.YDot);
+    end;
   end;
+
 begin
   if FDrawerSkia = nil then
   begin
@@ -317,6 +326,19 @@ begin
       end;
     end;
     localSetGabarites;
+
+    if SkPainter <> nil then
+      LastCanvasScale := SkPainter.AbsoluteScale.X
+    else
+      LastCanvasScale := 1;
+    if LastCanvasScale <= 0 then
+      LastCanvasScale := 1;
+    if FDrawerSkia <> nil then
+    begin
+      FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
+      FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
+    end;
+
     Selector.UpdateRects(True);
     objectRepaintAccess := True;
     WriteIn(['TwgForm=', TwgForm.Twigs.TwigsCount, TwgForm.Twigs.LotsCount, TwgForm.Twigs.AnyCount]);
@@ -327,8 +349,11 @@ begin
 
   InitSkPainterInput;
   SceneDirty := True;
-  if SkPainter <> nil then
-    SkPainter.Redraw;
+  GlobalRender := True;
+//  if SkPainter <> nil then
+ //   SkPainter.Redraw;
+  SkPainterDblClick(nil);
+  btnPaintClick(nil);
 end;
 
 procedure TMainFormSkia.btnOpenClickSkia(Sender: TObject);
@@ -708,6 +733,11 @@ begin
   InteractionActive := False;
 end;
 
+procedure TMainFormSkia.SetSkPainterCapture(const ACapture: Boolean);
+begin
+  // no-op: this FMX version does not expose a compatible capture API for TSkPaintBox
+end;
+
 procedure TMainFormSkia.SkPainterDblClick(Sender: TObject);
 begin
   if Selector = nil then
@@ -846,6 +876,8 @@ begin
 end;
 
 procedure TMainFormSkia.SkPainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
+var
+  StepRatio: Single;
 begin
   if FDrawerSkia = nil then
     Exit;
@@ -858,8 +890,9 @@ begin
   ZoomActive := True;
   PanActive := False;
 
-  if EventInfo.Distance <= 0 then
+  if (EventInfo.Distance <= 0) or (EventInfo.Distance < 2) then
   begin
+    SetSkPainterCapture(False);
     FinalizeZoom;
     ResetInteractionState;
     SkPainter.Redraw;
@@ -868,7 +901,9 @@ begin
 
   if (not ZoomBitmapActive) and (ZoomStartDistance = 0) then
   begin
+    SetSkPainterCapture(True);
     ZoomStartDistance := EventInfo.Distance;
+    LastZoomDistance := EventInfo.Distance;
     ZoomFactor := 1;
     ZoomPivot := EventInfo.Location;
     if ZoomBaseRect = nil then
@@ -885,6 +920,18 @@ begin
 
   if ZoomStartDistance <= 0 then
     Exit;
+
+  if LastZoomDistance > 0 then
+  begin
+    StepRatio := EventInfo.Distance / LastZoomDistance;
+    if (StepRatio > 1.8) or (StepRatio < (1 / 1.8)) then
+    begin
+      LastZoomDistance := EventInfo.Distance;
+      Exit;
+    end;
+  end;
+  LastZoomDistance := EventInfo.Distance;
+
   ZoomFactor := EventInfo.Distance / ZoomStartDistance;
   if ZoomFactor < 0.05 then
     ZoomFactor := 0.05;

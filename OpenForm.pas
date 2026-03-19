@@ -16,6 +16,8 @@ implementation
 {$R *.fmx}
 
 uses
+  System.Zip,
+{$IFDEF ANDROID}
   System.Messaging,
   Androidapi.Helpers,
   Androidapi.IOUtils,
@@ -27,6 +29,7 @@ uses
   FMX.Helpers.Android,
   FMX.Platform,
   Androidapi.JNI.GraphicsContentViewText;
+{$ENDIF}
 
 type
   TAndroidGmfPicker = class
@@ -38,6 +41,7 @@ type
     FCallback: TPickGmfFileCallback;
     function GetDisplayNameFromUri(const Uri: Jnet_Uri): string;
     procedure CopyUriToFile(const Uri: Jnet_Uri; const LocalPath: string);
+    function ResolvePickedLocalPath(const PickedLocalPath: string): string;
     procedure Finish(const LocalPath: string);
     procedure OnMessage(const Sender: TObject; const M: TMessage);
   public
@@ -108,6 +112,40 @@ begin
   end;
 end;
 
+function TAndroidGmfPicker.ResolvePickedLocalPath(const PickedLocalPath: string): string;
+var
+  Ext: string;
+  ZipBaseName: string;
+  ExtractDir: string;
+  Gmfs: TStringDynArray;
+begin
+  Result := '';
+  if PickedLocalPath = '' then
+    Exit;
+  Ext := LowerCase(ExtractFileExt(PickedLocalPath));
+  if Ext = '.gmf' then
+  begin
+    Result := PickedLocalPath;
+    Exit;
+  end;
+  if Ext <> '.zip' then
+    Exit;
+
+  ZipBaseName := ChangeFileExt(ExtractFileName(PickedLocalPath), '');
+  if ZipBaseName = '' then
+    ZipBaseName := 'import_zip';
+  ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
+  try
+    ForceDirectories(ExtractDir);
+    TZipFile.ExtractZipFile(PickedLocalPath, ExtractDir);
+    Gmfs := TDirectory.GetFiles(ExtractDir, '*.gmf', TSearchOption.soAllDirectories);
+    if Length(Gmfs) > 0 then
+      Result := Gmfs[0];
+  except
+    Result := '';
+  end;
+end;
+
 procedure TAndroidGmfPicker.CopyUriToFile(const Uri: Jnet_Uri; const LocalPath: string);
 var
   InStream: JInputStream;
@@ -155,6 +193,7 @@ var
   DisplayName: string;
   LocalPath: string;
   FirstGmfLocalPath: string;
+  ResolvedPath: string;
   PersistFlags: Integer;
 begin
   if FDone then Exit;
@@ -186,7 +225,12 @@ begin
       LocalPath := TPath.Combine(TPath.GetDocumentsPath, DisplayName);
       try
         CopyUriToFile(TargetUri, LocalPath);
-        if (FirstGmfLocalPath = '') and SameText(ExtractFileExt(DisplayName), '.gmf') then FirstGmfLocalPath := LocalPath;
+        if FirstGmfLocalPath = '' then
+        begin
+          ResolvedPath := ResolvePickedLocalPath(LocalPath);
+          if ResolvedPath <> '' then
+            FirstGmfLocalPath := ResolvedPath;
+        end;
       except
       end;
     end;
@@ -207,7 +251,8 @@ begin
   LocalPath := TPath.Combine(TPath.GetDocumentsPath, DisplayName);
   try
     CopyUriToFile(Uri, LocalPath);
-    if SameText(ExtractFileExt(DisplayName), '.gmf') then Finish(LocalPath) else Finish('');
+    ResolvedPath := ResolvePickedLocalPath(LocalPath);
+    Finish(ResolvedPath);
   except
     Finish('');
   end;
@@ -216,11 +261,75 @@ end;
 procedure PickGmfFile(const ACallback: TPickGmfFileCallback);
 var
   Dlg: TOpenDialog;
-  SrcPath, DstPath, DstName: string;
+  SrcPath: string;
+  Ext: string;
+  DstZipPath: string;
+  ZipBaseName: string;
+  ExtractDir: string;
+  Gmfs: TStringDynArray;
+  ResolvedPath: string;
 begin
   if not Assigned(ACallback) then Exit;
+
+{$IFDEF ANDROID}
   TAndroidGmfPicker.Instance.StartPick(ACallback);
-  Exit;
+{$ELSE}
+  Dlg := TOpenDialog.Create(nil);
+  try
+    Dlg.Filter := 'GMF (*.gmf)|*.gmf|ZIP (*.zip)|*.zip|All files (*.*)|*.*';
+    Dlg.Options := Dlg.Options + [TOpenOption.ofFileMustExist];
+    if not Dlg.Execute then
+    begin
+      ACallback('');
+      Exit;
+    end;
+
+    SrcPath := Dlg.FileName;
+    if SrcPath = '' then
+    begin
+      ACallback('');
+      Exit;
+    end;
+
+    Ext := LowerCase(ExtractFileExt(SrcPath));
+    if Ext = '.gmf' then
+    begin
+      ACallback(SrcPath);
+      Exit;
+    end;
+
+    if Ext = '.zip' then
+    begin
+      ZipBaseName := ChangeFileExt(ExtractFileName(SrcPath), '');
+      if ZipBaseName = '' then
+        ZipBaseName := 'import_zip';
+
+      DstZipPath := TPath.Combine(TPath.GetDocumentsPath, ExtractFileName(SrcPath));
+      ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
+
+      try
+        ForceDirectories(ExtractDir);
+        if not SameText(SrcPath, DstZipPath) then
+          TFile.Copy(SrcPath, DstZipPath, True);
+        TZipFile.ExtractZipFile(DstZipPath, ExtractDir);
+        Gmfs := TDirectory.GetFiles(ExtractDir, '*.gmf', TSearchOption.soAllDirectories);
+        if Length(Gmfs) > 0 then
+          ResolvedPath := Gmfs[0]
+        else
+          ResolvedPath := '';
+      except
+        ResolvedPath := '';
+      end;
+
+      ACallback(ResolvedPath);
+      Exit;
+    end;
+
+    ACallback('');
+  finally
+    Dlg.Free;
+  end;
+{$ENDIF}
 end;
 
 end.

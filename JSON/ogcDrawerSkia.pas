@@ -417,7 +417,7 @@ begin
         P0 := TlDot(Points.Items[I]);
         R.Insert(P0.XDot, P0.YDot);
       end;
-      if not ogsSelector.RectVisible(R) then
+      if (not ogsSelector.RectVisible(R)) and (not GlobalRender) then
         Exit;
     finally
       R.Free;

@@ -412,7 +412,6 @@
             <Form>localOpenForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
-        <DCCReference Include="OpenForm.pas"/>
         <DCCReference Include="MainFrm.pas">
             <Form>MainForm</Form>
             <FormType>fmx</FormType>
