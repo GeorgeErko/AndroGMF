@@ -425,6 +425,11 @@
             <Form>MainForm1</Form>
             <FormType>fmx</FormType>
         </DCCReference>
+        <DCCReference Include="MOUSE\objMouse.pas"/>
+        <DCCReference Include="GMF\UndoColNew.pas"/>
+        <DCCReference Include="GMF\UndoItem.pas"/>
+        <DCCReference Include="GMF\SelectorObj.pas"/>
+        <DCCReference Include="GMF\UndoStream.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

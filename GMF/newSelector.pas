@@ -85,6 +85,8 @@ Type
  //
    GFontCollect:PCollection;
    GFontSet    :PCollection;
+ //
+   LOperation: Integer;
  // Создание
   Constructor Create(Drawer: TogsDrawer);
   Destructor Destroy; override;
@@ -117,6 +119,8 @@ Type
   Function GMS:Double;
   function RealDouble(V: Double): Double;
   function RealInt(V: Double): Int64;
+//
+  function execEscape: boolean;
  end;
 
 var RealScaleLength:TRealScaleLength;
@@ -211,6 +215,11 @@ end;
 function TSelector.EqualPoints(D1, D2: Pointer): Boolean;
 begin
  Result:=(Abs(TDot(D1).XDot-TDot(D2).XDot)<1/Const_Of_PrecCoord) and (Abs(TDot(D1).YDot-TDot(D2).YDot)<1/Const_Of_PrecCoord);
+end;
+
+function TSelector.execEscape: boolean;
+begin
+ raise Exception.Create('Error Message Selector.execEscape');
 end;
 
 function TSelector.GCanvas: TCanvas;

@@ -1,9 +1,10 @@
 object localOpenForm: TlocalOpenForm
   Left = 0
   Top = 0
+  BorderStyle = Single
   Caption = 'Form1'
-  ClientHeight = 444
-  ClientWidth = 423
+  ClientHeight = 505
+  ClientWidth = 541
   Position = ScreenCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -16,40 +17,52 @@ object localOpenForm: TlocalOpenForm
     ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
     HeaderAppearanceClassName = 'TListHeaderObjects'
     FooterAppearanceClassName = 'TListHeaderObjects'
-    Position.X = 10.000000000000000000
-    Position.Y = 12.000000000000000000
-    Size.Width = 405.000000000000000000
-    Size.Height = 347.000000000000000000
+    Position.X = 13.000000000000000000
+    Position.Y = 14.000000000000000000
+    Size.Width = 371.000000000000000000
+    Size.Height = 411.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 0
+    TabOrder = 1
     OnClick = ListView1Click
   end
-  object btnOpen: TButton
-    Default = True
-    ModalResult = 1
-    Position.X = 196.000000000000000000
-    Position.Y = 386.000000000000000000
-    TabOrder = 1
-    Text = 'btnOpen'
-    TextSettings.Trimming = None
-    OnClick = btnOpenClick
-    object btnClose: TButton
-      Default = True
-      ModalResult = 2
-      Position.X = 104.000000000000000000
-      Position.Y = 1.000000000000000000
-      TabOrder = 1
-      Text = 'btnClose'
-      TextSettings.Trimming = None
-      OnClick = btnCloseClick
-    end
-  end
   object btnDelete: TButton
-    Position.X = 18.000000000000000000
-    Position.Y = 387.000000000000000000
+    Anchors = [akTop, akRight]
+    Position.X = 408.000000000000000000
+    Position.Y = 184.000000000000000000
+    Size.Width = 109.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
     TabOrder = 3
     Text = 'btnDelete'
     TextSettings.Trimming = None
     OnClick = btnDeleteClick
+  end
+  object btnOpen: TButton
+    Anchors = [akTop, akRight]
+    Default = True
+    ModalResult = 1
+    Position.X = 408.000000000000000000
+    Position.Y = 66.000000000000000000
+    Size.Width = 107.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = 'btnOpen'
+    TextSettings.Trimming = None
+    OnClick = btnOpenClick
+  end
+  object btnClose: TButton
+    Anchors = [akTop, akRight]
+    Default = True
+    ModalResult = 1
+    Position.X = 408.000000000000000000
+    Position.Y = 24.000000000000000000
+    Size.Width = 109.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = 'btnClose'
+    TextSettings.Trimming = None
+    OnClick = btnCloseClick
   end
 end

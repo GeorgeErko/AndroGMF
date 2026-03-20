@@ -5,6 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls,
+  FMX.Layouts, FMX.Objects,
   FMX.Controls.Presentation, FMX.ListView.Types, FMX.ListView.Appearances,
   FMX.ListView.Adapters.Base, FMX.ListView, System.IOUtils,
   newProcs, FMX.DialogService, GmfPickTypes;
@@ -12,9 +13,9 @@ uses
 type
   TlocalOpenForm = class(TForm)
     ListView1: TListView;
+    btnDelete: TButton;
     btnOpen: TButton;
     btnClose: TButton;
-    btnDelete: TButton;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btnOpenClick(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
@@ -22,6 +23,8 @@ type
     procedure ListView1Click(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
+    FAndroidDialogSetup: Boolean;
+    procedure SetupAndroidDialog;
     procedure RefreshFiles;
     procedure Cancel;
   public
@@ -79,9 +82,65 @@ end;
 
 procedure TlocalOpenForm.FormShow(Sender: TObject);
 begin
+{$IFDEF ANDROID}
+ SetupAndroidDialog;
+{$ENDIF}
  RefreshFiles;
  btnOpen.Enabled := False;
  btnDelete.Enabled := False;
+end;
+
+procedure TlocalOpenForm.SetupAndroidDialog;
+var
+  Overlay: TLayout;
+  DimRect: TRectangle;
+  PanelRect: TRectangle;
+  PanelW: Single;
+  PanelH: Single;
+begin
+  if FAndroidDialogSetup then
+    Exit;
+  FAndroidDialogSetup := True;
+
+  Overlay := TLayout.Create(Self);
+  Overlay.Parent := Self;
+  Overlay.Align := TAlignLayout.Contents;
+  Overlay.Stored := False;
+
+  DimRect := TRectangle.Create(Self);
+  DimRect.Parent := Overlay;
+  DimRect.Align := TAlignLayout.Contents;
+  DimRect.Fill.Kind := TBrushKind.Solid;
+  DimRect.Fill.Color := $88000000;
+  DimRect.Stroke.Kind := TBrushKind.None;
+  DimRect.Stored := False;
+
+  PanelRect := TRectangle.Create(Self);
+  PanelRect.Parent := Overlay;
+  PanelRect.Fill.Kind := TBrushKind.Solid;
+  PanelRect.Fill.Color := $FFF0F0F0;
+  PanelRect.Stroke.Kind := TBrushKind.Solid;
+  PanelRect.Stroke.Color := $FF808080;
+  PanelRect.XRadius := 12;
+  PanelRect.YRadius := 12;
+  PanelRect.Stored := False;
+
+  PanelW := ClientWidth;
+  PanelH := ClientHeight;
+  if PanelW <= 0 then PanelW := 420;
+  if PanelH <= 0 then PanelH := 440;
+  if PanelW > 600 then PanelW := 600;
+  if PanelH > 800 then PanelH := 800;
+  PanelRect.Width := PanelW;
+  PanelRect.Height := PanelH;
+  PanelRect.Align := TAlignLayout.Center;
+
+  if ListView1 <> nil then ListView1.Parent := PanelRect;
+  if btnOpen <> nil then btnOpen.Parent := PanelRect;
+  if btnClose <> nil then btnClose.Parent := PanelRect;
+  if btnDelete <> nil then btnDelete.Parent := PanelRect;
+
+  PanelRect.BringToFront;
 end;
 
 procedure TlocalOpenForm.ListView1Click(Sender: TObject);

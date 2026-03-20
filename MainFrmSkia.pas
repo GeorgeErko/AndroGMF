@@ -5,7 +5,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
-  FMX.Layouts,
+  FMX.Layouts, FMX.DialogService,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   ogcBasic, ogcDrawerSkia;
@@ -15,9 +15,13 @@ type
     SkPainter: TSkPaintBox;
     SceneProgressOverlay: TLayout;
     SceneProgressBar: TProgressBar;
+    Popup1: TPopup;
+    btnPDF: TCornerButton;
+    CornerButton4: TCornerButton;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
+    procedure btnPDFClick(Sender: TObject);
   private
     FStatusLabel: TLabel;
     FDrawerSkia: TogsDrawerSkia;
@@ -71,6 +75,8 @@ type
     procedure BuildCachedPicture;
     procedure CapturePanBitmap;
 
+    procedure DoExportPdfWithName(const AName: string);
+
     procedure SceneProgressShow(const AMax: Single);
     procedure SceneProgressSet(const AValue: Single);
     procedure SceneProgressHide;
@@ -79,6 +85,7 @@ type
   public
     destructor Destroy; override;
     procedure OpenGmfFile(const LocalPath: string); override;
+    function ExportSceneToPdf(const AFileName: string = ''): string;
   end;
 
 var
@@ -88,7 +95,11 @@ implementation
 
 uses Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager,
      OpenForm, EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
-     newSelector, WPTForm2;
+     newSelector, WPTForm2
+{$IFDEF ANDROID}
+     , Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
+{$ENDIF}
+     ;
 
 {$R *.fmx}
 
@@ -107,6 +118,97 @@ begin
   SkPainter.OnDblClick := SkPainterDblClick;
   SkPainter.OnDraw := SkPainterDraw;
   SkPainter.Touch.InteractiveGestures := [TInteractiveGesture.Zoom];
+end;
+
+function TMainFormSkia.ExportSceneToPdf(const AFileName: string): string;
+var
+  OutPath: string;
+  Stream: TFileStream;
+  Doc: ISkDocument;
+  C: ISkCanvas;
+  R: TRectF;
+  Pad: Single;
+  PageW: Single;
+  PageH: Single;
+  PrevWorld: Boolean;
+  ScaleToPdf: Single;
+const
+  PointsPerInch = 72;
+  CmPerInch = 2.54;
+  PointsPerCm = PointsPerInch / CmPerInch;
+  MetersPerCmAtScale = 5;
+  WorldUnitsPerMeter = 1;
+begin
+  Result := '';
+  if (Selector = nil) or (Selector.GlobalRect = nil) or (not Selector.GlobalRect.isRect) then
+    Exit;
+  if FDrawerSkia = nil then
+    Exit;
+
+  if (FDrawerSkia.SkiaList.Count = 0) or SceneDirty then
+    BuildCachedPicture;
+  if FDrawerSkia.SkiaList.Count = 0 then
+    Exit;
+
+  Pad := 10;
+  R := TRectF.Create(
+    Single(Selector.GlobalRect.XMin),
+    Single(Selector.GlobalRect.YMin),
+    Single(Selector.GlobalRect.XMax),
+    Single(Selector.GlobalRect.YMax));
+  if R.IsEmpty then
+    Exit;
+  R.Inflate(Pad, Pad);
+
+  ScaleToPdf := (PointsPerCm / MetersPerCmAtScale) / WorldUnitsPerMeter;
+  PageW := R.Width * ScaleToPdf;
+  PageH := R.Height * ScaleToPdf;
+  if PageW < 1 then
+    PageW := 1;
+  if PageH < 1 then
+    PageH := 1;
+
+  if AFileName <> '' then
+    OutPath := AFileName
+  else
+    OutPath := TPath.Combine(TPath.GetDocumentsPath, 'scene.pdf');
+  if ExtractFileExt(OutPath) = '' then
+    OutPath := OutPath + '.pdf';
+
+  Stream := TFileStream.Create(OutPath, fmCreate);
+  try
+    Doc := TSkDocument.MakePDF(Stream);
+    if Doc = nil then
+      Exit;
+    C := Doc.BeginPage(PageW, PageH);
+    try
+      if C <> nil then
+      begin
+        C.Clear(TAlphaColors.White);
+        C.Save;
+        try
+          C.Scale(ScaleToPdf, ScaleToPdf);
+          C.Translate(-R.Left, -R.Top);
+          PrevWorld := FDrawerSkia.UseWorldCoords;
+          FDrawerSkia.UseWorldCoords := True;
+          try
+            FDrawerSkia.DrawSkiaList(C);
+          finally
+            FDrawerSkia.UseWorldCoords := PrevWorld;
+          end;
+        finally
+          C.Restore;
+        end;
+      end;
+    finally
+      Doc.EndPage;
+      Doc.Close;
+    end;
+  finally
+    Stream.Free;
+  end;
+
+  Result := OutPath;
 end;
 
 procedure TMainFormSkia.FormCreate(Sender: TObject);
@@ -143,8 +245,80 @@ begin
     ptnMinus.OnClick := btnPlusClickSkia;
   if CornerButton1 <> nil then
     CornerButton1.OnClick := btnOpenClickSkia;
+  if btnPDF <> nil then
+    btnPDF.OnClick := btnPDFClick;
 
   InitSkPainterInput;
+end;
+
+procedure TMainFormSkia.btnPDFClick(Sender: TObject);
+var
+  DefaultName: string;
+begin
+  DefaultName := '/scene.pdf';
+
+{$IFDEF ANDROID}
+  TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+  TDialogService.InputQuery('Export PDF', ['File name (Documents)'], [DefaultName],
+    procedure(const AResult: TModalResult; const AValues: array of string)
+    begin
+      if AResult <> mrOk then
+        Exit;
+      if Length(AValues) < 1 then
+        Exit;
+      DoExportPdfWithName(AValues[0]);
+    end);
+{$ELSE}
+  if InputQuery('Export PDF', 'File name (Documents)', DefaultName) then
+    DoExportPdfWithName(DefaultName);
+{$ENDIF}
+end;
+
+procedure TMainFormSkia.DoExportPdfWithName(const AName: string);
+var
+  FileName: string;
+  FullPath: string;
+  SavedPath: string;
+  BaseDir: string;
+begin
+  FileName := Trim(AName);
+  if FileName = '' then
+    Exit;
+  while (FileName <> '') and ((FileName[Low(string)] = '/') or (FileName[Low(string)] = '\\')) do
+    Delete(FileName, Low(string), 1);
+  FileName := StringReplace(FileName, '/', '_', [rfReplaceAll]);
+  FileName := StringReplace(FileName, '\\', '_', [rfReplaceAll]);
+  if ExtractFileExt(FileName) = '' then
+    FileName := FileName + '.pdf';
+
+{$IFDEF ANDROID}
+  BaseDir := '';
+  try
+    BaseDir := JStringToString(
+      TJEnvironment.JavaClass.getExternalStoragePublicDirectory(
+        TJEnvironment.JavaClass.DIRECTORY_DOWNLOADS).getAbsolutePath);
+  except
+    BaseDir := '';
+  end;
+  if (BaseDir <> '') and (BaseDir[Low(string)] <> '/') then
+    BaseDir := '/' + BaseDir;
+  if BaseDir = '' then
+    BaseDir := TPath.GetDocumentsPath;
+{$ELSE}
+  BaseDir := TPath.GetDocumentsPath;
+{$ENDIF}
+
+  FullPath := TPath.Combine(BaseDir, FileName);
+  try
+    SavedPath := ExportSceneToPdf(FullPath);
+    if SavedPath <> '' then
+      newProcs.ShowMessage(AnsiString('Saved: ' + FullPath))
+    else
+      newProcs.MessageError('PDF export failed');
+  except
+    on E: Exception do
+      newProcs.MessageError(AnsiString(E.Message));
+  end;
 end;
 
 procedure TMainFormSkia.SceneProgressShow(const AMax: Single);

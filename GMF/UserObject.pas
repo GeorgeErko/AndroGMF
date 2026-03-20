@@ -4,6 +4,9 @@ interface uses Collect, FMX.Graphics, Classes, TwgDraw, newProperties;
 
 const propNULL ='-123456789';
       binaryValue = 'Изображение';
+      GlobalPropertyUnlocked: boolean = False;
+     // поиск свойств с учетом решистра
+      gEqualCaseInsProps: boolean = True;
 
 type
   hRgn = Integer;

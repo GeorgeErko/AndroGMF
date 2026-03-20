@@ -72,7 +72,12 @@ uses
   MainFrm in 'MainFrm.pas' {MainForm},
   MainFrmSkia in 'MainFrmSkia.pas' {MainFormSkia},
   ogcDrawerSkia in 'JSON\ogcDrawerSkia.pas',
-  MainFrm1 in 'MainFrm1.pas' {MainForm1};
+  MainFrm1 in 'MainFrm1.pas' {MainForm1},
+  objMouse in 'MOUSE\objMouse.pas',
+  UndoColNew in 'GMF\UndoColNew.pas',
+  UndoItem in 'GMF\UndoItem.pas',
+  SelectorObj in 'GMF\SelectorObj.pas',
+  UndoStream in 'GMF\UndoStream.pas';
 
 {$R *.res}
 
