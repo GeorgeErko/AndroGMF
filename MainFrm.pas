@@ -540,7 +540,6 @@ begin
  if Drawer = nil then Exit;
  if TwgForm = nil then Exit;
  if not objectRepaintAccess then Exit;
- GLines := nil;
  NeedW := Round(Painter.Width * Canvas.Scale);
  NeedH := Round(Painter.Height * Canvas.Scale);
  if (Drawer.Width <> NeedW) or (Drawer.Height <> NeedH) then begin

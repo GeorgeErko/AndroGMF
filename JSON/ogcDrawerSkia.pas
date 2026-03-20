@@ -339,6 +339,7 @@ var
   Paint: ISkPaint;
   P0, P1: TPointF;
   X_, Y_, X1_, Y1_: Double;
+  D: Single;
 begin
   if Disable then
     Exit;
@@ -376,17 +377,18 @@ begin
     Paint.Color := EnsureOpaqueAlpha(Pen.penColor);
     if Pen.penWidth > 0 then
     begin
-      if FUseWorldCoords and (ogsSelector.GetScale > 0) then
-        Paint.StrokeWidth := Max(0.05, Pen.penWidth/10)
+      if FUseWorldCoords and (ogsSelector.GetScale > 0) then begin
+        D := Max(0.03, Pen.penWidth);
+        Paint.StrokeWidth := D;
+      end
       else
         Paint.StrokeWidth := Max(1.0, Pen.penWidth);
     end
     else
-      Paint.StrokeWidth := 1;
+      Paint.StrokeWidth := 0.03;
     FSkCanvas.DrawLine(P0.X, P0.Y, P1.X, P1.Y, Paint);
   end
-  else if Canvas <> nil then
-  begin
+  else if Canvas <> nil then begin
     Canvas.Stroke.Kind := TBrushKind.Solid;
     Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
     Canvas.Stroke.Thickness := Max(1.0, Pen.penWidth);
@@ -402,6 +404,7 @@ var
   Path: ISkPath;
   Paint: ISkPaint;
   R: TogsRect;
+  D: Single;
 begin
   if (Points = nil) or (Points.Count < 2) then
     Exit;
@@ -446,9 +449,10 @@ begin
     Paint.AntiAlias := True;
     Paint.Style := TSkPaintStyle.Stroke;
     Paint.Color := EnsureOpaqueAlpha(Pen.penColor);
-    if FUseWorldCoords and (ogsSelector.GetScale > 0) then
-      Paint.StrokeWidth := Max(0.05, Pen.penWidth/10)
-    else
+    if FUseWorldCoords and (ogsSelector.GetScale > 0) then begin
+      D := Max(0.03, Pen.penWidth);
+      Paint.StrokeWidth := D;
+    end   else
       Paint.StrokeWidth := Max(1.0, Pen.penWidth);
     FSkCanvas.DrawPath(Path, Paint);
   end

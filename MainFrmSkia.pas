@@ -13,11 +13,10 @@ uses
 type
   TMainFormSkia = class(TMainForm)
     SkPainter: TSkPaintBox;
-    SceneProgressOverlay: TLayout;
-    SceneProgressBar: TProgressBar;
     Popup1: TPopup;
     btnPDF: TCornerButton;
     CornerButton4: TCornerButton;
+    SceneProgressBar: TProgressBar;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
@@ -27,7 +26,9 @@ type
     FDrawerSkia: TogsDrawerSkia;
     FCachedPicture: ISkPicture;
     FBuildingScene: Boolean;
+    FRebuildQueued: Boolean;
     PanBitmap: TBitmap;
+    FPanImage: ISkImage;
     PanBitmapActive: Boolean;
     PanStartPoint: TPointF;
     PanShift: TPointF;
@@ -49,6 +50,8 @@ type
     BaseDx, BaseDy, BaseScale: Double;
 
     procedure InitSkPainterInput;
+
+    procedure RequestRebuildScene;
 
     procedure RenderSceneToBackbufferSkia;
 
@@ -100,6 +103,9 @@ uses Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontMana
      , Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
      ;
+
+type
+  TBitmapAccess = class(TBitmap);
 
 {$R *.fmx}
 
@@ -219,6 +225,7 @@ begin
   FBuildingScene := False;
 
   PanBitmap := nil;
+  FPanImage := nil;
   PanBitmapActive := False;
   ZoomBaseRect := nil;
   ZoomBitmapActive := False;
@@ -323,31 +330,60 @@ end;
 
 procedure TMainFormSkia.SceneProgressShow(const AMax: Single);
 begin
-  if SceneProgressOverlay <> nil then
-  begin
-    SceneProgressOverlay.Visible := True;
-    SceneProgressOverlay.BringToFront;
-  end;
-  if SceneProgressBar <> nil then
-  begin
-    SceneProgressBar.Min := 0;
-    SceneProgressBar.Max := AMax;
-    SceneProgressBar.Value := 0;
-  end;
+  SceneProgressBar.Min := 0;
+  SceneProgressBar.Max := AMax;
+  SceneProgressBar.Value := 0;
+  SceneProgressBar.Repaint;
+  SceneProgressBar.Visible := True;
+  SceneProgressBar.UpdateRect;
 end;
 
 procedure TMainFormSkia.SceneProgressSet(const AValue: Single);
 begin
-  if (SceneProgressOverlay <> nil) and (not SceneProgressOverlay.Visible) then
-    Exit;
-  if SceneProgressBar <> nil then
-    SceneProgressBar.Value := AValue;
+ SceneProgressBar.Value := AValue;
+ SceneProgressBar.UpdateRect;//(SceneProgressBar.BoundsRect.Round);
 end;
 
 procedure TMainFormSkia.SceneProgressHide;
 begin
-  if SceneProgressOverlay <> nil then
-    SceneProgressOverlay.Visible := False;
+ SceneProgressBar.Visible := False;
+end;
+
+procedure TMainFormSkia.RequestRebuildScene;
+var
+  Total: Single;
+begin
+  if FRebuildQueued then
+    Exit;
+  if FBuildingScene then
+    Exit;
+  if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) then
+    Exit;
+  if (SkPainter.Width <= 0) or (SkPainter.Height <= 0) then
+    Exit;
+
+  Total := 1;
+  if TwgForm <> nil then
+    Total := TwgForm.Twigs.LotsCount + TwgForm.Twigs.AnyCount;
+  if Total < 1 then
+    Total := 1;
+
+  FRebuildQueued := True;
+  SceneProgressShow(Total);
+  SceneProgressSet(0);
+  TThread.Queue(nil,
+    procedure
+    begin
+      try
+        BuildCachedPicture;
+        CapturePanBitmap;
+      finally
+        SceneProgressHide;
+        FRebuildQueued := False;
+        if SkPainter <> nil then
+          SkPainter.Redraw;
+      end;
+    end);
 end;
 
 procedure TMainFormSkia.Loaded;
@@ -641,7 +677,6 @@ begin
     Exit;
   if not objectRepaintAccess then
     Exit;
-  GLines := nil;
 
   FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
   FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
@@ -777,7 +812,10 @@ begin
       FDrawerSkia.BeginFrame(RecCanvas, R);
       try
         if (TwgForm <> nil) and objectRepaintAccess then
+        begin
           RenderSceneToBackbufferSkia;
+          FDrawerSkia.DrawSkiaList(RecCanvas);
+        end;
       finally
         FDrawerSkia.EndFrame;
       end;
@@ -786,19 +824,21 @@ begin
     end;
   finally
     FBuildingScene := False;
-    SceneProgressHide;
+   // SceneProgressHide;
     FCachedPicture := Recorder.FinishRecording;
   end;
 end;
 
 procedure TMainFormSkia.CapturePanBitmap;
 var
-  D: TBitmapData;
   ImgInfo: TSkImageInfo;
   Surface: ISkSurface;
   C: ISkCanvas;
   ViewScale: Single;
   Tx, Ty: Single;
+  W, H: Integer;
+  BaseXMin: Double;
+  BaseYMin: Double;
 begin
   if FDrawerSkia = nil then
     Exit;
@@ -810,43 +850,65 @@ begin
   if (FDrawerSkia.SkiaList.Count = 0) or SceneDirty then
     BuildCachedPicture;
 
-  if PanBitmap = nil then
-    PanBitmap := TBitmap.Create;
+  W := Round(SkPainter.Width * LastCanvasScale);
+  H := Round(SkPainter.Height * LastCanvasScale);
+  if W < 1 then W := 1;
+  if H < 1 then H := 1;
 
-  PanBitmap.SetSize(Round(SkPainter.Width * LastCanvasScale), Round(SkPainter.Height * LastCanvasScale));
-  if (PanBitmap.Width <= 0) or (PanBitmap.Height <= 0) then
+  ImgInfo := TSkImageInfo.Create(W, H, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+  Surface := TSkSurface.MakeRaster(ImgInfo);
+  if Surface = nil then
+    Exit;
+  C := Surface.Canvas;
+  if C = nil then
     Exit;
 
-  if not PanBitmap.Map(TMapAccess.ReadWrite, D) then
-    Exit;
-  try
-    ImgInfo := TSkImageInfo.Create(PanBitmap.Width, PanBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-    Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-    if Surface = nil then
-      Exit;
-    C := Surface.Canvas;
-    if C = nil then
-      Exit;
+  C.Clear(TAlphaColors.White);
 
-    C.Clear(TAlphaColors.White);
-
+  ViewScale := Single(Selector.GetScale);
+  if ViewScale <= 0 then
+  begin
+    Selector.UpdateRects(True);
     ViewScale := Single(Selector.GetScale);
-    if ViewScale > 0 then
-    begin
-      Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
-      Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
-      C.Save;
-      try
-        C.Translate(Tx, Ty);
-        C.Scale(ViewScale, ViewScale);
-        FDrawerSkia.DrawSkiaList(C);
-      finally
-        C.Restore;
-      end;
-    end;
-  finally
-    PanBitmap.Unmap(D);
   end;
+  if ViewScale <= 0 then
+    ViewScale := 1;
+
+  if (Selector.GlobalRect <> nil) then
+  begin
+    BaseXMin := Selector.GlobalRect.XMin;
+    BaseYMin := Selector.GlobalRect.YMin;
+  end
+  else if (Selector.ActiveRect <> nil) then
+  begin
+    BaseXMin := Selector.ActiveRect.XMin;
+    BaseYMin := Selector.ActiveRect.YMin;
+  end
+  else
+  begin
+    BaseXMin := 0;
+    BaseYMin := 0;
+  end;
+
+  if ViewScale > 0 then
+  begin
+    Tx := -Single(BaseXMin + Selector.GetDx) * ViewScale;
+    Ty := -Single(BaseYMin + Selector.GetDy) * ViewScale;
+    C.Save;
+    try
+      C.Translate(Tx, Ty);
+      C.Scale(ViewScale, ViewScale);
+      if FCachedPicture <> nil then
+        C.DrawPicture(FCachedPicture)
+      else
+        FDrawerSkia.DrawSkiaList(C);
+    finally
+      C.Restore;
+    end;
+  end;
+
+  Surface.Flush;
+  FPanImage := Surface.MakeImageSnapshot;
 end;
 
 procedure TMainFormSkia.ResetInteractionState;
@@ -905,6 +967,8 @@ begin
   ZoomFactor := 1;
   ZoomActive := False;
   InteractionActive := False;
+
+  CapturePanBitmap;
 end;
 
 procedure TMainFormSkia.SetSkPainterCapture(const ACapture: Boolean);
@@ -939,8 +1003,9 @@ begin
   PanBitmapActive := False;
   if (not SceneDirty) and (FDrawerSkia <> nil) and (FDrawerSkia.SkiaList.Count > 0) then
   begin
-    CapturePanBitmap;
-    if (PanBitmap <> nil) and (PanBitmap.Width > 0) and (PanBitmap.Height > 0) then
+    if FPanImage = nil then
+      CapturePanBitmap;
+    if (FPanImage <> nil) then
     begin
       PanStartPoint := PointF(X, Y);
       PanShift := PointF(0, 0);
@@ -1008,6 +1073,8 @@ begin
   end;
   PanBitmapActive := False;
   ResetInteractionState;
+
+  CapturePanBitmap;
   if SkPainter <> nil then
     SkPainter.Redraw;
 end;
@@ -1086,8 +1153,9 @@ begin
     ZoomBaseDx := Selector.GetDx;
     ZoomBaseDy := Selector.GetDy;
     ZoomBaseScale := Selector.GetScale;
-    CapturePanBitmap;
-    if (PanBitmap <> nil) and (PanBitmap.Width > 0) and (PanBitmap.Height > 0) then
+    if FPanImage = nil then
+      CapturePanBitmap;
+    if (FPanImage <> nil) then
       ZoomBitmapActive := True;
     Exit;
   end;
@@ -1126,9 +1194,6 @@ var
   I: Integer;
   ViewScale: Single;
   Tx, Ty: Single;
-  D: TBitmapData;
-  ImgInfo: TSkImageInfo;
-  Surface: ISkSurface;
   Img: ISkImage;
   Paint: ISkPaint;
   DstRect: TRectF;
@@ -1208,21 +1273,9 @@ begin
     Exit;
   end;
 
-  if PanBitmapActive and (PanBitmap <> nil) and (PanBitmap.Width > 0) and (PanBitmap.Height > 0) then
+  if PanBitmapActive and (FPanImage <> nil) then
   begin
-    if not PanBitmap.Map(TMapAccess.Read, D) then
-      Exit;
-    try
-      ImgInfo := TSkImageInfo.Create(PanBitmap.Width, PanBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-      Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-      if Surface = nil then
-        Exit;
-      Img := Surface.MakeImageSnapshot;
-    finally
-      PanBitmap.Unmap(D);
-    end;
-    if Img = nil then
-      Exit;
+    Img := FPanImage;
     Paint := TSkPaint.Create;
     Paint.AntiAlias := True;
     DstRect := TRectF.Create(ADest.Left + PanShift.X, ADest.Top + PanShift.Y, ADest.Right + PanShift.X, ADest.Bottom + PanShift.Y);
@@ -1236,23 +1289,11 @@ begin
     Exit;
   end;
 
-  if ZoomBitmapActive and (PanBitmap <> nil) and (PanBitmap.Width > 0) and (PanBitmap.Height > 0) then
+  if ZoomBitmapActive and (FPanImage <> nil) then
   begin
     Pivot := ZoomPivot;
     F := ZoomFactor;
-    if not PanBitmap.Map(TMapAccess.Read, D) then
-      Exit;
-    try
-      ImgInfo := TSkImageInfo.Create(PanBitmap.Width, PanBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-      Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-      if Surface = nil then
-        Exit;
-      Img := Surface.MakeImageSnapshot;
-    finally
-      PanBitmap.Unmap(D);
-    end;
-    if Img = nil then
-      Exit;
+    Img := FPanImage;
     Paint := TSkPaint.Create;
     Paint.AntiAlias := True;
     DstRect := TRectF.Create(
@@ -1271,7 +1312,16 @@ begin
   end;
 
   if (FDrawerSkia.SkiaList.Count = 0) or SceneDirty then
-    BuildCachedPicture;
+  begin
+    RequestRebuildScene;
+    if (FPanImage <> nil) then
+    begin
+      Paint := TSkPaint.Create;
+      Paint.AntiAlias := True;
+      ACanvas.DrawImageRect(FPanImage, ADest, Paint);
+    end;
+    Exit;
+  end;
   if (ACanvas <> nil) and (FDrawerSkia.SkiaList.Count > 0) and (Selector <> nil) then
   begin
     ViewScale := Single(Selector.GetScale);

@@ -21,11 +21,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 8
+      TabOrder = 16
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 7
+      TabOrder = 15
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -56,6 +56,15 @@ inherited MainFormSkia: TMainFormSkia
         OnClick = btnPaintClick
       end
     end
+    object SceneProgressBar: TProgressBar
+      Align = Right
+      Orientation = Horizontal
+      Position.X = 743.000000000000000000
+      Position.Y = 12.000000000000000000
+      Size.Width = 111.000000000000000000
+      Size.Height = 10.000000000000000000
+      Size.PlatformDefault = False
+    end
   end
   inherited PanelPainter: TPanel
     inherited Painter: TPaintBox
@@ -79,20 +88,6 @@ inherited MainFormSkia: TMainFormSkia
         Size.PlatformDefault = False
         StyleLookup = 'popupcellstyle'
         TabOrder = 0
-      end
-    end
-    object SceneProgressOverlay: TLayout
-      Align = Client
-      Size.Width = 854.000000000000000000
-      Size.Height = 364.000000000000000000
-      Size.PlatformDefault = False
-      Visible = False
-      object SceneProgressBar: TProgressBar
-        Align = Center
-        Orientation = Horizontal
-        Size.Width = 200.000000000000000000
-        Size.Height = 10.000000000000000000
-        Size.PlatformDefault = False
       end
     end
   end

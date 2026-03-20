@@ -139,25 +139,10 @@ begin
 end;
 
 procedure TPropValue.SetValue(Value_: AnsiString);
-var Code: Integer;
+var S: string;
+    Code: Integer;
 begin
- {
- exceptValue:=0;
- fValue:=Value_;
- If fValue = byLayer then begin
-  exceptValue:=3;
- end else
- If Length(fValue)>0 then If (fValue[1] in ['0'..'9']) then begin
-  try
-   intValue:=StrToInt(fValue);
-  except exceptValue:=1; end;
-  try
-   floatValue:=GStrToFloat(fValue);
-  except exceptValue:=exceptValue or 2; end;
- end else exceptValue:=3;
-end;
-
-}
+{
 exceptValue:=0;
 fValue:=Value_;
 If fValue = byLayer then begin
@@ -172,6 +157,25 @@ If Length(fValue)>0 then If (fValue[1] in ['0'..'9']) then begin
     exceptValue := exceptValue or 2;
   end;
 end else exceptValue:=3;
+exit;   }
+ exceptValue:=0;
+ fValue:=Value_;
+ If fValue = byLayer then begin
+  exceptValue:=3;
+ end else
+ If Length(fValue)>0 then If (fValue[1] in ['0'..'9', '+', '-']) then begin
+  S := string(fValue);
+  if not TryStrToInt(S, intValue) then
+    exceptValue := exceptValue or 1;
+
+  if (FormatSettings.DecimalSeparator = ',') and (Pos('.', S) <> 0) then
+    S[Pos('.', S)] := ','
+  else if (FormatSettings.DecimalSeparator = '.') and (Pos(',', S) <> 0) then
+    S[Pos(',', S)] := '.';
+
+  if not TryStrToFloat(S, floatValue, FormatSettings) then
+    exceptValue := exceptValue or 2;
+ end else exceptValue:=3;
 end;
 
 function TPropValue.isFloat: boolean;
@@ -318,11 +322,13 @@ begin
 end;
 
 function TProperties.GetPropValue(PropName: AnsiString): TPropValue;
-var I:Integer;
+var I:Integer; S1, S2:AnsiString; B: Boolean;
 begin
  Result:=nil;
  For I:=0 to Properties.Count-1 do begin
-//  WriteIn(['FindProp=',TProperty(Properties[I]).PropName, PropName]);
+  S1 := PropName; S2:= TProperty(Properties[I]).PropName;
+  B := S1 = S2;
+//  WriteIn(['    FindProp=',TProperty(Properties[I]).PropName, PropName, TProperty(Properties[I]).PropName = PropName]);
   If TProperty(Properties[I]).PropName = PropName then
    Result:=TProperty(Properties[I]).PropValue;
  end;
@@ -354,7 +360,11 @@ function TProperties.GetFloatValueDef(propName: AnsiString; defValue: Double): D
 var Value:TPropValue;
 begin
  Value:=PropValue[propName];
- If Value = nil then Result:=defValue else If Value.isFloat then Result:=Value.floatValue else Result:=defValue;
+ If Value = nil then
+  Result:=defValue else
+   If Value.isFloat then
+    Result:=Value.floatValue else
+     Result:=defValue;
 end;
 
 function TProperties.GetIntValueDef(propName: AnsiString; defValue: Integer): Integer;

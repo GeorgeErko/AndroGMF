@@ -1,0 +1,8 @@
+inherited MainFormMouseObj: TMainFormMouseObj
+  Caption = 'MainFormSkia1'
+  DesignerMasterStyle = 3
+  inherited Memo1: TMemo
+    Viewport.Width = 854.000000000000000000
+    Viewport.Height = 111.000000000000000000
+  end
+end

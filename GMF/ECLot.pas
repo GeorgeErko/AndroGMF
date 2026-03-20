@@ -3556,6 +3556,7 @@ const C = 100;
 var Tw:TTwig;I,J:Integer;AlphaColor:Integer;
     Pen: TogsPen; Brush: TogsBrush;
     Points2: TogsCollection;
+    D: Double;
 Procedure DrawLine(X,Y,X1,Y1:Double);
 var XX,YY,XX1,YY1:Integer; Pen: TogsPen;
 begin
@@ -3582,6 +3583,7 @@ var Ind: Integer;
     Pen: TogsPen;
     NewPen: TogsPen;
 begin
+// If ClassHandle.RecString = 'Фотофиксация' then
  With  Selector do
  try
     If (ClassHandle.Standart = 1) and (GGraphSet.ViewZnaks=1) then begin
@@ -3590,7 +3592,7 @@ begin
        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
      end else
-      For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+      For J:=0 to Twig.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
     end else
    If (ClassHandle.Standart = 0) and (ClassHandle.Znak = 1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
@@ -3600,7 +3602,7 @@ begin
      end else
       For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
   end else
-   For J:=0 to Tw.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+   For J:=0 to Tw.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
   // If GGraphSet.PointView = 1 then For J:=0 to Tw.Coord.Count-1 do TDot(Twig.Coord[J]).Draw32(Drawer, 0, 0, GMS, GMS);
  finally
  end;
@@ -3611,6 +3613,8 @@ begin
 // WriteIn(['sel=nil', Selector=nil]);
  //WriteIn([Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  If not isVisible(Selector.GPRect) then exit;
+ //D := Properties.GetFloatValueDef('Масштаб',0.23);
+ // WriteIn([ClassHandle.RecString, 'Масштаб=', D, GetProperty('Масштаб')]);
   If (TypeLot=1) then With Selector, GRect do begin// ðèñóåì ëèíåéíûé
    If Inv = 1 then Pen := Selector. Drawer.SelectPen(TogsPen.Create(TAlphaColorRec.Lime, 0, nil)) else
     Pen := Selector.Drawer.SelectPen(TogsPen.Create(LotLineColor, 0, nil));

@@ -101,6 +101,7 @@ var I,J,K:Integer;D1,D2:TDot1;
     CLines:Integer;
     TS: TDateTime;
     Counter: Integer;
+    ogsCoord: TogsCollection;
 begin
  Counter := 0;
 // dNext:=PS.Param3*Ko;dPrev:=PS.Param3*Ko;B:=False;
@@ -122,12 +123,17 @@ begin
    begin
     If PS.DrawState and ls_solid1 <> 0 then
      begin // рисуем сплошную линию с отсечением
-      For I:=0 to Coord.Count-2 do
+      ogsCoord := TogsCollection.Create;
+       For I:=0 to Coord.Count - 1 do With TDot1(Coord.List[I]) do
+        ogsCoord.Add(TlDot.Create(X, Y));
+       Drawer.DrawPolyLine(ogsCoord, False);
+      ogsCoord.Free;
+     { For I:=0 to Coord.Count-2 do
        With TDot1(Coord.List[I]) do
         begin
          D1:=Coord.List[I+1];
          Drawer.DrawLine(X,Y,D1.X,D1.Y);
-        end;
+        end;}
      end else
      begin // рисуем пунктирную линию с отсечением штрихов
       // просчитываем все начальные и конечные точки пунктирной линии

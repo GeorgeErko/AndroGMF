@@ -1723,6 +1723,7 @@ end;
 function TPointDot.BlockVisible: boolean;
 begin
  Result:=True;
+ If GlobalRender then exit;
  With Selector do
  With GRect do begin
   If BlockSect.Right<Left then begin Result:=False;Exit;end;

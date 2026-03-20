@@ -212,6 +212,7 @@ If N<>0 then begin
 end else Result:=S;
 end;
 begin
+ If not FVisible then exit;
  if Selector = nil then Exit;
  if FFontIndex = - 1 then Exit;
  if FText = '' then Exit;
