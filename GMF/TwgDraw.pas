@@ -71,6 +71,10 @@ var LotRgn:TRegion;
        Procedure binDrawPen(Buf:TMemoryStream);virtual;
        Procedure binDrawBrush(Buf:TMemoryStream);virtual;
        Procedure binLoadSect(Buf:TMemoryStream);virtual;
+     //
+       Function GetDrawerObject: TObject; virtual; abstract;
+       Procedure SetDrawerObject(Obj: TObject); virtual; abstract;
+       Property DrawerObject: TObject read GetDrawerObject write SetDrawerObject;
     end;
 
 

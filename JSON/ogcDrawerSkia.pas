@@ -3,6 +3,7 @@
 interface
 
 uses
+  FMX.Skia,
   System.Classes,
   System.SysUtils,
   System.Types,
@@ -14,7 +15,8 @@ uses
   FMX.Types,
   System.Skia,
   ogcBasic,
-  ogcMathUtils;
+  ogcMathUtils,
+  TwgDraw;
 
 procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
 function GetRegisteredSkiaFontFile(const FamilyName: string): string;
@@ -45,6 +47,7 @@ type
     FHeight: Integer;
     FBitmap: TBitmap;
     FInScene: Boolean;
+    FSkPainter: TSkPaintBox;
     FSkCanvas: ISkCanvas;
     FDest: TRectF;
     FUseWorldCoords: Boolean;
@@ -53,7 +56,7 @@ type
     FPrimitiveCanvas: ISkCanvas;
     FPrimitiveOldCanvas: ISkCanvas;
     FPrimitiveId: Int64;
-    FPrimitiveUserObject: TObject;
+    FPrimitiveUserObject: TTD;
     FPrimitiveBoundsWorld: TRectF;
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
@@ -64,13 +67,13 @@ type
     procedure SetPen(AValue: TogsPen); override;
     procedure SetBrush(AValue: TogsBrush); override;
   public
-    constructor Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent); override;
+    constructor Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent; SkPainter_: TSkPaintBox);
     destructor Destroy; override;
 
     procedure BeginFrame(const ACanvas: ISkCanvas; const ADest: TRectF);
     procedure EndFrame;
 
-    procedure Clear(AColor: Integer); override;
+    procedure Clear(AColor: Longint); override;
 
     procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); override;
     procedure DrawPolyline(Points: TogsCollection; cutRequest: Boolean = True); override;
@@ -98,15 +101,18 @@ type
 
     procedure DrawTo(Image_: TCanvas; Rect: TRect); override;
 
+    procedure RedrawAll; override;
+
     procedure ClearSkiaList;
     procedure DrawSkiaList(const ACanvas: ISkCanvas);
 
-    procedure BeginPrimitive(const AId: Int64; const AUserObject: TObject = nil);
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD);
     procedure EndPrimitive;
 
     property Bitmap: TBitmap read FBitmap;
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
     property SkiaList: TogsSkiaList read FSkiaList;
+    property skPainter: TSkPaintBox read FskPainter;
   end;
 
 implementation uses Writer, newProcs;
@@ -159,7 +165,7 @@ end;
 
 { TogsDrawerSkia }
 
-constructor TogsDrawerSkia.Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent);
+constructor TogsDrawerSkia.Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent; SkPainter_: TSkPaintBox);
 begin
   inherited Create(ogsSelector_, OnPaint_);
   FWidth := 1;
@@ -169,16 +175,21 @@ begin
   FInScene := False;
   FUseWorldCoords := False;
   FSkiaList := TogsSkiaList.Create(True);
+  FSkPainter := SkPainter_;
 end;
 
 destructor TogsDrawerSkia.Destroy;
 begin
+ Writein(['sk1']);
   FSkiaList.Free;
   FSkiaList := nil;
-  FBitmap.Free;
-  FBitmap := nil;
+ Writein(['sk2']);
+   FBitmap.Free;
+ Writein(['sk3']);
+   FBitmap := nil;
   inherited;
-end;
+ Writein(['sk4']);
+ end;
 
 { TogsSkiaObject }
 
@@ -232,7 +243,7 @@ begin
     FSkiaList.DrawAll(ACanvas);
 end;
 
-procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TObject);
+procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD);
 begin
   if FSkCanvas = nil then
     Exit;
@@ -261,6 +272,7 @@ begin
     Obj.UserObject := FPrimitiveUserObject;
     Obj.BoundsWorld := FPrimitiveBoundsWorld;
     Obj.Picture := FPrimitiveRecorder.FinishRecording;
+    FPrimitiveUserObject.DrawerObject := Obj;
     if (FSkiaList <> nil) and (Obj.Picture <> nil) then
       FSkiaList.Add(Obj)
     else
@@ -321,7 +333,7 @@ begin
     FBitmap.SetSize(FWidth, FHeight);
 end;
 
-procedure TogsDrawerSkia.Clear(AColor: Integer);
+procedure TogsDrawerSkia.Clear(AColor: LongInt);
 var
   Paint: ISkPaint;
 begin
@@ -572,6 +584,12 @@ begin
    // Canvas.MoveTo(PointF(X, Y));
 end;
 
+procedure TogsDrawerSkia.RedrawAll;
+begin
+ If FSkPainter <> nil then
+  FSkPainter.Redraw;
+end;
+
 procedure TogsDrawerSkia.LineTo(X, Y: Integer);
 begin
   if Canvas <> nil then
@@ -758,10 +776,8 @@ begin
 end;
 
 initialization
-  SkiaFontFiles := nil;
-
+ // SkiaFontFiles := nil;
 finalization
-  SkiaFontFiles.Free;
+  If SkiaFontFiles <> nil then SkiaFontFiles.Free;
   SkiaFontFiles := nil;
-
 end.

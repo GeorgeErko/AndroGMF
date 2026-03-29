@@ -14,8 +14,6 @@ implementation uses FMX.Forms, System.IOUtils, Writer;
 
 procedure RegPrimitives;
 begin
-// newProcs
- MainPath := Application.GetNamePath;
 // Collect
  RegisterObject(PCollection,50);
  RegisterObject(TSortedCollection,51);
@@ -80,7 +78,7 @@ begin
 //mpMarker
  RegisterObject(TMarkerOperation,121);
  RegisterObject(TMarkerView,122);
- MarkerList:=TMarkerList.Create;
+ MarkerList:=TMarkerList.Create(nil);
  MarkerList.AddMarker(mtCross);MarkerList.AddMarker(mtDiagCross);MarkerList.AddMarker(mtRect);MarkerList.AddMarker(mtTriangle);MarkerList.AddMarker(mtInvTriangle);
  MarkerList.AddMarker(mt2Triangle);
 // Lines2

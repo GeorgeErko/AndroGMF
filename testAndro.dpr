@@ -72,19 +72,27 @@ uses
   MainFrm in 'MainFrm.pas' {MainForm},
   MainFrmSkia in 'MainFrmSkia.pas' {MainFormSkia},
   ogcDrawerSkia in 'JSON\ogcDrawerSkia.pas',
-  objMouse in 'MOUSE\objMouse.pas',
   UndoColNew in 'GMF\UndoColNew.pas',
   UndoItem in 'GMF\UndoItem.pas',
   SelectorObj in 'GMF\SelectorObj.pas',
   UndoStream in 'GMF\UndoStream.pas',
-  MainFrmMouseObj in 'MainFrmMouseObj.pas' {MainFormMouseObj};
+  MainFrmMouseObj in 'MainFrmMouseObj.pas' {MainFormMouseObj},
+  objMouse in 'MOUSE\objMouse.pas',
+  objMouseSelect in 'MOUSE\objMouseSelect.pas',
+  drawTwigs in 'GMF\drawTwigs.pas',
+  WpGeo in 'GMF\WpGeo.pas',
+  notLink_ in 'GMF\notLink_.pas',
+  Util in 'GMF\Util.pas',
+  Circle in 'GMF\Circle.pas',
+  drawGrid in 'GMF\drawGrid.pas',
+  GBFWUndo in 'GMF\GBFWUndo.pas',
+  FrameAccuDraw in 'FrameAccuDraw.pas' {AccuDrawFrame: TFrame};
 
 {$R *.res}
 
 begin
   Application.Initialize;
-   Application.CreateForm(TMainFormSkia, MainFormSkia);
-  Application.CreateForm(TMainFormMouseObj, MainFormMouseObj);
+   Application.CreateForm(TMainFormMouseObj, MainFormMouseObj);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;
 end.

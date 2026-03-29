@@ -3,7 +3,7 @@
 interface uses System.Types, System.UITypes, {$IFDEF WIN64}Windows,{$ENDIF}Collect,
                newSettings, FMX.Controls, FMX.Graphics, FMX.Objects
                {$IFDEF UNIX},Types, tmpPainter{$ENDIF},
-               ogcBasic;
+               ogcBasic, System.Skia, FMX.Skia;
 
  var
     { точности }
@@ -65,8 +65,11 @@ Type
   function Visible(Sect: TSect): boolean;
   Function Sect: TSect;
  end;
-
- TUpdateProc=Procedure(Check:boolean=False) of object;
+//
+ TUpdateProc = procedure(Check:boolean=False) of object;
+//
+ TUpdateSceneMode = (usmNone, usmAdd, usmModify, usmDelete);
+ TOnUpdateSceneProc = procedure (UpdateSceneMode: TUpdateSceneMode; Obj: TObject) of object;
 
  TSelector = class(TogsSelector)
   public
@@ -75,10 +78,13 @@ Type
    GMemMake:AnsiString;
  //
    GNForm:TControl;
+   ovrPainter: TSkPaintBox;
+   ovrPaint: ISkPaint;
    HObject,WObject:Double;
    GGraphSet:TGraphSet;
-   GlobalSettings:TGlobalSettings;
    GLineCol,GSqwearCol,GPointCol:TSortedCollection;
+   GlobalSettings: TGlobalSettings;
+   GridPath: Pointer;
    GFontColEx:Pointer;
    FCurPos:TPointF;
    STSDrawing:boolean;
@@ -87,6 +93,9 @@ Type
    GFontSet    :PCollection;
  //
    LOperation: Integer;
+ // добавление, удаление, редактирование примитивов в рендере
+   OnUpdateScene: TOnUpdateSceneProc;
+   SelName: String;
  // Создание
   Constructor Create(Drawer: TogsDrawer);
   Destructor Destroy; override;
@@ -108,7 +117,8 @@ Type
   Function  DirectToRumb(Angle:Double):TRumb;
   Function  AngleToStr(Angle:Double;UseCalc:Boolean;Razd:String):String;
 // Параметры координатной системы
-  Procedure UpdateImage(CheckRange:boolean = false);
+  Procedure UpdateImage(UpdateSceneMode:TUpdateSceneMode = usmNone; Obj: TObject = nil);
+  Procedure UpdateOverlay;
   Function Drawer: TogsDrawer;
   Function GCanvas:TCanvas;
 //
@@ -121,13 +131,22 @@ Type
   function RealInt(V: Double): Int64;
 //
   function execEscape: boolean;
+ // процедуры для рисования на ISkCanvas в MouseObject.DrawTemp
+  procedure DrawLine(X1, Y1, X2, Y2: Double);
+  procedure MoveTo(X, Y: Double);
+  procedure LineTo(X, Y: Double);
+  procedure PMoveTo(X, Y: Double);
+  procedure PLineTo(X, Y: Double);
+  Procedure PSetPixel(X, Y: Double);
+  Procedure PSetPixelDbl(X, Y: Double);
  end;
 
 var RealScaleLength:TRealScaleLength;
 
 Function ScrRealScaleLength(Drawer: TogsDrawer; Value: Double; Ko: Double): Double;
 
-implementation uses EcDot, Intervals, SysUtils, Math, WPTForm0, WPTForm1;
+implementation uses EcDot, Intervals, SysUtils, Math, WPTForm0, WPTForm1,
+                    drawGrid, Writer;
 
 Function ScrRealScaleLength(Drawer: TogsDrawer; Value: Double; Ko: Double): Double;
 begin
@@ -192,14 +211,23 @@ end;
 constructor TSelector.Create(Drawer: TogsDrawer);
 begin
  inherited Create(Drawer);
- GlobalSettings:=TGlobalSettings.Create();
+ GlobalSettings:=TGlobalSettings.Create(Self);
+ GridPath:=TGridPath.Create(Self);
  RealScaleLength := ScrRealScaleLength;
+ ovrPaint := TSkPaint.Create;
+ ovrPaint.AntiAlias := True;
+ SelName := TimeToStr(Time);
 end;
 
 destructor TSelector.Destroy;
 begin
+ Writein(['sel.destr1']);
  inherited Destroy;
+ Writein(['sel.destr2']);
  GlobalSettings.Free;
+ Writein(['sel.destr3']);
+ TGridPath(GridPath).Free;
+ Writein(['sel.destr4']);
 end;
 
 function TSelector.EqualAnyPoints(X, Y, X2, Y2: Double): Boolean;
@@ -219,7 +247,7 @@ end;
 
 function TSelector.execEscape: boolean;
 begin
- raise Exception.Create('Error Message Selector.execEscape');
+ //raise Exception.Create('Error Message Selector.execEscape');
 end;
 
 function TSelector.GCanvas: TCanvas;
@@ -248,11 +276,14 @@ begin
 end;
 
 function TSelector.GRect: TSect;
-var Sect: TSect;
 begin
- Sect := ActiveRect.Sect;
- Result := Sect;
- Result.Bottom := Sect.Top; Result.Top := Sect.Bottom;
+ Result.Left := ActiveRect.XMin; Result.Right := ActiveRect.XMax;
+ Result.Bottom := ActiveRect.YMin; Result.Top := ActiveRect.YMax;
+end;
+
+procedure TSelector.LineTo(X, Y: Double);
+begin
+ assert(True, 'Selector.LineTo');
 end;
 
 function TSelector.LineVis(XX, YY, XX1, YY1: Double): Boolean;
@@ -260,9 +291,14 @@ begin
 
 end;
 
+procedure TSelector.MoveTo(X, Y: Double);
+begin
+ assert(True, 'Selector.MoveTo');
+end;
+
 Function TSelector.XRasst;
  begin
-  XRasst := pixDist(XCoord);
+  XRasst := inherited pixDist(XCoord);
  end;
 
 Function TSelector.YRasst;
@@ -279,6 +315,16 @@ Function TSelector.YGeoRasst;
  begin
   YGeoRasst := geoDist(YCoord);
  end;
+
+procedure TSelector.PLineTo(X, Y: Double);
+begin
+ LineTo(X, Y);
+end;
+
+procedure TSelector.PMoveTo(X, Y: Double);
+begin
+ MoveTo(X, Y);
+end;
 
 function TSelector.PointInSect(X, Y: Double; Sect: TSect): Boolean;
 Const C=100;
@@ -310,6 +356,18 @@ Function TSelector.PointVis1;
                                      PointVis1:=False;
    end;
  end;
+
+procedure TSelector.PSetPixel(X, Y: Double);
+begin
+ With GGraphSet do
+  // PointViewer[PointStyle](X,Y);
+end;
+
+procedure TSelector.PSetPixelDbl(X, Y: Double);
+begin
+ With GGraphSet do
+  // PointViewerDbl[PointStyle](X,Y);
+end;
 
 function TSelector.RealDouble(V: Double): Double;
 begin
@@ -399,9 +457,27 @@ begin
  Result := ogsDrawer;
 end;
 
-procedure TSelector.UpdateImage(CheckRange: boolean);
+procedure TSelector.DrawLine(X1, Y1, X2, Y2: Double);
 begin
- //
+ assert(True, 'Selector.DrawLine')
+end;
+
+procedure TSelector.UpdateImage(UpdateSceneMode:TUpdateSceneMode = usmNone; Obj: TObject = nil);
+begin
+ If UpdateSceneMode = usmNone then
+  Drawer.RedrawAll
+ else
+ begin
+  OnUpdateScene(UpdateSceneMode, Obj);
+  ovrPainter.Redraw;
+ end;
+end;
+
+procedure TSelector.UpdateOverlay;
+begin
+ If ovrPainter <> nil then
+  ovrPainter.Redraw else
+   UpdateImage;
 end;
 
 initialization

@@ -62,6 +62,8 @@ type
     procedure InitPainterInput;
     procedure SaveBackbufferToFile(const Tag: string);
     procedure RenderSceneToBackbuffer(const Canvas: TCanvas);
+  protected
+    procedure PickGmfFileWin64;
   public
     TwgForm: TForm2;
     Selector: TSelector;
@@ -86,7 +88,8 @@ procedure  runFonts;
 implementation uses Collect, uExecRegisterClass,
                     System.IOUtils, Writer, newProcs,
                     FMX.FontManager,
-                    OpenForm, EcText, EcDot, EcDot2, EcLot,
+                    {$IFDEF ANDROID} OpenForm, {$ENDIF}
+                    EcText, EcDot, EcDot2, EcLot,
                     RPrims, WPTwigs, DlgLocalOpen;
 
 {$R *.fmx}
@@ -664,7 +667,31 @@ end;
 
 procedure TMainForm.btnOpenClick(Sender: TObject);
 begin
+{$IFDEF ANDROID}
  PickGmfFile(OpenGmfFile);
+{$ELSE}
+ PickGmfFileWin64;
+{$ENDIF}
+end;
+
+procedure TMainForm.PickGmfFileWin64;
+var
+  Dlg: TOpenDialog;
+  SrcPath: string;
+begin
+  Dlg := TOpenDialog.Create(nil);
+  try
+    Dlg.Filter := 'GMF (*.gmf)|*.gmf|All files (*.*)|*.*';
+    Dlg.Options := Dlg.Options + [TOpenOption.ofFileMustExist];
+    if not Dlg.Execute then
+      Exit;
+    SrcPath := Dlg.FileName;
+    if SrcPath = '' then
+      Exit;
+    OpenGmfFile(SrcPath);
+  finally
+    Dlg.Free;
+  end;
 end;
 
 procedure  runFonts;

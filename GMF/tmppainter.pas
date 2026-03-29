@@ -5,6 +5,14 @@ interface
 
 uses SysUtils, FMX.Types, System.Types;
 
+const
+//
+ ps_solid = 0;
+ ps_dot = 1;
+ ps_Dash =2;
+ R2_notXorPen = 0;
+ TransParent = 0;
+//
 type
  HDC = Integer;
  HGDIOBJ = Integer;
@@ -15,7 +23,6 @@ type
  HPEN = Integer;
  LOGBRUSH = Integer;
  HFONT = Integer;
-
 
 function SelectObject(_para1:HDC; _para2:HGDIOBJ):HGDIOBJ;
 function CreatePen(_para1:longint; _para2:longint; _para3:COLORREF):HPEN;
@@ -38,6 +45,8 @@ function ExtSelectClipRgn(_para1:HDC; _para2:HRGN; _para3:longint):longint;
 function FillRect(hDC:HDC; const lprc:TRECT; hbr:HBRUSH):longint;
 function MoveToEx(_para1:HDC; _para2:longint; _para3:longint; _para4:PPOINT):LONGBOOL;
 function LineTo(_para1:HDC; _para2:longint; _para3:longint):LONGBOOL;
+function Arc(DC: HDC; p1,p2,p3,p4,p5,p6,p7,p8:integer): LONGBOOL;
+function MoveTo(DC: HDC; p1,p2: integer): LONGBOOL;
 
 implementation
 
@@ -150,6 +159,15 @@ begin
  assert(False,'LineTo');
 end;
 
+function Arc(DC: HDC; p1,p2,p3,p4,p5,p6,p7,p8:integer): LONGBOOL;
+begin
+ assert(False,'Arc');
+end;
+
+function MoveTo(DC: HDC; p1,p2: integer): LONGBOOL;
+begin
+ assert(False,'MoveTo');
+end;
 
 end.
 

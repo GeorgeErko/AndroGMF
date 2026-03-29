@@ -1,6 +1,7 @@
 ﻿unit mpMarker;
 
-interface uses tmpPainter,Collect, FMX.Graphics, newSelector, System.Types, System.UITypes;
+interface uses tmpPainter, Collect, FMX.Graphics, System.Types, System.UITypes,
+               System.Skia, ogcBasic;
 
 const
  xyNull = -1000000000;
@@ -51,7 +52,7 @@ type
  TMarker = class (TTwgObject)
   mType:Integer;
   Color:Integer;
-  Colors:Array[0..7] of Integer;
+  Colors:Array[0..7] of TColorRef;
   OriginalSize:Integer;
   Size:Integer;
   mX,mY,mZ:Double;
@@ -69,15 +70,17 @@ type
   ID:String;
  {}
   TwgForm:Pointer;
-  Selector:TSelector;
-   Constructor Create(wnd:LongInt;mt,col,sz,mW:Integer);
-   Procedure Draw(Canvas:TCanvas;X,Y:Double;inPix:Boolean = False);
-  {}
+  Selector: Pointer;
+   Constructor Create(Selector_: Pointer; wnd:LongInt;mt,col,sz,mW:Longint);
+   Destructor Destroy;override;
+   Procedure Draw(Canvas:TCanvas;X,Y:Double;inPix:Boolean = False); overload;
+   Procedure Draw(const Canvas: ISkCanvas; X, Y: Double; inPix: Boolean = False); overload;
+ {}
    Procedure Resize(Canvas:TCanvas;newSize:Integer);
    Procedure Move(Canvas:TCanvas;X,Y:Double;moveCur:Integer=moveNone;newAngle:Double=0;MoveName:String='');
    Procedure Remove(Canvas:TCanvas;RemoveName:String='');
    Function Visible:boolean;
-  {}
+ {}
    Procedure AssignMarker(Marker:TMarker;Canvas:TCanvas);
  end;
 
@@ -92,7 +95,8 @@ type
     procedure SetWidth(const Value: Integer);
   public
   Markers:PCollection;
-  Constructor Create;
+  Selector: Pointer;
+  Constructor Create(Selector_: Pointer);
   Destructor Destroy;override;
   Procedure AddMarker(Style:Integer);
   Procedure Draw(Canvas:TCanvas;Index,X,Y:Integer);
@@ -110,7 +114,9 @@ type
   Marker:TMarker;
   Checked:Boolean;
   Dop:Array[0..100-SizeOf(Integer)-1] of byte;
-  Constructor Create(fixName_,Name_:String;Marker_:TMarker);
+ //
+  Selector: Pointer;
+  Constructor Create(Selector_: Pointer; fixName_,Name_:String;Marker_:TMarker);
   Constructor Load(Buf:TBufStream);override;
   Procedure Store(Buf:TBufStream);override;
  end;
@@ -122,7 +128,8 @@ type
     function GetMarkerChecked(Index: String): boolean;
   public
   Operations:PCollection;
-  Constructor Create(Wnd:LongInt);
+  Selector: Pointer;
+  Constructor Create(Selector_: Pointer);
   Destructor Destroy;override;
  //
   Constructor Load(Buf:TBufStream);override;
@@ -144,7 +151,77 @@ Procedure Rotate(X2,Y2,Angle:Double;var X,Y:Double);
 procedure Move(Dx, Dy: Double; var X, Y: Double);
 Procedure RotateDots(XX, YY, Angle: Double; Col: PCollection);
 
-implementation uses EcDot, newProcs, SysUtils;
+procedure DrawMarkerOverlay(const ASelector: Pointer; const Canvas: ISkCanvas);
+procedure RequestMarkerRedraw(const ASelector: Pointer);
+
+implementation uses EcDot, newProcs, SysUtils, newSelector, ogcDrawerSkia,
+                 System.Generics.Collections, Writer, FMX.Controls, FMX.Skia,
+                 System.Classes;
+
+var
+  MarkerRegistry: TList<TMarker>;
+
+procedure RegisterMarker(const M: TMarker);
+begin
+  if M = nil then
+    Exit;
+  if MarkerRegistry = nil then
+    MarkerRegistry := TList<TMarker>.Create;
+  if MarkerRegistry.IndexOf(M) < 0 then
+    MarkerRegistry.Add(M);
+end;
+
+procedure UnregisterMarker(const M: TMarker);
+var
+  Idx: Integer;
+begin
+  if (M = nil) or (MarkerRegistry = nil) then
+    Exit;
+  Idx := MarkerRegistry.IndexOf(M);
+  if Idx >= 0 then
+    MarkerRegistry.Delete(Idx);
+end;
+
+procedure DrawMarkerOverlay(const ASelector: Pointer; const Canvas: ISkCanvas);
+var
+  I: Integer;
+  M: TMarker;
+  Sel: TSelector;
+begin
+  if (Canvas = nil) or (ASelector = nil) or (MarkerRegistry = nil) then
+    Exit;
+  Sel := TSelector(ASelector);
+  if Sel = nil then
+    Exit;
+  for I := 0 to MarkerRegistry.Count - 1 do
+  begin
+    M := MarkerRegistry[I];
+    if (M <> nil) and (M.Selector = ASelector) and M.Visible then
+      M.Draw(Canvas, Sel.XPix(M.mX), Sel.YPix(M.mY), True);
+  end;
+end;
+
+procedure RequestMarkerRedraw(const ASelector: Pointer);
+var
+  Sel: TSelector;
+  Ov: TSkPaintBox;
+begin
+  if ASelector = nil then
+    Exit;
+  Sel := TSelector(ASelector);
+
+  Ov := nil;
+  try
+    if Sel <> nil then
+      Ov := Sel.ovrPainter;
+  except
+  end;
+
+  if Ov <> nil then
+    Ov.Redraw
+  else
+    Exit;
+end;
 
 Procedure Rotate(X2,Y2,Angle:Double;var X,Y:Double);
 var XD,YD,XD1:Double;
@@ -165,8 +242,8 @@ end;
 
 Procedure RotateDots(XX, YY, Angle: Double; Col: PCollection);
 var I:Integer;Dot:TDot;Dx,Dy:Double;XXX,YYY:Double;
-begin                                           
- For I:=0 to Col.Count-1 do begin      
+begin
+ For I:=0 to Col.Count-1 do begin
   Dot:=Col.At(I);
   Rotate(0,0,Angle,Dot.XDot,Dot.YDot);
   XXX:=XX;YYY:=YY;
@@ -176,22 +253,27 @@ begin
  end;
 end;
 
+function S(P: Pointer): TSelector;
+begin
+ Result := P;
+end;
+
 { TMarker }
 
 procedure TMarker.AssignMarker(Marker: TMarker;Canvas:TCanvas);
 begin
- Draw(Canvas,mX,mY);
   ID:='';
   mType:=Marker.mType;
   Size:=Marker.Size;
   Color:=Marker.Color;
   mWidth:=Marker.mWidth;
   Rotation:=Marker.Rotation;
- Draw(Canvas,mx,mY);
+ RequestMarkerRedraw(Selector);
 end;
 
-constructor TMarker.Create(wnd: LongInt; mt, col, sz, mW: Integer);
+constructor TMarker.Create(Selector_: Pointer; wnd: LongInt; mt, col, sz, mW: Longint);
 begin
+ Selector := Selector_;
  OriginalSize:=sz;
  hWndParent:=wnd;
  mType:=mt; Color:=col; Size:=sz;
@@ -201,13 +283,119 @@ begin
  Iter:=0;
  Angle:=0;
  ID:='';
+ RegisterMarker(Self);
+end;
+
+destructor TMarker.Destroy;
+begin
+  UnregisterMarker(Self);
+  inherited;
+end;
+
+procedure TMarker.Draw(const Canvas: ISkCanvas; X, Y: Double; inPix: Boolean);
+var
+  xx, yy: Single;
+  r: Single;
+  penColor: TAlphaColor;
+  ViewScale: Single;
+  Sel: TSelector;
+begin
+// Writein([inpix, x, y]);
+  if Canvas = nil then
+    Exit;
+  if X = xyNull then
+    Exit;
+
+  try
+    if inPix then
+    begin
+      xx := Single(X);
+      yy := Single(Y);
+    end
+    else
+    begin
+      xx := Single(X);
+      yy := Single(Y);
+    end;
+  except
+    Exit;
+  end;
+
+  ViewScale := 1;
+  if Selector <> nil then
+  begin
+    try
+      ViewScale := Single(TSelector(Selector).GetScale);
+    except
+      ViewScale := 1;
+    end;
+  end;
+  if ViewScale <= 0 then
+    ViewScale := 1;
+
+  r := Size * 0.5;
+  if r < 1 then
+    r := 1;
+ //
+  penColor := TAlphaColor(Color);
+ //
+  Sel := TSelector(Selector);
+  if mWidth > 0 then
+    Sel.ovrPaint.StrokeWidth := mWidth + 1
+  else
+    Sel.ovrPaint.StrokeWidth := 2;
+  Sel.ovrPaint.Color := penColor;
+//
+  If (not Rotation) or (mType=mtMarker) then Angle:=0;
+//  Writein(['Ang=', Angle]);
+ //
+  Canvas.Save;
+  try
+    Canvas.Translate(xx, yy);
+    if (Abs(ViewScale) > 1e-6) and (Abs(ViewScale - 1) > 1e-6) then
+      Canvas.Scale(1 / ViewScale, 1 / ViewScale);
+    if Abs(Angle) > 1e-6 then
+      Canvas.Rotate(Angle * 57.29577951308232);
+    case mType of
+      mtCross:
+        begin
+          Canvas.DrawLine(-r, 0, r, 0, Sel.ovrPaint);
+          Canvas.DrawLine(0, -r, 0, r, Sel.ovrPaint);
+        end;
+      mtDiagCross:
+        begin
+          Canvas.DrawLine(-r, -r, r, r, Sel.ovrPaint);
+          Canvas.DrawLine(r, -r, -r, r, Sel.ovrPaint);
+        end;
+      mtRect:
+        begin
+          Canvas.DrawRect(TRectF.Create(-r, -r, r, r), Sel.ovrPaint);
+        end;
+      mtTriangle:
+        begin
+          Canvas.DrawLine(0, -r, r, r, Sel.ovrPaint);
+          Canvas.DrawLine(r, r, -r, r, Sel.ovrPaint);
+          Canvas.DrawLine(-r, r, 0, -r, Sel.ovrPaint);
+        end;
+      mtInvTriangle:
+        begin
+          Canvas.DrawLine(0, r, -r, -r, Sel.ovrPaint);
+          Canvas.DrawLine(-r, -r, r, -r, Sel.ovrPaint);
+          Canvas.DrawLine(r, -r, 0, r, Sel.ovrPaint);
+        end;
+    else
+      begin
+        Canvas.DrawLine(-r, 0, r, 0, Sel.ovrPaint);
+        Canvas.DrawLine(0, -r, 0, r, Sel.ovrPaint);
+      end;
+    end;
+  finally
+    Canvas.Restore;
+  end;
 end;
 
 procedure TMarker.Draw(Canvas: TCanvas;X,Y:Double;inPix:Boolean = False);
-var xx,yy:Integer;r,I:Integer;                  
-    {$IFDEF MSWINDOWS}
-    Pen,Rop,Brush:hPen;
-    {$ENDIF}
+var xx,yy:Integer;r,I:Integer;
     Col,Col2:PCollection;
     D,D2:TDot;
     wr:Integer;
@@ -216,20 +404,14 @@ var xx,yy:Integer;r,I:Integer;
     BMP:TBitmap;
     XOld,YOld:Integer;
     OldCanvas:TCanvas;
-    {$IFDEF MSWINDOWS}
     Br:hBrush;
     R1:TRect;
-    CM:TCopyMode;
-    {$ENDIF}
     penColor:Integer;
+
 begin
- If X=xyNull then Exit;
- With Selector do begin
-  try
-  If not inPix then begin xx:=XPix(X);yy:=YPix(Y);end else begin xx:=Round(X);yy:=Round(Y);end;
-  except MessageError('Ошибка: mpMarker строка 215');Writeln('Exit',TiMeToStr(Now));exit;end;
-  r:=Size div 2;
+ Exit;
  // рисуем крест заданного размера формы и цвета
+  With S(Selector) do begin
   bm:=GGraphSet.bmGlass;
   GGraphSet.bmGlass:=True;
   try
@@ -238,15 +420,7 @@ begin
   BMP:=TBitmap.Create;BMP.Width:=Size+2;BMP.Height:=Size+2;
   XX:=BMP.Width div 2;YY:=BMP.Height div 2;
   Canvas:=BMP.Canvas;
-  {$IFDEF MSWINDOWS}
-  R1.Left:=0;R1.Top:=0;R1.Right:=BMP.Width;R1.Bottom:=BMP.Height;
- // Br:=CreateSolidBrush(GlobalSettings.Settings.gsWindowColor);
-  Br:=CreateSolidBrush(clBlack);
-  FillRect(Canvas.Handle,R1,Br);
-  DeleteObject(Br);
-  {$ELSE}
   BMP.Clear(TAlphaColors.Black);
-  {$ENDIF}
   If GlobalSettings.Settings.gsWindowColor <> TAlphaColors.Black then begin
    If Color = TAlphaColors.White then penColor:=notColor(Color) else
    penColor:=notColor(Color)
@@ -254,15 +428,11 @@ begin
    If Color = TAlphaColors.Black then penColor:=notColor(Color) else
    penColor:=Color;
   end;
-   {$IFDEF MSWINDOWS}
-   Pen:=SelectObject(Canvas.Handle,CreatePen(ps_Solid,mWidth,penColor));
-   {$ELSE}
    Canvas.Stroke.Kind:=TBrushKind.Solid;
    Canvas.Stroke.Color:=TAlphaColor(penColor);
    Canvas.Stroke.Thickness:=mWidth;
    Canvas.Fill.Kind:=TBrushKind.Solid;
    Canvas.Fill.Color:=TAlphaColor(penColor);
-   {$ENDIF}
    // Writeln('Col=',Color);
  // Brush:=SelectObject(Canvas.Handle,CreateSolidBrush(Color));
  // Rop:=SetRop2(Canvas.Handle,R2_NotXorPen);
@@ -328,27 +498,16 @@ begin
             end;
   end;
    If (not Rotation) or (mType=mtMarker) then Angle:=0;
-   Comm.PlayLines(Canvas,Angle);
+   Comm.PlayLines(Canvas, Angle);
    Comm.Free;
-   {$IFDEF MSWINDOWS}
-   CM:=OldCanvas.CopyMode;
-   OldCanvas.CopyMode:=cmSrcInvert;
-   OldCanvas.Draw(XOld-XX,YOld-YY,BMP);
-   OldCanvas.CopyMode:=CM;
-   {$ELSE}
    OldCanvas.Blending:=True;
   // OldCanvas.BlendMode := TBlendMode.Invert;
    OldCanvas.DrawBitmap(BMP,RectF(0,0,BMP.Width,BMP.Height),RectF(XOld-XX,YOld-YY,XOld-XX+BMP.Width,YOld-YY+BMP.Height),1);
   // OldCanvas.BlendMode:=TBlendMode.Normal;
-     OldCanvas.Blending:=False;
-   {$ENDIF}
+    OldCanvas.Blending:=False;
   finally
    GGraphSet.bmGlass:=bm;
   end;
-  {$IFDEF MSWINDOWS}
-  SetRop2(Canvas.Handle,Rop);
-  DeleteObject(SelectObject(Canvas.Handle,Pen));
-  {$ENDIF}
   Showing:=not Showing;
   Inc(Iter);
   Col.Free;
@@ -362,36 +521,33 @@ var PC:TPoint;
 begin
 // Writeln(1,' ',X,' ',Y);
 // Writeln('MoveMarker..',MoveName);
- If Canvas<>nil then Draw(Canvas,mX,mY);
+//  WriteIn(['Marker.Move2=', X, Y]);
   mX:=X;mY:=Y;
   Angle:=newAngle;
- If Canvas<>nil then Draw(Canvas,mX,mY);
 // Writeln(2,' ',XPix(mX),' ',YPix(mY));
  If moveCur=moveCursor then begin
-  PC.X:=Selector.XPix(mX);PC.Y:=Selector.YPix(mY);
-  {$IFDEF WIN64}
-  ClientToScreen(hWndParent,PC);
-  SetCursorPos(PC.X,PC.Y);
-  {$ELSE}
-   assert(False,'TMarker.Move');
-  {$ENDIF}
+  PC.X:=S(Selector).XPix(mX);PC.Y:=S(Selector).YPix(mY);
+//  {$IFDEF WIN64}
+//  ClientToScreen(hWndParent,PC);
+//  SetCursorPos(PC.X,PC.Y);
+//  {$ELSE}
+//   assert(False,'TMarker.Move');
+ // {$ENDIF}
  end;
+ RequestMarkerRedraw(Selector);
 end;
 
-procedure TMarker.Remove(Canvas: TCanvas; RemoveName: String);
+procedure TMarker.Remove(Canvas: TCanvas; RemoveName: String = '');
 begin
 // Writeln('ReMoveMarker..',RemoveName);
- try
- If mX<>xyNull then Draw(Canvas,mX,mY);
- except end;
  mX:=xyNull;
+ RequestMarkerRedraw(Selector);
 end;
 
 procedure TMarker.Resize(Canvas: TCanvas; newSize: Integer);
 begin
- Draw(Canvas,mX,mY);
   Size:=newSize;
- Draw(Canvas,mX,mY);
+ RequestMarkerRedraw(Selector);
 end;
 
 function TMarker.Visible: boolean;
@@ -403,11 +559,12 @@ end;
 
 procedure TMarkerList.AddMarker(Style: Integer);
 begin
- Markers.Insert(TMarker.Create(0,Style,0,0,0));
+ Markers.Insert(TMarker.Create(Selector, 0,Style,0,0,0));
 end;
 
 constructor TMarkerList.Create;
 begin
+ Selector := Selector_;
  Markers:=PCollection.Create(1);
 end;
 
@@ -418,14 +575,14 @@ end;
 
 procedure TMarkerList.Draw(Canvas:TCanvas;Index,X,Y:Integer);
 begin
- Marker[Index].Draw(Canvas,X,Y,True);
+ Exit;
 end;
 
 function TMarkerList.GetMarker(Index: Integer): TMarker;
 begin
  Result:=Markers[Index];
 end;
-                              
+
 procedure TMarkerList.SetColor(const Value: Integer);
 var I:Integer;
 begin
@@ -505,43 +662,33 @@ begin
  For I:=0 to Comms.Count-1 do
   Case Comm[I].Comm of
    commMoveTo:begin
-    {$IFDEF MSWINDOWS}
-    MoveToEx(Canvas.Handle,Comm[I].X,Comm[I].Y,nil);
-    {$ELSE}
     CurX:=Comm[I].X;CurY:=Comm[I].Y;
-    {$ENDIF}
    end;
    commLineTo:begin
-    {$IFDEF MSWINDOWS}
-    LineTo(Canvas.Handle,Comm[I].X,Comm[I].Y);
-    {$ELSE}
     Canvas.DrawLine(PointF(CurX,CurY),PointF(Comm[I].X,Comm[I].Y),1);
     CurX:=Comm[I].X;CurY:=Comm[I].Y;
-    {$ENDIF}
     // Writeln('ColLinePix=',Comm[I].Color);
    end;
    commSetPixel:begin
-    {$IFDEF MSWINDOWS}
-    SetPixel(Canvas.Handle,Comm[I].X,Comm[I].Y,Comm[I].Color);
-    {$ELSE}
     Canvas.FillRect(RectF(Comm[I].X,Comm[I].Y,Comm[I].X+1,Comm[I].Y+1),0,0,[],1);
-    {$ENDIF}
     // Writeln('ColsetPix=',Comm[I].Color);
     end;
   end;
 end;
 
-constructor TMarkerOperation.Create(fixName_,Name_: String; Marker_: TMarker);
+constructor TMarkerOperation.Create(Selector_: Pointer; fixName_,Name_: String; Marker_: TMarker);
 begin
+ Selector := Selector_;
  fixName:=fixName_;Name:=Name_;Marker:=Marker_;Checked:=True;
 end;
 
 constructor TMarkerOperation.Load(Buf: TBufStream);
 begin
  // считываем имя и свойства маркера
+ Selector := Buf.Selector;
  fixName:=Buf.ReadString;
  Name:=Buf.ReadString;
- Marker:=TMarker.Create(0,0,0,0,0);
+ Marker:=TMarker.Create(Selector, 0,0,0,0,0);
  Buf.Read(Marker.Color,SizeOf(Marker.Color));
  Buf.Read(Marker.Size,SizeOf(Marker.Size));
  Buf.Read(Marker.mWidth,SizeOf(Marker.mWidth));
@@ -572,20 +719,21 @@ begin
 end;
 
 constructor TMarkerView.Create;
-var clRed: Integer;
+var clRed, Wnd: Longint;
 begin
-clRed := TAlphaColors.Red;
+ Selector := Selector_;
+ clRed := TAlphaColors.Red;
  Operations:=PCollection.Create(1);
- Operations.Insert(TMarkerOperation.Create('mvPoint','Захват точки',TMarker.Create(Wnd,mtDiagCross,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvLine','Захват отрезка',TMarker.Create(Wnd,mtDiagCross,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvPolygon','Захват полигона',TMarker.Create(Wnd,mtCross,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvCenterLine','Захват центра отрезка',TMarker.Create(Wnd,mtTriangle,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvCenter','Захват центра фигуры',TMarker.Create(Wnd,mtDiagCross,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvInterSect','Пересечение примитивов',TMarker.Create(Wnd,mtDiagCross,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector, 'mvPoint','Захват точки',TMarker.Create(Selector,Wnd, mtDiagCross,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvLine','Захват отрезка',TMarker.Create(Selector,Wnd,mtDiagCross,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvPolygon','Захват полигона',TMarker.Create(Selector,Wnd,mtCross,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvCenterLine','Захват центра отрезка',TMarker.Create(Selector,Wnd,mtTriangle,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvCenter','Захват центра фигуры',TMarker.Create(Selector,Wnd,mtDiagCross,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvInterSect','Пересечение примитивов',TMarker.Create(Selector,Wnd,mtDiagCross,clRed,20,0)));
 // Operations.Insert(TMarkerOperation.Create('mvInter','Пересечение с направляющей',TMarker.Create(Wnd,mtDiagCross,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvPointDot','Захват блока/текста/знака и т.п.',TMarker.Create(Wnd,mtRect,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvGrid','Захват узла/линии сетки',TMarker.Create(Wnd,mtRect,clRed,20,0)));
- Operations.Insert(TMarkerOperation.Create('mvPerpend','Перпендикуляр к линии',TMarker.Create(Wnd,mtCross,clRed,10,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvPointDot','Захват блока/текста/знака и т.п.',TMarker.Create(Selector,Wnd,mtRect,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvGrid','Захват узла/линии сетки',TMarker.Create(Selector,Wnd,mtRect,clRed,20,0)));
+ Operations.Insert(TMarkerOperation.Create(Selector,'mvPerpend','Перпендикуляр к линии',TMarker.Create(Selector,Wnd,mtCross,clRed,10,0)));
 // Operations.Insert(TMarkerOperation.Create('Захват линии сетки',TMarker.Create(Wnd,mtCross,clRed,20,0)));
 end;
 
@@ -616,10 +764,11 @@ end;
 
 Constructor TMarkerView.Load(Buf: TBufStream);
 begin
+ Selector := Buf.Selector;
  Operations:=PCollection(Buf.Get);
  If Operations.Count<9 then begin
-  Operations.Insert(TMarkerOperation.Create('mvPerpend','Перпендикуляр к линии',
-                     TMarker.Create({ApplicationMainForm.Handle}0,mtCross, TAlphaColors.Red,10,0)));
+  Operations.Insert(TMarkerOperation.Create(Selector, 'mvPerpend','Перпендикуляр к линии',
+                     TMarker.Create(Selector, 0,mtCross, TAlphaColors.Red,10,0)));
  end;
 end;
 
@@ -630,5 +779,5 @@ end;
 
 initialization
 finalization
- MarkerList.Free;
+// MarkerList.Free;
 end.

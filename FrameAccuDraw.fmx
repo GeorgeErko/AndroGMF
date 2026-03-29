@@ -1,0 +1,145 @@
+object AccuDrawFrame: TAccuDrawFrame
+  Size.Width = 363.000000000000000000
+  Size.Height = 217.000000000000000000
+  Size.PlatformDefault = False
+  object pLine: TPanel
+    Position.X = 8.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 345.000000000000000000
+    Size.Height = 35.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object C1: TCheckBox
+      Position.X = 8.000000000000000000
+      Position.Y = 9.000000000000000000
+      Size.Width = 89.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #1056#1072#1089#1089#1090#1086#1103#1085#1080#1077
+    end
+    object E1: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 2
+      Position.X = 99.000000000000000000
+      Position.Y = 7.000000000000000000
+      Size.Width = 79.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object CA: TCheckBox
+      Position.X = 200.000000000000000000
+      Position.Y = 9.000000000000000000
+      Size.Width = 45.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = #1059#1075#1086#1083
+    end
+    object EA: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 1
+      Position.X = 252.000000000000000000
+      Position.Y = 7.000000000000000000
+      Size.Width = 79.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+  object pRect: TPanel
+    Position.X = 10.000000000000000000
+    Position.Y = 64.000000000000000000
+    Size.Width = 345.000000000000000000
+    Size.Height = 35.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    object C2: TCheckBox
+      Position.X = 8.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 89.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = '1 '#1089#1090#1086#1088#1086#1085#1072
+    end
+    object E2: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 2
+      Position.X = 89.000000000000000000
+      Position.Y = 7.000000000000000000
+      Size.Width = 68.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object C3: TCheckBox
+      Position.X = 170.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 77.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = '2 '#1089#1090#1086#1088#1086#1085#1072
+    end
+    object E3: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 1
+      Position.X = 255.000000000000000000
+      Position.Y = 5.000000000000000000
+      Size.Width = 69.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+  object pArc: TPanel
+    Position.X = 10.000000000000000000
+    Position.Y = 116.000000000000000000
+    Size.Width = 169.000000000000000000
+    Size.Height = 35.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object CR: TCheckBox
+      Position.X = 8.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 89.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #1088#1072#1076#1080#1091#1089
+    end
+    object ER: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 1
+      Position.X = 89.000000000000000000
+      Position.Y = 7.000000000000000000
+      Size.Width = 68.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+  object pKoef: TPanel
+    Position.X = 10.000000000000000000
+    Position.Y = 168.000000000000000000
+    Size.Width = 197.000000000000000000
+    Size.Height = 35.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object CK: TCheckBox
+      Position.X = 8.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 99.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #1082#1086#1101#1092#1092#1080#1094#1080#1077#1085#1090
+    end
+    object EK: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      TabOrder = 1
+      Position.X = 115.000000000000000000
+      Position.Y = 7.000000000000000000
+      Size.Width = 68.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+end

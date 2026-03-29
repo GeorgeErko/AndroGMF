@@ -1,7 +1,8 @@
 ﻿unit objMouse;
 interface
  uses Collect, Classes, FMX.Controls, WpTForm2, FMX.Graphics, newSelector,
-      UpdateMessages, UndoColNew, System.UITypes, System.Types;
+      UpdateMessages, UndoColNew, System.UITypes, System.Types, System.Skia,
+      drawTwigs;
 
 const
  keyNone=-1;
@@ -47,7 +48,7 @@ type
   mForms:TList;
    class function MouseHook(Operation:Integer):boolean;virtual;
  {}
-   Constructor Create(ATwigs:Pointer;AFreeProc:TFreeProc);virtual;
+   Constructor Create(ATwigs:Pointer;AFreeProc:TFreeProc); virtual;
    Procedure Initialize;virtual;
    Destructor Destroy;override;
    Procedure KeyDown(Form:TForm2; var Key: Word; Shift: TShiftState; var Hook:boolean);virtual;
@@ -57,9 +58,9 @@ type
    Procedure MouseUp(Form:TForm2; Button: TMouseButton;Shift: TShiftState;X, Y: Double; var Hook:boolean);virtual;
    Procedure MouseMove(Form:TForm2; Shift: TShiftState;X, Y: Double; var Hook:boolean);virtual;
   {}
-   Procedure DrawTemp(Canvas:TCanvas;PaintOnImage:Boolean=False);virtual;// отрисовка при построении
-   Procedure DrawActive(Canvas:TCanvas);virtual;// отрисовка Prims с выделением
-   Procedure Draw(Canvas:TCanvas);virtual; // отрисовка Prims
+   Procedure DrawTemp(const Canvas: ISkCanvas;PaintOnImage:Boolean=False);virtual;// отрисовка при построении
+   Procedure DrawActive(const Canvas:ISkCanvas);virtual;// отрисовка Prims с выделением
+   Procedure Draw(const Canvas:ISkCanvas);virtual; // отрисовка Prims
    Procedure UpdateSettings(Sender:TObject);virtual;
    Procedure SetCur(CurName:String);virtual;
    Procedure ResetCur;virtual;
@@ -96,26 +97,24 @@ type
    Procedure Maximize;virtual;
   end;
 
- TKeyMouseClass=class of TKeyMouseHook;
+implementation uses SysUtils, newProcs, newSettings, FMX.Forms, Writer;
 
- var MouseHookList : TList; // список зарегистрированных классов перехвата сообщений
-
- Procedure AddMouseHook(MouseHook:TKeyMouseClass);
- Function MouseHookClassName(CName:String):TKeyMouseClass;
-
-implementation uses SysUtils, newProcs, newSettings, FMX.Forms;
 { TKeyMouseHook }
 
 constructor TKeyMouseHook.Create;
 begin
+ WriteIn(['KM', 1]);
+ Twigs:=ATwigs;
  mForms:=TList.Create;
  Operation := LOperation;
+ WriteIn(['KM', 2]);
  FreeProc:=AFreeProc;
- Twigs:=ATwigs;
  Prims:=TForm2.Create(0);
+ WriteIn(['KM', 3]);
  ShiftPress:=False;ControlPress:=False;
  LMouseDown:=False;RMouseDown:=False;MouseX:=0;MouseY:=0;
  PopUpMenu:=nil;
+ WriteIn(['KM', 4]);
 // Initialize;
  V25:=nil;
 // Writeln(AnsiUpperCase(ExtractFileExt(Twigs.About.MyName)));
@@ -123,6 +122,8 @@ begin
 // Writeln('AutoSaveEna=',AutoSaveEnabled);
 // If not Twigs.MirrorObject then If AutoSaveEnabled then try If not AutoSave(Twigs) then Writeln('AutoSaveFALSE');
  UpdateMessage.SetOperation(Self.ClassName,IntToStr(LOperation));
+ WriteIn(['KM', 5]);
+//
  Application.Hint:=' ';
 end;
 
@@ -134,15 +135,15 @@ begin
  ResetCur;
 end;
 
-procedure TKeyMouseHook.Draw(Canvas: TCanvas);
+procedure TKeyMouseHook.Draw(const Canvas: ISkCanvas);
 begin
 end;
 
-procedure TKeyMouseHook.DrawActive(Canvas: TCanvas);
+procedure TKeyMouseHook.DrawActive(const Canvas: ISkCanvas);
 begin
 end;
 
-procedure TKeyMouseHook.DrawTemp(Canvas: TCanvas;PaintOnImage:Boolean=False);
+procedure TKeyMouseHook.DrawTemp(const Canvas:ISkCanvas;PaintOnImage:Boolean=False);
 begin
 end;
 
@@ -187,6 +188,7 @@ end;
 procedure TKeyMouseHook.MouseMove;
 begin
  MouseX:=X;MouseY:=Y;
+ Hook := False;
 end;
 
 procedure TKeyMouseHook.MouseUp;
@@ -194,6 +196,7 @@ begin
  If Button = TMouseButton.mbLeft then LMouseDown:=False;
  If Button = TMouseButton.mbRight then RMouseDown:=False;
  MouseX:=X;MouseY:=Y;
+ Hook := False;
 end;
 
 procedure TKeyMouseHook.UpdateSettings;
@@ -286,21 +289,6 @@ begin
  Result:=False;
 end;
 
-
-Procedure AddMouseHook(MouseHook:TKeyMouseClass);
-begin
- If MouseHookList = nil then MouseHookList:=TList.Create;
- MouseHookList.Add(MouseHook);
-end;
-
-Function MouseHookClassName(CName:String):TKeyMouseClass;
-var I:Integer;
-begin
- For I:=0 to MouseHookList.Count-1 do
-  If TKeyMouseClass(MouseHookList[I]).ClassName = CName then begin Result:=MouseHookList[I];exit;end;
- Result:=nil;
-end;
-
 function TKeyMouseHook.CanDoUndo: Boolean;
 begin
  Result:=False;
@@ -337,6 +325,5 @@ end;
 initialization
 
 finalization
- If MouseHookList<>nil then MouseHookList.Free;
 end.
 

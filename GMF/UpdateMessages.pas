@@ -1,4 +1,4 @@
-unit UpdateMessages;
+﻿unit UpdateMessages;
 
 interface uses Collect, newResource;
 

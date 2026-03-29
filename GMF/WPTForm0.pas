@@ -130,8 +130,8 @@ Type
   {}
     Undo:Pointer;
  {}
-     Procedure CreateLinearView;virtual;abstract;
-     Procedure FreeLinearView;virtual;abstract;
+    Procedure CreateLinearView;virtual;abstract;
+    Procedure FreeLinearView;virtual;abstract;
   end;
 
 
@@ -264,6 +264,7 @@ Procedure LoadAbout;
  end;
 
 { TForm0 }
+
 
 Initialization
 end.

@@ -13,12 +13,10 @@ procedure PickGmfFile(const ACallback: TPickGmfFileCallback);
 
 implementation
 
-{$R *.fmx}
-
 uses
-  System.Zip,
+  System.Zip
 {$IFDEF ANDROID}
-  System.Messaging,
+  ,System.Messaging,
   Androidapi.Helpers,
   Androidapi.IOUtils,
   Androidapi.JNIBridge,
@@ -28,8 +26,8 @@ uses
   Androidapi.JNI.Provider,
   FMX.Helpers.Android,
   FMX.Platform,
-  Androidapi.JNI.GraphicsContentViewText;
-{$ENDIF}
+  Androidapi.JNI.GraphicsContentViewText
+{$ENDIF};
 
 type
   TAndroidGmfPicker = class

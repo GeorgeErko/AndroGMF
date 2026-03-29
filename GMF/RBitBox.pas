@@ -2,9 +2,8 @@
 
 interface
 
-uses SysUtils, Classes, FMX.Graphics, Collect, FMX.Controls, System.Types, FMX.Surfaces{$IFDEF MSWINDOWS}, Winapi.Windows{$ENDIF};
+uses SysUtils, Classes, FMX.Graphics, Collect, FMX.Controls, System.Types, FMX.Surfaces;
 
-{$IFNDEF MSWINDOWS}
 type
  TPaletteEntry=packed record
   peRed:Byte;
@@ -64,7 +63,6 @@ const
  FILE_SHARE_WRITE=0;
  OPEN_EXISTING=0;
  PAGE_READWRITE=0;
-{$ENDIF}
 
 type
   pBmi = ^TBmi;
@@ -249,7 +247,7 @@ begin
  CloseView;
  FileName:=FN;
  Bits:=nil;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  try
  hf := CreateFile(PChar(FileName), GENERIC_READ or GENERIC_WRITE,
   FILE_SHARE_READ or FILE_SHARE_WRITE, nil, OPEN_EXISTING, 0, 0);
@@ -296,7 +294,7 @@ begin
    // raise exception.Create('Ошибка закрытия файла '+FileName);
    end;
 }
-{$IFDEF WIN64}
+{$IFDEF WIN65}
   if (hm<>0) and (hm<>INVALID_HANDLE_VALUE) then  CloseHandle(hm);
   if (hf<>0) and (hf<>INVALID_HANDLE_VALUE) then  CloseHandle(hf);
 {$ENDIF}
@@ -575,7 +573,7 @@ Procedure TBitBox.SetView1x1;
     end;
  if TransParent then
   DrawNewBitmap(False) else
-{$IFDEF WIN64}
+{$IFDEF WIN65}
   SetDIBitsToDevice(ViewDc,Rect.Left,Rect.Top,R.Right-R.Left,R.Bottom-R.Top,
                              0,0,0,R.Bottom-R.Top,
                              NewBitmap, NewInfo^, DIB_RGB_COLORS);
@@ -648,7 +646,7 @@ var Cnt,CX,CY,CNewX,Index,I,J,N,M,biWidth2,Dc,XBit,YBit:Integer;Dib:pBytearray;C
 end;
   if Left<0 then Rect.Left:=0 else Rect.Left:=Left;
   if Top<0 then Rect.Top:=0 else Rect.Top:=Top;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  if TransParent then
   begin
 //   ReplaceAndZoom(R2,R);
@@ -833,7 +831,7 @@ Procedure TBitBox.SetViewStretch;
   if Left<0 then Rect.Left:=0 else Rect.Left:=Left;
   if Top<0 then Rect.Top:=0 else Rect.Top:=Top;
  {}
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  if TransParent then begin
    StretchDIBits(ViewDC,Rect.Left,Rect.Top,R2.Right-R2.Left,R2.Bottom-R2.Top,
     0,0,R2.Right-R2.Left,R2.Bottom-R2.Top,
@@ -955,11 +953,7 @@ Function TBitBox.CreateMemBitmap;
 Function TBitBox.ViewDc;
  begin
   if Canvas<>nil then
- {$IFDEF MSWINDOWS}
-  Result:=Canvas.Handle else
- {$ELSE}
-  Result := 0 else
- {$ENDIF}
+   Result := 0 else
   Result:=PrinterDc;
  end;
 {

@@ -85,8 +85,7 @@ var I:Integer;bkMode:Integer;Count:Integer;
 begin
 //И дальше поставь точку: F. и посмотри, есть ли у ISkFont один из методов:
 //f.GetPath
-
- {$IFDEF WIN64}
+ {$IFDEF WIN65}
  Symbol:=S[0];
  For I:=0 to 1 do begin
   bkMode:=SetBkMode(DC,Opaque);
@@ -161,7 +160,7 @@ var I:Integer;bkMode:Integer;Count:Integer;
     P,AllP:PCollection;
     Rect:TRect;
 begin
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  For I:=0 to 1 do begin
   bkMode:=SetBkMode(DC,Opaque);
    Rect.Left:=0;Rect.Top:=0;Rect.Right:=(XMax-XMin);Rect.Bottom:=YMax-YMin;
@@ -271,7 +270,7 @@ var I:Integer;
     FS1:TFontScaleEx;
 begin
  FontName:=FName;Scale:=FS;
- {$IFDEF WIN64}
+ {$IFDEF WIN65}
 // begW:=Trunc(FS*FW/FH);
  FontName:=FName;Scale:=FS;
  bl:=bl1;it:=it1;un:=0;
@@ -308,7 +307,7 @@ var I:Integer;
     HH:Double;
     FS1:TFontScaleEx;
 begin
-{$IFDEF WIN64}
+{$IFDEF WIN65}
 (* только по Windows *)
  FontScales:=PCollection.Create(1);
  F:=SelectObject(Canvas.Handle,CreateFont(Scale,0,0,0,bl*600+100,It,0,0,CharSet,0,0,0,0,PChar(FontName)));
@@ -386,7 +385,7 @@ begin
   AllLin[I].X:=Round(X+(Cos(Pi/2-Angle)*Y1+Cos(Angle)*X1));
   AllLin[I].Y:=Round(Y+(Sin(Pi/2-Angle)*Y1-Sin(Angle)*X1));
  end;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  Windows.PolyPolyLine(DC,AllLin[0],AllPoly[0],PolyCount);
 {$ENDIF}
 end;
@@ -418,7 +417,7 @@ begin
   AllLin[I].X:=Round(X+(Cos(Pi/2-Angle)*Y1+Cos(Angle)*X1));
   AllLin[I].Y:=Round(Y+(Sin(Pi/2-Angle)*Y1-Sin(Angle)*X1));
  end;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
  Windows.PolyPolyGon(DC,AllLin[0],AllPoly[0],PolyCount);
 {$ENDIF}
 end;

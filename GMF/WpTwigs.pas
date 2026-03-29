@@ -114,25 +114,25 @@ Type
   Procedure SetSelector(S:TSelector);override;
   function IsVisRect: boolean;
   function IsVisGlobal: boolean;
-  Constructor Create(W1: Integer; Data: Pointer = nil); virtual;
+  Constructor Create(Selector_: TSelector; W1: Integer; Data: Pointer = nil); virtual;
   Constructor CreateAsTwig(Twig: TTwig; AddCoord: boolean); virtual;
   Constructor Load(Stream: TBufStream); Override;
   Procedure Store(Stream: TBufStream); Override;
+ //
   Function GetData: Pointer; virtual;
   Procedure Insert(P: TDot);
   Procedure Insert3DPoint(P: TPointDot);
   Procedure AtPut(Index: SmallInt; P: TDot);
   Procedure MinMax(X, Y: Double);
   { Рисование }
-  Function IsVisible(R: TRect): boolean;
+  Function IsVisible(Sect: TSect): boolean; overload;
   Function IsMinimal: boolean;
   { }
   Function GetTwigDist(XDrag, YDrag: Double; Var X1, Y1: Double)
     : Double; Virtual;
   Procedure Rotation; virtual;
   { Захват и отображение точки при перемещении }
-  Function GetNearestPoint(XDrag, YDrag: Double; var Index: Integer)
-    : TDot; Virtual;
+  Function GetNearestPoint(XDrag, YDrag: Double; var Index: Integer): TDot; Virtual;
   { }
   Function isMovePointValid(Index: Integer; XX, YY: Double;
     var Error: AnsiString): boolean; Virtual;
@@ -206,12 +206,13 @@ Type
   Procedure CreateLotsView(Lot: Pointer);
   Procedure FreeLotsView;
   // UNIX
-  Procedure Draw;virtual;
+  Procedure Paint; virtual;
+  function GetThreeFold(XDrag, YDrag: Double; var D1, D3: TDot): TDot;
  end;
 
  TClassTwig = Class(TTwig)
   Code: Double;
-  Constructor Create(W1: Integer; Cl: Pointer = nil); override;
+  Constructor Create(Selector_: TSelector; W1: Integer; Cl: Pointer = nil); override;
   Constructor CreateAsTwig(Twig: TTwig; AddCoord: boolean); override;
   Constructor Load(Stream: TBufStream); Override;
   Procedure Store(Stream: TBufStream); Override;
@@ -220,7 +221,7 @@ Type
 
  T3DTwig = Class(TTwig)
   Z: Single;
-  Constructor Create(W1: Integer; Z1: Pointer = nil); Override;
+  Constructor Create(Selector_: TSelector; W1: Integer; Z1: Pointer = nil); Override;
   Constructor CreateAsTwig(Twig: TTwig; AddCoord: boolean); override;
   Constructor Load(Stream: TBufStream); Override;
   Procedure Store(Stream: TBufStream); Override;
@@ -242,7 +243,7 @@ Type
   A, B, D, DOld: TDot; // координаты точек
   ArcCoord: PCollection;
   Procedure FillTwigCoord;
-  Constructor Create(W1: Integer; Data: Pointer = nil); Override;
+  Constructor Create(Selector_: TSelector; W1: Integer; Data: Pointer = nil); Override;
   Constructor CreateAsTwig(Twig: TTwig; AddCoord: boolean); override;
   Constructor Load(Stream: TBufStream); Override;
   Procedure Store(Stream: TBufStream); Override;
@@ -253,7 +254,6 @@ Type
   Procedure ArcCreate(Question: boolean);
   Function GetNearestPoint(XDrag, YDrag: Double; var Index: Integer)
     : TDot; override;
-  { }
   { Доступ к координатам }
   Function ReadTwigCoord: PCollection; override;
   Procedure WriteTwigCoord(C: PCollection); override;
@@ -280,10 +280,13 @@ Type
   //
   Procedure Move(Dx, Dy: Double); override;
   Function CreateVirtualVertex: Integer;
+ //
+  Procedure ArcDraw;
+  Procedure Paint; override;
  end;
 
  TTwigTriangle = class(TClassTwig)
-  Constructor Create(W1: Integer; Data: Pointer = nil); override;
+  Constructor Create(Selector_: TSelector; W1: Integer; Data: Pointer = nil); override;
   Procedure Move(Dx, Dy: Double); override;
   Function GetTwigDist(XDrag, YDrag: Double; Var X1, Y1: Double)
     : Double; override;
@@ -292,7 +295,7 @@ Type
  TTwigCoif = class(TClassTwig)
   Coif: TRealCollect;
   Pikets: PCollection;
-  Constructor Create(W1: Integer; Data: Pointer = nil); override;
+  Constructor Create(Selector_: TSelector; W1: Integer; Data: Pointer = nil); override;
   Constructor CreateAsTwig(Twig: TTwig; AddCoord: boolean); override;
   Constructor Load(Stream: TBufStream); Override;
   Procedure Store(Stream: TBufStream); Override;
@@ -302,7 +305,7 @@ Type
  TDataTwig = Class(TClassTwig)
   Size: Integer;
   Data: Pointer;
-  Constructor Create(Sz: Integer; Cl: Pointer = nil); override;
+  Constructor Create(Selector_: TSelector; Sz: Integer; Cl: Pointer = nil); override;
   Destructor Destroy; override;
   Constructor Load(Stream: TBufStream); override;
   Procedure Store(Stream: TBufStream); override;
@@ -342,9 +345,8 @@ Type
  }
 Function Dist(X1, Y1, X2, Y2: Double): Double;
 
-Implementation
-
-uses circle_di, Polygons, Lib, Lines2, Lines3, Writer;
+Implementation uses circle_di, Polygons, Lib, Lines2, Lines3, Writer,
+                    ogcBasic, GMFLTDrawer;
 
 Function ArcCat(X1, Y1, X2, Y2: real; Var Znak: Byte): real;
 Var
@@ -401,9 +403,10 @@ begin
  Writeln(TwClass.ClassName);
 end;
 
-constructor TTwig.Create(W1: Integer; Data: Pointer);
+constructor TTwig.Create(Selector_: TSelector; W1: Integer; Data: Pointer);
 begin
  // old    TaheoIndex:=GMemMakeIndex;
+ fSelector := Selector_;
  FillChar(Color, 3, #255);
  TwigCoord := PCollection.Create(1);
  XMax := -1000000;
@@ -712,54 +715,26 @@ begin
  end;
 end;
 
-function TTwig.IsVisible(R: TRect): boolean;
-var
- I: Integer;
+function TTwig.IsVisible(Sect: TSect): boolean;
 begin
  If GlobalRender then begin Result := True; exit; end;
- { CLO }
- With Selector do
- begin
+ With Selector do begin
   If Rang <> 0 then
    if not GGraphSet.ShowClosed then
-    if (Closed <> 1) then
-    begin
-     IsVisible := False;
+    if (Closed <> 1) then begin
+     Result := False;
      IsVis := False;
      exit;
     end;
-  IsVisible := true;
-  IsVis := true;
-  // GCanvas.Pen.Color:=Rgb(255,0,0);
-  // If Coord.Count>=2 then DrawLine(Item[0].XDot,Item[0].YDot,Item[1].XDot,Item[1].YDot);
-  With GRect do
-  begin
-   If XMax < Left then
-   begin
-    IsVisible := False;
-    IsVis := False;
-    exit;
-   end;
-   If XMin > Right then
-   begin
-    IsVisible := False;
-    IsVis := False;
-    exit;
-   end;
-   If YMin > Top then
-   begin
-    IsVisible := False;
-    IsVis := False;
-    exit;
-   end;
-   If YMax < Bottom then
-   begin
-    IsVisible := False;
-    IsVis := False;
-    exit;
-   end;
-  end;
  end;
+//
+ Result := True;
+ IsVis := True;
+ if Self.XMax < Sect.Left then Result := False else
+  if Self.XMin > Sect.Right then Result := False else
+   if Self.YMin > Sect.Top then Result := False else
+    if Self.YMax < Sect.Bottom then Result := False;
+ if not Result then IsVis := False;
 end;
 
 function TTwig.IsMinimal: boolean;
@@ -776,95 +751,94 @@ begin
 end;
 
 
-function TTwig.GetTwigDist(XDrag, YDrag: Double; var X1, Y1: Double): Double;
+function TTWig.GetTwigDist;
 
 var
- PD1, PD2: TDot;
- Dot: TDot;
- MinStor, S1, s2: Double;
- TmpX, TmpY: Double;
- I: SmallInt;
- Dx, Dy, k1, k2, b2, b1: Double;
- X, Y: Double;
+   PD1,PD2:TDot;
+   Dot:TDot;
+	MinStor,S1,s2:Double;
+	TmpX,TmpY:Double;
+        i:SmallInt;
+        dx,dy,k1,k2,b2,b1:Double;
+	x,y:Double;
 begin
- Dot := TDot.Create(0, 0, 0);
- Dot.Xdot := XDrag;
- Dot.Ydot := YDrag;
- MinStor := 100000000;
- S1 := MinStor;
- for I := 0 to Coord.Count - 2 do
- begin
-  PD1 := Coord.At(I);
-  PD2 := Coord.At(I + 1);
+Dot:=TDot.Create(0,0,0);
+Dot.XDot:=XDrag;
+Dot.YDot:=YDrag;
+MinStor:=100000000;
+s1:=MinStor;
+for i:=0 to coord.count-2 do
+	 begin
+        PD1:=coord.At(i);
+        PD2:=coord.At(i+1);
 
-  Dx := PD2.Xdot - PD1.Xdot;
-  Dy := PD2.Ydot - PD1.Ydot;
+        dx:=PD2.xDot-PD1.xDot;
+        dy:=PD2.yDot-PD1.yDot;
 
-  // Writeln(dx:8:10,' ',dy:8:10);
+      //  Writeln(dx:8:10,' ',dy:8:10);
 
-  if Abs(Dx) < 0.00001 then
-  begin
-   { вертикильная прямая . начало }
-   X := PD1.Xdot;
-   Y := Dot.Ydot;
-   { вертикильная прямая .конец }
-  end
-  else
-  begin
-   k1 := Dy / Dx;
-   b1 := PD1.Ydot - k1 * PD1.Xdot;
-   If Abs(Dy) < 0.00001 then
-   begin
-    { гор. прямая . начало }
-    X := Dot.Xdot;
-    Y := PD1.Ydot;
-    { гор. прямая . конец }
-   end
-   else
-   begin
-    k2 := -1 / k1;
-    b2 := Dot.Ydot - k2 * Dot.Xdot;
-    X := (b1 - b2) / (k2 - k1);
-    Y := (k2 * b1 - k1 * b2) / (k2 - k1);
-   end;
-  end;
+        if abs(dx)<0.00001 then
+          begin
+          {âåðòèêèëüíàÿ ïðÿìàÿ . íà÷àëî}
+          x:=PD1.xDot;
+          y:=Dot.Ydot;
+          {âåðòèêèëüíàÿ ïðÿìàÿ .êîíåö}
+          end
+        else
+          begin
+          k1:=dy/dx;
+          b1:=PD1.yDot-K1*PD1.xDot;
+          If abs(dy)<0.00001 then
+				       begin
+             {ãîð. ïðÿìàÿ . íà÷àëî}
+             x:=Dot.Xdot;
+             y:=PD1.YDot;
+             {ãîð. ïðÿìàÿ . êîíåö}
+            end
+          else
+            begin
+            k2:=-1/k1;
+            b2:=Dot.ydot-k2*Dot.Xdot;
+            x:=(b1-b2)/(k2-k1);
+            y:=(k2*b1-k1*b2)/(k2-k1);
+            end;
+         end;
 
-  { PMoveTo(DC,Dot.Xdot,Dot.ydot); }
+         {PMoveTo(DC,Dot.Xdot,Dot.ydot);}
 
-  If InInterval(X, PD1.Xdot, PD2.Xdot) and InInterval(Y, PD1.Ydot, PD2.Ydot)
-  then
-  begin
-   S1 := Dist(X, Y, Dot.Xdot, Dot.Ydot);
-   { PLineTo(DC,X,y); }
-   TmpX := X;
-   TmpY := Y;
-  end
-  else
-  begin
-   S1 := Dist(Dot.Xdot, Dot.Ydot, PD1.Xdot, PD1.Ydot);
-   s2 := Dist(Dot.Xdot, Dot.Ydot, PD2.Xdot, PD2.Ydot);
-   if s2 < S1 then
-   begin
-    S1 := s2;
-    TmpX := PD2.Xdot;
-    TmpY := PD2.Ydot;
-    { PLineTo(DC,PD2.xDot,PD2.yDot); }
-   end
-   else
-   begin
-    TmpX := PD1.Xdot;
-    TmpY := PD1.Ydot;
-    { PLineTo(DC,PD1.xDot,PD1.yDot); }
-   end
-  end;
-  if S1 < MinStor then
-  begin
-   X1 := TmpX;
-   Y1 := TmpY;
-   MinStor := S1;
-  end;
- end;
- GetTwigDist := MinStor;
+        If InInterval(x,PD1.xDot,PD2.xDot) and InInterval(y,PD1.yDot,PD2.yDot) then
+         begin
+         s1:=Dist(x,y,Dot.Xdot,Dot.ydot);
+			{PLineTo(DC,X,y);}
+			TmpX:=X;
+			TmpY:=Y;
+         end
+      else
+        begin
+        s1:=Dist(Dot.Xdot,Dot.ydot,PD1.xDot,PD1.yDot);
+		  s2:=Dist(Dot.Xdot,Dot.ydot,PD2.xDot,PD2.yDot);
+        if s2<s1 then
+          begin
+			 s1:=s2;
+			 TmpX:=PD2.XDot;
+			 TmpY:=PD2.YDot;
+          {PLineTo(DC,PD2.xDot,PD2.yDot);}
+          end
+        else
+			 begin
+			 TmpX:=PD1.XDot;
+			 TmpY:=PD1.YDot;
+          {PLineTo(DC,PD1.xDot,PD1.yDot);}
+          end
+        end;
+	 if s1<MinStor then
+		begin
+		X1:=TmpX;
+		Y1:=TmpY;
+		MinStor:=s1;
+		end;
+    end;
+ GetTwigDist:=MinStor;
  Dot.Free;
 end;
 
@@ -954,7 +928,7 @@ var
 begin
  S := GetTwigDist(X, Y, X1, Y1);
  I := 1;
- Tw := TTwig.Create(0);
+ Tw := TTwig.Create(Selector, 0);
  s2 := 10000;
  Result := -1;
  For I := 0 to Coord.Count - 2 do
@@ -1573,12 +1547,65 @@ begin
  Result := Dist;
 end;
 
+procedure TTwig.Paint;
+var Ind: Integer;
+    J: Integer;
+    Pen: TogsPen;
+    NewPen: TogsPen;
+    Twig: TTwig;
+    Standart: Boolean;
+begin
+ Twig:= Self;
+ If ClassHandle = nil then Standart := True else
+  Standart := ClassHandle.Standart = 1;
+ With  Selector do
+ try
+   If not isVisible(GRect) then exit;
+    If (Standart) and (GGraphSet.ViewZnaks=1) then begin
+     Ind:=SearchLine(GLineCol, Twig.UZnak);
+      If Ind>-1 then begin
+       TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
+       DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
+     end else
+      For J:=0 to Twig.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+    end else
+   If (not Standart) and (ClassHandle.Znak = 1) then begin
+     Ind:=SearchLine(GLineCol, Twig.UZnak);
+      If Ind>-1 then begin
+       TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
+        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
+     end else
+      For J:=0 to Twig.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+  end else
+   For J:=0 to Twig.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+  // If GGraphSet.PointView = 1 then For J:=0 to Tw.Coord.Count-1 do TDot(Twig.Coord[J]).Draw32(Drawer, 0, 0, GMS, GMS);
+ finally
+ end;
+end;
+
+function TTwig.GetThreeFold(XDrag, YDrag: Double; var D1, D3: TDot): TDot;
+var Ind:Integer;D2:TDot;
+begin
+ D2:=GetNearestPoint(XDrag,YDrag,Ind);
+ If Ind=0 then begin
+  If Selector.EqualPoints(D2,Coord[Coord.Count-1]) then D1:=Coord[Coord.Count-2] else D1:=Coord[Coord.Count-1];
+  D3:=Coord[Ind+1];
+ end else
+ If Ind=Coord.Count-1 then begin
+  If Selector.EqualPoints(D2,Coord[0]) then D3:=Coord[1] else D3:=Coord[0];
+  D1:=Coord[Ind-1];
+ end else begin
+  D1:=Coord[Ind-1];D3:=Coord[Ind+1];
+ end;
+ Result:=D2;
+end;
+
 { ---------------------------------------------------------------------- }
 { TClassTwig }
 { ---------------------------------------------------------------------- }
 Constructor TClassTwig.Create;
 begin
- inherited Create(W1);
+ inherited Create(Selector_, W1);
  ClassHandle := Cl;
  Code := ClassHandle.ID;
  Closed := ClassHandle.Check;
@@ -1622,7 +1649,7 @@ end;
 { ---------------------------------------------------------------------- }
 Constructor T3DTwig.Create;
 begin
- inherited Create(Twig_3D);
+ inherited Create(Selector_, Twig_3D);
  if Z1 <> nil then
   Z := PDouble(Z1)^
  else
@@ -1656,7 +1683,7 @@ end;
 
 Constructor TTwigARC.Create;
 begin
- inherited Create(W1);
+ inherited Create(Selector, W1);
  With TArcRecord(Data) do
  begin
   C := TDot.Create(XXC, YYC, 20);
@@ -1679,6 +1706,14 @@ begin
  B.Free;
  D.Free;
  DOld.Free;
+end;
+
+procedure TTwigARC.Paint;
+ var AV:Byte;
+begin
+ AV:=ArcView;ArcView:=1;
+  inherited Paint;
+ ArcView:=AV;
 end;
 
 Procedure TTwigARC.ReCreate;
@@ -1748,6 +1783,30 @@ begin
  ArcView := 1;
  SetMinMax;
  ArcView := AV;
+ P.Free;
+end;
+
+procedure TTwigARC.ArcDraw;
+ var Quants,AV:Integer;P:PCollection;I:Integer;D1,D2:TDot1;
+begin
+ Quants:=Quants_For_Arcs;ArcCoord.FreeAll;
+ try
+  if LeftCircle
+   then P:=Arc_Circle3( C.XDot, C.YDot, B.XDot, B.YDot, A.XDot, A.YDot, Quants) else
+        P:=Arc_Circle3( C.XDot, C.YDot, A.XDot, A.YDot, B.XDot, B.YDot, Quants);
+ except
+  P:=PCollection.Create(1);
+ end;
+ For I:=0 to P.Count-2 do
+  begin
+   D1:=P[I];D2:=P[I+1];
+   Selector.DrawLine(D1.X,D1.Y,D2.X,D2.Y);
+   ArcCoord.Insert(TDot.Create(D1.X,D1.Y,0));
+  end;
+  If P.Count>1 then ArcCoord.Insert(TDot.Create(D2.X,D2.Y,0));
+  AV:=ArcView;ArcView:=1;
+   SetMinMax;
+  ArcView:=AV;
  P.Free;
 end;
 
@@ -2093,11 +2152,6 @@ begin
  end;
 end;
 
-procedure TTwig.Draw;
-begin
- //
-end;
-
 { TArcRecord }
 
 Constructor TArcRecord.Create(XC, YC, X1, Y1, X2, Y2, X3, Y3: Double);
@@ -2225,9 +2279,9 @@ end;
 
 { TTwigTriangle }
 
-constructor TTwigTriangle.Create(W1: Integer; Data: Pointer);
+constructor TTwigTriangle.Create(Selector_: TSelector; W1: Integer; Data: Pointer);
 begin
- inherited Create(W1, Data);
+ inherited Create(Selector_, W1, Data);
  What := Twig_Triangle;
 end;
 
@@ -2244,9 +2298,9 @@ end;
 
 { TTwigCoif }
 
-constructor TTwigCoif.Create(W1: Integer; Data: Pointer);
+constructor TTwigCoif.Create(Selector_: TSelector; W1: Integer; Data: Pointer);
 begin
- inherited Create(W1, Data);
+ inherited Create(Selector_, W1, Data);
  What := Twig_Coif;
  Coif := nil;
  Pikets := nil;
@@ -2303,7 +2357,7 @@ end;
 
 { TDataTwig }
 
-constructor TDataTwig.Create(Sz: Integer; Cl: Pointer);
+constructor TDataTwig.Create(Selector_: TSelector; Sz: Integer; Cl: Pointer);
 begin
  Size := Sz;
  Data := Cl;

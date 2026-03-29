@@ -680,7 +680,7 @@ begin
    If not TP.DxfLock then begin TP.FH:=DT.FHeight;TP.FW:=DT.FWidth;end;
   end else begin TP.FH:=H;TP.FW:=TP.FH*0.375; end;
   end;
-  {$IFDEF WIN64}Dc:=GetDc(0);{$ELSE}Dc:=0;{$ENDIF}
+ // {$IFDEF WIN64}Dc:=GetDc(0);{$ELSE}Dc:=0;{$ENDIF}
   If Style<>-1 then tp.FAttr:=Style else If not TP.DxfLock then begin
     tp.FAttr := 0;
     if DT.FUn=1 then tp.FAttr := tpUnderline;
@@ -695,7 +695,7 @@ begin
   end else begin
    TP.tmFontIndex:=DWGText.FontCol.AddFont(DC, fName, TP.FH, TP.FW, DT.fCharSet, fBl, fIt, fUn);
   end;
-  {$IFDEF WIN64}ReleaseDc(0,Dc);{$ENDIF}
+//  {$IFDEF WIN64}ReleaseDc(0,Dc);{$ENDIF}
  end;
 end;
 

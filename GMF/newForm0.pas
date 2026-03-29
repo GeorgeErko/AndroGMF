@@ -917,11 +917,13 @@ begin
    Result:=F;Exit;
   end;
  end;
- {$IFDEF WIN64}Dc:=GetDC(0);{$ELSE}Dc:=0;{$ENDIF}
+// {$IFDEF WIN64}Dc:=GetDC(0);{$ELSE}
+ Dc:=0;
+// {$ENDIF}
  F:=TFontViewEx.Create(DC,FontName,FH,FH*0.4,Char_Set,bl,it,un);
  Insert(F);
  Result:=F;
-  {$IFDEF WIN64}ReleaseDc(0,Dc);{$ENDIF}
+// {$IFDEF WIN64}ReleaseDc(0,Dc);{$ENDIF}
 end;
 
 

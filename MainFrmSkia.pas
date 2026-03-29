@@ -8,7 +8,7 @@ uses
   FMX.Layouts, FMX.DialogService,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
-  ogcBasic, ogcDrawerSkia;
+  ogcBasic, ogcDrawerSkia, newSelector;
 
 type
   TMainFormSkia = class(TMainForm)
@@ -63,14 +63,6 @@ type
 
     procedure SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
 
-    procedure SkPainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-    procedure SkPainterMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
-    procedure SkPainterMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-    procedure SkPainterMouseLeave(Sender: TObject);
-    procedure SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
-    procedure SkPainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
-    procedure SkPainterDblClick(Sender: TObject);
-
     procedure ResetInteractionState;
     procedure FinalizeZoom;
     procedure SetSkPainterCapture(const ACapture: Boolean);
@@ -83,9 +75,28 @@ type
     procedure SceneProgressShow(const AMax: Single);
     procedure SceneProgressSet(const AValue: Single);
     procedure SceneProgressHide;
+
+    procedure WheelZoomTimer(Sender: TObject);
   protected
     procedure Loaded; override;
+    procedure SetSelectorParams; virtual;
+  // события мыши
+    procedure SkPainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single); virtual;
+    procedure SkPainterMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single); virtual;
+    procedure SkPainterMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single); virtual;
+    procedure SkPainterMouseLeave(Sender: TObject);
+    procedure SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); virtual;
+    procedure SkPainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
+    procedure SkPainterDblClick(Sender: TObject);
+  // рисование перед-после
+    procedure PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF); virtual;
+    procedure PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF); virtual;
+
+    function InteractionBitmapActive: Boolean; virtual;
+    procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); virtual;
+    procedure UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
   public
+   MousePos: TPointF;
     destructor Destroy; override;
     procedure OpenGmfFile(const LocalPath: string); override;
     function ExportSceneToPdf(const AFileName: string = ''): string;
@@ -97,15 +108,19 @@ var
 implementation
 
 uses Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager,
-     OpenForm, EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
-     newSelector, WPTForm2
+     EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
+     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw
 {$IFDEF ANDROID}
-     , Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
+     , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
      ;
 
 type
   TBitmapAccess = class(TBitmap);
+
+var
+  WheelZoomTmr: TTimer;
+  WheelZoomLastTick: UInt64;
 
 {$R *.fmx}
 
@@ -113,7 +128,6 @@ procedure TMainFormSkia.InitSkPainterInput;
 begin
   if SkPainter = nil then
     Exit;
-
   SkPainter.AutoCapture := True;
   SkPainter.OnMouseDown := SkPainterMouseDown;
   SkPainter.OnMouseMove := SkPainterMouseMove;
@@ -256,6 +270,14 @@ begin
     btnPDF.OnClick := btnPDFClick;
 
   InitSkPainterInput;
+
+  if WheelZoomTmr = nil then
+  begin
+    WheelZoomTmr := TTimer.Create(nil);
+    WheelZoomTmr.Enabled := False;
+    WheelZoomTmr.Interval := 200;
+    WheelZoomTmr.OnTimer := WheelZoomTimer;
+  end;
 end;
 
 procedure TMainFormSkia.btnPDFClick(Sender: TObject);
@@ -339,14 +361,12 @@ begin
 end;
 
 procedure TMainFormSkia.SceneProgressSet(const AValue: Single);
-begin
- SceneProgressBar.Value := AValue;
+begin SceneProgressBar.Value := AValue;
  SceneProgressBar.UpdateRect;//(SceneProgressBar.BoundsRect.Round);
 end;
 
 procedure TMainFormSkia.SceneProgressHide;
-begin
- SceneProgressBar.Visible := False;
+begin SceneProgressBar.Visible := False;
 end;
 
 procedure TMainFormSkia.RequestRebuildScene;
@@ -394,13 +414,29 @@ end;
 
 destructor TMainFormSkia.Destroy;
 begin
-  PanBitmap.Free;
-  PanBitmap := nil;
-  ZoomBaseRect.Free;
-  ZoomBaseRect := nil;
   FDrawerSkia.Free;
   FDrawerSkia := nil;
+  FreeAndNil(TwgForm);
   inherited Destroy;
+end;
+
+procedure TMainFormSkia.WheelZoomTimer(Sender: TObject);
+const TimeforZoom = 100;
+begin
+  if (WheelZoomLastTick = 0) or ((TThread.GetTickCount64 - WheelZoomLastTick) < TimeForZoom) then
+    Exit;
+
+  if WheelZoomTmr <> nil then
+    WheelZoomTmr.Enabled := False;
+
+  if ZoomBitmapActive and (Selector <> nil) then
+  begin
+    SetSkPainterCapture(False);
+    FinalizeZoom;
+    ResetInteractionState;
+    if SkPainter <> nil then
+      SkPainter.Redraw;
+  end;
 end;
 
 procedure TMainFormSkia.OpenGmfFile(const LocalPath: string);
@@ -482,44 +518,48 @@ var
 begin
   if FDrawerSkia = nil then
   begin
-    FDrawerSkia := TogsDrawerSkia.Create(nil, nil);
+    FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
     Selector := TSelector.Create(FDrawerSkia);
     FDrawerSkia.ogsSelector := Selector;
     FDrawerSkia.Name := 'DrawerSkia';
     Selector.Name := 'Selector';
-  end
-  else
+    UpdateMessage:=TUpdateMessage.Create(nil);
+  end else
     Selector.Clear;
 
   Memo1.Lines.Clear;
   FormCreate(Self);
  // InitSkPainterInput;
-  GLines := Memo1.Lines;
+  {$IFDEF WIN64}
+   GLines := nil;
+   newProcs.MainPath := TPath.GetLibraryPath;
+  {$ELSE}
+   GLines := Memo1.Lines;
   newProcs.MainPath := TPath.GetDocumentsPath;
-  WriteIn(['Test1', TPath.GetDocumentsPath]);
+  {$ENDIF}
+  WriteIn(['Test1', MainPath]);
   RegPrimitives;
   WriteIn(['Registered']);
   objectRepaintAccess := False;
   Path := LocalPath;
+  WriteIn(['Path=', LocalPath]);
   if LocalPath = '' then
   begin
     WriteIn(['Path Space']);
     Exit;
   end;
-  WriteIn(['Path=', ExtractFilePath(LocalPath), SizeOf(Single), SizeOf(Double)]);
-  newProcs.MainPath := ExtractFilePath(LocalPath);
+  WriteIn(['Path=', ExtractFilePath(LocalPath), MainPath, SizeOf(Single), SizeOf(Double)]);
 
   RegisterFontsNearGmf(LocalPath);
 
   Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
-  Selector.GNForm := TControl(Self);
-  Selector.GNForm := TControl(Self);
+  Selector.GNForm := TControl(skPainter);
   WriteIn(['s.Drawer=', Selector.Drawer = nil]);
   ApplicationMainForm := Self;
   Stream.Selector := Selector;
   try
     FreeAndNil(TwgForm);
-
+   //
     TwgForm := TForm2(Stream.Get);
     Selector.GLineCol := TwgForm.MkLib.LSLib;
     Selector.GSqwearCol := TwgForm.MkLib.SSLib;
@@ -527,6 +567,7 @@ begin
     Selector.GFontCollect := TwgForm.Twigs.FontS;
     Selector.GFontSet := TwgForm.Twigs.FontSet;
     Selector.GGraphSet := TwgForm.fGraphSet;
+    SetSelectorParams;
     if TwgForm.FontColEx <> nil then
     begin
       for I := 0 to TwgForm.Twigs.AnyCount - 1 do
@@ -558,6 +599,7 @@ begin
   end;
 
   InitSkPainterInput;
+
   SceneDirty := True;
   GlobalRender := True;
 //  if SkPainter <> nil then
@@ -568,7 +610,11 @@ end;
 
 procedure TMainFormSkia.btnOpenClickSkia(Sender: TObject);
 begin
-  PickGmfFile(OpenGmfFileSkia);
+ {$IFDEF ANDROID}
+ PickGmfFile(OpenGmfFile);
+{$ELSE}
+ PickGmfFileWin64;
+{$ENDIF}
 end;
 
 procedure TMainFormSkia.btnLocalOpenClickSkia(Sender: TObject);
@@ -594,10 +640,9 @@ end;
 procedure TMainFormSkia.btnPlusClickSkia(Sender: TObject);
 var
   Btn: TControl;
-  Koef: Double;
   CenterLocal: TPointF;
-  CenterPix: TPointF;
-  PivotGeo: TPointF;
+  Handled: Boolean;
+  WheelDelta: Integer;
 begin
   if Selector = nil then
     Exit;
@@ -610,23 +655,142 @@ begin
   if LastCanvasScale <= 0 then
     LastCanvasScale := 1;
 
-  Koef := 1.20;
-  if (Btn <> nil) and (Btn.Tag < 0) then
-    Koef := 1 / Koef;
-  if Koef <= 0 then
-    Exit;
-
   CenterLocal := PointF(SkPainter.Width * 0.5, SkPainter.Height * 0.5);
-  CenterPix := PointF(CenterLocal.X * LastCanvasScale, CenterLocal.Y * LastCanvasScale);
-  PivotGeo := PointF(Selector.XGeo(Round(CenterPix.X)), Selector.YGeo(Round(CenterPix.Y)));
-  Selector.Scale(PivotGeo.X, PivotGeo.Y, Koef);
-  SkPainter.Redraw;
+  MousePos := CenterLocal;
+
+  WheelDelta := 120;
+  if (Btn <> nil) and (Btn.Tag < 0) then
+    WheelDelta := -WheelDelta;
+
+  Handled := False;
+  SkPainterMouseWheel(SkPainter, [], WheelDelta, Handled);
+
+  WheelZoomLastTick := TThread.GetTickCount64 - 1000;
+  WheelZoomTimer(nil);
 end;
 
+procedure TMainFormSkia.UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
+var
+ DrawIndex, I: Integer;
+ B: Byte;
+ PP: Pointer;
+ Lot: TLot;
+ PPoint: TPointDot;
+ SceneRect: TRectF;
+ DummyRecorder: ISkPictureRecorder;
+ DummyCanvas: ISkCanvas;
+ PrevWorld: Boolean;
+ AddedObj: TogsSkiaObject;
+ SkObj: TObject;
+begin
+ if (FDrawerSkia = nil) or (Selector = nil) or (TwgForm = nil) or (Obj = nil) then Exit;
+
+ case UpdateSceneMode of
+  usmDelete:
+   if Obj is TTD then
+   begin
+    SkObj := TTD(Obj).DrawerObject;
+    if (SkObj is TogsSkiaObject) and (FDrawerSkia.SkiaList <> nil) then
+    begin
+     FDrawerSkia.SkiaList.Remove(TogsSkiaObject(SkObj));
+     TTD(Obj).DrawerObject := nil;
+     SceneDirty := True;
+     BuildCachedPicture;
+     ResetInteractionState;
+     PanShift := PointF(0, 0);
+     BaseScale := 0;
+     FPanImage := nil;
+     if SkPainter <> nil then SkPainter.Redraw;
+    end;
+   end;
+
+  usmModify:
+   begin
+    UpdateScene(usmDelete, Obj);
+    UpdateScene(usmAdd, Obj);
+   end;
+
+  usmAdd:
+   begin
+    if (Obj is TTD) and (TTD(Obj).DrawerObject <> nil) then Exit;
+
+    if (Selector.GlobalRect <> nil) and Selector.GlobalRect.isRect then
+     SceneRect := TRectF.Create(Single(Selector.GlobalRect.XMin - 1000), Single(Selector.GlobalRect.YMin - 1000),
+       Single(Selector.GlobalRect.XMax + 1000), Single(Selector.GlobalRect.YMax + 1000))
+    else if (Selector.ActiveRect <> nil) and Selector.ActiveRect.isRect then
+     SceneRect := TRectF.Create(Single(Selector.ActiveRect.XMin - 1000), Single(Selector.ActiveRect.YMin - 1000),
+       Single(Selector.ActiveRect.XMax + 1000), Single(Selector.ActiveRect.YMax + 1000))
+    else
+     SceneRect := TRectF.Create(-10000000, -10000000, 10000000, 10000000);
+
+    DummyRecorder := TSkPictureRecorder.Create;
+    DummyCanvas := DummyRecorder.BeginRecording(SceneRect);
+    PrevWorld := FDrawerSkia.UseWorldCoords;
+    FDrawerSkia.UseWorldCoords := True;
+    FDrawerSkia.BeginFrame(DummyCanvas, SceneRect);
+    try
+     AddedObj := nil;
+     DrawIndex := 0;
+     with Selector, GGraphset do
+     begin
+      if FillLot = 1 then
+       for I := 0 to TwgForm.Twigs.LotsCount - 1 do
+       begin
+        Lot := TwgForm.Twigs.LAt(I);
+        if (Lot.TypeLot = 254) or (Lot.Closed <> 1) then Continue;
+        if Lot = Obj then
+        begin
+         Lot.Selector := Self.Selector;
+         FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
+         try Lot.Draw32(TwgForm.Twigs); finally FDrawerSkia.EndPrimitive; end;
+         AddedObj := TogsSkiaObject(Lot.DrawerObject);
+         Break;
+        end;
+        Inc(DrawIndex);
+       end;
+
+      if AddedObj = nil then
+       for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+       begin
+        PP := TwgForm.Twigs.AAt(I, B);
+        if B <> TWG_Point then Continue;
+        PPoint := PP;
+        if PPoint.Closed then Continue;
+        if PPoint = Obj then begin
+         PPoint.Selector := Self.Selector;
+         FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
+         try PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx); finally FDrawerSkia.EndPrimitive; end;
+         AddedObj := TogsSkiaObject(PPoint.DrawerObject);
+         Break;
+        end;
+        Inc(DrawIndex);
+       end;
+     end;
+
+     if (AddedObj <> nil) and (FDrawerSkia.SkiaList <> nil) then
+     begin
+      if FDrawerSkia.SkiaList.IndexOf(AddedObj) >= 0 then
+      begin
+       SceneDirty := True;
+       BuildCachedPicture;
+       ResetInteractionState;
+       PanShift := PointF(0, 0);
+       BaseScale := 0;
+       FPanImage := nil;
+       if SkPainter <> nil then SkPainter.Redraw;
+      end;
+     end;
+    finally
+     FDrawerSkia.EndFrame;
+     FDrawerSkia.UseWorldCoords := PrevWorld;
+     DummyRecorder.FinishRecording;
+    end;
+   end;
+ end;
+end;
 procedure TMainFormSkia.UpdateStatusGeo(const X, Y: Single);
 var
-  XPix, YPix: Double;
-  XGeo, YGeo: Double;
+  XPix, YPix, XGeo, YGeo: Double;
   S: string;
 begin
   if StatusBar = nil then
@@ -635,10 +799,8 @@ begin
     Exit;
   if Selector.GetScale = 0 then
     Exit;
-  XPix := X * LastCanvasScale;
-  YPix := Y * LastCanvasScale;
-  XGeo := Selector.XGeo(Round(XPix));
-  YGeo := Selector.YGeo(Round(YPix));
+  XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
+  XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
   if FStatusLabel <> nil then
     FStatusLabel.Text := S;
@@ -681,7 +843,6 @@ begin
   FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
   FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
   FDrawerSkia.Clear(TAlphaColors.White);
-
   Total := 0;
   if TwgForm <> nil then
     Total := TwgForm.Twigs.LotsCount + TwgForm.Twigs.AnyCount;
@@ -694,6 +855,11 @@ begin
 
   with Selector, GGraphset do
     try
+     for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
+      begin
+       Tw := TwgForm.Twigs.TAt(I);
+       Tw.isVis := False;
+      end;
       Error := 6;
       Error := 7;
       TWC := 0;
@@ -775,7 +941,9 @@ var
   R: TRectF;
   PrevWorld: Boolean;
   Pad: Single;
+  T0, Dt: UInt64;
 begin
+  T0 := TThread.GetTickCount64;
   if FBuildingScene then
     Exit;
   if FDrawerSkia = nil then
@@ -826,6 +994,12 @@ begin
     FBuildingScene := False;
    // SceneProgressHide;
     FCachedPicture := Recorder.FinishRecording;
+    if FCachedPicture <> nil then
+      SceneDirty := False;
+
+    Dt := TThread.GetTickCount64 - T0;
+    if Dt > 30 then
+      WriteIn(['BuildCachedPicture ms=', Dt, ' ObjCnt=', FDrawerSkia.SkiaList.Count]);
   end;
 end;
 
@@ -916,6 +1090,8 @@ begin
   InteractionActive := False;
   PanActive := False;
   ZoomActive := False;
+  PanBitmapActive := False;
+  ZoomBitmapActive := False;
   LastZoomDistance := 0;
 end;
 
@@ -969,6 +1145,11 @@ begin
   InteractionActive := False;
 
   CapturePanBitmap;
+end;
+
+procedure TMainFormSkia.SetSelectorParams;
+begin
+ Selector.OnUpdateScene := UpdateScene;
 end;
 
 procedure TMainFormSkia.SetSkPainterCapture(const ACapture: Boolean);
@@ -1028,6 +1209,7 @@ var
   DxPix, DyPix: Single;
   DxGeo, DyGeo: Double;
 begin
+ MousePos := PointF(X, Y);
   if Selector = nil then
     Exit;
   UpdateStatusGeo(X, Y);
@@ -1083,7 +1265,7 @@ procedure TMainFormSkia.SkPainterMouseLeave(Sender: TObject);
 begin
   if Selector = nil then
     Exit;
-  if InteractionActive or PanActive or (LastZoomDistance <> 0) then
+  if InteractionActive or PanActive or (LastZoomDistance <> 0) or PanBitmapActive or ZoomBitmapActive then
   begin
     ResetInteractionState;
     if SkPainter <> nil then
@@ -1093,8 +1275,8 @@ end;
 
 procedure TMainFormSkia.SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
 var
-  P: TPoint;
   PF: TPointF;
+  Step: Single;
 begin
   if FDrawerSkia = nil then
     Exit;
@@ -1107,11 +1289,47 @@ begin
     BaseDy := Selector.GetDy;
     BaseScale := Selector.GetScale;
   end;
-  if LastCanvasScale <= 0 then
-    LastCanvasScale := 1;
-  PF := SkPainter.AbsoluteToLocal(Screen.MousePos);
-  P := Point(Round(PF.X * LastCanvasScale), Round(PF.Y * LastCanvasScale));
-  FDrawerSkia.MouseWheel(Sender, Shift, WheelDelta, P, Handled);
+  Handled := True;
+
+  PF := MousePos;
+
+  ZoomPivot := PF;
+  ZoomActive := True;
+  InteractionActive := True;
+
+  if not ZoomBitmapActive then
+  begin
+    SetSkPainterCapture(True);
+    ZoomStartDistance := 100;
+    LastZoomDistance := 100;
+    ZoomFactor := 1;
+    if ZoomBaseRect = nil then
+      ZoomBaseRect := TogsRect.Create;
+    ZoomBaseRect.Assign(Selector.ActiveRect);
+    ZoomBaseDx := Selector.GetDx;
+    ZoomBaseDy := Selector.GetDy;
+    ZoomBaseScale := Selector.GetScale;
+    if FPanImage = nil then
+      CapturePanBitmap;
+    if FPanImage <> nil then
+      ZoomBitmapActive := True;
+  end;
+
+  if WheelDelta > 0 then
+    Step := 1.15
+  else
+    Step := 1 / 1.15;
+
+  ZoomFactor := ZoomFactor * Step;
+  if ZoomFactor < 0.05 then
+    ZoomFactor := 0.05;
+  if ZoomFactor > 20 then
+    ZoomFactor := 20;
+
+  WheelZoomLastTick := TThread.GetTickCount64;
+  if WheelZoomTmr <> nil then
+    WheelZoomTmr.Enabled := True;
+
   InteractionActive := False;
   SkPainter.Redraw;
 end;
@@ -1135,17 +1353,6 @@ begin
   begin
     SetSkPainterCapture(False);
     FinalizeZoom;
-    ResetInteractionState;
-    SkPainter.Redraw;
-    Exit;
-  end;
-
-  if (not ZoomBitmapActive) and (ZoomStartDistance = 0) then
-  begin
-    SetSkPainterCapture(True);
-    ZoomStartDistance := EventInfo.Distance;
-    LastZoomDistance := EventInfo.Distance;
-    ZoomFactor := 1;
     ZoomPivot := EventInfo.Location;
     if ZoomBaseRect = nil then
       ZoomBaseRect := TogsRect.Create;
@@ -1182,6 +1389,27 @@ begin
   SkPainter.Redraw;
 end;
 
+
+procedure TMainFormSkia.PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF);
+begin
+//
+end;
+
+procedure TMainFormSkia.PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF);
+begin
+//
+end;
+
+function TMainFormSkia.InteractionBitmapActive: Boolean;
+begin
+ Result := PanBitmapActive or ZoomBitmapActive;
+end;
+
+procedure TMainFormSkia.DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF);
+begin
+//
+end;
+
 procedure TMainFormSkia.SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
 var
   Pivot: TPointF;
@@ -1197,147 +1425,131 @@ var
   Img: ISkImage;
   Paint: ISkPaint;
   DstRect: TRectF;
+  Pic: ISkPicture;
+  T0, Dt: UInt64;
 const
   DebugDirectSkia = false;
 begin
-  if FDrawerSkia = nil then
-    Exit;
-  if SkPainter <> nil then
-    LastCanvasScale := SkPainter.AbsoluteScale.X
-  else
-    LastCanvasScale := 1;
-  if LastCanvasScale <= 0 then
-    LastCanvasScale := 1;
+  T0 := TThread.GetTickCount64;
+  try
+    if FDrawerSkia = nil then Exit;
+    if SkPainter <> nil then
+      LastCanvasScale := SkPainter.AbsoluteScale.X
+    else
+      LastCanvasScale := 1;
+    if LastCanvasScale <= 0 then LastCanvasScale := 1;
+    if ACanvas <> nil then ACanvas.Clear(TAlphaColors.White);
 
-  if ACanvas <> nil then
-    ACanvas.Clear(TAlphaColors.White);
+    if not InteractionBitmapActive then PaintBefore(ACanvas, ADest);
 
-  if DebugDirectSkia and (ACanvas <> nil) then
-  begin
-    DebugPaint := TSkPaint.Create;
-    DebugPaint.AntiAlias := True;
-    DebugPaint.Color := $FF202020;
-
-    Family := 'Do431';
-    FontFile := GetRegisteredSkiaFontFile(Family);
-    DebugTypeface := nil;
-    if FontFile <> '' then
-      DebugTypeface := TSkTypeface.MakeFromFile(FontFile);
-    if (DebugTypeface = nil) and (Family <> '') then
-      DebugTypeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Normal);
-
-    DebugFont := TSkFont.Create(DebugTypeface, 24);
-
-    ACanvas.DrawSimpleText('Skia DebugDirectSkia: Do431 + XKoef + Angle', 20, 50, DebugFont, DebugPaint);
-
-    DebugFont := TSkFont.Create(DebugTypeface, 18);
-    ACanvas.Save;
-    try
-      ACanvas.Translate(20, 90);
-      ACanvas.Scale(0.7, 1);
-      ACanvas.DrawSimpleText('XKoef=0.7  1234567890', 0, 0, DebugFont, DebugPaint);
-    finally
-      ACanvas.Restore;
-    end;
-
-    ACanvas.Save;
-    try
-      ACanvas.Translate(20, 120);
-      ACanvas.Scale(1.0, 1);
-      ACanvas.DrawSimpleText('XKoef=1.0  1234567890', 0, 0, DebugFont, DebugPaint);
-    finally
-      ACanvas.Restore;
-    end;
-
-    ACanvas.Save;
-    try
-      ACanvas.Translate(20, 150);
-      ACanvas.Scale(1.4, 1);
-      ACanvas.DrawSimpleText('XKoef=1.4  1234567890', 0, 0, DebugFont, DebugPaint);
-    finally
-      ACanvas.Restore;
-    end;
-
-    ACanvas.Save;
-    try
-      ACanvas.Translate(420, 160);
-      ACanvas.Rotate(30);
-      ACanvas.Scale(1.2, 1);
-      ACanvas.DrawSimpleText('Angle=30deg      Do431', 0, 0, DebugFont, DebugPaint);
-    finally
-      ACanvas.Restore;
-    end;
-
-    DebugFont := TSkFont.Create(DebugTypeface, 14);
-    ACanvas.DrawSimpleText('Note: rotation uses canvas matrix (degrees).', 20, 210, DebugFont, DebugPaint);
-    Exit;
-  end;
-
-  if PanBitmapActive and (FPanImage <> nil) then
-  begin
-    Img := FPanImage;
-    Paint := TSkPaint.Create;
-    Paint.AntiAlias := True;
-    DstRect := TRectF.Create(ADest.Left + PanShift.X, ADest.Top + PanShift.Y, ADest.Right + PanShift.X, ADest.Bottom + PanShift.Y);
-    ACanvas.Save;
-    try
-      ACanvas.ClipRect(ADest, TSkClipOp.Intersect, True);
-      ACanvas.DrawImageRect(Img, DstRect, Paint);
-    finally
-      ACanvas.Restore;
-    end;
-    Exit;
-  end;
-
-  if ZoomBitmapActive and (FPanImage <> nil) then
-  begin
-    Pivot := ZoomPivot;
-    F := ZoomFactor;
-    Img := FPanImage;
-    Paint := TSkPaint.Create;
-    Paint.AntiAlias := True;
-    DstRect := TRectF.Create(
-      Pivot.X + (ADest.Left - Pivot.X) * F,
-      Pivot.Y + (ADest.Top - Pivot.Y) * F,
-      Pivot.X + (ADest.Right - Pivot.X) * F,
-      Pivot.Y + (ADest.Bottom - Pivot.Y) * F);
-    ACanvas.Save;
-    try
-      ACanvas.ClipRect(ADest, TSkClipOp.Intersect, True);
-      ACanvas.DrawImageRect(Img, DstRect, Paint);
-    finally
-      ACanvas.Restore;
-    end;
-    Exit;
-  end;
-
-  if (FDrawerSkia.SkiaList.Count = 0) or SceneDirty then
-  begin
-    RequestRebuildScene;
-    if (FPanImage <> nil) then
+    if PanBitmapActive and (FPanImage <> nil) then
     begin
+      Img := FPanImage;
       Paint := TSkPaint.Create;
       Paint.AntiAlias := True;
-      ACanvas.DrawImageRect(FPanImage, ADest, Paint);
-    end;
-    Exit;
-  end;
-  if (ACanvas <> nil) and (FDrawerSkia.SkiaList.Count > 0) and (Selector <> nil) then
-  begin
-    ViewScale := Single(Selector.GetScale);
-    if ViewScale > 0 then
-    begin
-      Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
-      Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
+      DstRect := TRectF.Create(ADest.Left + PanShift.X, ADest.Top + PanShift.Y, ADest.Right + PanShift.X, ADest.Bottom + PanShift.Y);
       ACanvas.Save;
       try
-        ACanvas.Translate(Tx, Ty);
-        ACanvas.Scale(ViewScale, ViewScale);
-        FDrawerSkia.DrawSkiaList(ACanvas);
+        ACanvas.ClipRect(ADest, TSkClipOp.Intersect, True);
+        ACanvas.DrawImageRect(Img, DstRect, Paint);
+        DrawInteractionOverlay(ACanvas, ADest, DstRect);
       finally
         ACanvas.Restore;
       end;
+      Exit;
     end;
+
+    if ZoomBitmapActive and (FPanImage <> nil) then
+    begin
+      Pivot := ZoomPivot;
+      F := ZoomFactor;
+      Img := FPanImage;
+      Paint := TSkPaint.Create;
+      Paint.AntiAlias := True;
+      DstRect := TRectF.Create(
+        Pivot.X + (ADest.Left - Pivot.X) * F,
+        Pivot.Y + (ADest.Top - Pivot.Y) * F,
+        Pivot.X + (ADest.Right - Pivot.X) * F,
+        Pivot.Y + (ADest.Bottom - Pivot.Y) * F);
+      ACanvas.Save;
+      try
+        ACanvas.ClipRect(ADest, TSkClipOp.Intersect, True);
+        ACanvas.DrawImageRect(Img, DstRect, Paint);
+        DrawInteractionOverlay(ACanvas, ADest, DstRect);
+      finally
+        ACanvas.Restore;
+      end;
+      Exit;
+    end;
+
+    if (FDrawerSkia.SkiaList.Count = 0) or SceneDirty then
+    begin
+      RequestRebuildScene;
+      if (FPanImage <> nil) then
+      begin
+        Paint := TSkPaint.Create;
+        Paint.AntiAlias := True;
+        ACanvas.DrawImageRect(FPanImage, ADest, Paint);
+      end;
+      PaintBefore(ACanvas, ADest);
+      Exit;
+    end;
+
+    if (FCachedPicture = nil) then
+    begin
+      SceneDirty := True;
+      RequestRebuildScene;
+      if (FPanImage <> nil) then
+      begin
+        Paint := TSkPaint.Create;
+        Paint.AntiAlias := True;
+        ACanvas.DrawImageRect(FPanImage, ADest, Paint);
+      end;
+      PaintBefore(ACanvas, ADest);
+      Exit;
+    end;
+
+    Pic := FCachedPicture;
+    if (Pic <> nil) and (Selector <> nil) then
+    begin
+      ViewScale := Single(Selector.GetScale);
+      if ViewScale > 0 then
+      begin
+        Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
+        Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
+        ACanvas.Save;
+        try
+          ACanvas.Translate(Tx, Ty);
+          ACanvas.Scale(ViewScale, ViewScale);
+          ACanvas.DrawPicture(Pic);
+        finally
+          ACanvas.Restore;
+        end;
+      end;
+      Exit;
+    end;
+
+    if (ACanvas <> nil) and (FDrawerSkia.SkiaList.Count > 0) and (Selector <> nil) then
+    begin
+      ViewScale := Single(Selector.GetScale);
+      if ViewScale > 0 then
+      begin
+        Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
+        Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
+        ACanvas.Save;
+        try
+          ACanvas.Translate(Tx, Ty);
+          ACanvas.Scale(ViewScale, ViewScale);
+          FDrawerSkia.DrawSkiaList(ACanvas);
+        finally
+          ACanvas.Restore;
+        end;
+      end;
+    end;
+  finally
+    Dt := TThread.GetTickCount64 - T0;
+    if Dt > 15 then
+      WriteIn(['SkPainterDraw ms=', Dt, ' PanBmp=', PanBitmapActive, ' ZoomBmp=', ZoomBitmapActive, ' SceneDirty=', SceneDirty]);
   end;
 end;
 

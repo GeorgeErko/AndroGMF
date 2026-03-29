@@ -5,4 +5,39 @@ inherited MainFormMouseObj: TMainFormMouseObj
     Viewport.Width = 854.000000000000000000
     Viewport.Height = 111.000000000000000000
   end
+  inherited Panel1: TPanel
+    inherited Label1: TSkLabel
+      Position.X = 490.000000000000000000
+      Position.Y = 8.000000000000000000
+    end
+    inherited btnPlus: TCornerButton
+      TabOrder = 21
+    end
+    inherited ptnMinus: TCornerButton
+      TabOrder = 20
+    end
+    object btnDS: TButton
+      StaysPressed = True
+      Position.X = 278.000000000000000000
+      Position.Y = 5.000000000000000000
+      Size.Width = 73.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 19
+      Text = 'btnDS'
+      TextSettings.Trimming = None
+      OnClick = btnDSClick
+      object btnDraw: TButton
+        StaysPressed = True
+        Position.X = 82.000000000000000000
+        Size.Width = 73.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 5
+        Text = 'Line'
+        TextSettings.Trimming = None
+        OnClick = btnDrawClick
+      end
+    end
+  end
 end

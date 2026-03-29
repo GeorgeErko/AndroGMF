@@ -126,7 +126,7 @@ Type
  Function GetBMFile(BMName,FName:AnsiString):AnsiString;
  Function TemporaryPath:AnsiString;
 
-implementation uses WPTForm1, newProcs, WpTwigs, EcLot,
+implementation uses WPTForm2, newProcs, WpTwigs, EcLot,
                     Maths_basic;
 
 Function GetBMFile;
@@ -200,8 +200,8 @@ Constructor TBmpMgr.CreateAsParam;
    Box.Initialize(GNForm,GCanvas);
    Box.UseStretch:=True;
    Box.UseStandart:=False;
-   Box.BackColor:=TForm1(GTwgForm).Settings.bmBackColor;
-   Box.Color:=TForm1(GTwgForm).Settings.bmColor;
+   Box.BackColor:=TForm2(GTwgForm).Settings.bmBackColor;
+   Box.Color:=TForm2(GTwgForm).Settings.bmColor;
   end;
 { If GetBMFile(BMName,FileName)<>'' then
   Box.CreateView(GetBMFile(BMName,FileName));
@@ -368,7 +368,7 @@ begin
  With Selector do
  For I:=0 to Regions.Count-1 do begin
   Tw:=Regions[I];Tw.isVis:=False;
-  TwDraw:=TTwig.Create(0);
+  TwDraw:=TTwig.Create(Selector, 0);
    For J:=0 to Tw.Coord.Count-1 do begin
     D:=Tw.Coord[J];
     Xmm:=(D.XDot/Box.PPM*1000);Ymm:=(D.Ydot/Box.PPM*1000);

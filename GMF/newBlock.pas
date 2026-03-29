@@ -531,12 +531,12 @@ begin
  // если ветка Arc -> заменяем горизонтальные ветки на дуги
   If (Data<>nil) and (TTwig(Data) is TTwigArc) and (UseBum) then begin
    P:=BehindTheWheel(XB,YB,XKoef,YKoef,Angle,Data,False); // arcDist = False -> пока расстояние по хорде
-   For I:=0 to P.Count-1 do TTwig(P[I]).Draw;
+   For I:=0 to P.Count-1 do TTwig(P[I]).Paint;
    P.Free;
   end else
  // вычисляем смещение
   For I:=0 to Twigs.TwigsCount-1 do begin
-   TTwig(Twigs.TAt(I)).Draw;//Paint(Canvas.Handle);
+   TTwig(Twigs.TAt(I)).Paint;
   end;
   For I:=0 to Twigs.AnyCount-1 do begin
    PD:=Twigs.AAt(I,B);
@@ -1088,10 +1088,10 @@ begin
  Block_Drawing:=True; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
  dePaint(XB,YB,Angle,XKoef,Ykoef);
  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
- If (Selector.XRasst(Width)<=GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=GGraphSet.fPntZnk)
+ If (Selector.XRasst(Width) <= Selector.GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=Selector.GGraphSet.fPntZnk)
      and (not GlobalRender) then exit;
  //dePaint(XB,YB,Angle,XKoef,Ykoef);
- With TwgForm,GGraphSet do begin
+ With TwgForm, Selector.GGraphSet do begin
   Dx:=XB-(X+TwgForm.XXMin);Dy:=YB-(Y+TwgForm.YYMin);
   XBlock:=XB;YBlock:=YB;
   try
@@ -1126,9 +1126,9 @@ begin
   end;
   finally
   Block_Drawing:=False; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
-  GGraphSet.UslPoint:=UP;
-  GGraphSet.TvdPoint:=TP;
-  GGraphSet.AllPoint:=AP;
+  //GGraphSet.UslPoint:=UP;
+  //GGraphSet.TvdPoint:=TP;
+  //GGraphSet.AllPoint:=AP;
   Twigs.TwigsLarge.Free;Twigs.LotsLarge.Free;Twigs.AnyLarge.Free;
   Twigs.TwigsLarge:=oldTwigsLarge;Twigs.LotsLarge:=oldLotsLarge;Twigs.AnyLarge:=oldAnyLarge;
   end;

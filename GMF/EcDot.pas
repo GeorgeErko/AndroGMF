@@ -128,7 +128,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      Buffer:TMemoryStream;
     {}
      Selector:TSelector;
-     MRect:TMRect; // габариты точки ч учетом поворота
+    //
+     FDrawerObject: TObject;
        Function  GetSelector:TSelector;override;
        Procedure SetSelector(S:TSelector);override;
        Constructor Create(X,Y:Extended;W:SmallInt);
@@ -209,7 +210,9 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
    // Габариты
      Procedure SetGabarites(MRect_:TMRect);override;
    //
-     Procedure Draw32(Drawer: TogsDrawer; PntZnk:TSortedCollection;FontColEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);virtual;
+     procedure Draw32(Drawer: TogsDrawer; PntZnk:TSortedCollection;FontColEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);virtual;
+     function GetDrawerObject: TObject; override;
+     procedure SetDrawerObject(Obj: TObject); override;
   end;
 
   TPointMessage = class(TPointDot)
@@ -422,14 +425,12 @@ begin
    TextManager:=nil;
   userObj:=nil;
   TexX:=1;TexY:=1;
-  MRect:=TMRect.Create;
 end;
 
 constructor TPointDot.CreateAsPoint_(P: TPointDot);
 var J:Integer;Col:PCollection;UZnak:TPoint_Sign;I:Integer;
 begin
  Selector:=P.Selector;
- MRect:=TMRect.CreateAs(P.MRect);
  NLot:=P.NLot;
   CreateGUID(GUID);
   CreateZ(P.XDot,P.YDot,P.Z,P.Control,P.What);
@@ -586,7 +587,6 @@ destructor TPointDot.Destroy;
   If Properties<>nil then Properties.Free;
   If Bind<>nil then Bind.Free;
   If Trees<>nil then Trees.Free;
-  MRect.Free;
  end;
 
 
@@ -825,7 +825,6 @@ var TI:ShortInt;
      end else TaheoIndex:=-1;
     Stream.Read(XDot,SizeOf(XDot));
     Stream.Read(YDot,SizeOf(YDot));
-    MRect:=TMRect.Create;Mrect.Insert(XDot,YDot);
     Stream.Read(What,SizeOf(What));
     Stream.Read(Ugol,SizeOf(Ugol));
     Stream.Read(Code,SizeOf(Code));
@@ -1613,7 +1612,7 @@ exit;
   N:=SearchThis(GPointCol,(abs(What)));
     If N<>-1 then begin
      PZ:=GPointCol.At(N);
-     PZ.SetGabaritesBlock(MRect,XDot,YDot,Ugol,XKoef,YKoef);
+     PZ.SetGabaritesBlock(nil,XDot,YDot,Ugol,XKoef,YKoef);
     end;
  end;
 end;
@@ -1757,6 +1756,15 @@ procedure TPointDot.renderGabarites;
 begin
 end;
 
+function TPointDot.GetDrawerObject: TObject;
+begin
+ Result := FDrawerObject;
+end;
+
+procedure TPointDot.SetDrawerObject(Obj: TObject);
+begin
+ FDrawerObject := Obj;
+end;
 { TPointMessage }
 
 constructor TPointMessage.Create(X, Y: Extended; W: SmallInt);

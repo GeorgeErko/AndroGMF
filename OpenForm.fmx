@@ -1,8 +1,12 @@
 object Frame1: TFrame1
-  Size.Width = 434.000000000000000000
-  Size.Height = 418.000000000000000000
-  Size.PlatformDefault = False
-  OnEnter = FrameEnter
+  Left = 0
+  Top = 0
+  ClientHeight = 480
+  ClientWidth = 640
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop, iPhone, iPad]
+  DesignerMasterStyle = 0
   object ListView1: TListView
     ItemAppearanceClassName = 'TListItemAppearance'
     ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'

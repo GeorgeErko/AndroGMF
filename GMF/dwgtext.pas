@@ -544,10 +544,9 @@ begin
   st.read(fun, sizeof(fun));
   st.read(fscale, sizeof(fscale));
   ffntname := st.ReadString;
-  {$IFDEF WIN64}Dc:=GetDc(0);{$ELSE}Dc:=0;{$ENDIF}
+  Dc:=0;
   FFontIndex := -1;
    SetFont(Dc, ffntName, FHeight, FWidth, fCharSet, fbl, fit, fun, fscale);
-  {$IFDEF WIN64}ReleaseDc(0,Dc);{$ENDIF}
   Active:=0;
   st.read(fvisible, sizeof(fvisible));
   st.read(fBg, sizeof(FBg));

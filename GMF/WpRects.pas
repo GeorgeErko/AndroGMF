@@ -10,7 +10,7 @@ type
   public
   Proportional:Boolean;
   Inversion:Boolean;
-  Constructor Create(W1:Integer;Data:Pointer = nil);override;
+  Constructor Create(Selector_: TSelector; W1:Integer;Data:Pointer = nil);override;
   Constructor   CreateAsTwig(Twig:TTwig;AddCoord:Boolean);override;
   Constructor   Load  (Stream :TBufStream);Override;
   Procedure     Store (Stream :TBufStream);Override;
@@ -27,7 +27,7 @@ implementation uses EcDot, mpMarker, Maths_Basic;
 
 { TTwigRect }
 
-constructor TTwigRect.Create(W1: Integer; Data: Pointer);
+constructor TTwigRect.Create(Selector_: TSelector; W1: Integer; Data: Pointer);
 begin
  inherited;
  If Data<>nil then With TSect(Data^) do begin

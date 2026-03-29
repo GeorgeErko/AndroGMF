@@ -86,13 +86,22 @@ Type
          Function  ObjectName:AnsiString;
 //         Function GetHandLot:Integer;
       Property Modified:boolean read GetModified write SetModified;
+    //
+     Function FindTwigs(X, Y: Double; Col: PCollection; MinDisst: Double =0.001): Integer;
+     Function ModifiedTwig(Twig:TTwig;OnModifiedPrim:procModifiedPrim):boolean;
+     Function ModifiedTwigsUndo(TwigCol:PCollection;LotCol:PCollection;Twig:TTwig=nil;UseTwigLots:boolean = false):boolean;
+    // Twice
+     Function  TwiseArc(XDrag,YDrag:Double;Twig:TTwigArc):boolean;
+     Function  TwiseTwig2(X, Y: Double; Twig: TTwig; OnModifiedPrim: procModifiedPrim;ShowError:Boolean=False): boolean;
+     Procedure TwiseLot(Lot:TLot);virtual;
    end;
 
 {------------------------------------------------------}
 
 
 Implementation uses newClassBuilder, newLayersTable, DWGText, EcDot2, newBlock,
-                    TextManager, Writer, System.Types;
+                    TextManager, Writer, System.Types, UndoColNew, GBFWUndo,
+                    newProperties;
 
 { TSortTextNum }
 
@@ -474,7 +483,7 @@ end;
        ClFile: String;
    begin
      Selector:=Stream.Selector;
-//     Undo:=TUndo.Create(Pointer(Self));
+     Undo:=TUndo.Create(Pointer(Self));
      MemMake:='';
      MemMakeIndex:=-1;
      GloLot2:=nil;
@@ -483,6 +492,9 @@ end;
      {1000}
       LoadAbout(About,Stream);
       MirrorObject:=About.MirrorObject=1;
+    //
+     If MirrorObject then begin TUndo(Undo).Free;Undo:=nil;end;
+    //
      If not MirrorObject then begin
       Selector.GTwgForm:=Self;
      // Selector.GRect := About.Fragment;
@@ -526,7 +538,7 @@ end;
           Stream.Read(fGraphSet,SizeOf(fGraphSet)) else fGraphSet:=GGraphSet;
           If not MirrorObject then WriteIn(['GraphSet', Stream.Position]);
         GGraphSet:=fGraphSet;
-        GGraphSet:=fGraphSet;
+        Selector.GGraphSet:=fGraphSet;
         If (Version>35) then begin
          If not MirrorObject then begin
           Settings:=TSettings.Load(Stream);
@@ -713,10 +725,23 @@ end;
       end;
      end;
     end;
-   //  If HObject<WObject then HObject:=WObject else WObject:=HObject;
- //   If not MirrorObject then
- //    WriteS(['EndLoad']);
-    // ClassBuild(nil,ClName,Twigs,MkLib);
+   If not MirrorObject then
+    With About do begin
+     Const_Of_DecimalCoord:=DecimalCoord;
+     Const_Of_DecimalHeight:=DecimalHeight;
+     Const_Of_DecimalLength:=DecimalLength;
+     Const_Of_DecimalSqwear:=DecimalSqwear;
+     Const_Of_SqwearMetric:=SqwearMetric;
+     Const_Of_AngleMetric:=AngleMetric;
+     Const_Of_DecimalAngle:=DecimalAngle;
+     Const_Of_CalcDirect:=CalcDirect;
+   {}
+     Const_Of_PrecHeight:=Round(IntPower(10,DecimalHeight));
+     Const_Of_PrecLength:=Round(IntPower(10,DecimalLength));
+     Const_Of_PrecSqwear:=Round(IntPower(10,DecimalSqwear));
+     Const_Of_PrecCoord :=Round(IntPower(10,DecimalCoord));
+    {}
+    end;
  end;
 
   Procedure   TForm1.Store;
@@ -918,6 +943,29 @@ begin
   end;
 end;
 
+function TForm1.FindTwigs(X, Y: Double; Col: PCollection; MinDisst: Double = 0.001): Integer;
+var Twig:TTwig;X1,Y1:Double;S,MinS:Double;
+    I:Integer;
+begin
+ MinS:=100000000000;
+ Result:=0;
+// Writeln('========================================',X:8:3,' ',Y:8:3);
+ For I:=1 to Twigs.TwigsCount-1 do begin
+  Twig:=Twigs.TAt(I);
+  If (Twig.Closed=0) or (Twig.Closed=254) then continue;
+  S:=Twig.GetTwigDist(X,Y,X1,Y1);
+  If S<MinS then MinS:=S;
+//  Writeln(S:8:4,' ',MinDisst:8:4);
+  If (Round(S*1000)<=Round(MinDisst*1000)) then begin
+  // Writeln('ActiveInsert->>>>>>');
+   ActiveTwig.Insert(TLong.Create(I));
+   Col.Insert(Twig);
+  end;
+ end;
+ Result:=Col.Count;
+// Writeln('========================================',X:8:3,' ',Y:8:3);
+end;
+
 procedure TForm1.FreeViewArc;
  var I:Integer;
 begin
@@ -1098,6 +1146,67 @@ Function TForm1.MakeLot(PT: TResource):TLot;
   Modified:=True;
  end;
 
+function TForm1.ModifiedTwig(Twig: TTwig;
+  OnModifiedPrim: procModifiedPrim): boolean;
+var Lot:TLot;I,J:Integer;
+begin
+ Result:=False;
+ For I:=0 to Twigs.LotsCount-1 do begin
+  Lot:=Twigs.LAt(I);
+   For J:=0 to Lot.Coord.Count-1 do
+    If Lot.GetTwig(Twigs,J)=Twig then begin
+     Result:=OnModifiedPrim(Lot);
+     if not Result then break;
+    end;
+ end;
+end;
+
+function TForm1.ModifiedTwigsUndo(TwigCol, LotCol: PCollection; Twig: TTwig;
+  UseTwigLots: boolean): boolean;
+var Lot:TLot;I,J,K:Integer;LotColUsed:Boolean;Undo_:TUndo;
+begin
+try
+ Undo_:=Undo;
+ LotColUsed:=False;
+ If LotCol<>nil then LotColUsed:=True else LotCol:=PCollection.Create(1);
+  Result:=False;
+  If UseTwigLots then begin
+   If TwigCol=nil then begin If Twig.Lots<>nil then For I:=0 to Twig.Lots.Count-1 do LotCol.Insert(Twig.Lots[I]) end else
+   For I:=0 to TwigCol.Count-1 do begin If TTwig(TwigCol[I]).Lots<>nil then For J:=0 to TTwig(TwigCol[I]).Lots.Count-1 do LotCol.Insert(TTwig(TwigCol[I]).Lots[J]);end;
+  end else
+   For I:=0 to Twigs.LotsCount-1 do begin
+    Lot:=Twigs.LAt(I);
+    If TwigCol=nil then begin
+     For K:=0 to Lot.Coord.Count-1 do If Lot.GetTwig(Twigs,K)=Twig then If LotCol.IndexOf(Lot)=-1 then LotCol.Insert(Lot);
+    end else begin
+     For J:=0 to TwigCol.Count-1 do begin
+      For K:=0 to Lot.Coord.Count-1 do If Lot.GetTwig(Twigs,K)=TwigCol[J] then If LotCol.IndexOf(Lot)=-1 then LotCol.Insert(Lot);
+     end;
+    end;
+   end;
+{$IFDEF GEOBUILDER}
+ if LotCol.Count>0 then begin
+  Undo.AddUndoItem(TPrimUndo.Create(Self,LU_ModifiedPrim,'UndoLotsModified...'));
+  For I:=0 to LotCol.Count-1 do begin
+   TPrimUndo(Undo.Last).AddModifiedPrim(LotCol[I]);
+  end;
+ end;
+ If not LotColUsed then begin LotCol.DeleteAll;LotCol.Free;end;
+{$ENDIF}
+{$IFDEF NEWUNDO}
+ if (LotCol.Count>0) then begin
+  Result:=True;
+  Undo_.AddUndoItem(TPrimUndo.Create(Self,LU_ModifiedPrim,'UndoLotsModified...C='+IntToStr(LotCol.Count)));
+  For I:=0 to LotCol.Count-1 do begin
+   If not Undo_.Locked then TPrimUndo(Undo_.Last).AddModifiedPrim(LotCol[I]);
+  end;
+ end;
+ If not LotColUsed then begin LotCol.DeleteAll;LotCol.Free;end;
+{$ENDIF}
+except
+end;
+end;
+
 procedure TForm1.StoreMkLib;
 begin
  // MkLib.StoreAll(MainPath+'\'+(About.ClassName));
@@ -1266,7 +1375,7 @@ end;
 
 function TForm1.SortSqwear(C: LongInt): LongInt;
 var I:Integer;IndexPlo:TPloIndex;
-begin                                                
+begin
 //  Twigs.CreateIndexes;
   IndexPlo:=TPloIndex.Create(Selector);
   For I:=0 to Twigs.LotsLarge.Count-1 do IndexPlo.Insert(Twigs.LotsLarge[I]);
@@ -1276,7 +1385,7 @@ begin
 end;
 
 function TForm1.ObjectName: AnsiString;
-begin                                                           
+begin
  Result:=About.Path+'\'+About.MyName;
 end;
 
@@ -1291,6 +1400,161 @@ begin
  Modified2:=Value;
 end;
 
+Function TForm1.TwiseArc(XDrag,YDrag:Double;Twig:TTwigArc):boolean;
+ var Twig2:TTwigArc;Nom1,Nom2,I,J:Integer;Lot:TLot;
+ Function TInd:Integer;
+  var I:Integer;
+  begin
+   Result:=-1;
+   For I:=1 to Twigs.TwigsCount-1 do
+    If Twig=Twigs.Tat(I) then Result:=I;
+  end;
+ begin
+  Twig2:=TTwigArc.CreateAsTwig(Twig,False);
+  Twig2.A.XDot:=XDrag;Twig2.A.YDot:=YDrag;
+  Twig.B.XDot:=XDrag;Twig.B.YDot:=YDrag;
+//  Twig.Calculate;Twig2.Calculate;
+  Twig.ArcCreate(False);Twig.MiddlePointSet;Twig2.ArcCreate(False);Twig2.MiddlePointSet;
+//  Twig.Calculate;Twig2.Calculate;
+  Twigs.Insert(Twg_Twig,Twig2);
+  Twig2.ParentIndex:=Twigs.TwigsCount-1;
+ {}
+ Nom1:=Twig.ParentIndex;
+ Nom2:=Twigs.TwigsCount-1;
+  For J:=0 to Twigs.LotsCount-1 do
+   begin
+    Lot:=Twigs.LAt(j);
+     i:=0;
+          while i<Lot.Coord.count do
+                  begin
+                  if TLong(Lot.Coord.At(i)).Num=Nom1 then
+                          begin
+                          Lot.Coord.AtInsert(i+1,(TLong.Create(Nom2)));
+                          i:=2000000;
+                          end
+        else
+                          if TLong(Lot.Coord.At(i)).Num=-Nom1 then
+                                  begin
+                                  Lot.Coord.AtInsert(i,(TLong.Create(-Nom2)));
+                                  i:=2000000;
+                                  end;
+                  inc(i);
+        end;
+     end;
+   Result:=True;
+end;
+
+procedure TForm1.TwiseLot(Lot: TLot);
+var I:Integer;Lot1:TLot;TransAction:Boolean;Undo_:TUndo;
+begin
+ Undo_:=Undo;
+ If Lot.TypeLot=2 then Exit;
+ If Lot.ClassHandle.NoPerehlest=1 then exit;
+ TransAction:=False;
+ If not Undo_.TransActionStarted then begin TransAction:=True;Undo_.StartTransAction;end;
+try
+// Writeln('TwiseLot.CoordCount = ',Lot.Coord.Count,' ',Lot.GUIDStr);
+  For I:=0 to Lot.Coord.Count-1 do begin
+   Lot1:=TLotClass(Lot.ClassType).CreateAsLot(Lot,True);Lot1.TypeLot:=1;Lot1.Coord.FreeAll;
+   Lot1.Insert(TLong(Lot.Coord[I]).Num);
+   Lot1.GetTwig(Twigs,0).Calculate;//Lot1.GetTwig(Twigs.Twigs,0).Opr:=100;
+   Lot1.SetMinMax(Twigs);
+   Twigs.Insert(Twg_Lot,Lot1);
+   TPrimUndo(Undo_.AddUndoItem(TPrimUndo.Create(Self,LU_AddPrim,'Lot_Twise'))).AddModifiedPrim(Lot1);
+  end;
+ Twigs.AtDelete(TWG_Lot,Twigs.LotsLarge.IndexOf(Lot));
+ If TransAction then Undo_.Commit;
+except If TransAction then Undo_.RollBack;end;
+end;
+
+Function TForm1.TwiseTwig2(X,Y:Double;Twig:TTwig;OnModifiedPrim:procModifiedPrim;ShowError:boolean=False):boolean;
+var
+  Twig1,Twig2:TTwig;
+  TwClass:TTwigClass;
+  N,i:Integer;
+  Nom1,Nom2:LongInt;
+  j:longint;
+  Lot:TLot;
+  Dot:TDot;
+  Error:String;
+begin
+Result:=False;
+Twig1:=Twig;
+if Twig1.Coord.Count<=2 then exit;
+// все сегменты Accessible
+//If not Twig1.isAccessibleTwig(Acc_Twise,X,Y,Error) then begin
+//  if ShowError then MessageError('Íåâîçìîæíî ðàçáèòü âåòâü ->'+Error);
+// Exit;
+//end;
+Dot:=Twig1.GetNearestPoint(X,Y,N);
+//if (N=0) or (N=(Twig1.Coord.Count-1)) then exit;
+// Åñëè âåòêà ñïëàéí äîáàâèì ArcTwig èíà÷å Twig
+//TwClass:=Twig1;
+Twig2:=TTwigClass(Twig1.ClassType).Create(Selector, Twig1.What,Twig1.GetData);
+Twigs.Insert(TWG_Twig,Twig2);
+Nom2:=Twigs.TwigsCount-1;
+{if Twig1 is T3DTwig then
+ begin
+  Twigs.Insert(TWG_Twig,(T3DTwig.Create(Twig_3D,PDouble(T3DTwig(Twig1).Z)))) end else
+ begin
+  Twigs.Insert(TWG_Twig,(TTwig.Create(Twig1.What)));
+ end;
+ Twig2:=Twigs.TAt(Nom2);}
+{ Óñòàíîâêà ïàðàìåòðîâ íîâîé âåòâè }
+ Twig2.Closed:=Twig1.Closed;
+ Twig2.Color:=Twig1.Color;
+ Twig2.Rang:=Twig1.Rang;
+ Twig2.UZnak:=Twig1.UZnak;
+ Twig2.Locked:=Twig1.Locked;
+ Twig2.notPere:=Twig1.notPere;
+ Twig2.TaheoIndex:=Twig1.TaheoIndex;
+ Twig2.ClassHandle:=Twig1.ClassHandle;
+ Twig2.ParentIndex:=Twigs.TwigsCount-1;
+ Twig2.What:=Twig1.What;
+ If Twig1.Properties=nil then Twig2.Properties:=nil else Twig2.Properties:=TProperties.CreateAs(Twig1.Properties);
+{}
+//Writeln('0=',Twig1.Is3DTwig);
+For i:=Twig1.Coord.Count-1 downto N do begin
+ Twig2.Coord.AtInsert(0,TDot.CreateAsDot(Twig1.Coord.At(i)));
+ If I<>N then Twig1.Coord.AtFree(i);
+end;
+Twig1.Inv:=0;
+Twig2.Inv:=0;
+TDot(Twig1.Coord.At(0)).What:=10;
+TDot(Twig1.Coord.At(Twig1.Coord.count-1)).What:=10;
+TDot(Twig2.Coord.At(0)).What:=10;
+TDot(Twig2.Coord.At(Twig2.Coord.count-1)).What:=10;
+//Writeln('1=',Twig1.Is3DTwig,' 2=',Twig2.Is3DTwig);
+Twig1.Calculate;Twig2.Calculate;
+//Writeln('1=',Twig1.Is3DTwig,' 2=',Twig2.Is3DTwig);
+//Writeln(Twig2.Coord.Count,' ',Twig1.Coord.Count,' ',TWig2.TwigCoord.Count,' ',Twig1.TwigCoord.Count);
+// Åñëè âåòêà Arc òî äðîáèì çàíîâî
+//Twig1.Spline;Twig2.Spline;
+{}
+//ActiveTwig.FreeAll;
+for j:=0 to Twigs.LotsCount-1 do begin
+ Lot:=Twigs.LAt(j);
+ I:=0;
+	While I<Lot.Coord.count do
+	if Twigs.TAt(TLong(Lot.Coord.At(i)).Num)=Twig then
+		begin
+    If TLong(Lot.Coord.At(i)).Num>0 then
+ 			begin
+			Lot.Coord.AtInsert(i+1,(TLong.Create(Nom2)));
+      If Assigned(OnModifiedPrim) then OnModifiedPrim(Lot);
+  			i:=2000000;
+			end else
+			If TLong(Lot.Coord.At(i)).Num<0 then
+				begin
+				 Lot.Coord.AtInsert(i,(TLong.Create(-Nom2)));
+         if Assigned(OnModifiedPrim) then OnModifiedPrim(Lot);
+				 i:=2000000;
+				end;
+	   	inc(i);
+      end else Inc(i);
+   end;
+ Result:=True;
+end;
 
 initialization
 // Writeln(525+3*2.9*600+2.8*1.5*1020+357+840+1260);

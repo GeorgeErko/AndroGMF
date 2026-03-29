@@ -174,7 +174,7 @@ var fs, i: cardinal;
 begin
   CheckDPI(fn, querydpi);
   Self.querydpi := querydpi;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
   SlStarts := TIntList.Create;
   finmemory := inmemory;
   if readonly then
@@ -256,7 +256,7 @@ destructor TSimpleBmp.Destroy;
 begin
   if fbmi <> nil then freemem(fbmi);
   SlStarts.Free;
-{$IFDEF WIN64}
+{$IFDEF WIN65}
   if not finmemory then
   begin
     if hmap <> nil then UnmapViewOfFile(hmap);

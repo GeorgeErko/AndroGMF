@@ -2,7 +2,7 @@
 
 interface
 
- Uses  Classes, SysUtils, Math {$IFDEF WIN64} Windows,{$ENDIF};
+ Uses  Classes, SysUtils, Math;
 
 { Корневой объект для примитивов }
 
@@ -208,6 +208,9 @@ var
   CurrentSize : WORD;
   i     : SmallInt;
 begin
+//  WriteIn(['Count=', NrOfStRecs, CType.ClassName, RCode]);
+  If RCode = 200 then
+   WriteIn(['Res']);
   If    (CType  = nil) then
     Raise EStreamError.CreateFmt('Нельзя зарегистрировать nil',[RCode]);
   If    (RCode  = 0) then

@@ -469,6 +469,8 @@ type
    procedure DoOnPaint(Sender: TObject); virtual;
    procedure DrawTo(Image_: TCanvas; Rect: TRect); virtual; abstract;
  //
+   procedure ReDrawAll(); virtual; abstract;
+ //
    property Canvas: TCanvas read GetCanvas;
    property Pen: TogsPen read GetPen write SetPen;
    property Brush: TogsBrush read GetBrush write SetBrush;
@@ -513,7 +515,7 @@ type
   TogsSelector = class(TogsBasic)
  private
   fDrawer: TogsDrawer;
-  fglobalRect,factiveRect: TogsRect;
+  fglobalRect, factiveRect: TogsRect;
   fPixelSize: Double;
   mfs, mff: Integer; // начало -> конец замера memFree
                       // memFreeFinish = mff - mfs
@@ -830,17 +832,7 @@ var XMM, XM: Double;
     Dc: THandle;
 begin
 // !!! проверить на Unix
-{$IFDEF WIN64}
- If fDrawer <> nil then begin
-//  DC:=GetDC(0);
-   XMM := GetDeviceCaps(fDrawer.Canvas.Handle, 4);
-   XM := geoDist(GetDeviceCaps(fDRawer.Canvas.Handle, 8));
-//  ReleaseDC(0, DC);
-  Result := Round(XM/XMM * 1000);
- end;
-{$ELSE}
- Write(1);
-{$ENDIF}
+// Write(1);
 // WriteIn([XMM, GetDeviceCaps(fDrawer.Canvas.Handle, 8), GetDeviceCaps(fDrawer.Canvas.Handle, 8)/XMM, Result]);
 // fpixScale := XM/XMM * 1000;
 end;
@@ -1356,7 +1348,7 @@ constructor TogsSortedCollection.Create(OnCompare_: TListSortCompare;
 begin
  inherited Create(Capacity_);
  fOnCompare := OnCompare_;
- If @fOnCompare = nil then fOnCompare := @ComparePointers;
+ If @fOnCompare = nil then fOnCompare := ComparePointers;
  fDuplicates := Duplicates_;
 end;
 
@@ -1989,11 +1981,12 @@ end;
 
 
 initialization
- ogsRegisteredClasses := TogsSortedCollection.Create(@RegisteredObjectsCompare, True);
+ ogsRegisteredClasses := TogsSortedCollection.Create(RegisteredObjectsCompare, True);
 // регистрация классов
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsRegisteredClass, 102, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsSortedCollection, 101, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsCollection, 100, 1));
+  WriteIn(['ogcBasic']);
 finalization
  ogsRegisteredClasses.Free;
 end.

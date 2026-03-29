@@ -5,10 +5,11 @@
         <FrameworkType>FMX</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Android64</Platform>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
         <TargetedPlatforms>693395</TargetedPlatforms>
         <AppType>Application</AppType>
         <MainSource>testAndro.dpr</MainSource>
+        <ProjectName Condition="'$(ProjectName)'==''">testAndro</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -320,6 +321,7 @@
         <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <DCC_RangeChecking>false</DCC_RangeChecking>
         <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
+        <DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;MATHS=maths_basic;maths=polygons;maths1=maths_basic;maths4=maths_versia;maths8=maths_versia;maths2=maths_basic;maths2=circle_di;maths8=circle_di;maths2=polygons;maths=maths_basic;maths4=polygons;maths3=maths_versia;maths3=circle_di;maths2=maths_versia;maths9=polygons;maths1=intervals;$(DCC_UnitAlias)</DCC_UnitAlias>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
@@ -422,7 +424,6 @@
             <FormType>fmx</FormType>
         </DCCReference>
         <DCCReference Include="JSON\ogcDrawerSkia.pas"/>
-        <DCCReference Include="MOUSE\objMouse.pas"/>
         <DCCReference Include="GMF\UndoColNew.pas"/>
         <DCCReference Include="GMF\UndoItem.pas"/>
         <DCCReference Include="GMF\SelectorObj.pas"/>
@@ -430,6 +431,20 @@
         <DCCReference Include="MainFrmMouseObj.pas">
             <Form>MainFormMouseObj</Form>
             <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="MOUSE\objMouse.pas"/>
+        <DCCReference Include="MOUSE\objMouseSelect.pas"/>
+        <DCCReference Include="GMF\drawTwigs.pas"/>
+        <DCCReference Include="GMF\WpGeo.pas"/>
+        <DCCReference Include="GMF\notLink_.pas"/>
+        <DCCReference Include="GMF\Util.pas"/>
+        <DCCReference Include="GMF\Circle.pas"/>
+        <DCCReference Include="GMF\drawGrid.pas"/>
+        <DCCReference Include="GMF\GBFWUndo.pas"/>
+        <DCCReference Include="FrameAccuDraw.pas">
+            <Form>AccuDrawFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

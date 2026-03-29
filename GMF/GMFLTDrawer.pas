@@ -16,7 +16,8 @@ const
 procedure DrawGeoLine(Drawer: TogsDrawer; GL: TGeoLine; ogsLine: PCollection;
                       Ko: Single; LineWidth: Single; Dx: Single; Selected: Boolean; Color: Integer);
 
-implementation uses Lib, newProcs, Polygons, ogcMathUtils, Writer, types_dimano;
+implementation uses Lib, newProcs, Polygons, ogcMathUtils, Writer, types_dimano,
+                    newSettings;
 
 { Локальные проуедуры модуля --------------------------------------------- }
 

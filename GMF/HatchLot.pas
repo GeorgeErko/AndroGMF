@@ -126,7 +126,7 @@ begin
   Twig[I].STColor:=wbColor(Selector,Color);Twig[I].Rang:=1;Clo:=Twig[I].Closed;Twig[I].Closed:=1;//Twig[I].SetMinMax;
   Twig[I].Inv:=Inv;
   Twig[I].UZnak:=-1;
-  Twig[I].Draw;
+  Twig[I].Paint;
   Twig[I].Inv:=0;
   Twig[I].Closed:=Clo;
  end;

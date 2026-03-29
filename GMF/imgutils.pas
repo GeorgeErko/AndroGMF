@@ -57,7 +57,7 @@ procedure SetfDpi(const fn: string; dpi: integer);
 begin
 //  ext := UpperCase(ExtractFileExt(fn));
 //  fn := UpperCase(ExtractFileName(fn));
-{$IFDEF MSWINDOWS}
+{$IFDEF WIN65}
   hf := CreateFile(pchar(fn), GENERIC_READ or GENERIC_WRITE, FILE_SHARE_READ, nil, OPEN_EXISTING, 0, 0);
   if hf = INVALID_HANDLE_VALUE then RaiseLastWin32Error;
   hmem := CreateFileMapping(hf, nil, PAGE_READWRITE, 0, 0, nil);

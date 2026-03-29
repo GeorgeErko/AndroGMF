@@ -1,5 +1,6 @@
 ﻿unit WpArcs;
-interface uses WpTwigs, Collect, newConsts, Maths_Basic, EcDot, SysUtils, Splines;
+interface uses WpTwigs, Collect, newConsts, Maths_Basic, EcDot, SysUtils, Splines,
+               newSelector;
 
 type
      // ветвь хранящая сглаженные точки старой
@@ -13,7 +14,7 @@ type
   TTwigSpline=class(TTwig)
    ArcCoord :PCollection;
      class function UseVirtualVertex: boolean;
-     Constructor Create(W1:Integer;Data:Pointer=nil);override;
+     Constructor Create(Selector_: TSelector; W1:Integer;Data:Pointer=nil);override;
      Constructor CreateAsTwig(Twig:TTwig;AddCoord:Boolean);override;
      Destructor Destroy;Override;
     {}
@@ -40,7 +41,7 @@ type
 
   TTwigSpline3D=class(TTwigSpline)
    Z:Single;
-    Constructor Create(W1:Integer;Z1:Pointer=nil);override;
+    Constructor Create(Selector_: TSelector; W1:Integer;Z1:Pointer=nil);override;
     constructor CreateAsTwig(Twig: TTwig; AddCoord: Boolean);override;
     {}
      Constructor   Load  (Stream :TBufStream);Override;
@@ -75,7 +76,7 @@ type
   TTwigCircle = class(TTwig)
    ArcCoord:PCollection;
    perePoints:TAngleCollection;
-    Constructor Create(W1:Integer;Data:Pointer=nil);override;
+    Constructor Create(Selector_: TSelector; W1:Integer;Data:Pointer=nil);override;
     constructor CreateAsTwig(Twig: TTwig; AddCoord: Boolean);override;
     Constructor   Load  (Stream :TBufStream);Override;
     Procedure     Store (Stream :TBufStream);Override;
@@ -143,7 +144,7 @@ Procedure TArcTwig.Store;
 
 Constructor TTwigSpline.Create;
  begin
-  inherited Create(W1);
+  inherited Create(Selector_, W1);
   ArcCoord:=PCollection.Create(1);
  end;
 
@@ -294,7 +295,7 @@ var I:Integer;D1,D2:TDot;x1,y1:Double;S,S2:Double;Tw:TTwig;
 begin
 S:=inherited GetTwigDist(x,y,x1,y1);
 I:=1;
-Tw:=TTwig.Create(0);
+Tw:=TTwig.Create(Selector, 0);
 S2:=10000;Result:=-1;
  For I:=0 to Coord.Count-2 do
   begin
@@ -343,7 +344,7 @@ end;
 
 Constructor  TTwigSpline3D.Create;
 begin
- inherited Create(Twig_3DSpline);
+ inherited Create(Selector_, Twig_3DSpline);
  if Z1<>nil then Z:=PDouble(Z1)^ else Z:=ZNull;
 end;
 
@@ -489,9 +490,9 @@ end;
 
 { TTwigCircle }
 
-constructor TTwigCircle.Create(W1: Integer; Data: Pointer);
+constructor TTwigCircle.Create(Selector_: TSelector; W1: Integer; Data: Pointer);
 begin
- inherited Create(W1);
+ inherited Create(Selector_, W1);
  With TCircRecord(Data) do
   begin
    Insert(TDot.Create(XC,YC,10));
@@ -655,7 +656,7 @@ var I:Integer;D1,D2:TDot;x1,y1:Double;S,S2:Double;Tw:TTwig;
 begin
 S:=inherited GetTwigDist(x,y,x1,y1);
 I:=1;
-Tw:=TTwig.Create(0);
+Tw:=TTwig.Create(Selector,0);
 S2:=10000;Result:=-1;
  For I:=0 to Coord.Count-2 do
   begin
@@ -695,7 +696,7 @@ begin
    end;
    middle_point_of_arc_circle(C.XDot,C.YDot,D1.XDot,D1.YDot,D2.XDot,D2.YDot,XD,YD);
    AR:=TArcRecord.Create(C.XDot,C.YDot,D1.XDot,D1.YDot,D2.XDot,D2.YDot,XD,YD);
-   Tw:=TTwigArc.Create(0,AR);Tw.Calculate;
+   Tw:=TTwigArc.Create(Selector, 0,AR);Tw.Calculate;
    If Properties<>nil then Tw.Properties:=TProperties.CreateAs(Properties) else Tw.Properties:=nil;
    Tw.Koef:= Koef;
    Tw.What:= What;

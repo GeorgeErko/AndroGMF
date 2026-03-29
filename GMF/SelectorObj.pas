@@ -3,7 +3,7 @@
 interface uses Types, newSelector, Collect;
 
 type
- TSelector = class (TTwgObject)
+ TSelectorObj = class (TTwgObject)
   Ms,Dx,Dy,HObject,WObject:Double;
   V25:Pointer;
    Constructor Create(V251:Pointer);
@@ -15,7 +15,7 @@ implementation
 
 { TSelector }
 
-constructor TSelector.Create;
+constructor TSelectorObj.Create;
 begin
  V25:=V251;
 {$IFDEF MASTER}
@@ -27,7 +27,7 @@ begin
 end;
 
 
-procedure TSelector.Update;
+procedure TSelectorObj.Update;
 begin
 {$IFDEF MASTER}
  TVer25Form(V25).ResetParams(Ms,Dx,Dy,HObject,WObject);

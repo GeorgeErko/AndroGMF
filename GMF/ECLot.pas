@@ -168,7 +168,8 @@ Type
    //
      StoreProps:TProperties;
      Selector:TSelector;
-     MRect: TMRect;
+   //
+     FDrawerObject: TObject;
      Constructor   Create(Code:Extended;CH:TResource;LotType:Byte);virtual;
       Constructor   CreateWithParams(PR:TResource;Params:Pointer);virtual;abstract;
       Constructor   CreateAsLot(Lot:TLot;AddAllCollections:Boolean);virtual;
@@ -301,10 +302,9 @@ Type
       Property UIDStr:AnsiString read GetUID write SetUID;
       Property UID1Str:AnsiString read GetUID1 write SetUID1;
      //
-      Procedure PaintNew(Painter:TPainterGDI);
-      Procedure SetGabarites(MRect_: TMRect);override;
-     //
       procedure Draw32(Twf: TTwigsCollect);
+      function GetDrawerObject: TObject; override;
+      procedure SetDrawerObject(Obj: TObject); override;
     end;
 
  TLotClass=class of TLot;
@@ -462,7 +462,6 @@ end;
     If AddAllCollections then Texture:=Lot.Texture;
     TexX:=Lot.TexX;TexY:=Lot.TexY;TexAngle:=Lot.TexAngle;TexScale:=Lot.TexScale;
     Alpha:=Lot.Alpha;
-    MRect:=TMRect.CreateAs(Lot.MRect);
  end;
 
   procedure TLot.LoadNew(Stream: TBufStream);
@@ -530,7 +529,6 @@ end;
      end else DataPoints:=PCollection.Create(1);
 //  Writeln(4);
    TexX:=1;TexY:=1;TexAngle:=0;TexScale:=500;Alpha:=0;
-   MRect:=TMRect.Create;
 //   WriteIn([6]);
   end;
 
@@ -567,7 +565,6 @@ end;
      Stream.Write(GUID,SizeOf(GUID));
     // Stream.Write(TexScale,SizeOf(TexScale));
     end;
-   MRect:=TMRect.Create;
   end;
 
 
@@ -713,7 +710,6 @@ end;
     If Properties<>nil then Properties.Free;
     DataPoints.Free;
     Hatches.Free;
-    MRect.Free;
   end;
 
 {------------}
@@ -814,7 +810,6 @@ end;
      end;
     getCount:=J;
   end;
-
 
 {==========================================================================}
 { All Functions                                                            }
@@ -1412,7 +1407,7 @@ if not GetPointIn(DotB,TWF) then
 // проверка на самопересечения
  ColTwig:=PCollection.Create(1);
  For I:=0 to Points.Count-2 do begin
-  Twig1:=TTwig.Create(0);
+  Twig1:=TTwig.Create(Selector, 0);
   Twig1.Insert(TDot.Create(TDot(Points[I]).XDot,TDot(Points[I]).YDot,0));Twig1.Insert(TDot.Create(TDot(Points[I+1]).XDot,TDot(Points[I+1]).YDot,0));
   ColTwig.Insert(Twig1);
  end;
@@ -1602,7 +1597,7 @@ If Closed=0 then exit;
   end;
 
 
-  function TLot.SetOwner(TWF: TTwigsCollect): AnsiString;
+function TLot.SetOwner(TWF: TTwigsCollect): AnsiString;
    begin
    end;
 
@@ -1634,8 +1629,7 @@ If Closed=0 then exit;
 
 
   
-    function TLot.PointIn(Twf: TTwigsCollect; X, Y: Double; Param: Integer
-   ): Boolean;
+function TLot.PointIn(Twf: TTwigsCollect; X, Y: Double; Param: Integer): Boolean;
   var W:Byte;I:Integer;Tw:TTwig;MM,S:Double;
    begin
     Result:=False;
@@ -1648,7 +1642,7 @@ If Closed=0 then exit;
          For I:=0 to Coord.Count-1 do
           With Selector do begin
            Tw:=TWF.TAt(TLong(Coord[I]).Num);
-           If Tw.IsVisible(GPRect) then
+           If Tw.IsVisible(GRect) then
            If (X>Tw.XMax)or(X<Tw.XMin)or(Y>Tw.YMax)or(Y<Tw.YMin) then continue;
               S:=Tw.GetTwigDist(X,Y,MM,MM);
              If XRasst(S)<=4 then begin
@@ -2495,13 +2489,13 @@ procedure TLot.InsTwigs(TWF: TTwigsCollect);
    If Coord.Count=1 then
     begin
      Twig:=TWF.TAt(TLong(Coord.At(0)).Num);
-     Tw:=TTwig.Create(0);Tw.AddTwig(Twig);
+     Tw:=TTwig.Create(Selector, 0);Tw.AddTwig(Twig);
      Points.Insert(Tw.Coord);
      Exit;
     end;                      
   { крутим ветки }
    Twig:=TWF.TAt(TLong(Coord.At(0)).Num);
-   Tw:=TTwig.Create(0);Tw.AddTwig(Twig);
+   Tw:=TTwig.Create(Selector, 0);Tw.AddTwig(Twig);
    Points.Insert(Tw.Coord);
    For I:=1 to Coord.Count-1 do
     With TWF do
@@ -2509,11 +2503,11 @@ procedure TLot.InsTwigs(TWF: TTwigsCollect);
       Twig:=TAt(TLong(Coord.At(I)).Num);
        If TLong(Coord.At(I)).Num>0 then
         begin // положительное направление
-         Tw:=TTwig.Create(0);Tw.AddTwig(Twig);
+         Tw:=TTwig.Create(Selector, 0);Tw.AddTwig(Twig);
          Points.Insert(Tw.Coord);
         end else
         begin
-         Tw:=TTwig.Create(0);Tw.AddTwig(Twig);Tw.Rotation;
+         Tw:=TTwig.Create(Selector, 0);Tw.AddTwig(Twig);Tw.Rotation;
          Points.Insert(Tw.Coord);
         end;
      end;
@@ -3527,30 +3521,6 @@ begin
 end;
 
 // Новые функции
-
-procedure TLot.SetGabarites(MRect_: TMRect);
-var I: Integer;
-begin
- InsClipDotsParall(TForm2(Selector.GTwgForm).Twigs);
-  For I := 0 to Points.Count-1 do MRect.Insert(TDot(Points[I]).XDot, TDot(Points[I]).YDot);
-  If Mrect_ <> nil then MRect_.CreateAs(MRect);
- Points.Free;
-end;
-
-procedure TLot.PaintNew(Painter: TPainterGDI);
-begin
- If (TypeLot = 254) or (Closed = 0) then exit;
- With Selector, Painter do begin
-  Pen.Color := LotLineColor;
-  Pen.Width := 0;
-  Brush.Color := LotColor;
-  InsClipDotsParall(TForm2(GTwgForm).Twigs);
-  If TypeLot = 2 then Brush.DrawPolygon(MRect, Points);
-   Pen.DrawPolyLine(MRect, Points);
-  Points.Free;
- end;
-end;
-
 procedure TLot.Draw32(Twf: TTwigsCollect);
 const C = 100;
 var Tw:TTwig;I,J:Integer;AlphaColor:Integer;
@@ -3586,6 +3556,7 @@ begin
 // If ClassHandle.RecString = 'Фотофиксация' then
  With  Selector do
  try
+   If not Twig.isVisible(GRect) then exit;
     If (ClassHandle.Standart = 1) and (GGraphSet.ViewZnaks=1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
       If Ind>-1 then begin
@@ -3657,6 +3628,18 @@ begin
    Points.Free;
  end;
 end;
+
+function TLot.GetDrawerObject: TObject;
+begin
+ Result := FDrawerObject;
+end;
+
+procedure TLot.SetDrawerObject(Obj: TObject);
+begin
+ FDrawerObject := Obj;
+end;
+
+
 
 { TSurface }
 

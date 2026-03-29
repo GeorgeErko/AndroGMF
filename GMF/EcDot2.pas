@@ -76,9 +76,7 @@ type
 
 var AlignStrings:TStrings;
 
-{$IFDEF ANDROID}
 procedure RegisterSkiaTypefaceFromFile(const FileName: string);
-{$ENDIF}
 
 implementation
 
@@ -86,7 +84,6 @@ uses Types_Dimano, Polygons, TextManager, Maths_Basic, userObject,
      newProcs, newSettings, newForm0, newProperties, newConsts,
      Writer, FMX.FontManager;
 
-{$IFDEF ANDROID}
 var
  SkiaFontFiles: TStringList;
 
@@ -120,7 +117,6 @@ begin
   SkiaFontFiles.Add(Fam + '=' + FileName);
  end;
 end;
-{$ENDIF}
 
 function ResolveRegisteredFontFamily(const RequestedFamily: string): string;
 var
@@ -355,7 +351,6 @@ var
   S: string;
   Style: TFontStyles;
   H: Double;
- {$IFDEF ANDROID}
   Family: string;
   Candidate: string;
   I: Integer;
@@ -379,7 +374,6 @@ var
   Surface: ISkSurface;
   Paint: ISkPaint;
   D: TBitmapData;
- {$ENDIF}
 begin
  inherited ResetParams(ParamID, Params);
  What:=1;

@@ -47,7 +47,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  Function  GReadObject(Name:AnsiString):TTwgObject;
  Function  GReadVCLProp(Name:AnsiString;obj:TComponent):boolean;
 // Цвет
- Function RGBToCol(R,G,B:Byte):TColor;
+ Function RGBToCol(R,G,B:Byte):TColorRef;
  Function GetR(Color:TColor):Byte;
  Function GetG(Color:TColor):Byte;
  Function GetB(Color:TColor):Byte;
@@ -122,7 +122,7 @@ function GStrToFloat(S: AnsiString): Double;
     Result:=Result+#13#10 else Result:=Result+S[I];
   end;
 
-  function ConcatString(S, S1, S2: AnsiString; var Res: AnsiString): AnsiString;
+ function ConcatString(S, S1, S2: AnsiString; var Res: AnsiString): AnsiString;
  var P1,P2,I:Integer;
  begin
   Res:='';Result:=S;
@@ -442,24 +442,24 @@ begin
 end;
 
 
-function RGBToCol(R, G, B: Byte): TColor;
+function RGBToCol(R, G, B: Byte): TColorRef;
 begin
- {$IFDEF WIN64} Result:=RGB(R,G,B);{$ELSE} Result := MakeColor(R, G, B);{$ENDIF}
+Result := MakeColor(R, G, B);
 end;
 
 function GetR(Color: TColor): Byte;
 begin
-{$IFDEF WIN64} Result:=GetRValue(Color);{$ELSE} Result:=TAlphaColorRec(Color).R;{$ENDIF}
+ Result:=TAlphaColorRec(Color).R;
 end;
 
 function GetG(Color: TColor): Byte;
 begin
-{$IFDEF WIN64} Result:=GetGValue(Color);{$ELSE} Result:=TAlphaColorRec(Color).G;{$ENDIF}
+ Result:=TAlphaColorRec(Color).G;
 end;
 
 function GetB(Color: TColor): Byte;
 begin
-{$IFDEF WIN64} Result:=GetBValue(Color);{$ELSE} Result:=TAlphaColorRec(Color).B;{$ENDIF}
+ Result:=TAlphaColorRec(Color).B;
 end;
 
 function wbRGB(View: TSelector; var R, G, B: Byte): Integer; // черно-белый цвет
@@ -557,4 +557,5 @@ end;
 
 initialization
 end.
+
 

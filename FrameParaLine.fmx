@@ -1,0 +1,20 @@
+object ParaLineFrame: TParaLineFrame
+  Size.Width = 184.000000000000000000
+  Size.Height = 49.000000000000000000
+  Size.PlatformDefault = False
+  object Label1: TLabel
+    Position.X = 10.000000000000000000
+    Position.Y = 16.000000000000000000
+    Size.Width = 53.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    Text = #1064#1080#1088#1080#1085#1072
+    TabOrder = 0
+  end
+  object EWidth: TEdit
+    Touch.InteractiveGestures = [LongTap, DoubleTap]
+    TabOrder = 1
+    Position.X = 68.000000000000000000
+    Position.Y = 15.000000000000000000
+  end
+end

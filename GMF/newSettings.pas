@@ -1,6 +1,7 @@
 ﻿unit newSettings;
 
-interface uses Collect, newProperties, FMX.Controls, FMX.Objects;
+interface uses Collect, newProperties, FMX.Controls, FMX.Objects, mpMarker,
+                System.UITypes;
 
 
 type
@@ -149,7 +150,7 @@ type
       SaveScreen:Byte;
     {}
       ColorZnak :FixedInt;
-      CZ1        :Boolean;
+      CZ1       :Boolean;
       CZR1,CZG1,CZB1:Byte;
     {}
       LinZnk    :Boolean;
@@ -238,7 +239,7 @@ type
  type
  TSettingsRec = record
   gsPointSize:Integer;
-  gsSelectColor:Integer;
+  gsSelectColor:TAlphaColor;
   gsWindowColor:Integer;
   gsColorZnaksCheck:Boolean;
   gsColorZnaks:Integer;
@@ -260,8 +261,9 @@ type
 type
  TGlobalSettings = class(TTwgObject)
   Settings:TSettingsRec;
-  MarkerView:TTwgObject;
-  Constructor Create;
+  MarkerView:TMarkerView;
+  Selector: Pointer;
+  Constructor Create(Selector_: Pointer);
   Destructor Destroy;override;
   Function CZ:Boolean;
   Function CZR:Byte;
@@ -269,7 +271,7 @@ type
   Function CZB:Byte;
  end;
 
-implementation uses newProcs, newConsts, mpMarker, System.UITypes;
+implementation uses newProcs, newConsts, newSelector;
 
 { TSettings }
 
@@ -450,15 +452,17 @@ end;
 constructor TGlobalSettings.Create;
 var St:TSettingsRec;
 begin
+ Selector:=Selector_;
  With Settings do begin
-  gsPointSize:=4;gsSelectColor:= TAlphaColors.Lime;gsWindowColor:=TAlphaColors.White;gsColorZnaksCheck:=False;gsColorZnaks:=TAlphaColors.Black;
+  gsPointSize:=4;
+  gsSelectColor:= TAlphaColors.Lime;
+  gsWindowColor:=TAlphaColors.White;gsColorZnaksCheck:=False;gsColorZnaks:=TAlphaColors.Black;
   gsFillPointColor:=TAlphaColors.Black;gsFillPointCheck:=False;
   gsColorUzl:=TAlphaColors.Red;gsColorDot:=TAlphaColors.Blue;gsColorPoint:=TAlphaColors.Lime;
  end;
- exit;
  If GReadBinary('GlobalSettings',St,SizeOf(TSettingsRec)) then Settings:=St;
 // MarkerView:=TMarkerView(GReadObject('GlobalSettings_MarkerView'));
- If MarkerView=nil then MarkerView:=TMarkerView.Create(0);
+ If MarkerView=nil then MarkerView:=TMarkerView.Create(Selector);
 end;
 
 function TGlobalSettings.CZ: Boolean;

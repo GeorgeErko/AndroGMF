@@ -13,7 +13,7 @@ type
   Twigs:TForm2;
   Mirror:TForm2;
   Prims:PCollection;
-  SelectorState:TSelector;
+  SelectorState:TSelectorObj;
   Operation:Integer;
   Name:String;
   Constructor Create(Form:Pointer; Opr :Integer = 0);
@@ -35,7 +35,7 @@ begin
  If (Form<>nil){and not(TForm2(Form).MirrorObject)} then begin
   Twigs:=Form;
   Prims:=PCollection.Create(1);
-  SelectorState:=TSelector.Create(Twigs.V25); // запоминаем состояние селектора
+  SelectorState:=TSelectorObj.Create(Twigs.V25); // запоминаем состояние селектора
   Operation:=Opr;
   Name:='SelectorState';
   Twigs.CreateObjectView(False);

@@ -135,7 +135,7 @@ begin
   GLines.Add(Fmt(Params,C));
   GLines.EndUpdate;
  end;
-// WriteLog(Fmt(Params,C));
+ Writeln(Fmt(Params,C));
 end;
 
 Procedure Delay(Sleep: Integer = 1000);
