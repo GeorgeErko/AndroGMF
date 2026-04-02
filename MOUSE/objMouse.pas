@@ -26,7 +26,7 @@ type
   XInt,YInt:Integer;
   MouseX,MouseY:Double;
   RMouseX,RMouseY:Double;
-  LMouseDown,RMouseDown:boolean;
+  LMouseDown,RMouseDown, MMouseDown:boolean;
   ShiftPress,ControlPress:boolean;
  {}
   Twigs:TForm2; // указатель на глобальную коллекцию примитивов
@@ -179,6 +179,7 @@ procedure TKeyMouseHook.MouseDown;
 begin
  If Button = TMouseButton.mbLeft then LMouseDown:=True;
  If Button = TMouseButton.mbRight then RMouseDown:=True;
+ If Button = TMouseButton.mbMiddle then MMouseDown:=True;
  MouseX:=X;MouseY:=Y;
  XInt:=XPix(X);YInt:=YPix(Y);
  Hook:=True;
@@ -195,6 +196,7 @@ procedure TKeyMouseHook.MouseUp;
 begin
  If Button = TMouseButton.mbLeft then LMouseDown:=False;
  If Button = TMouseButton.mbRight then RMouseDown:=False;
+ If Button = TMouseButton.mbMiddle then MMouseDown:=False;
  MouseX:=X;MouseY:=Y;
  Hook := False;
 end;

@@ -439,7 +439,7 @@ type
    destructor Destroy; override;
    function DrawerMode: TDrawerMode; virtual;
   //
-   procedure Clear(AColor: Integer); virtual;
+   procedure Clear(AColor: Longint); virtual;
  // рисованиев в системе координат объекта
    procedure DrawPoint(Point: TogsDot); virtual;
    procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); virtual;
@@ -1192,7 +1192,7 @@ begin
  Result := fDrawerMode;
 end;
 
-procedure TogsDrawer.Clear(AColor: Integer);
+procedure TogsDrawer.Clear(AColor: Longint);
 begin
 // virtual abstract procedure
 end;

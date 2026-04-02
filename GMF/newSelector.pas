@@ -464,6 +464,7 @@ end;
 
 procedure TSelector.UpdateImage(UpdateSceneMode:TUpdateSceneMode = usmNone; Obj: TObject = nil);
 begin
+ Writein(['ui=1']);
  If UpdateSceneMode = usmNone then
   Drawer.RedrawAll
  else
@@ -471,6 +472,7 @@ begin
   OnUpdateScene(UpdateSceneMode, Obj);
   ovrPainter.Redraw;
  end;
+ Writein(['ui=2']);
 end;
 
 procedure TSelector.UpdateOverlay;

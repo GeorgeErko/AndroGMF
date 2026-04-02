@@ -59,6 +59,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
 // Файлы
  Function GExtractFilePath(FN:AnsiString):AnsiString;
  Function SetSlashCorrect(FN:AnsiString):AnsiString;
+ Function SetExtFile(S,newExt:string):String;
 // Консоль
 
 implementation uses IniFiles, Math, System.Types,
@@ -555,6 +556,23 @@ end;
    Result:=FN;
   end;
 
+  Function SetExtFile;
+   var S1:String;
+  begin
+   Result:=S;
+   If Length(S)<=4 then Exit;
+   If Length(ExtractFileExt(S1))>2 then Exit;
+   If NewExt='' then begin
+    S1:=S;
+    Delete(S1,Length(S1)-Length(ExtractFileExt(S1))+1,Length(S1));
+    Result:=S1;
+    exit;
+   end;
+   S1:=S;
+    Delete(S1,Length(S1)-Length(ExtractFileExt(S1))+1,Length(S1));
+    S1:=S1+NewExt;
+    SetExtFile:=S1;
+  end;
 initialization
 end.
 

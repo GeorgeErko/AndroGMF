@@ -1,0 +1,76 @@
+object InstPointsFrame: TInstPointsFrame
+  Align = Client
+  Size.Width = 384.000000000000000000
+  Size.Height = 426.000000000000000000
+  Size.PlatformDefault = False
+  object TC: TTabControl
+    Position.Y = 31.000000000000000000
+    Size.Width = 384.000000000000000000
+    Size.Height = 234.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    TabPosition = PlatformDefault
+  end
+  object Panel1: TPanel
+    Align = Top
+    Size.Width = 384.000000000000000000
+    Size.Height = 31.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object btnTabs: TButton
+      Align = FitRight
+      Position.X = 350.304351806640600000
+      Size.Width = 33.695648193359380000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = '<'
+      TextSettings.Trimming = None
+      OnClick = btnTabsClick
+    end
+  end
+  object LB: TListBox
+    Align = Top
+    Position.Y = 31.000000000000000000
+    Size.Width = 384.000000000000000000
+    Size.Height = 178.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Visible = False
+    DisableFocusEffect = True
+    DefaultItemStyles.ItemStyle = ''
+    DefaultItemStyles.GroupHeaderStyle = ''
+    DefaultItemStyles.GroupFooterStyle = ''
+    OnChange = LBChange
+    Viewport.Width = 380.000000000000000000
+    Viewport.Height = 174.000000000000000000
+  end
+  object CB: TComboBox
+    Position.X = 12.000000000000000000
+    Position.Y = 280.000000000000000000
+    Size.Width = 359.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 5
+  end
+  object Lay: TLayout
+    Position.X = 20.000000000000000000
+    Position.Y = 312.000000000000000000
+    Size.Width = 351.000000000000000000
+    Size.Height = 97.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 8
+    object SB: THorzScrollBox
+      Position.Y = 52.000000000000000000
+      TabOrder = 0
+      Viewport.Width = 50.000000000000000000
+      Viewport.Height = 50.000000000000000000
+    end
+  end
+  object ImageList1: TImageList
+    Source = <>
+    Destination = <>
+    Left = 346
+    Top = 43
+  end
+end

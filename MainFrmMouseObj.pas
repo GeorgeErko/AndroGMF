@@ -7,14 +7,33 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   MainFrmSkia, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
-  FMX.Memo, objMouse;
+  FMX.Memo, objMouse, System.IOUtils, WPTForm2, instPointSign;
 
 type
   TMainFormMouseObj = class(TMainFormSkia)
-    btnDS: TButton;
-    btnDraw: TButton;
-    procedure btnDSClick(Sender: TObject);
-    procedure btnDrawClick(Sender: TObject);
+    ToolImageList: TImageList;
+    ToolBarPaint: TToolBar;
+    btnToolLine: TSpeedButton;
+    btnToolPoint: TSpeedButton;
+    btnToolPolyline: TSpeedButton;
+    btnToolPolygon: TSpeedButton;
+    btnToolSpline: TSpeedButton;
+    btnToolArc: TSpeedButton;
+    btnToolCircle: TSpeedButton;
+    btnToolRect: TSpeedButton;
+    btnToolParaline: TSpeedButton;
+    btnToolMultiline: TSpeedButton;
+    btnToolMultiAngle: TSpeedButton;
+    btnToolText: TSpeedButton;
+    Load: TButton;
+    btnEsc: TCornerButton;
+    imgEsc: TImageList;
+    instPanel: TPanel;
+    Splitter2: TSplitter;
+    procedure ToolButtonClick(Sender: TObject);
+    procedure LoadClick(Sender: TObject);
+    procedure btnEscClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FOverlayPainter: TSkPaintBox;
@@ -30,8 +49,10 @@ type
    procedure DrawOverlay(const ACanvas: ISkCanvas; const ADest: TRectF);
    procedure InteractionWatchTimer(Sender: TObject);
   protected
+   InstPoints: TInstPointsFrame;
    destructor Destroy; override;
    procedure Loaded; override;
+   procedure SetTwgForm(const Value: TForm2); override;
    procedure SetSelectorParams; override;
   //
    procedure SkPainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
@@ -40,6 +61,7 @@ type
    procedure SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
    procedure PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF); override;
    procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); override;
+   procedure UpdateEscButton(Index: Integer);
   public
    procedure RequestOverlayRedraw;
    property OverlayPainter: TSkPaintBox read FOverlayPainter;
@@ -62,13 +84,27 @@ var
 
 { TMainFormMouseObj }
 
+procedure TMainFormMouseObj.FormCreate(Sender: TObject);
+begin
+ InstPoints := TInstPointsFrame.Create(Self);
+ InstPoints.Parent := InstPanel;
+end;
+
+procedure TMainFormMouseObj.LoadClick(Sender: TObject);
+begin
+{$IFDEF Android}
+  OpenGmfFile(TPath.GetDocumentsPath+'18.gmf')
+{$ELSE}
+  OpenGmfFile('C:\!!!ГЗ\Борт\18.gmf')
+{$ENDIF}
+end;
+
 procedure TMainFormMouseObj.Loaded;
 begin
   inherited;
   EnsureOverlayPainter;
   if Selector <> nil then
     Selector.ovrPainter := FOverlayPainter;
-
   if FInteractionWatchTimer = nil then
   begin
     FInteractionPrevActive := InteractionBitmapActive;
@@ -78,6 +114,35 @@ begin
     FInteractionWatchTimer.Enabled := True;
     FInteractionWatchTimer.OnTimer := InteractionWatchTimer;
   end;
+end;
+
+procedure TMainFormMouseObj.SetTwgForm(const Value: TForm2);
+begin
+ inherited;
+ InstPoints.TwgForm := Value;
+end;
+
+procedure TMainFormMouseObj.ToolButtonClick(Sender: TObject);
+var Op: Integer;
+begin
+ if Selector = nil then exit;
+ if not TSpeedButton(Sender).IsPressed then
+   MouseObject := nil
+ else begin
+  Selector.LOperation := TSpeedButton(Sender).Tag;
+  MouseObject := nil;
+  MouseObject := TMousePainter.Create(TwgForm, nil);
+  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+  MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+  MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+  MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+  UpdateEscButton(1);
+ end
+end;
+
+procedure TMainFormMouseObj.UpdateEscButton(Index: Integer);
+begin
+ btnEsc.ImageIndex := Index;
 end;
 
 procedure TMainFormMouseObj.EnsureOverlayPainter;
@@ -242,29 +307,6 @@ begin
   ACanvas.DrawImageRect(FOverlayInteractionImage, ASceneDst, Paint);
 end;
 
-procedure TMainFormMouseObj.btnDrawClick(Sender: TObject);
-begin
- If TwgForm = nil then exit;
- If btnDraw.isPressed then begin
-  Selector.LOperation := 100111;
-  MouseObject := TMousePainter.Create(TwgForm, nil);
-  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
-  MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
-  MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
-  MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
- end else
-  MouseObject := nil;
-end;
-
-procedure TMainFormMouseObj.btnDSClick(Sender: TObject);
-begin
- If TwgForm = nil then exit;
- If btnDS.isPressed then begin
-  MouseObject := TMouseSelector.Create(TwgForm, nil);
- end else
-  MouseObject := nil;
-end;
-
 procedure TMainFormMouseObj.SetMouseObject(const Value: TKeyMouseHook);
 begin
  If MouseObject <> nil then MouseObject.Free;
@@ -279,23 +321,40 @@ begin
  MouseObject := nil;
 end;
 
+procedure TMainFormMouseObj.btnEscClick(Sender: TObject);
+var I: Integer;
+begin
+ For I := 0 to ComponentCount - 1 do
+  If Components[I] is TSpeedButton then
+   If (TSpeedButton(Components[I]).Tag > 0) and (TSpeedButton(Components[I]).isPressed) then
+    begin
+     TSpeedButton(Components[I]).isPressed := False;
+     MouseObject := nil;
+     Selector.UpdateOverlay;
+     UpdateEscButton(0);
+    end;
+end;
+
 destructor TMainFormMouseObj.Destroy;
 begin
+   WriteIn(['Mouse1']);
   if FInteractionWatchTimer <> nil then
   begin
     FInteractionWatchTimer.Enabled := False;
     FInteractionWatchTimer.Free;
     FInteractionWatchTimer := nil;
   end;
-  if FMouseObject <> nil then begin
-   FMouseObject.Free;
-   FMouseObject := nil;
-  end;
   if FOverlayPainter <> nil then begin
    FOverlayPainter.Free;
    FOverlayPainter := nil;
   end;
-  inherited;
+ //
+  if FMouseObject <> nil then begin
+   FMouseObject.Free;
+   FMouseObject := nil;
+  end;
+   WriteIn(['Mouse2']);
+  inherited Destroy;
 end;
 
 procedure TMainFormMouseObj.SkPainterMouseDown(Sender: TObject;
@@ -303,12 +362,13 @@ procedure TMainFormMouseObj.SkPainterMouseDown(Sender: TObject;
 var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
 begin
+ Hook := False;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseDown(TwgForm, Button, Shift, XGeo, YGeo, Hook);
-  If not Hook then
-   inherited;
+  if (Button = TMouseButton.mbMiddle) or (not Hook) then
+    inherited;
  end else
   inherited;
 end;
@@ -318,17 +378,19 @@ procedure TMainFormMouseObj.SkPainterMouseMove(Sender: TObject;
 var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
 begin
-MousePos := PointF(X, Y);
+ Hook := False;
+ MousePos := PointF(X, Y);
+ UpdateStatusGeo(X, Y);
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseMove(TwgForm, Shift, XGeo, YGeo, Hook);
-  if Hook then
-  begin
-     RequestOverlayRedraw;
-  end;
-  If not Hook then
-   inherited;
+  if (ssMiddle in Shift) then
+    inherited
+  else if Hook then
+    RequestOverlayRedraw
+  else
+    inherited;
  end else
   inherited;
 end;
@@ -338,12 +400,13 @@ procedure TMainFormMouseObj.SkPainterMouseUp(Sender: TObject;
 var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
 begin
+ Hook := False;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
-  MouseObject.MouseUp(TwgForm, Button, Shift, X, Y, Hook);
-  If not Hook then
-   inherited;
+  MouseObject.MouseUp(TwgForm, Button, Shift, XGeo, YGeo, Hook);
+  if (Button = TMouseButton.mbMiddle) or (not Hook) then
+    inherited;
  end else
   inherited;
 end;

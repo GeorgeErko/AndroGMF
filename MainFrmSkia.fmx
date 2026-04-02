@@ -1,12 +1,18 @@
 inherited MainFormSkia: TMainFormSkia
   Caption = 'MainFor'
+  ClientWidth = 875
   DesignerMasterStyle = 3
   inherited Memo1: TMemo
-    Viewport.Width = 854.000000000000000000
+    Size.Width = 875.000000000000000000
+    Viewport.Width = 875.000000000000000000
     Viewport.Height = 111.000000000000000000
   end
+  inherited Splitter1: TSplitter
+    Size.Width = 875.000000000000000000
+  end
   inherited Panel1: TPanel
-    inherited CornerButton1: TCornerButton
+    Size.Width = 875.000000000000000000
+    inherited btnOpen: TCornerButton
       TabOrder = 3
     end
     inherited btnLocalOpen: TCornerButton
@@ -21,11 +27,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 39
+      TabOrder = 41
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 38
+      TabOrder = 40
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -41,39 +47,17 @@ inherited MainFormSkia: TMainFormSkia
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnPDFClick
-      object CornerButton4: TCornerButton
-        Images = ImageList1
-        ImageIndex = 1
-        Position.X = 814.000000000000000000
-        Sides = [Top, Left, Bottom, Right]
-        Size.Width = 25.000000000000000000
-        Size.Height = 25.000000000000000000
-        Size.PlatformDefault = False
-        TabOrder = 0
-        TextSettings.Trimming = None
-        XRadius = 3.000000000000000000
-        YRadius = 3.000000000000000000
-        OnClick = btnPaintClick
-      end
-    end
-    object SceneProgressBar: TProgressBar
-      Align = Right
-      Orientation = Horizontal
-      Position.X = 743.000000000000000000
-      Position.Y = 12.000000000000000000
-      Size.Width = 111.000000000000000000
-      Size.Height = 10.000000000000000000
-      Size.PlatformDefault = False
     end
   end
   inherited PanelPainter: TPanel
+    Size.Width = 875.000000000000000000
     inherited Painter: TPaintBox
       Visible = False
     end
     object SkPainter: TSkPaintBox
       Align = Client
       HitTest = True
-      Size.Width = 854.000000000000000000
+      Size.Width = 875.000000000000000000
       Size.Height = 364.000000000000000000
       Size.PlatformDefault = False
       object Popup1: TPopup
@@ -90,6 +74,9 @@ inherited MainFormSkia: TMainFormSkia
         TabOrder = 0
       end
     end
+  end
+  inherited StatusBar: TStatusBar
+    Size.Width = 875.000000000000000000
   end
   inherited ImageList1: TImageList
     Source = <

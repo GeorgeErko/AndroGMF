@@ -83,7 +83,7 @@ end;
 procedure TlocalOpenForm.FormShow(Sender: TObject);
 begin
 {$IFDEF ANDROID}
- SetupAndroidDialog;
+// SetupAndroidDialog;
 {$ENDIF}
  RefreshFiles;
  btnOpen.Enabled := False;

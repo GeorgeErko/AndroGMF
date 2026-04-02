@@ -14,20 +14,17 @@ type
     Memo1: TMemo;
     Splitter1: TSplitter;
     Panel1: TPanel;
-    CornerButton1: TCornerButton;
+    btnOpen: TCornerButton;
     ImageList1: TImageList;
-    CornerButton3: TCornerButton;
     PanelPainter: TPanel;
     Painter: TPaintBox;
     btnPaint: TCornerButton;
     upm: TCornerButton;
-    Label1: TSkLabel;
     StatusBar: TStatusBar;
     btnPlus: TCornerButton;
     ptnMinus: TCornerButton;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure PainterPaint(Sender: TObject; Canvas: TCanvas);
     procedure btnPaintClick(Sender: TObject);
@@ -63,9 +60,11 @@ type
     procedure SaveBackbufferToFile(const Tag: string);
     procedure RenderSceneToBackbuffer(const Canvas: TCanvas);
   protected
+   FTwgForm: TForm2;
     procedure PickGmfFileWin64;
+    procedure SetTwgForm(const Value: TForm2); virtual;
+    property TwgForm: TForm2 read FTwgForm write SetTwgForm;
   public
-    TwgForm: TForm2;
     Selector: TSelector;
     Drawer: TogsDrawerCanvas;
     objectRepaintAccess: boolean;
@@ -77,7 +76,8 @@ type
     ZoomActive: Boolean;
     InteractionActive: Boolean;
     BaseDx, BaseDy, BaseScale: Double;
-   procedure OpenGmfFile(const LocalPath: string); virtual;
+    procedure OpenGmfFile(const LocalPath: string); virtual;
+    destructor Destroy; override;
   end;
 
 var
@@ -151,8 +151,9 @@ begin
  end;
 end;
 
-procedure TMainForm.FormDestroy(Sender: TObject);
+destructor TMainForm.Destroy;
 begin
+  WriteIn(['Canvas1']);
  PanBitmap.Free;
  PanBitmap := nil;
  ZoomBaseRect.Free;
@@ -161,6 +162,9 @@ begin
  Selector.Free;
  Drawer := nil;
  Selector := nil;
+//
+ inherited Destroy;
+ WriteIn(['Canvas2']);
 end;
 
 procedure TMainForm.OpenGmfFile(const LocalPath: string);
@@ -621,6 +625,11 @@ begin
   Drawer.Bitmap.SaveToFile(FileName);
  except
  end;
+end;
+
+procedure TMainForm.SetTwgForm(const Value: TForm2);
+begin
+ FTwgForm := Value;
 end;
 
 procedure TMainForm.PainterPaint(Sender: TObject; Canvas: TCanvas);

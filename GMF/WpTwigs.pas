@@ -718,6 +718,7 @@ end;
 function TTwig.IsVisible(Sect: TSect): boolean;
 begin
  If GlobalRender then begin Result := True; exit; end;
+ If Selector <> nil then
  With Selector do begin
   If Rang <> 0 then
    if not GGraphSet.ShowClosed then

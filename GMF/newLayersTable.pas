@@ -7,14 +7,54 @@ const
  LayerTableGUID = '{08171EB9-30D0-46D3-A342-F8CEE46C8B79}';
 
 type
+  TZnakView = class(TTwgObject)
+   znakName:String;
+   znakNum:Integer;
+   znakLayer:String;
+   Znak:Pointer;
+   Error:Integer;
+   Constructor Create(ZName,ZNum:String;Z:Pointer);
+  end;
+
+  TGroupZnk = class(TTwgObject)
+   Name:String;
+   Items:PCollection;
+   Index:Integer;
+   Constructor Create(Name_:String);
+   Destructor Destroy;override;
+  //
+    Procedure AddItem(Item_:Pointer);
+    Function GetItem(Index:Integer):TZnakView;
+    Property Item[Index:Integer]:TZnakView read GetItem;
+    function GetNum(Num: Integer): Pointer;
+    Property ItemByNum[Name:Integer]:Pointer read GetNum;
+    function GetName(Name: String): Pointer;
+    Property ItemByName[Name:String]:Pointer read GetName;
+  end;
+
+  TGroupCollection = class(PCollection)
+   Procedure AddGroup(GroupName:String);
+    function GetGroupZnk(Index: Integer): TGroupZnk;
+   Property Group[Index:Integer]:TGroupZnk read GetGroupZnk;default;
+    function GetGroupByName(Index: String): TGroupZnk;
+   Property GroupByName[Index:String]:TGroupZnk read GetGroupByName;
+  end;
 
  { TMosLib }
-
  TMosLib = class(TTwgObject)
+ private
+  procedure CreateIni;
+  procedure CreateGroupView;
+ public
   FileName:AnsiString;
   LayerTable:Pointer;
+  PntZnk,SqwZnk,LineZnk,BaseZnk,GrpName:String;
   PntLib,SqwLib,LineLib:PCollection;
   PSLib,SSLib,LSLib:TSortedCollection;// сортированные коллекции знаков
+ // группы знаков по типам
+  PointGroup:TGroupCollection;
+  LineGroup:TGroupCollection;
+  SquareGroup:TGroupCollection;
  //
   Selector: TSelector;
   Constructor Create(FileName_:AnsiString);
@@ -105,7 +145,85 @@ type
 
 var Cells: Array [0..4] of Integer;
 
-implementation uses TwgColle, SysUtils, Classes;
+implementation uses TwgColle, Classes, System.IniFiles, System.SysUtils;
+
+{ TZnakView }
+
+constructor TZnakView.Create(ZName,ZNum:String;Z: Pointer);
+var S:String;
+begin
+ znakName:=ZName;Znak:=Z;
+ znakLayer:='';
+// разбираем номер знака
+ If Pos('/',ZNum)<>0 then begin
+  S:=Copy(ZNum,1,Pos('/',ZNum)-1);
+  try znakNum:=StrToInt(S);except Error:=1;exit;end;
+  znakLayer:=Copy(ZNum,Pos('/',ZNum)+1,Length(ZNum));
+ end else try
+  znakNum:=StrToInt(ZNum);
+ except Error:=2;end;
+end;
+
+{ TGroupZnk }
+
+procedure TGroupZnk.AddItem(Item_:Pointer);
+begin
+ Items.Insert(Item_);
+end;
+
+constructor TGroupZnk.Create;
+begin
+ Name:=Name_;
+ Items:=PCollection.Create(1);
+end;
+
+destructor TGroupZnk.Destroy;
+begin
+ Items.DeleteAll;Items.Free;
+end;
+
+function TGroupZnk.GetItem(Index: Integer): TZnakView;
+begin
+ Result:=Items[Index]
+end;
+
+function TGroupZnk.GetName(Name: String): Pointer;
+var I:Integer;
+begin
+ Result:=nil;Index:=-1;
+ For I:=0 to Items.Count-1 do If AnsiUpperCase(Item[I].znakName) = AnsiUpperCase(Name) then begin
+  Result:=Items[I];Index:=I;exit;
+ end;
+end;
+
+function TGroupZnk.GetNum(Num: Integer): Pointer;
+var I:Integer;
+begin
+ Result:=nil;Index:=-1;
+ For I:=0 to Items.Count-1 do If Item[I].znakNum = Num then begin
+  Result:=Items[I];Index:=I;exit;
+ end;
+end;
+
+{ TGroupCollection }
+
+procedure TGroupCollection.AddGroup(GroupName: String);
+begin
+ Insert(TGroupZnk.Create(GroupName));
+end;
+
+function TGroupCollection.GetGroupByName(Index: String): TGroupZnk;
+var I:Integer;
+begin
+ Result:=nil;
+ For I:=0 to Count-1 do If Group[I].Name = Index then begin Result:=Group[I];exit;end;
+end;
+
+function TGroupCollection.GetGroupZnk(Index: Integer): TGroupZnk;
+begin
+ Result:=Items[Index];
+end;
+
 {
 Procedure DrawGeoLayer(Canvas:TCanvas;Layer:TResource;State:TCustomDrawState;Rect:TRect;Images:TImageList);
 var R3:TRect;HItem:Integer;
@@ -626,6 +744,7 @@ begin
  PSLib:=PLib.Create(1);
  SSLib:=SLib.Create(1);
  LSLib:=LLib.Create(1);
+ GrpName:='Topo500';
 end;
 
 destructor TMosLib.Destroy;
@@ -638,6 +757,7 @@ end;
 constructor TMosLib.CreateEmpty;
 begin
  LoadZnaks('');
+ GrpName:='Topo500';
 end;
 
 function TMosLib.LoadZnaks(LibPath: AnsiString): boolean;
@@ -655,6 +775,7 @@ begin
   SSLib:=SLib.Create(1);
   LSLib:=LLib.Create(1);
 Try
+   PntZnk := FName+'.lib';
    Buf:=TBufStream.InitFileStream(FName+'.lib',fmOpenRead);
    Buf.Selector := Selector;
    Buf.Read(C,SizeOf(C));
@@ -665,11 +786,13 @@ Try
     If VersionOfZnk=0 then Buf.Position:=0;
     PntLib:=PCollection(Buf.Get);
    Buf.Free;
+   LineZnk := FName+'.lb2';
    Buf:=TBufStream.InitFileStream(FName+'.lb2',fmOpenRead);
    Buf.Selector := Selector;
     SqwLib:=PCollection(Buf.Get);
    Buf.Free;
 //     SqwLib:=PCollection.Create(1);
+   SqwZnk := FName+'.lb3';
    Buf:=TBufStream.InitFileStream(FName+'.lb3',fmOpenRead);
    Buf.Selector := Selector;
      LineLib:=PCollection(Buf.Get);
@@ -695,10 +818,9 @@ Try
      LSLib.Insert(LineLib[I]);
     end;
  // группировка INI-файл
- // If GlobalIniLoad then begin
-  // CreateINI;
-  // CreateGroupView;
- //1 end;
+  CreateINI;
+  CreateGroupView;
+ //
   PntLib.DeleteAll;PntLib.Free;
   SqwLib.DeleteAll;SqwLib.Free;
   LineLib.DeleteAll;LineLib.Free;
@@ -707,6 +829,121 @@ end;
 function TMosLib.SearchRes(Num: Extended): TResource;
 begin
  Result:=nil;
+end;
+
+procedure TMosLib.CreateIni;
+var Ini:TIniFile;
+Function GetGroupN(NameOf:String;var zName:String):String;
+begin
+ Result:='';
+ If (Pos('[',NameOf)<>0) and (Pos(']',NameOf)<>0) then begin
+  Result:=Copy(NameOf,Pos('[',NameOf)+1,Pos(']',NameOf)-Pos('[',NameOf)-1);
+  zName:=Copy(NameOf,1,Pos('[',NameOf)-2);
+ end;
+end;
+Procedure CreateLibNames(Col:PCollection;What:Byte);
+var I,J:Integer;P:Pointer;St:TStrings;
+    groupName,znkName:String;S:String;
+Function ZnakName:String;begin case What of 0:Result:=TPoint_Sign(P).MyNameIs;1:Result:=TGeoLine(P).NameOf;2:Result:=TSqwear_Sign(P).NameOf;end;end;
+Function ZnakInd:Integer;begin case What of 0:Result:=TPoint_Sign(P).MyInd;1:Result:=TGeoLine(P).IdNum;2:Result:=TSqwear_Sign(P).IdNum;end;end;
+Procedure SetName(Nm:String);begin case What of 0:StrPCopy(TPoint_Sign(P).MyNameIs,Nm);1:StrPCopy(TGeoLine(P).NameOf,PChar(Nm));2:StrPCopy(TSqwear_Sign(P).NameOf,PChar(Nm));end;end;
+begin
+ For I:=0 to Col.Count-1 do begin
+  P:=Col[I];
+  znkName:=ZnakName;
+  groupName:=GetGroupN(ZnakName,znkName);
+  SetName(znkName);
+  If groupName<>'' then begin
+   St:=TStringList.Create;Ini.ReadSectionValues(groupName,St);
+   For J:=St.Count-1 downTo 0 do If Pos('=',St[J])<>0 then begin
+    St[J]:=Copy(St[J],Pos('=',St[J])+1,Length(St[J]));
+    If Pos('/',St[J])>0 then begin
+     S:=Copy(St[J],1,Pos('/',St[J])-1);
+     ST[J]:=S;
+    end;
+   end else St.Delete(J);
+   If St.IndexOf(IntToStr(ZnakInd))=-1 then
+    // Ini.WriteString(groupName,znkName,IntToStr(ZnakInd))
+    else
+   St.Free;
+  end;
+ end;
+end;
+begin
+ Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.grp'));
+  If PntLib<>nil then CreateLibNames(PntLib,0);
+ Ini.Free;
+ Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.gr1'));
+  If LineLib<>nil then CreateLibNames(LineLib,1);
+ Ini.Free;
+ Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(SqwZnk,'.gr2'));
+  If SqwLib<>nil then CreateLibNames(SqwLib,2);
+ Ini.Free;
+end;
+
+Procedure TMosLib.CreateGroupView;
+Function GetLibZnaks(IniName:String;Lib:TSortedCollection;Group:TGroupCollection;Flag:Integer):boolean;
+var I,J,N:Integer;
+    Ini:TIniFile;
+    Names,Items,Values:TStrings;
+    ZnkView:TZnakView;
+begin
+ Ini:=TIniFile.Create(IniName);
+ Names:=TStringList.Create;Items:=TStringList.Create;Values:=TStringList.Create;
+ Ini.ReadSections(Names);
+  For I:=0 to Names.Count-1 do begin
+   Group.AddGroup(Names[I]);
+   Case Flag of  0:Group[I].AddItem(TZnakView.Create(byLayer,'0',TPoint_Sign.Create(0,0,byLayer))); 1:Group[I].AddItem(TZnakView.Create(byLayer,'0',TGeoLine.Create(byLayer)));
+                 2:Group[I].AddItem(TZnakView.Create(byLayer,'0',TSqwear_Sign.Create(byLayer)));
+   end;
+   Ini.ReadSectionValues(Names[I],Values);
+   Items.Text:=Values.Text;
+   For J:=Values.Count-1 downTo 0 do
+    If Pos('=',Values[J])<>0 then begin
+     Values[J]:=Copy(Values[J],Pos('=',Values[J])+1,Length(Values[J]));
+     Items[J]:=Copy(Items[J],1,Pos('=',Items[J])-1);
+    end else begin
+     Values.Delete(J);
+     Items.Delete(J);
+    end;
+   //заполняем группу знаками
+   For J:=0 to Values.Count-1 do begin
+    try
+     ZnkView:=TZnakView.Create(Items[J],Values[J],nil);
+     If ZnkView.Error<>0 then begin ZnkView.Free;continue;end;
+     Case Flag of 0:N:=SearchThis(Lib,ZnkView.znakNum);1:N:=SearchLine(Lib,ZnkView.znakNum);2:N:=SearchLine(Lib,ZnkView.znakNum);end;
+     If N<>-1 then begin
+      Case Flag of 0:ZnkView.Znak:=PSLIb[N];1:ZnkView.Znak:=LSLib[N];
+                   2:ZnkView.Znak:=SSLib[N];
+      end;
+     Group.GroupByName[Names[I]].AddItem(ZnkView);
+     // переименовываем знак
+      Case Flag of 0:StrPCopy(TPoint_Sign(PSLib[N]).MyNameIs,PChar(Items[J]));1:StrPCopy(TGeoLine(LSLib[N]).NameOf,PChar(Items[J]));
+                   2:StrPCopy(TSqwear_Sign(SSLib[N]).NameOf,PChar(Items[J]));
+      end; // Case
+
+     end; // If N<>-1
+    except end;
+   end;
+  end;
+ Names.Free;Items.Free;Values.Free;
+ Ini.Free;
+end;
+begin
+ If PointGroup<>nil then PointGroup.Free;
+ If LineGroup<>nil then LineGroup.Free;
+ If SquareGroup<>nil then SquareGroup.Free;
+{}
+ PointGroup:=TGroupCollection.Create(1);
+ LineGroup:=TGroupCollection.Create(1);
+ SquareGroup:=TGroupCollection.Create(1);
+If FileExists(MainPath+GrpName+'.grp') then begin
+// MessageInform('Невозможно загрузить файл таблицы групп условных обозначений '+GrpName+'. Загружены значения по умолчанию.');
+ GetLibZnaks(SetExtFile(PntZnk,'.grp'),PSLib,PointGroup,0);
+ GetLibZnaks(SetExtFile(LineZnk,'.gr1'),LSLib,LineGroup,1);
+ GetLibZnaks(SetExtFile(SqwZnk,'.gr2'),SSLib,SquareGroup,2);
+end;
+{}
 end;
 
 initialization

@@ -15,8 +15,6 @@ type
     SkPainter: TSkPaintBox;
     Popup1: TPopup;
     btnPDF: TCornerButton;
-    CornerButton4: TCornerButton;
-    SceneProgressBar: TProgressBar;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
@@ -66,16 +64,11 @@ type
     procedure ResetInteractionState;
     procedure FinalizeZoom;
     procedure SetSkPainterCapture(const ACapture: Boolean);
-    procedure UpdateStatusGeo(const X, Y: Single);
     procedure BuildCachedPicture;
     procedure CapturePanBitmap;
-
+   //
     procedure DoExportPdfWithName(const AName: string);
-
-    procedure SceneProgressShow(const AMax: Single);
-    procedure SceneProgressSet(const AValue: Single);
-    procedure SceneProgressHide;
-
+   //
     procedure WheelZoomTimer(Sender: TObject);
   protected
     procedure Loaded; override;
@@ -95,6 +88,8 @@ type
     function InteractionBitmapActive: Boolean; virtual;
     procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); virtual;
     procedure UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
+  protected
+    procedure UpdateStatusGeo(const X, Y: Single);
   public
    MousePos: TPointF;
     destructor Destroy; override;
@@ -264,8 +259,8 @@ begin
     btnPlus.OnClick := btnPlusClickSkia;
   if ptnMinus <> nil then
     ptnMinus.OnClick := btnPlusClickSkia;
-  if CornerButton1 <> nil then
-    CornerButton1.OnClick := btnOpenClickSkia;
+  if btnOpen <> nil then
+    btnOpen.OnClick := btnOpenClickSkia;
   if btnPDF <> nil then
     btnPDF.OnClick := btnPDFClick;
 
@@ -350,24 +345,6 @@ begin
   end;
 end;
 
-procedure TMainFormSkia.SceneProgressShow(const AMax: Single);
-begin
-  SceneProgressBar.Min := 0;
-  SceneProgressBar.Max := AMax;
-  SceneProgressBar.Value := 0;
-  SceneProgressBar.Repaint;
-  SceneProgressBar.Visible := True;
-  SceneProgressBar.UpdateRect;
-end;
-
-procedure TMainFormSkia.SceneProgressSet(const AValue: Single);
-begin SceneProgressBar.Value := AValue;
- SceneProgressBar.UpdateRect;//(SceneProgressBar.BoundsRect.Round);
-end;
-
-procedure TMainFormSkia.SceneProgressHide;
-begin SceneProgressBar.Visible := False;
-end;
 
 procedure TMainFormSkia.RequestRebuildScene;
 var
@@ -389,8 +366,6 @@ begin
     Total := 1;
 
   FRebuildQueued := True;
-  SceneProgressShow(Total);
-  SceneProgressSet(0);
   TThread.Queue(nil,
     procedure
     begin
@@ -398,7 +373,6 @@ begin
         BuildCachedPicture;
         CapturePanBitmap;
       finally
-        SceneProgressHide;
         FRebuildQueued := False;
         if SkPainter <> nil then
           SkPainter.Redraw;
@@ -409,14 +383,15 @@ end;
 procedure TMainFormSkia.Loaded;
 begin
   inherited;
-  FormCreate(Self);
 end;
 
 destructor TMainFormSkia.Destroy;
 begin
+ WriteIn(['Skia1']);
   FDrawerSkia.Free;
   FDrawerSkia := nil;
   FreeAndNil(TwgForm);
+   WriteIn(['Skia2']);
   inherited Destroy;
 end;
 
@@ -788,6 +763,7 @@ begin
    end;
  end;
 end;
+
 procedure TMainFormSkia.UpdateStatusGeo(const X, Y: Single);
 var
   XPix, YPix, XGeo, YGeo: Double;
@@ -850,9 +826,7 @@ begin
     Total := 1;
   Prog := 0;
   GlobalRender := True;
-  SceneProgressShow(Total);
-  SceneProgressSet(0);
-
+ //
   with Selector, GGraphset do
     try
      for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
@@ -884,10 +858,6 @@ begin
             end;
 
             Prog := Prog + 1;
-            if (I mod 25) = 0 then
-            begin
-              SceneProgressSet(Prog);
-            end;
           end;
         end;
       end;
@@ -911,10 +881,6 @@ begin
         end;
 
         Prog := Prog + 1;
-        if (I mod 50) = 0 then
-        begin
-          SceneProgressSet(Prog);
-        end;
       end;
       Error := 16;
     finally
@@ -929,9 +895,6 @@ begin
   BaseDx := Selector.GetDx;
   BaseDy := Selector.GetDy;
   BaseScale := Selector.GetScale;
-
-  SceneProgressSet(Total);
-  SceneProgressHide;
 end;
 
 procedure TMainFormSkia.BuildCachedPicture;

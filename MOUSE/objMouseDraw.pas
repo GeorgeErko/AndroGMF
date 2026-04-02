@@ -137,7 +137,7 @@ begin
                    paraLineForm := TParaLineFrame.Create(Selector.GNForm);
                    paraLineForm.OnReturn := Return;
                    twigStyle:=GReadInteger('ParaLineForm_lbHotSpot',0)+1000;
-                    cirKvant:=Twigs.Settings.psArcCount;
+                   cirKvant:=Twigs.Settings.psArcCount;
                  // ParaLineForm.Show;
                   end;
   sysDrawKvant:begin
@@ -238,13 +238,16 @@ var Kvant:Integer;
     Sel.ovrPaint.Style := TSkPaintStyle.Stroke;
     Sel.ovrPaint.StrokeWidth := 0.1;
     Sel.ovrPaint.Color := TAlphaColorRec.Red;
-
+    Tw.Selector := Selector;
+  //  Tw.Paint;
+    Tw.ArcView := 1;
     for J := 0 to Tw.Coord.Count - 2 do
       Canvas.DrawLine(
         Single(Tw[J].XDot), Single(Tw[J].YDot),
         Single(Tw[J + 1].XDot), Single(Tw[J + 1].YDot),
         Sel.ovrPaint
       );
+    Tw.ArcView := 0;
   end;
   procedure DrawFixedPointsSkia;
   var
@@ -303,9 +306,14 @@ begin
                   if mpTwig <> nil then
                   begin
                     mpTwig.Move(nil, X0, Y0);
+                    If mpTwig.Twig is TTwigCircle then
+                     With TTwigCircle(mpTwig.Twig) do begin
+                       Writein([MouseX, MouseY]);
+                       R.XDot := MouseX; R.YDot := MouseY;
+                      end;
                     mpTwig.Calculate;
                     DrawTwigSimple(mpTwig.Twig);
-                    if mpTwig.Marker.Visible then
+                   if mpTwig.Marker.Visible then
                       mpTwig.Marker.Draw(Canvas, mpTwig.Marker.mx, mpTwig.Marker.mY, True);
                   end;
                  finally
@@ -428,11 +436,14 @@ begin
    sysDrawParaLine,
    sysLine,
    sysDrawKvant   :begin
+                    Writein(['md1']);
                     if fixPoint1.Visible then begin
                      X0:=fixPoint2.mX;Y0:=fixPoint2.mY;
                     end;// else begin X0:=X;Y0:=Y;end;
+                      Writein(['md2']);
                     B:=False;
                     mpUpdateTwigPath(X0,Y0);
+                      Writein(['md3']);
                     //WriteIn(['MM.Count=', Twigs.Twigs.TwigsCount]);
                    end;
   sysDrawArc2,
@@ -464,7 +475,7 @@ begin
  MouseX := X;
  MouseY := Y;
  Hook := False;
- if ShiftPress or ControlPresS then begin Hook:=False;Exit;end;
+ if ShiftPress or ControlPresS or MMouseDown then exit;
  Hook:=True;
  SetCur('');
 {}
@@ -490,7 +501,8 @@ begin
                       //If mpTwig.Twig.Coord.Count = 1 then
                        //  Writein([123]);
                       X0:=X;Y0:=Y;
-                     if Twigs.Settings.psAuto then
+                     if Twigs.Settings.psAuto then  emGetDotMarker(X0,Y0,mpTwig.FirstPoint,mpTwig.mpStvor,objTemporary,True,True,True);
+                    { if Twigs.Settings.psAuto then
                       begin
                         NowT := TThread.GetTickCount64;
                         if (fLastMarkTick = 0) or ((NowT - fLastMarkTick) >= 30) then
@@ -500,12 +512,13 @@ begin
                           DtMark := TThread.GetTickCount64 - Dt;
                           fLastMarkTick := TThread.GetTickCount64;
                         end;
-                      end;
+                      end;}
                      mpMoveTwigPath(X0,Y0);
                       If fixPoint1.Visible then begin fixPoint2.mX:=X0;fixPoint2.mY:=Y0;end;
                      end else begin
                       Stvor_.X1:=xyNull;
-                     if Twigs.Settings.psAuto then
+                      if Twigs.Settings.psAuto then emGetDotMarker(X,Y,nil,Stvor_,objTemporary,True,True,True);
+                     {if Twigs.Settings.psAuto then
                       begin
                         NowT := TThread.GetTickCount64;
                         if (fLastMarkTick = 0) or ((NowT - fLastMarkTick) >= 30) then
@@ -515,14 +528,14 @@ begin
                           DtMark := TThread.GetTickCount64 - Dt;
                           fLastMarkTick := TThread.GetTickCount64;
                         end;
-                      end;
+                      end;}
                       X0:=X;Y0:=Y;
                       If fixPoint1.Visible then begin fixPoint2.mX:=X0;fixPoint2.mY:=Y0;end;
                      end;
                      UpdateFixedPoints(fixPoint2.mX,fixPoint2.mY);
                      if (TSelector(Selector).ovrPainter = nil) then
-                       DrawFixedPoints(Selector.GCanvas);
-                     if (TSelector(Selector).ovrPainter = nil) then
+                       DrawFixedPoints(Selector.GCanvas)
+                     else
                       Selector.UpdateOverlay;
                     finally
                      Quants_For_Arcs:=Kvant;
@@ -562,6 +575,7 @@ begin
                       PD.Symbol:=Form.LayerTable.ActiveSymbology;
                      {$ELSE}
                       PD:=TPointDot.CreateTaheo(Layer,-1,'',D1.XDot,D1.YDot,ZNull);
+                      PD.Selector := Selector;
                      {$ENDIF}
                       If OnAddPrim(PD) then begin
                        PropEditorForm.SetEnumProperties(PD);
@@ -973,7 +987,7 @@ try
    sysDrawParaLine:begin
                  mpTwig:=TTwigParaLine.Create(Selector, TTwig);
                  mpTwig.fixLength:=fixLength;
-                 mpTwig.Width:=ParaLineForm.Width;
+                 mpTwig.Width:=ParaLineForm.paraWidth;
                  mpTwig.twigStyle:=twigStyle;
                  mpTwig.AddPoint(Selector.GCanvas,X,Y);
                  fixPoint1.Remove(Selector.GCanvas);
@@ -995,7 +1009,7 @@ try
    OrthoTwigs.UpdateTwigs;OrthoTwigs.Draw(Selector.GCanvas);
   mpDrawTwig(Selector.GCanvas);
   fixPoint1.Remove(Selector.GCanvas);
-  Selector.UpdateImage;
+  Selector.UpdateOverlay;
  end;
  except ShowMessage('objMouseDraw '+intToStr(636));end;
 end;
@@ -1047,6 +1061,8 @@ begin
   X0:=mpTwig.mX;
   Y0:=mpTwig.mY;
   Dot:=mpTwig[mpTwig.Twig.Coord.Count-1];
+  Selector.UpdateOverlay;
+  WriteIn(['Move=',  Dot.XDot, Dot.YDot, X, Y]);
   Application.Hint:='#L='+FloatToStrF(Distance(Dot.XDot,Dot.YDot,X0,Y0),ffFixed,_LD,Const_Of_DecimalLength);
  end;
 end;
@@ -1205,7 +1221,7 @@ begin
  ftwigStyle:=Value;
  If mpTwig<>nil then begin
   mpTwig.twigStyle:=Value;
-//  mpTwig.Width:=ParaLineForm.Width;
+  mpTwig.Width := ParaLineForm.paraWidth;
 //  ParaLineForm.HotSpot:=Value;
   mpTwig.Calculate;
   Selector.UpdateImage;

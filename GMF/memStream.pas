@@ -144,31 +144,11 @@ begin
 
       begin
 
-      {$IFDEF WIN64}
-
        If FSize=0 then begin
-
-        FMemory := GlobalAllocPtr(HeapAllocFlags, Pos)
-
-       end else begin
-
-        FMemory:=GlobalReallocPtr(FMemory, Pos, HeapAllocFlags);
-
-       end;
-
-      {$ELSE}
-
-       If FSize=0 then begin
-
         FMemory := AllocMem(Pos)
-
        end else begin
-
         ReallocMem(FMemory, Pos);
-
        end;
-
-      {$ENDIF}
 
        FSize := Pos;
 
@@ -197,37 +177,19 @@ destructor TMemStream.Destroy;
 begin
 
  If doFreeMemory then begin
-
-  {$IFDEF WIN64}
-
-   GlobalFreePtr(FMemory);
-
-  {$ELSE}
-
    FreeMem(FMemory);
-
-  {$ENDIF}
-
   fSize:=0;Position:=0;
-
  end;
-
  inherited Destroy;
-
 end;
 
 
 
 constructor TMemStream.Create(fMem: boolean);
-
 begin
-
- inherited Create;
-
- fMemory:=nil;
-
- doFreeMemory:=fMem;
-
+  inherited Create;
+  fMemory:=nil;
+  doFreeMemory:=fMem;
 end;
 
 
@@ -237,24 +199,10 @@ procedure TMemStream.SetSize(const Value: Longint);
 const HeapAllocFlags = 2;
 
 begin                                        
-
- fSize := Value;
-
- {$IFDEF WIN64}
-
- If fMemory=nil then fMemory:=GlobalAllocPtr(HeapAllocFlags, fSize) else
-
-                     fMemory:=GlobalReAllocPtr(fMemory, HeapAllocFlags, fSize);
-
- {$ELSE}
-
+  fSize := Value;
  If fMemory=nil then fMemory:=AllocMem(fSize) else
-
                      ReAllocMem(fMemory, fSize);
-
- {$ENDIF}
-
-end;
+ end;
 
 
 

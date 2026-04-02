@@ -329,7 +329,7 @@ begin
  Twig.Closed:=1;
  Twig.Calculate;
  try
-  Twig.Paint;
+//  Twig.Paint;
   PathMarker.Draw(Canvas);
  If Twig is TTwigSpline then if mX<>xyNull then Twig.Coord.AtFree(Twig.Coord.Count-1);
   D:=Twig[Twig.Coord.Count-1];
@@ -502,7 +502,7 @@ end;
 
 procedure TTwigPath.Calculate;
 begin
-//
+ If Twig <> nil then Twig.Calculate;
 end;
 
 { TTwigPathArc }
@@ -1612,16 +1612,16 @@ begin
  Mode:=SetBkMode(Dc,TransParent);
  TwigL.Closed:=1;TwigL.Calculate;TwigR.Closed:=1;TwigR.Calculate;
  try
-  TwigL.Paint;TwigR.Paint;
+//  TwigL.Paint;TwigR.Paint;
   Pen:=selectObject(Dc,CreatePen(ps_Dot,0,winColor(Selector, 0)));
 //  DrawRects;
   try
-   For I:=0 to Rects.Count-1 do
-    TTwig(Rects[I]).Paint;
+  // For I:=0 to Rects.Count-1 do
+  //  TTwig(Rects[I]).Paint;
   except end;
   DeleteObject(SelectObject(Dc,Pen));
   D:=Twig[Twig.Coord.Count-1];
-  If mX<>xyNull then Selector.DrawLine(D.XDot,D.YDot,mX,mY);
+ // If mX<>xyNull then Selector.DrawLine(D.XDot,D.YDot,mX,mY);
   // если включен режим прямых углов
   if TForm2(Selector.GTwgForm).Settings.psOrtho then begin
    if Twig.Coord.Count=1 then Marker.Move(Canvas,D.XDot,D.YDot,MoveNone,addAngle) else begin

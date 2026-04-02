@@ -4,25 +4,24 @@ object MainForm: TMainForm
   BorderStyle = SizeToolWin
   Caption = 'Form2'
   ClientHeight = 539
-  ClientWidth = 854
+  ClientWidth = 910
   Position = Designed
   Visible = True
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop, iPhone, iPad]
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
   DesignerMasterStyle = 3
   object Memo1: TMemo
     Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
     DataDetectorTypes = []
     Align = Bottom
     Position.Y = 428.000000000000000000
-    Size.Width = 854.000000000000000000
+    Size.Width = 910.000000000000000000
     Size.Height = 111.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 2
-    Viewport.Width = 854.000000000000000000
+    Viewport.Width = 910.000000000000000000
     Viewport.Height = 111.000000000000000000
   end
   object Splitter1: TSplitter
@@ -30,17 +29,17 @@ object MainForm: TMainForm
     Cursor = crVSplit
     MinSize = 20.000000000000000000
     Position.Y = 420.000000000000000000
-    Size.Width = 854.000000000000000000
+    Size.Width = 910.000000000000000000
     Size.Height = 8.000000000000000000
     Size.PlatformDefault = False
   end
   object Panel1: TPanel
     Align = Top
-    Size.Width = 854.000000000000000000
+    Size.Width = 910.000000000000000000
     Size.Height = 33.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
-    object CornerButton1: TCornerButton
+    object btnOpen: TCornerButton
       Images = ImageList1
       ImageIndex = 0
       Position.X = 8.000000000000000000
@@ -69,25 +68,11 @@ object MainForm: TMainForm
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnLocalOpenClick
-      object CornerButton3: TCornerButton
-        Images = ImageList1
-        ImageIndex = 1
-        Position.X = 814.000000000000000000
-        Sides = [Top, Left, Bottom, Right]
-        Size.Width = 25.000000000000000000
-        Size.Height = 25.000000000000000000
-        Size.PlatformDefault = False
-        TabOrder = 0
-        TextSettings.Trimming = None
-        XRadius = 3.000000000000000000
-        YRadius = 3.000000000000000000
-        OnClick = btnPaintClick
-      end
     end
     object btnPaint: TCornerButton
       Images = ImageList1
       ImageIndex = 1
-      Position.X = 814.000000000000000000
+      Position.X = 816.000000000000000000
       Position.Y = 5.000000000000000000
       Sides = [Top, Left, Bottom, Right]
       Size.Width = 25.000000000000000000
@@ -112,17 +97,6 @@ object MainForm: TMainForm
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = upmClick
-    end
-    object Label1: TSkLabel
-      Position.X = 422.000000000000000000
-      Position.Y = 6.000000000000000000
-      Size.Width = 40.200000762939450000
-      Size.Height = 19.000000000000000000
-      Size.PlatformDefault = False
-      Words = <
-        item
-          Text = 'Label1'
-        end>
     end
     object btnPlus: TCornerButton
       Tag = 1
@@ -161,13 +135,13 @@ object MainForm: TMainForm
   end
   object PanelPainter: TPanel
     Align = Client
-    Size.Width = 854.000000000000000000
+    Size.Width = 910.000000000000000000
     Size.Height = 364.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 5
     object Painter: TPaintBox
       Align = Client
-      Size.Width = 854.000000000000000000
+      Size.Width = 910.000000000000000000
       Size.Height = 364.000000000000000000
       Size.PlatformDefault = False
       OnPaint = PainterPaint
@@ -176,7 +150,7 @@ object MainForm: TMainForm
   object StatusBar: TStatusBar
     Position.Y = 397.000000000000000000
     ShowSizeGrip = True
-    Size.Width = 854.000000000000000000
+    Size.Width = 910.000000000000000000
     Size.Height = 23.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0

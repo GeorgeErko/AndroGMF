@@ -14,7 +14,8 @@ type
   private
     fOnReturn: TNotifyEvent;
   public
-   Property OnReturn: TNotifyEvent read fOnReturn write fOnReturn;
+   property OnReturn: TNotifyEvent read fOnReturn write fOnReturn;
+   function paraWidth: Double;
   end;
 
  var paraLineForm: TParaLineFrame;
@@ -22,5 +23,13 @@ type
 implementation
 
 {$R *.fmx}
+
+{ TParaLineFrame }
+
+function TParaLineFrame.paraWidth: Double;
+begin
+ Result := 0.5;
+// чтение EWidth
+end;
 
 end.

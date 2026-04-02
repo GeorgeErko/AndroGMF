@@ -31,7 +31,7 @@ type
   Bitmap: TBitmap;
   constructor Create(ogsSelector_: TogsSelector; Control_: TControl; Scale_: Single;  OnPaint_:TNotifyEvent);
   destructor Destroy; override;
-  procedure Clear(AColor: Integer); override;
+  procedure Clear(AColor: Longint); override;
   procedure SyncToControl(Scale_: Single);
  //
   procedure UpdateImage;
@@ -141,7 +141,7 @@ begin
   Bitmap.SetSize(W, H);
 end;
 
-procedure TogsDrawerCanvas.Clear(AColor: Integer);
+procedure TogsDrawerCanvas.Clear(AColor: Longint);
 var
  WasInScene: Boolean;
 begin
