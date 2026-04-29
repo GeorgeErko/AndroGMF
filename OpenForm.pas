@@ -116,6 +116,9 @@ var
   ZipBaseName: string;
   ExtractDir: string;
   Gmfs: TStringDynArray;
+  S: TFileStream;
+  Sig: array[0..3] of Byte;
+  IsZip: Boolean;
 begin
   Result := '';
   if PickedLocalPath = '' then
@@ -126,13 +129,28 @@ begin
     Result := PickedLocalPath;
     Exit;
   end;
-  if Ext <> '.zip' then
-    Exit;
+  IsZip := (Ext = '.zip');
+  if not IsZip then
+  begin
+    try
+      S := TFileStream.Create(PickedLocalPath, fmOpenRead or fmShareDenyNone);
+      try
+        if S.Read(Sig, SizeOf(Sig)) = SizeOf(Sig) then
+          IsZip := (Sig[0] = $50) and (Sig[1] = $4B);
+      finally
+        S.Free;
+      end;
+    except
+      IsZip := False;
+    end;
+  end;
+  if not IsZip then Exit;
 
   ZipBaseName := ChangeFileExt(ExtractFileName(PickedLocalPath), '');
   if ZipBaseName = '' then
     ZipBaseName := 'import_zip';
-  ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
+ // ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
+   ExtractDir := TPath.GetDocumentsPath;
   try
     ForceDirectories(ExtractDir);
     TZipFile.ExtractZipFile(PickedLocalPath, ExtractDir);

@@ -345,11 +345,8 @@ function TDotText.ResetParams(ParamID:Integer;Params:Pointer):boolean;
 const
  NominalPxHeight: Integer = 100;
 var
-  L: TTextLayout;
-  R: TRectF;
   W: Integer;
   S: string;
-  Style: TFontStyles;
   H: Double;
   Family: string;
   Candidate: string;
@@ -394,167 +391,115 @@ begin
        Exit;
       end;
 
-       {$IFDEF ANDROID}
+       Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
+       S := string(Text.Text);
+
+       Weight := TSkFontWeight.Normal;
+       if Text.FontView.Bl <> 0 then
+        Weight := TSkFontWeight.Bold;
+
+       Slant := TSkFontSlant.Upright;
+       if Text.FontView.It <> 0 then
+        Slant := TSkFontSlant.Italic;
+
+       Typeface := nil;
+       Candidate := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
+
+       FileName := '';
+       if (SkiaFontFiles <> nil) and (Candidate <> '') then
        begin
-        Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-        S := string(Text.Text);
+        Idx := SkiaFontFiles.IndexOfName(Candidate);
+        if Idx >= 0 then
+         FileName := SkiaFontFiles.ValueFromIndex[Idx];
+       end;
 
-        Weight := TSkFontWeight.Normal;
-        if Text.FontView.Bl <> 0 then
-         Weight := TSkFontWeight.Bold;
+       if FileName <> '' then
+        Typeface := TSkTypeface.MakeFromFile(FileName);
 
-        Slant := TSkFontSlant.Upright;
-        if Text.FontView.It <> 0 then
-         Slant := TSkFontSlant.Italic;
+       if (Typeface = nil) and (Candidate <> '') then
+        Typeface := TSkTypeface.MakeFromName(Candidate, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
 
-        Typeface := nil;
-        Candidate := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-
-        FileName := '';
-        if (SkiaFontFiles <> nil) and (Candidate <> '') then
-        begin
-         Idx := SkiaFontFiles.IndexOfName(Candidate);
-         if Idx >= 0 then
-          FileName := SkiaFontFiles.ValueFromIndex[Idx];
-        end;
-
-        if FileName <> '' then
-         Typeface := TSkTypeface.MakeFromFile(FileName);
-
-        if (Typeface = nil) and (Candidate <> '') then
-         Typeface := TSkTypeface.MakeFromName(Candidate, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
-
-        if (Typeface = nil) and (Candidate <> '') then
-         for I := 0 to TFontManager.CustomFontInfoCount - 1 do
-          if SameText(TFontManager.CustomFontInfo[I].FamilyName, Candidate) then
-          begin
-           Typeface := TSkTypeface.MakeFromName(TFontManager.CustomFontInfo[I].FamilyName,
-             TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
-           if Typeface <> nil then
-            Break;
-          end;
-
-        if Typeface = nil then
-         Typeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
-        FontSize := NominalPxHeight;
-        Font := TSkFont.Create(Typeface, FontSize);
-
-        Font.GetMetrics(Metrics);
-        if (-Metrics.Ascent) > 0.01 then
-        begin
-         ScaleK := NominalPxHeight / (-Metrics.Ascent);
-         FontSize := FontSize * ScaleK;
-         Font := TSkFont.Create(Typeface, FontSize);
-        end;
-
-        BaseLineXPix := 2;
-        RightPadPix := 4;
-
-        W := Round(Length(S) * FontSize * 0.6);
-        W := W + Round(BaseLineXPix + RightPadPix);
-        if W < 2 then W := 2;
-        Font.GetMetrics(Metrics);
-        BaseLinePix := -Metrics.Ascent + 2;
-        SymbolTopPix := BaseLinePix + Metrics.Ascent;
-        SymbolHeightPix := -Metrics.Ascent;
-        H := (-Metrics.Ascent + Metrics.Descent) + 4;
-        TextBitmap.SetSize(W, Round(H));
-
-        if TextBitmap.Map(TMapAccess.Write, D) then
-        try
-         ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-         Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-         if Surface <> nil then
+       if (Typeface = nil) and (Candidate <> '') then
+        for I := 0 to TFontManager.CustomFontInfoCount - 1 do
+         if SameText(TFontManager.CustomFontInfo[I].FamilyName, Candidate) then
          begin
-          Paint := TSkPaint.Create;
-          Paint.AntiAlias := True;
-          Paint.Color := WinColorToAlphaColor(Text.Color);
-          Surface.Canvas.Clear(0);
+          Typeface := TSkTypeface.MakeFromName(TFontManager.CustomFontInfo[I].FamilyName,
+            TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
+          if Typeface <> nil then
+           Break;
+         end;
 
-          BaselineY := BaseLinePix;
+       if Typeface = nil then
+        Typeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
 
-          Surface.Canvas.DrawSimpleText(S, 2, BaselineY, Font, Paint);
+       FontSize := NominalPxHeight;
+       Font := TSkFont.Create(Typeface, FontSize);
 
-          DebugPaint := TSkPaint.Create;
-          DebugPaint.AntiAlias := True;
-          DebugPaint.Color := TAlphaColor($FFFF0000);
-          DebugPaint.StrokeWidth := 2;
-          DebugPaint.Style := TSkPaintStyle.Stroke;
-
-          YTop := 0;
-          YBaseline := BaseLinePix;
-          YAscent := BaseLinePix + Metrics.Ascent;
-          YDescent := BaseLinePix + Metrics.Descent;
-          YBottom := TextBitmap.Height - 1;
-
-          Surface.Canvas.DrawLine(0, YTop, TextBitmap.Width, YTop, DebugPaint);
-          Surface.Canvas.DrawLine(0, YAscent, TextBitmap.Width, YAscent, DebugPaint);
-          Surface.Canvas.DrawLine(0, YBaseline, TextBitmap.Width, YBaseline, DebugPaint);
-          Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
-          Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
-
-          Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
-
-          Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
-          Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
-          Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
-          Surface.Canvas.DrawCircle(2, YDescent, 4, DebugPaint);
-          Surface.Canvas.DrawCircle(2, YBottom, 4, DebugPaint);
-         end
-        finally
-         TextBitmap.Unmap(D);
-        end;
+       Font.GetMetrics(Metrics);
+       if (-Metrics.Ascent) > 0.01 then
+       begin
+        ScaleK := NominalPxHeight / (-Metrics.Ascent);
+        FontSize := FontSize * ScaleK;
+        Font := TSkFont.Create(Typeface, FontSize);
        end;
-       {$ELSE}
-       L := TTextLayoutManager.DefaultTextLayout.Create;
+
+       BaseLineXPix := 2;
+       RightPadPix := 4;
+
+       W := Round(Length(S) * FontSize * 0.6);
+       W := W + Round(BaseLineXPix + RightPadPix);
+       if W < 2 then W := 2;
+       Font.GetMetrics(Metrics);
+       BaseLinePix := -Metrics.Ascent + 2;
+       SymbolTopPix := BaseLinePix + Metrics.Ascent;
+       SymbolHeightPix := -Metrics.Ascent;
+       H := (-Metrics.Ascent + Metrics.Descent) + 4;
+       TextBitmap.SetSize(W, Round(H));
+
+       if TextBitmap.Map(TMapAccess.Write, D) then
        try
-        S := string(Text.Text);
-        L.BeginUpdate;
-        try
-         L.Text := S;
-         L.WordWrap := False;
-         L.Font.Family := ResolveRegisteredFontFamily(string(Text.FontView.FontName));
-         L.Font.Size := NominalPxHeight;
-         Style := [];
-         if Text.FontView.Bl <> 0 then Include(Style, TFontStyle.fsBold);
-         if Text.FontView.It <> 0 then Include(Style, TFontStyle.fsItalic);
-         if Text.FontView.Un <> 0 then Include(Style, TFontStyle.fsUnderline);
-         L.Font.Style := Style;
-         L.Color := WinColorToAlphaColor(Text.Color);
-         L.TopLeft := PointF(0, 0);
-         L.MaxSize := PointF(10000, NominalPxHeight * 2);
-        finally
-         L.EndUpdate;
-        end;
+        ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+        Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
+        if Surface <> nil then
+        begin
+         Paint := TSkPaint.Create;
+         Paint.AntiAlias := True;
+         Paint.Color := WinColorToAlphaColor(Text.Color);
+         Surface.Canvas.Clear(0);
 
-        R := L.TextRect;
-        W := Trunc(R.Width);
-        if Frac(R.Width) > 0 then Inc(W);
-        W := W + 4;
-        if W < 2 then W := 2;
-        TextBitmap.SetSize(W, NominalPxHeight * 2);
-        BaseLinePix := NominalPxHeight;
-        BaseLineXPix := 0;
-        RightPadPix := 0;
-        SymbolTopPix := 0;
-        SymbolHeightPix := NominalPxHeight;
-        if TextBitmap.Canvas.BeginScene then
-        try
-         TextBitmap.Canvas.Clear(TAlphaColor($00000000));
-         L.RenderLayout(TextBitmap.Canvas);
+         BaselineY := BaseLinePix;
 
-         TextBitmap.Canvas.Stroke.Kind := TBrushKind.Solid;
-         TextBitmap.Canvas.Stroke.Color := TAlphaColor($FFFF0000);
-         TextBitmap.Canvas.Stroke.Thickness := 2;
-         TextBitmap.Canvas.DrawLine(PointF(0, BaseLinePix), PointF(TextBitmap.Width, BaseLinePix), 1);
-         TextBitmap.Canvas.DrawRect(RectF(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), 0, 0, [], 1);
-        finally
-         TextBitmap.Canvas.EndScene;
-        end;
+         Surface.Canvas.DrawSimpleText(S, 2, BaselineY, Font, Paint);
+
+         DebugPaint := TSkPaint.Create;
+         DebugPaint.AntiAlias := True;
+         DebugPaint.Color := TAlphaColor($FFFF0000);
+         DebugPaint.StrokeWidth := 2;
+         DebugPaint.Style := TSkPaintStyle.Stroke;
+
+         YTop := 0;
+         YBaseline := BaseLinePix;
+         YAscent := BaseLinePix + Metrics.Ascent;
+         YDescent := BaseLinePix + Metrics.Descent;
+         YBottom := TextBitmap.Height - 1;
+
+         Surface.Canvas.DrawLine(0, YTop, TextBitmap.Width, YTop, DebugPaint);
+         Surface.Canvas.DrawLine(0, YAscent, TextBitmap.Width, YAscent, DebugPaint);
+         Surface.Canvas.DrawLine(0, YBaseline, TextBitmap.Width, YBaseline, DebugPaint);
+         Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
+         Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
+
+         Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
+
+         Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
+         Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
+         Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
+         Surface.Canvas.DrawCircle(2, YDescent, 4, DebugPaint);
+         Surface.Canvas.DrawCircle(2, YBottom, 4, DebugPaint);
+        end
        finally
-        L.Free;
+        TextBitmap.Unmap(D);
        end;
-       {$ENDIF}
        TextDirty := False;
        Result:=True;
      end;
@@ -860,18 +805,19 @@ var
  St: TCanvasSaveState;
  Dst: TRectF;
  XP, YP: Double;
- K: Single;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  if Text = nil then Exit;
-
  // Skia direct text path (debug)
  if DebugDirectSkia and (Drawer is TogsDrawerSkia) then
  begin
   if Selector.GetScale = 0 then Exit;
-  K := 1;
-  H := Text.Height * K;
+  // DrawTextAlignedPix expects font size as Top->Baseline height.
+  if TogsDrawerSkia(Drawer).UseWorldCoords then
+   H := Text.Height
+  else
+   H := Selector.XRasst(Text.Height);
   if H <= 0 then Exit;
 
   Text.GetXPYP(XP, YP);
@@ -888,9 +834,7 @@ begin
     Ugol,
     XP, YP,
     XKoef,
-    string(Text.FontView.FontName),
-    Text.FontView.Bl <> 0,
-    Text.FontView.It <> 0
+    Text.FontView
   );
   Exit;
  end;
@@ -902,7 +846,10 @@ begin
   H := Selector.XRasst(Text.Height);
   if H <= 0 then Exit;
 
-  S := H / NominalPxHeight;
+  if BaseLinePix > 0 then
+   S := H / BaseLinePix
+  else
+   S := H / NominalPxHeight;
   SX := S;
   SY := S;
   if XKoef <> 0 then
@@ -942,7 +889,10 @@ begin
  H := Selector.XRasst(Text.Height);
  if H <= 0 then Exit;
 
- S := H / NominalPxHeight;
+ if BaseLinePix > 0 then
+  S := H / BaseLinePix
+ else
+  S := H / NominalPxHeight;
  SX := S;
  SY := S;
  if XKoef <> 0 then

@@ -8,6 +8,10 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  {$ELSE}
   Slash = '/';
  {$ENDIF}
+  byLayer = 'По слою';
+  byNone = 'None';
+
+//
  var MainPath:AnsiString;
      ApplicationMainForm:TForm;
      GlobalRender: Boolean = False;

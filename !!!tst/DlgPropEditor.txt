@@ -1,0 +1,1322 @@
+unit DlgPropEditor;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, Grids, ValEdit, ObjInsp2, StdCtrls, Colorbox, ExtCtrls, ComCtrls,
+  Collect, TwgDraw, SelectedObjects, EcLot, WptForm2, Buttons, SzPanel;
+
+var PropEditorStyle:Integer;
+                            
+type
+  TUpdatePropObject = class(TLot)
+   TwgForm:TForm2;                                                  
+    Constructor Create(Form:TForm2);
+    Destructor Destroy;override;
+   // свойства
+    Procedure GetObjectProps(propNames,propValues,propTypes:TStrings;Data:Pointer = nil);override;
+    Function SetProperty(propName:String;propValue:String;Obj:TTD = nil):boolean;override;
+    Procedure ClearProperties;
+  end;
+
+const Space:String=#32#32;
+
+type
+  TObjInsp = class
+  private
+    function Get(Index: Integer): TObjInsp2;
+  public
+   ObjInsps:TList;
+   Constructor Create;
+   Destructor Destroy;override;
+   Procedure Add(Insp:TObjInsp2);
+   Property ObjInsp[Index:Integer]:TObjInsp2 read Get;default;
+   Function Count:Integer;
+  end;
+
+type
+  TStringSelection = class(TTwgObject)
+   Params,orand,Values:TStrings;
+   Constructor Create;
+   Destructor Destroy;override;
+  //
+   Procedure AddParam(paramName,paramValue:String;orFlag:boolean;Button:TControl);
+   Procedure Clear;
+   Function Text:String;
+  end;
+
+type
+  TPropEditorForm = class(TForm)
+    Panel1: TPanel;
+    cbSelection: TComboBox;
+    PanelTop: TPanel;
+    SpeedButton1: TSpeedButton;
+    PC: TPageControl;
+    TabSheet1: TTabSheet;
+    ObjInsp1: TObjInsp2;
+    TabSheet2: TTabSheet;
+    SizePanel1: TSizePanel;
+    Panel: TPanel;
+    Splitter1: TSplitter;
+    PCEdit: TPageControl;
+    TSEdit: TTabSheet;
+    TabSheet4: TTabSheet;
+    Panel2: TPanel;
+    sbOr: TSpeedButton;
+    sbAnd: TSpeedButton;
+    sbNot: TSpeedButton;
+    sbSelectByLayer: TSpeedButton;
+    Button1: TButton;
+    sbAddProp: TSpeedButton;
+    sbMemory: TSpeedButton;
+    sbAllSelect: TSpeedButton;
+    sbUp: TSpeedButton;
+    sbDown: TSpeedButton;
+    sbMinus: TSpeedButton;
+    sbMinusMinus: TSpeedButton;
+    sbLock: TSpeedButton;
+    sbCheck: TSpeedButton;
+    sbUncheck: TSpeedButton;
+    sbCheckSilver: TSpeedButton;
+    procedure ObjInsp1EditButtonClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure ObjInsp1KeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure ObjInsp1SelectCell(Sender: TObject; ACol, ARow: Integer;
+      var CanSelect: Boolean);
+    procedure PCChange(Sender: TObject);
+    procedure ObjInsp1DrawCell(Sender: TObject; ACol, ARow: Integer;
+      Rect: TRect; State: TGridDrawState);
+    procedure ObjInsp1ChangeValue(const AName: String);
+    procedure FormShow(Sender: TObject);
+    procedure ObjInsp1MouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormResize(Sender: TObject);
+    procedure sbOrClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure sbAddPropClick(Sender: TObject);
+    procedure sbAndClick(Sender: TObject);
+    procedure sbMemoryClick(Sender: TObject);
+    procedure sbDownClick(Sender: TObject);
+    procedure sbMinusMinusClick(Sender: TObject);
+    procedure sbLockClick(Sender: TObject);
+    procedure ObjInsp1MouseMove(Sender: TObject; Shift: TShiftState; X,
+      Y: Integer);
+    procedure ObjInsp1MouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+  public
+   ObjInsp:TObjInsp;
+   Objects:TSelectedObjects;
+   TwgForm:TForm2;
+   LockChangeValue:Boolean;
+   Splitter:TControl;
+   Selections:TStringSelection;
+   EqualString:String;
+   EqualNumber:Boolean;
+   SelectInObjects:boolean;
+   SelectAddObjects:boolean;
+   xMovePoint: Integer;
+   Procedure CreateParams(var P:TCreateParams);override;
+   Constructor Create(AOwner:TComponent);
+   Procedure Execute(Objects_:TSelectedObjects);
+   Procedure Update(Sender:TObject);
+   Procedure MoveWindow(var Msg:TMessage);message WM_Move;
+   Procedure SetProperty(propNAme:String;propValue:STring;Layer:Pointer=nil);
+   Procedure SetProperties(propNames:String;propValues:STring);
+   Procedure MergeProperties(Obj:TTD);
+   Procedure SetSystemPropertiesValue;
+   Procedure GetProperties(Obj:TTD);
+   Procedure SetEnumProperties(Obj: TTD);
+  //
+   Procedure SetUserProperty(propName,propValue:String;Layer:Pointer=nil);
+   Procedure SetCaption(S:String);
+  //
+  end;
+
+var
+  PropEditorForm: TPropEditorForm;
+  UpdatePropObject:TUpdatePropObject;
+
+type
+  TEqualProc = function(S1,S2:String;Num:boolean):boolean;
+
+var
+  Equal:Array[0..10] of TEqualProc;
+
+  Function EqualRavno(S1,S2:String;Num:boolean):boolean;
+  Function EqualBolshe(S1,S2:String;Num:boolean):boolean;
+  Function EqualMenshe(S1,S2:String;Num:boolean):boolean;
+  Function EqualNeRavno(S1,S2:String;Num:boolean):boolean;
+  Function EqualBRavno(S1,S2:String;Num:boolean):boolean;
+  Function EqualMRavno(S1,S2:String;Num:boolean):boolean;
+  Function EqualLike(S1,S2:String;Num:boolean):boolean;
+  Function EqualSet(S1,S2:String;Num:boolean):boolean;
+
+implementation uses Procs, ZnkDlg, Selector, PropertyEditors,
+                    GBFWUndo, Resource, userObject, UndoColNew,
+                    VarSetForm, EcDot2, EcDot, DlgPropAdd, DlgPropSelect,
+                    DlgDelProperties, UpdateMessages, LBN;
+
+{$R *.dfm}
+
+{ TObjInsp }
+
+procedure TObjInsp.Add(Insp: TObjInsp2);
+begin
+ ObjInsps.Add(Insp);
+end;
+
+function TObjInsp.Count: Integer;
+begin
+ Result:=ObjInsps.Count;
+end;
+
+constructor TObjInsp.Create;
+begin
+ ObjINsps:=TList.Create;
+end;
+
+destructor TObjInsp.Destroy;
+begin
+ ObjInsps.Free;
+end;
+
+function TObjInsp.Get(Index: Integer): TObjInsp2;
+begin
+ Result:=ObjInsps[Index];
+end;
+
+{ TPropEditorForm }
+
+constructor TPropEditorForm.Create(AOwner: TComponent);
+var I:Integer;R,R1:TRect;Fonts:TStrings;
+begin
+ inherited Create(AOwner);
+ Selections:=TStringSelection.Create;
+ sbSelectByLayer.Down:=GReadInteger(Name+'_SelectByLayer',0) = 1;
+//
+ ObjInsp:=TObjInsp.Create;
+ ObjInsp.Add(ObjInsp1);
+ For I:=0 to ObjInsp.Count-1 do begin
+  ObjInsp[I].RegisterType('Integer',tkSimple,[],nil);
+  ObjInsp[I].RegisterType('Float',tkSimple,[],nil);
+  ObjInsp[I].RegisterType('Color',tkPointer,[],TColorEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('LineType',tkPointer,[],TLineTypeEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('PointType',tkPointer,[],TPointTypeEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('SquareType',tkPointer,[],TSquareTypeEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Sign',tkPointer,[],nil);
+  ObjInsp[I].RegisterType('FontName',tkOrdinal,['По слою','Arial','Times New Roman','Courier New Cyr'],nil,Screen.Fonts);
+  ObjInsp[I].RegisterType('Attrib',tkSimple,[],TAttribEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('String',tkSimple,[],nil);
+  ObjInsp[I].RegisterType('StringSpr',tkPointer,[],TSprEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Boolean',tkOrdinal,['По слою','Да','Нет'],nil);
+  ObjInsp[I].RegisterType('FontStyle',tkPointer,[],TFontStyleEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('GeoData',tkPointer,[],TGeoDataEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Percents',tkPointer,[],TPercentEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Explication',tkPointer,[],TExplicationEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('JSON',tkPointer,[],TJSONEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Align',tkOrdinal,['По слою'],nil,AlignStrings);
+  ObjInsp[I].RegisterType('Memo',tkPointer,[],TMemoEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Foto',tkPointer,[],TFotoEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Tree',tkPointer,[],TTreeEditor.Create(ObjInsp[I]));
+ //
+ // Fonts:=TStringList.Create;
+  ObjInsp[I].RegisterType('Block',tkPointer,[],TBlockEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Hatch',tkPointer,[],THatchEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('Texture',tkPointer,[],TTextureEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('UNOM',tkPointer,[],TUNOMEditor.Create(ObjInsp[I]));
+  ObjInsp[I].RegisterType('ImageFile',tkPointer,[],TImageFileEditor.Create(ObjInsp[I]));
+ end;
+//
+ R1:=BoundsRect;
+ {$IFDEF GEO2BASE}
+  If GReadBinary(Name+'_BoundsGB2',R,SizeOf(BoundsRect)) then BoundsRect:=R else With BoundsRect do begin Left:=0;Right:=100;Top:=0;Bottom:=100;end;
+ {$ELSE}
+  If GReadBinary(Name+'_Bounds',R,SizeOf(BoundsRect)) then BoundsRect:=R else With BoundsRect do begin Left:=0;Right:=100;Top:=0;Bottom:=100;end;
+ {$ENDIF}
+ With BoundsRect do begin
+  If (Left>2000) or (Top>2000) or (Right>2000) or (Bottom>2000) then With R do begin
+   Left:=50;Right:=200;Top:=50;Bottom:=400;
+   BoundsRect:=R;
+  end;
+ end;
+ GetProperties(UpdatePropObject);
+// With BoundsRect do ShowMEssage(IntToStr(Left)+' '+IntToStr(Right)+' '+IntToStr(Top)+' '+IntToStr(Bottom));
+end;
+
+procedure TPropEditorForm.CreateParams(var P: TCreateParams);
+begin
+ inherited;
+// {$IFDEF GEO2BASE}
+//  P.Style:=P.Style or WS_Child or WS_Caption;
+// {$ELSE}
+  P.Style:=WS_Child;
+// {$ENDIF}
+ P.WndParent:=TWinControl(Owner).Handle;
+end;
+
+procedure TPropEditorForm.Execute(Objects_: TSelectedObjects);
+begin
+(* {$IFDEF GEO2BASE}
+  Panel1.Visible:=False;Panel.Visible:=False;
+ {$ELSE}
+*)
+  ObjInsp1.ColWidths[0] := GReadInteger(Name + '_ColWidth', ObjInsp1.ColWidths[0]);
+  Splitter.Visible:=True;
+  Parent.Visible:=True;
+  Splitter.Left:=Parent.Width;
+// {$ENDIF}
+ If Objects_<>nil then begin
+  Objects:=Objects_;
+  PcChange(nil);
+//  If Objects.Count>0 then GetProperties(Objects[Objects.Count-1]) else GetProperties(nil);
+  If not Visible then Show;
+  Update(Objects);
+ end else begin
+  ObjInsp[0].Clear;
+  GetProperties(UpdatePropObject);
+  If not Visible then Show;
+  SetCaption(Space+'По умолчанию');
+  Selections.Clear;
+  SbOr.Hint:='Выделить объекты с указанными свойствами (логика ИЛИ)';
+ end;
+end;
+
+procedure TPropEditorForm.Update(Sender: TObject);
+var I,M:Integer;S:String;OIT:TOIType;List:TStrings;
+begin
+ObjInsp[0].Visible:=False;
+try
+ Objects:=TSelectedObjects(Sender);
+ If Objects=nil then PropEditorForm.Close else begin
+  SetCaption(Space+'Выбрано объектов '+IntToStr(Objects.Count));
+  If Objects.Count = 0 then begin
+   ObjInsp[0].Clear;
+   GetProperties(UpdatePropObject);
+   SetCaption(Space+'По умолчанию');
+   Selections.Clear;
+   SbOr.Hint:='Выделить объекты с указанными свойствами (логика ИЛИ)';
+  end else
+  If Visible then begin
+   GetProperties(Objects[Objects.Count-1]);
+   With ObjInsp[0] do
+(*    For I:=0 to RowCount-1 do begin
+     OIT:=NameType[Cells[0,Row]];
+     If OIT.FName = 'Block' then begin
+       List:=TwgForm.Twigs.BlockList.GetBlockNames;
+     //OIT.UpdateStrings(List);
+       OIT.NoCheckOrdinals:=True;
+       ItemProps[I].PickList.Assign(List);
+       List.Free;
+     end;
+    end;*)
+   With ObjInsp[0] do
+    For I:=0 to RowCount-1 do If (Pos('##',Cells[0,I])=1) or (Pos('*',Cells[0,I])=1) then begin
+     S:=Cells[0,I];DelSubStr(S,'##');//DelSubStr('*');
+     If S = '*Фотофиксация' then begin
+       ItemProps[i].EditStyle := esEllipsis;
+      // ItemProps[i].ReadOnly:=True;
+       Strings.Objects[i]:=FindType('ImageFile');
+     end else
+     If ListByName.FindByName(S)<>nil then begin
+      If ListByName.FindByName(S).Tree<>nil then begin
+       ItemProps[i].EditStyle := esEllipsis;
+       ItemProps[i].ReadOnly:=True;
+       Strings.Objects[i]:=FindType('Tree');
+      end else begin
+       ItemProps[i].EditStyle := esPickList;
+       ItemProps[i].PickList.Assign(ListByName.FindByName(S).GetStrings);
+       ItemProps[i].ReadOnly:=Pos('*',S)=0;
+      end;
+     end else
+     If ListByDicts.FindByName2(S,0)<>nil then begin
+      ItemProps[i].EditStyle := esPickList;
+      ItemProps[i].PickList.Assign(ListByDicts.FindByName2(S,0).GetStrings(True));
+      ItemProps[i].ReadOnly:=Pos('*',S)=0;
+     end;
+    end else
+    begin
+     If Cells[0,I] = '*UNOM' then
+      Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+     If Cells[0,I] = '#Геоданные' then
+      Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+     If Cells[0,I] = '#Экспликация' then
+      Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+     If Cells[0,I] = '#JSON' then     
+      Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+    // If Cells[0,I] = '#Текстура' then
+    //  Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+    // If Cells[0,I] = '#Штриховка' then
+    //  Cells[1,I]:='...';//'Объектов :'+IntToStr(Objects.Count);
+    end;
+  end;
+  If (ObjInsp[0].RowCount=1)and(ObjInsp[0].Keys[0]='') then begin
+   ObjInsp[0].Enabled:=False;
+   ObjInsp[0].GridLineWidth:=0;
+   ObjINsp[0].Refresh;
+  end else begin
+   ObjInsp[0].Enabled:=True;
+   ObjInsp[0].GridLineWidth:=1;
+   ObjINsp[0].Refresh;
+  end;
+ end;
+finally
+ ObjInsp[0].Visible:=True;
+end;
+end;
+
+procedure TPropEditorForm.MoveWindow(var Msg: TMessage);
+var R:TRect;
+begin
+ inherited;
+end;
+
+procedure TPropEditorForm.FormClose(Sender: TObject;
+  var Action: TCloseAction);
+var R:TRect;
+begin
+ R:=BoundsRect;
+{$IFDEF GEO2BASE}
+ GWriteBinary(Name+'_BoundsGB2',R,SizeOf(BoundsRect));//Panel.Top:=2;
+{$ELSE}
+ GWriteBinary(Name+'_Bounds',R,SizeOf(BoundsRect));
+ Parent.Visible:=False;
+ Splitter.Visible:=False;
+{$ENDIF}
+end;
+
+procedure TPropEditorForm.ObjInsp1EditButtonClick(Sender: TObject);
+var OIT:TOIType;S:String;St:TStrings;I:Integer;
+begin
+ With TObjInsp2(Sender) do begin
+  OIT:=NameType[Cells[0,Row]];
+  S:=Cells[1,Row];
+  If OIT.FPropEditor<>nil then begin
+   If OIT.FPropEditor is TTreeEditor then begin
+    S:=Cells[0,Row];
+    St:=TStringList.Create;
+    OIT.FPropEditor.Execute(S,St);
+    For I:=0 to St.Count-1 do If Pos('*',St[I])=0 then St[I]:='##'+St[I];
+    If S<>'' then SetProperties(St.Text,S);
+    St.Free;
+    exit;
+   end else
+    OIT.FPropEditor.Execute(S,Objects);
+  end;
+  If S='' then Cells[1,Row]:=byLayer else Cells[1,Row]:=S;
+  SetProperty(Cells[0,Row],Cells[1,Row]);
+ end;
+end;
+
+procedure TPropEditorForm.ObjInsp1KeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+var I:Integer;OIT:TOIType;propName,propValue:String;
+begin
+ With TObjInsp2(Sender) do begin
+  If Key = VK_Return then begin
+   propName:=Cells[0,Row];
+   propValue:=Cells[1,Row];
+//   Writeln('SetPropertyKeyDown');
+    LockChangeValue:=True;
+   try
+    SetProperty(propName,propValue);
+//   Writeln('SetPropKeyEnd');
+   If propValue = '' then Cells[1,Row]:=byLayer;
+     Windows.SetFocus(TForm2(GTwgForm).HWndParent);
+   finally   LockChangeValue:=False;end;
+  end else If Key = VK_Escape then begin
+   EditorMode:=False;
+   SendMessage(GetFocus,WM_KillFocus,0,0);
+   Windows.SetFocus(TForm2(GTwgForm).HWndParent);
+  end;
+ end;
+end;
+
+procedure TPropEditorForm.ObjInsp1ChangeValue(const AName: String);
+var I:Integer;OIT:TOIType;propName,propValue:String;
+begin
+ If LockChangeValue then Exit;
+ With ObjInsp[0] do begin
+  propName:=AName;
+  propValue:=Values[AName];
+  SetProperty(propName,propValue);
+  If propValue = '' then Cells[1,Row]:=byLayer;
+ end;
+end;
+
+procedure TPropEditorForm.sbLockClick(Sender: TObject);
+var I:Integer;B:Boolean;
+    LCount:Integer;
+begin
+ With ObjInsp[0] do begin
+  LCount:=0;
+   For I:=0 to Objects.Count-1 do If TTD(Objects[I]).useProperty(Cells[0,Row]) then
+    If TPropValue(TTD(Objects[I]).GetPropValue(Cells[0,Row])).varType = varTypeLocked then Inc(LCount);
+ For I:=0 to Objects.Count-1 do If TTD(Objects[I]).useProperty(Cells[0,Row]) then
+  If LCount = Objects.Count then          
+   TPropValue(TTD(Objects[I]).GetPropValue(Cells[0,Row])).varType:=0 else
+   TPropValue(TTD(Objects[I]).GetPropValue(Cells[0,Row])).varType:=varTypeLocked;
+  ObjInsp1SelectCell(ObjInsp[0],Col,Row,B);
+  ObjInsp[0].Repaint;
+ end;
+end;
+
+procedure TPropEditorForm.ObjInsp1SelectCell(Sender: TObject; ACol,
+  ARow: Integer; var CanSelect: Boolean);
+var OIT:TOIType;LCount:Integer;
+    I:Integer;
+begin
+ CanSelect:=ACol<>0;
+ With ObjInsp[0] do If Pos('*',Cells[0,ARow])=1 {and (Pos('**',Cells[0,ARow])=0)} then begin
+  sbLock.Enabled:=True;
+  LCount:=0;
+   For I:=0 to Objects.Count-1 do If TTd(Objects[I]).useProperty(Cells[0,ARow]) then
+    If TPropValue(TTD(Objects[I]).GetPropValue(TObjInsp2(Sender).Cells[0,ARow])).varType = varTypeLocked then Inc(LCount);
+  If LCount=Objects.Count then sbLock.Glyph:=sbCheck.Glyph else
+  If LCount<>0 then
+  sbLock.Glyph:=sbCheckSilver.Glyph else
+  sbLock.Glyph:=sbUncheck.Glyph;
+ end else begin
+  sbLock.Glyph:=nil;sbLock.Enabled:=False;
+ end;
+// CanSelect:=(Pos('#',ObjInsp[0].Cells[0,ARow])<>1) or (Pos('##',ObjInsp[0].Cells[0,ARow])=1);
+end;
+
+procedure TPropEditorForm.PCChange(Sender: TObject);
+begin
+ With ObjInsp[0] do begin
+  Col:=1;Row:=0;
+ end;
+end;
+
+procedure TPropEditorForm.ObjInsp1DrawCell(Sender: TObject; ACol,
+  ARow: Integer; Rect: TRect; State: TGridDrawState);
+const D = 2;
+var OIT:TOIType;S:String;FColor:Integer;
+    I, Index: Integer;
+    Prop: TProperty;
+begin
+ If TObjInsp2(Sender).InClear then Exit;
+ With TObjInsp2(Sender) do begin
+  If ACol=1 then begin
+   If (Cells[0,ARow] = 'Гиперссылка') then begin
+    OIT:=NameType[Cells[0,ARow]];
+    OIT.FPropEditor.Draw(Canvas,Rect,Cells[1,ARow]);
+    exit;
+   end;
+  end;
+  // обращаемся к свойству по индексу для проверки свойства из справочника
+  If Cells[0, ARow][1] = '*' then
+   If TTD(Objects[0]).GetPropertyIndex(Cells[0, ARow], Pointer(Prop)) <> - 1 then begin
+    FColor:=Canvas.Font.Color;
+     If Prop.Index > 0 then Canvas.Font.Color := clNavy;
+     Canvas.TextOut(Rect.Left+D,Rect.Top+D,Cells[ACol, ARow]);
+    Canvas.Font.Color:=FColor;
+  end;
+  //
+  If (Pos('#',Cells[0,ARow])=1) and not(Cells[0,ARow]='Гиперссылка') then begin
+    FColor:=Canvas.Font.Color;
+    If Pos('##',Cells[0,ARow])=1 then begin
+     If ACol = 0 then Canvas.Font.Color:=clGray;
+    end else Canvas.Font.Color:=clRed;
+    Canvas.FillRect(Rect);
+    S:=Cells[ACol,ARow];
+    DelSubStr(S,'#');
+    If ACol = 0 then If Length(S)>18 then begin SetLength(S,18);S:=S+'...';end;
+    Canvas.TextOut(Rect.Left+D,Rect.Top+D,S);
+    Canvas.Font.Color:=FColor;
+   exit;
+  end;
+{  If (Pos('#',Cells[0,ARow])=1) and not(Cells[0,ARow]='Гиперссылка') then begin
+    FColor:=Canvas.Font.Color;
+    Canvas.Font.Color:=clRed;
+    Canvas.FillRect(Rect);
+    S:=Cells[ACol,ARow];
+    Canvas.TextOut(Rect.Left+D,Rect.Top+D,S);
+    Canvas.Font.Color:=FColor;
+   exit;
+  end;
+}
+  If (ACol=0)  then Exit;
+  If (RowCount=1) and (Keys[0]='') then exit;
+  OIT:=NameType[Cells[0,ARow]];
+   If (OIT.FPropEditor<>nil) then begin
+    If (Cells[1,ARow] = '#') then
+     OIT.FPropEditor.DrawData(Canvas,Rect,Objects) else
+     OIT.FPropEditor.Draw(Canvas,Rect,Cells[1,ARow]);
+   end else If Pos('*',TObjInsp2(Sender).Cells[0,ARow])=1{ and (Pos('**',Cells[0,ARow])=0)} then begin
+    If Objects.Count = 0 then exit;
+   // For I:=0 to Objects.Count-1 do If TTD(Objects[I]).UseProperty(Cells[0,ARow]) then
+   //  Writeln(Cells[1,ARow],' ',TPropValue(TTD(Objects[I]).GetPropValue(TObjInsp2(Sender).Cells[0,ARow])).varType);
+    For I:=0 to Objects.Count-1 do If TTD(Objects[I]).UseProperty(Cells[0,ARow]) then begin
+     If TPropValue(TTD(Objects[I]).GetPropValue(TObjInsp2(Sender).Cells[0,ARow])).varType <> varTypeLocked then exit;
+    end;// else exit;
+    Canvas.FillRect(Rect);
+    Canvas.Pen.Color:=clRed;Canvas.Pen.Style:=psDot;
+    Canvas.MoveTo(Rect.Left+2,Rect.Top+1);Canvas.LineTo(Rect.Right-2,Rect.Top+1);Canvas.LineTo(Rect.Right-2,Rect.Bottom-2);Canvas.LineTo(Rect.Left+2,Rect.Bottom-2);
+    Canvas.LineTo(Rect.Left+2,Rect.Top+1);
+    S:=Cells[ACol,ARow];
+    DelSubStr(S,'#');
+    If ACol = 0 then If Length(S)>18 then begin SetLength(S,18);S:=S+'...';end;
+    Canvas.TextOut(Rect.Left+D+2,Rect.Top+D,S);
+    Canvas.Pen.Style:=psSolid;
+   end;
+ end;
+end;
+
+procedure TPropEditorForm.SetProperties(propNames, propValues: String);
+var I,J,propSettingCount,Index:Integer;Undo:TUndo;Names,Values:TStrings;
+begin
+ Undo:=TwgForm.Undo;
+ Undo.StartTransAction;
+ Undo.AddUndoItem(TPrimUndo.Create(GTwgForm,LU_ModifiedPrim,'SetProperty...'+PropNames+'='+PropValues));
+ Names:=TStringList.Create;Values:=TStringList.Create;
+ Names.Text:=propNames;Values.Text:= propValues;
+ try
+  propSettingCount:=0;                                                               
+//  Writeln(propName,' = ',propValue);
+  If Objects<>nil then                           
+   For I:=0 to Objects.Count-1 do begin                                      
+     TPrimUndo(Undo.Last).AddModifiedPrim(Objects[I]);
+    For J:=0 to Names.Count-1 do begin
+     If Values.Count-1<J then begin If TTD(Objects[I]).SetProperty(Names[J],'') then Inc(propSettingCount) end else
+     If TTD(Objects[I]).SetProperty(Names[J],Values[J]) then Inc(propSettingCount);
+    end;
+   end;
+   For J:=0 to Names.Count-1 do begin
+    Index:=ObjInsp[0].FindRowByName(Names[J]);
+    If Values.Count-1<J then ObjInsp[0].Cells[1,Index]:='' else ObjInsp[0].Cells[1,Index]:=Values[J];
+   end;
+//  Writeln(propSettingCount);
+  If propSettingCount=0 then begin
+   Undo.RollBack;
+//   UpdatePropObject.SetProperty(propName,propValue);
+   exit;
+  end;
+  Names.Free;Values.Free;
+  TForm2(GTwgForm).ClassBuildII;
+  TForm2(GTwgForm).Modified:=True;
+  UpdateImage;
+  Undo.Commit;
+ except Undo.RollBack;end;
+end;
+
+Procedure TPropEditorForm.SetProperty(propName:String;propValue:String;Layer:Pointer = nil);
+var I,propSettingCount:Integer;Undo:TUndo;oldPropValue:String;oldLayer:TResource;
+    badCol:PCollection;
+begin
+ GlobalPropertyUnLocked:=True;
+ try
+  If (Pos('#',PropName)<>0)and(Pos('##',PropName) = 0)and(Pos('#Текстура',PropName)=0)and(PropName<>'#Штриховка')and(Pos('#Прозрачность',PropName)=0)and(Pos('#Изображение',PropName)=0) then exit;
+  Undo:=TwgForm.Undo;
+  If propValue = '' then propValue:=byLayer;
+  badCol:=PCollection.Create(1);
+  If propName = 'Знак' then begin
+  If Objects<>nil then
+   For I:=0 to Objects.Count-1 do If TTD(Objects[I]).GetProperty(propName)<>propValue then begin
+    oldPropValue:=TTD(Objects[I]).GetProperty(propName);
+    oldLayer:=TTD(Objects[I]).GetLayer;
+    TTD(Objects[I]).SetProperty(propName,propValue);
+    If Layer<>nil then TTD(Objects[I]).SetLayer(Layer);
+    If not updateMessage.ModifiedPrim(Objects[I]) then badCol.Insert(Objects[I]);
+    TTD(Objects[I]).SetProperty(propName,OldpropValue);
+    TTD(Objects[I]).SetLayer(oldLayer);
+   end;
+  end;
+  Undo.StartTransAction;
+  Undo.AddUndoItem(TPrimUndo.Create(GTwgForm,LU_ModifiedPrim,'SetProperty...'+PropName+'='+PropValue));
+  try
+   propSettingCount:=0;
+ //  Writeln(propName,' = ',propValue);
+   If Objects<>nil then
+    For I:=0 to Objects.Count-1 do If badCol.IndexOf(Objects[I])=-1 then begin
+      TPrimUndo(Undo.Last).AddModifiedPrim(Objects[I]);
+     If TTD(Objects[I]).SetProperty(propName,propValue) then begin
+      Inc(propSettingCount);
+      If Layer<>nil then TTD(Objects[I]).SetLayer(Layer);
+     end;
+    end;
+ //  Writeln(propSettingCount);
+  badCol.DeleteAll;badCol.Free;
+   If propSettingCount=0 then begin
+    Undo.RollBack;
+    UpdatePropObject.SetProperty(propName,propValue);
+    exit;
+   end;
+   TForm2(GTwgForm).ClassBuildII;
+   TForm2(GTwgForm).Modified:=True;
+   UpdateImage;
+   Undo.Commit;
+  except Undo.RollBack;end;
+ finally
+  GlobalPropertyUnlocked:=False;
+ end;
+end;
+
+procedure TPropEditorForm.GetProperties(Obj:TTD);
+var I:Integer;
+begin
+ If Obj = nil then begin
+  ObjInsp[0].Clear;
+  exit;
+ end;
+ MergeProperties(Obj);
+end;
+
+
+procedure TPropEditorForm.MergeProperties(Obj: TTD);
+var propNames,propValues,propTypes:TStrings;
+    ARow:Integer;
+    I:Integer;
+    gridEmpty:Boolean;
+begin
+ propNames:=TStringList.Create;propValues:=TStringList.Create;propTypes:=TStringList.Create;
+// TStringList(propValues).Duplicates:=dupIgnore;TStringList(propTypes).Duplicates:=dupIgnore;
+  If TwgForm<>nil then Obj.GetObjectProps(propNames,propValues,propTypes,TwgForm.Twigs) else
+                       Obj.GetObjectProps(propNames,propValues,propTypes);
+  If Objects<>nil then
+   For I:=0 to Objects.Count-2 do begin
+//    try
+    TTD(Objects[I]).GetPropMerge(Obj,propNames,propValues,propTypes);
+//    except
+//    TTD(Objects[I]).GetPropMerge(Obj,propNames,propValues,propTypes);
+//    end;
+   end;
+ With ObjInsp[0] do begin
+  Clear;
+  For I:=0 to propNames.Count-1 do
+   begin
+    If PropValues[I] = byNone then PropValues[I]:=byLayer;
+    Add(propNames[I],propValues[I],propTypes[I]);
+   end;
+ {
+  For I:=0 to propNames.Count-1 do
+   If FindRow(propNames[I],ARow) then Cells[1,ARow]:=propValues[I] else If gridEmpty then Add(propNames[I],propValues[I],propTypes[I]);
+  For I:=RowCount-1 downTo 0 do If Keys[I]<>'' then If propNames.IndexOf(Keys[I])=-1 then DeleteRow(I);
+ }
+ end;
+ propNames.Free;propValues.Free;propTypes.Free;
+ SetSystemPropertiesValue;
+end;
+
+procedure TPropEditorForm.SetEnumProperties(Obj: TTD);
+var propNames,propValues,propTypes:TStrings;
+    propValue:String;
+    I:Integer;
+begin
+ propNames:=TStringList.Create;propValues:=TStringList.Create;propTypes:=TStringList.Create;
+  Obj.GetObjectProps(propNames,propValues,propTypes);
+//  For I:=0 to propNames.Count-1 do ShowMessage(PropNames[I]);
+  With ObjInsp[0] do begin
+   For I:=0 to RowCount-1 do
+    If propNames.IndexOf(Keys[I])<>-1 then begin
+//     ShowMessage(propNames[propNames.IndexOf(Keys[I])]+' '+Values[Keys[I]]);
+     propValue:=Values[Keys[I]];
+     If propValue = '' then propValue:=byLayer;
+     Obj.SetProperty(Keys[I],propValue);
+    end;
+  end;
+ propNames.Free;propValues.Free;propTypes.Free;
+end;
+
+procedure TPropEditorForm.FormShow(Sender: TObject);
+begin
+ ObjInsp[0].Visible:=True;
+end;
+
+procedure TPropEditorForm.SetSystemPropertiesValue;
+var I,J:Integer;Value:Double;propValue:String;Prec:Integer;
+begin
+ If Objects = nil then exit;
+ TwgForm := GTwgForm;
+ With ObjInsp[0] do
+  For I:=1 to RowCount-1 do If (Pos('#',Cells[0,I])=1)and(Pos('##',Cells[0,I])<>1) then begin
+   propValue:=Cells[0,I];Value:=0;
+   For J:=0 to Objects.Count-1 do If TObject(Objects[J]) is TLot then begin
+   {
+    If propValue = '#Длина' then begin Value:=Value+Trunc(TLot(Objects[J]).Perimeter(TwgForm.Twigs)*Const_Of_PrecLength)/Const_of_PrecLength;Prec:=Const_of_DecimalLength;end;
+    If propValue = '#Площадь' then begin Value:=Value+Trunc(TLot(Objects[J]).Plo*Const_Of_PrecSqwear)/Const_of_PrecSqwear;Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Площадь[лин]' then begin Value:=Value+Trunc(TLot(Objects[J]).GetLinearPlo(TwgForm.Twigs)*Const_Of_PrecSqwear)/Const_of_PrecSqwear;Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Чистая площадь' then begin Value:=Value+Trunc(TLot(Objects[J]).ClearPlo*Const_Of_PrecSqwear)/Const_of_PrecSqwear;Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Периметр' then begin Value:=Value+Trunc(TLot(Objects[J]).Perimeter(TwgForm.Twigs)*Const_Of_PrecLength)/Const_of_PrecLength;Prec:=Const_of_DecimalLength;end;
+    }
+    If propValue = '#Длина' then begin Value:=Value+RoundDblToDbl(TLot(Objects[J]).Perimeter(TwgForm.Twigs),Const_of_DecimalLength);Prec:=Const_of_DecimalLength;end;
+    If propValue = '#Площадь' then begin Value:=Value+RoundDblToDbl(TLot(Objects[J]).Plo,Const_Of_DecimalSqwear);Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Площадь[лин]' then begin Value:=Value+RoundDblToDbl(TLot(Objects[J]).GetLinearPlo(TwgForm.Twigs),Const_Of_DecimalSqwear)/Const_of_PrecSqwear;Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Чистая площадь' then begin Value:=Value+RoundDblToDbl(TLot(Objects[J]).ClearPlo,Const_of_DecimalSqwear);Prec:=Const_of_DecimalSqwear;end;
+    If propValue = '#Периметр' then begin Value:=Value+RoundDblToDbl(TLot(Objects[J]).Perimeter(TwgForm.Twigs),Const_Of_DecimalLength);Prec:=Const_of_DecimalLength;end;
+   end;
+    If propValue = '#Длина' then Cells[1,I]:=FloatToStrF(Value,ffFixed,_LD,Prec);
+    If propValue = '#Площадь' then Cells[1,I]:=MetersGaStr(Value);
+    If propValue = '#Площадь[лин]' then Cells[1,I]:=MetersGaStr(Value);
+    If propValue = '#Чистая площадь' then Cells[1,I]:=MetersGaStr(Value);
+    If propValue = '#Периметр' then Cells[1,I]:=FloatToStrF(Value,ffFixed,_LD,Prec);
+  // Cells[1,I]:=FloatToStrF(Value,ffFixed,_LD,Prec);
+  end;
+end;
+
+{ TUpdateObject }
+
+procedure TUpdatePropObject.ClearProperties;
+begin
+ SetProperty('Цвет',byLayer);
+ SetProperty('Цвет заливки',byLayer);
+ SetProperty('Тип линии',byLayer);
+ SetProperty('Тип заливки',byLayer);
+ SetProperty('Масштаб',byLayer);
+ SetProperty('Толщина',byLayer);
+ SetProperty('Знак',byLayer);
+ SetProperty('Шрифт',byLayer);
+ SetProperty('Размер',byLayer);
+ SetProperty('Стиль',byLayer);
+end;
+
+constructor TUpdatePropObject.Create(Form: TForm2);
+var Pr:TResource;
+begin
+ Pr:=TResource.CreateRes(GResRec);
+ inherited Create(Pr.ID,Pr,1);
+ TwgForm:=Form;
+ Properties:=TProperties.Create;
+ Properties.AddProperty('Цвет',byLayer);
+ Properties.AddProperty('Цвет заливки',byLayer);
+ Properties.AddProperty('Тип линии',byLayer);
+ Properties.AddProperty('Тип заливки',byLayer);
+ Properties.AddProperty('Масштаб',byLayer);
+ Properties.AddProperty('Толщина',byLayer);
+ Properties.AddProperty('Знак',byLayer);
+ Properties.AddProperty('Шрифт',byLayer);
+ Properties.AddProperty('Размер',byLayer);
+ Properties.AddProperty('Стиль',byLayer);
+end;
+
+destructor TUpdatePropObject.Destroy;
+begin
+ inherited Destroy;
+ ClassHandle.Free;
+end;
+
+procedure TUpdatePropObject.GetObjectProps(propNames, propValues, propTypes: TStrings;Data:Pointer = nil);
+begin
+{1}
+ PropNames.Add('Цвет');PropNames.Add('Цвет заливки');PropNames.Add('Тип линии');PropNames.Add('Тип заливки');PropNames.Add('Масштаб');PropNames.Add('Толщина');
+ If PropTypes<>nil then begin
+  propTypes.Add('Color');propTypes.Add('Color');propTypes.Add('LineType');propTypes.Add('SquareType');propTypes.Add('Float');propTypes.Add('Float');
+ end;
+ If propValues<>nil then begin
+  propValues.Add(GetProperty('Цвет'));propValues.Add(GetProperty('Цвет заливки'));propValues.Add(GetProperty('Тип линии'));propValues.Add(GetProperty('Тип заливки'));propValues.Add(GetProperty('Масштаб'));propValues.Add(GetProperty('Толщина'));
+ end;
+{2}
+ PropNames.Add('Знак');PropNames.Add('Шрифт');PropNames.Add('Размер');PropNames.Add('Стиль');
+ If PropTypes<>nil then begin
+  propTypes.Add('PointType');propTypes.Add('FontName');propTypes.Add('Float');propTypes.Add('FontStyle');
+ end;
+ If propValues<>nil then begin
+  propValues.Add(GetProperty('Знак'));propValues.Add(GetProperty('Шрифт'));propValues.Add(GetProperty('Размер'));propValues.Add(GetProperty('Стиль'));
+ end;
+end;
+
+function TUpdatePropObject.SetProperty(propName: String;
+  propValue: String;Obj:TTD = nil): boolean;
+begin
+ inherited SetProperty(propName,propValue);
+end;
+
+procedure TPropEditorForm.ObjInsp1MouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+SetForegroundWindow(Handle);
+ SetFocus;ObjInsp1.SetFocus;
+ If ObjInsp1.Cursor = crHSplit then
+  xMovePoint := X
+ else xMovePoint := 0;
+end;
+
+procedure TPropEditorForm.SetUserProperty(propName, propValue: String;Layer:Pointer=nil);
+var I,Index:Integer;
+begin
+ With ObjInsp[0] do
+ try
+  For I:=0 to RowCount-1 do If Cells[0,I] = propName then begin
+   Cells[1,I]:=propValue;
+   SetProperty(propName,propValue,Layer);
+   exit;
+  end;
+ except end;
+end;
+
+procedure TPropEditorForm.SpeedButton1Click(Sender: TObject);
+begin
+ Close;
+end;
+
+procedure TPropEditorForm.FormDestroy(Sender: TObject);
+var R:TRect;
+begin
+ R:=BoundsRect;
+ GWriteBinary(Name+'_Bounds',R,SizeOf(BoundsRect));
+ GWriteInteger(Name+'_SelectByLayer',ord(sbSelectByLayer.Down));
+end;
+
+procedure TPropEditorForm.FormResize(Sender: TObject);
+var I:Integer;
+begin
+ For I:=0 to ControlCount-1 do TControl(Controls[I]).Refresh;
+ exit;
+//
+ UpdateWindow(Self.Handle);
+ readln;
+ Refresh;
+ ObjINsp[0].Refresh;
+ readln;
+end;
+
+procedure TPropEditorForm.SetCaption(S: String);
+begin
+// {$IFDEF GEO2BASE}
+//  Caption:=S;
+// {$ELSE}
+  Panel.Caption:=S;
+// {$ENDIF}
+end;
+
+Function EqualRavno(S1,S2:String;Num:boolean):boolean;
+begin
+ Result:=S1=S2;
+end;
+
+Function EqualBolshe(S1,S2:String;Num:boolean):boolean;
+var Num1,Num2:Double;
+begin
+ If Num then begin
+  try
+   Num1:=GStrToFloat(S2);
+   Num2:=GStrToFloat(S1);
+   Result:=Num1>Num2;
+  except
+   Result:=False;
+  end;
+ end else Result:=S2>S1;
+end;
+
+Function EqualMenshe(S1,S2:String;Num:boolean):boolean;
+var Num1,Num2:Double;
+begin
+ If Num then begin
+  try
+   Num1:=GStrToFloat(S2);
+   Num2:=GStrToFloat(S1);
+   Result:=Num1<Num2;
+  except
+   Result:=False;
+  end;
+ end else Result:=S1<S2;
+end;
+
+Function EqualNeRavno(S1,S2:String;Num:boolean):boolean;
+var Num1,Num2:Double;
+begin
+ If Num then begin
+  try
+   Num1:=GStrToFloat(S2);
+   Num2:=GStrToFloat(S1);
+   Result:=Num1<>Num2;
+  except
+   Result:=False;
+  end;
+ end else Result:=S1<>S2;
+end;
+
+Function EqualBRavno(S1,S2:String;Num:boolean):boolean;
+var Num1,Num2:Double;
+begin
+ If Num then begin
+  try
+   Num1:=GStrToFloat(S2);
+   Num2:=GStrToFloat(S1);
+   Result:=Num1>=Num2;
+  except
+   Result:=False;
+  end;
+ end else Result:=S1>=S2;
+end;
+
+Function EqualMRavno(S1,S2:String;Num:boolean):boolean;
+var Num1,Num2:Double;
+begin
+ If Num then begin
+  try
+   Num1:=GStrToFloat(S2);
+   Num2:=GStrToFloat(S1);
+   Result:=Num1<=Num2;
+  except
+   Result:=False;
+  end;
+ end else Result:=S1<=S2;
+end;
+
+Function EqualLike(S1,S2:String;Num:boolean):boolean;
+var I:Integer;
+begin
+ Result:=Pos(S1,S2)<>0;
+end;
+
+Function EqualSet(S1,S2:String;Num:boolean):boolean;
+var Num1,Num11,Num2:Double;
+    St:TStrings;St1:String;
+begin
+ St:=TStringList.Create;
+ St.Text:=MakeString(S1,'.');
+ If St.Count=2 then begin
+  St1:=St1[1];Delete(St1,1,1);St[1]:=St[1];
+ end else begin St.Free;Result:=False;exit;end;
+ If Num then begin
+  try
+   Num1:=GStrToFloat(St[0]);
+   Num11:=GStrToFloat(St[1]);
+   Num2:=GStrToFloat(S2);
+   Result:=(Num2>=Num1)and(Num2<=Num11);
+  except
+   Result:=False;
+   St.Free;
+   exit;
+  end;
+ end else begin
+  Result:=(S1>=St[0])and(S1<=St[1]);  
+ end;
+ St.Free;
+end;
+
+procedure TPropEditorForm.sbOrClick(Sender: TObject);
+var I:Integer;P:TObject;Dot:TDot;Text,TextI:TDotText;Lot:TLot;
+    B:Byte;propName:String;PDTemp,PD:TPointDot;
+Function Filter(D:TPointDot):boolean;
+begin
+ Result:=True;
+ exit;
+ try
+  Result:=(StrToInt(D.TextManager.AttrValue('№ растения'))>200) and (StrToInt(D.TextManager.AttrValue('№ растения'))<1000);
+ except Result:=False;exit;end;
+end;
+Procedure SelectLot(Lot:TLot;Point:TPointDot);
+var ClassHandle:Pointer;I:Integer;
+begin
+ If Lot<>nil then ClassHandle:=Lot.ClassHandle else ClassHandle:=Point.ClassHandle;
+ For I:=0 to TwgForm.Twigs.LotsCount-1 do begin
+  Lot:=TwgForm.Twigs.LAt(I);
+  If Lot.Closed<>1 then continue;
+  //If P = Lot then continue;
+  If sbSelectByLayer.Down then If TLot(P).ClassHandle <> Lot.ClassHandle then continue;
+  propName:=ObjInsp1.Cells[0,ObjInsp1.Row];
+   If Equal[TComponent(Sender).Tag](EqualString, Lot.GetProperty(propName), EqualNumber)  then begin
+    If Objects.IndexOf(Lot)=-1 then Objects.Insert(Lot) else
+   end else
+   If Sender = sbAnd then begin
+    If SelectInObjects then If Objects.IndexOf(Lot)<>-1 then Objects.AtDelete(Objects.IndexOf(Lot));
+   end;
+ end;
+end;
+Procedure SelectText(Lot:TLot;Point:TDotText;ClassNameOf:String);
+var ClassHandle:Pointer;I:Integer;
+begin
+ If Lot<>nil then ClassHandle:=Lot.ClassHandle else ClassHandle:=Point.ClassHandle;
+ For I:=0 to TwgForm.Twigs.AnyCount-1 do begin
+  TextI:=TwgForm.Twigs.AAt(I,B);
+ // If TextI = Point then continue;
+  If TextI.Closed then continue;
+  If B= TWG_Point then If ClassNameOf = TextI.ClassName then begin
+   If sbSelectByLayer.Down then If ClassHandle <> TextI.ClassHandle then continue;
+   // выделяем текст с активным атрибутом (в инспекторе), равным атрибуту в Text
+   propName:=ObjInsp1.Cells[0,ObjInsp1.Row];//DelSubStr(propName,'#');DelSubStr(propName,'#');
+   If Equal[TComponent(Sender).Tag](EqualString,TextI.GetProperty(propName), EqualNumber)  then begin
+    If Objects.IndexOf(TextI)=-1 then Objects.Insert(TextI);
+   end else
+   If Sender = sbAnd then begin
+    If SelectInObjects then If Objects.IndexOf(Lot)<>-1 then Objects.AtDelete(Objects.IndexOf(Lot));
+   end;
+  end;
+ end;
+end;
+Procedure SelectPoint(Lot:TLot;Point:TPointDot;ClassNameOf:String);
+var ClassHandle:Pointer;I:Integer;
+begin
+ If Lot<>nil then ClassHandle:=Lot.ClassHandle else ClassHandle:=Point.ClassHandle;
+  For I:=0 to TwgForm.Twigs.AnyCount-1 do begin
+   PD:=TwgForm.Twigs.AAt(I,B);
+   If PD.Closed then continue;
+  // If Point = PD then continue;
+   If B= TWG_Point then If ClassNameOf = PD.ClassName then begin
+    If sbSelectByLayer.Down then If ClassHandle <> PD.ClassHandle then continue;
+    // выделяем текст с активным атрибутом (в инспекторе), равным атрибуту в Text
+    propName:=ObjInsp1.Cells[0,ObjInsp1.Row];//DelSubStr(propName,'#');DelSubStr(propName,'#');
+    If Equal[TComponent(Sender).Tag](EqualString, PD.GetProperty(propName), EqualNumber) then begin
+     If Filter(PD) then
+     If Objects.IndexOf(PD)=-1 then Objects.Insert(PD);
+    end else
+    try
+     DelSubStr(propName,'#');DelSubStr(propName,'#');
+     If Equal[TComponent(Sender).Tag](EqualString,PD.TextManager.AttrValue(propName), EqualNumber) then begin
+     If Filter(PD) then
+     If Objects.IndexOf(PD)=-1 then Objects.Insert(PD);
+     end else
+     If Sender = sbAnd then begin
+      If SelectInObjects then If Objects.IndexOf(Lot)<>-1 then Objects.AtDelete(Objects.IndexOf(Lot));
+     end;
+    except end;
+   end;
+  end;
+end;
+begin
+ If ObjInsp1.Row = -1 then exit;
+ If (Objects=nil) or (Objects.Count=0) then exit;
+ If Sender = sbOr then begin
+  EqualString:=ObjInsp1.Cells[1,ObjInsp1.Row];
+  EqualNumber:=False;
+ end;
+ Objects.Locked:=True;
+ try
+ P:=Objects[0];
+ Selections.AddParam(ObjInsp1.Cells[0,ObjInsp1.Row],ObjInsp1.Cells[1,ObjInsp1.Row],True,sbOr);
+ if sbMemory.Down then begin
+  GlobalPropertyName:=ObjInsp1.Cells[0,ObjInsp1.Row];GlobalPropertyValue:=ObjInsp1.Cells[1,ObjInsp1.Row];
+ end else GlobalPropertyName:='';
+ If (Sender = sbAnd) then If (not SelectInObjects) and (not SelectAddObjects) then Objects.DeleteAll;
+ If (P is TLot) then begin
+  SelectLot(TLot(P),nil);
+  If sbAllSelect.Down then SelectText(TLot(P),nil,'TDotText');
+  If sbAllSelect.Down then SelectPoint(TLot(P),nil,'TPointDot');
+ end else
+ If P is TDotText then begin
+  Text:=TDotText(P);
+  SelectText(nil,Text,Text.ClassName);
+  If sbAllSelect.Down then SelectLot(nil,Text);
+  If sbAllSelect.Down then SelectPoint(nil,Text,'TPointDot');
+ end else
+ If P is TPointDot then begin
+  PDTemp:=TPointDot(P);
+  SelectPoint(nil,PDTemp,PDTemp.ClassName);
+  If sbAllSelect.Down then SelectLot(nil,TDotText(PDTemp));
+  If sbAllSelect.Down then SelectPoint(nil,PDTemp,'TDotText');
+ end;
+ finally
+  Objects.Locked:=False;
+  Objects.Update;
+  UpdateImage;
+ end;
+end;
+
+procedure TPropEditorForm.Button1Click(Sender: TObject);
+var I,Cnt:Integer;ST:TStrings;
+begin
+//отбираем 30% в случайном порядке
+ St:=TStringList.Create;
+ Randomize;
+ Cnt:=Objects.Count div 3;
+  For I:=0 to Cnt do ST.Add(IntToStr(Random(Objects.Count)));
+  For I:=0 to St.Count-1 do Objects[StrToInt(St[I])]:=nil;
+  Objects.Pack;
+ UpdateImage;
+ St.Free;
+end;
+
+{ TStringSelection }
+
+procedure TStringSelection.AddParam(paramName, paramValue: String;
+  orFlag: boolean;Button:TControl);
+begin
+ If (Params.IndexOf(paramName)<>-1)and(orFlag = False) then exit;
+ Params.Add(paramName);Values.Add(paramValue);If OrFlag then OrAnd.Add('или') else OrAnd.Add('и');
+ Button.Hint:=Text;
+end;
+
+procedure TStringSelection.Clear;
+begin
+ Params.Clear;Values.Clear;OrAnd.Clear;
+end;
+
+constructor TStringSelection.Create;
+begin
+ Params:=TStringList.Create;
+ OrAnd:=TStringList.Create;
+ Values:=TStringList.Create;
+end;
+
+destructor TStringSelection.Destroy;
+begin
+ Params.Free;OrAnd.Free;Values.Free;
+end;
+
+function TStringSelection.Text: String;
+var I:Integer;
+begin
+ For I:=0 to Params.Count-1 do
+  If I=0 then Result:=Params[I]+' = '+Values[I] else
+              Result:=Result+#13#10+orAnd[I]+' '+Params[I]+' = '+Values[I];
+end;
+
+procedure TPropEditorForm.sbAddPropClick(Sender: TObject);
+var I,J:Integer;P:PCollection;PD:TPointDot;Lot:TLot;
+begin
+ If Objects=nil then begin MessageInform('Выберите объекты...');exit;end;
+ PropAddForm:=TPropAddForm.Create(ApplicationMainForm);
+  If PropAddForm.Execute(MainPath+'\Properties.ini'+'|'+MainPath+'\Dictionary.txt'+'|'+MainPath+'\Dictionary_odh.txt') then With PropAddForm do begin
+   Objects.Locked:=True;
+   P:=PCollection.Create(1);
+   For I:=0 to Objects.Count-1 do begin
+    If cbClear.Checked then begin           
+     PD:=nil;Lot:=nil;
+     If TObject(Objects[I]) is TLot then Lot:=Objects[I] else PD:=Objects[I];
+     If PD<>nil then begin
+      For J:=PD.Properties.Count-1 downTo 0 do If Pos('*',PD.Properties[J].propName)=1 then PD.DeleteProperty(PD.Properties[J].propName)
+     end else
+      For J:=Lot.Properties.Count-1 downTo 0 do If Pos('*',Lot.Properties[J].propName)=1 then Lot.DeleteProperty(Lot.Properties[J].propName) else
+    end;
+    For J:=0 to propNames.Count-1 do
+     If propValues[J]<>'--' then begin
+      If propValues[J]='++' then begin
+       If not TTD(Objects[I]).useProperty(propNames[J]) then begin
+              TTD(Objects[I]).AddProperty(propNames[J]);
+             end;
+      end else
+       TTD(Objects[I]).SetProperty(propNames[J],propValues[J]);
+     end else begin
+      If TTD(Objects[I]).useProperty(propNames[J]) then
+         TTD(Objects[I]).DeleteProperty(propNames[J]);
+     end;
+     P.Insert(Objects[I]);
+   end;
+   Objects.DeleteAll;
+   Objects.Locked:=True;
+   For I:=0 to P.Count-1 do begin
+    Objects.Insert(P[I]);
+   end;
+   Objects.Locked:=False;
+   Objects.Update;
+   P.DeleteAll;P.Free;
+  end;
+ PropAddForm.Free;
+end;
+
+procedure TPropEditorForm.sbAndClick(Sender: TObject);
+label 1;
+var isNumber:boolean;propName,propValue,Exp:String;
+begin
+ PropSelectForm:=TPropSelectForm.Create(ApplicationMainForm);
+  If PropSelectForm.Execute(ObjInsp1.Cells[0,ObjInsp1.Row],ObjInsp1.Cells[1,ObjInsp1.Row]) then
+   With PropSelectForm do begin
+    sbAnd.Tag:=ZnakIndex;
+    EqualNumber:=isNumber;
+    EqualString:=propValue;
+    SelectInObjects:=cbInObjects.Checked;
+    SelectAddObjects:=cbAddObjects.Checked;
+    If isNumber then
+     try
+      GStrToFloat(EqualString);
+     except
+      MessageError('Задайте число(числа) в строке выражения...');
+      PropSelectForm.Free;exit;
+     end;
+    sbOrClick(sbAnd);
+   end;
+ PropSelectForm.Free;
+end;
+
+procedure TPropEditorForm.sbMemoryClick(Sender: TObject);
+begin
+ GlobalPropertyName:='';
+end;
+
+procedure TPropEditorForm.sbDownClick(Sender: TObject);
+var Props:TProperties;I,Index:Integer;propName:String;
+    P:PCollection;
+begin
+ propName:=ObjInsp[0].Cells[0,ObjInsp[0].Row];
+ For I:=0 to Objects.Count-1 do begin
+  If TObject(Objects[I]) is TLot then Props:=TLot(Objects[I]).Properties else Props:=TPointDot(Objects[I]).Properties;
+  If TComponent(Sender).Tag = 1 then Props.Up(propName) else
+  If TComponent(Sender).Tag = 2 then Props.Down(propName) else begin
+   If MessageConfirm('Удалить свойство "'+propName+'" ?') = mrNo then exit;
+   Props.DeleteProperty(propName);
+  end;
+ end;
+ Index:=ObjInsp[0].Row;                          
+ P:=PCollection.Create(1);
+  For I:=0 to Objects.Count-1 do P.Insert(Objects[I]);
+  Objects.Locked:=True;
+  Objects.DeleteAll;
+  For I:=0 to P.Count-1 do begin
+   Objects.Insert(P[I]);
+  end;
+  Objects.Locked:=False;
+  Objects.Update;
+ P.DeleteAll;P.Free;
+ If TComponent(Sender).Tag = 0 then If Index<ObjInsp[0].RowCount then ObjInsp[0].Row:=Index else ObjInsp[0].Row:=ObjInsp[0].RowCount-1
+ else
+ For I:=0 to ObjInsp[0].RowCount-1 do If ObjInsp[0].Cells[0,I]=propName then ObjInsp[0].Row:=I;
+end;
+
+procedure TPropEditorForm.sbMinusMinusClick(Sender: TObject);
+var Props:TProperties;I,J,Index:Integer;propName:String;
+    P:PCollection;
+begin
+ DelPropertiesForm:=TDelPropertiesForm.Create(ApplicationMainForm);
+ If DelPropertiesForm.Execute(Objects) then With DelPropertiesForm do begin
+  Objects.Locked:=True;
+   For I:=0 to List.Items.Count-1 do If List.Checked[I] then
+    For J:=0 to Objects.Count-1 do TTD(Objects[J]).DeleteProperty(List.Items[I]);
+  Index:=ObjInsp[0].Row;
+  P:=PCollection.Create(1);
+   For I:=0 to Objects.Count-1 do P.Insert(Objects[I]);
+   Objects.Locked:=True;
+   Objects.DeleteAll;
+   For I:=0 to P.Count-1 do begin
+    Objects.Insert(P[I]);
+   end;
+   Objects.Locked:=False;
+   Objects.Update;
+  P.DeleteAll;P.Free;
+  If Index<ObjInsp[0].RowCount then ObjInsp[0].Row:=Index else ObjInsp[0].Row:=ObjInsp[0].RowCount-1
+ end;
+end;                           
+
+procedure TPropEditorForm.ObjInsp1MouseMove(Sender: TObject;
+  Shift: TShiftState; X, Y: Integer);
+begin
+ If xMovePoint <> 0 then begin
+  If X < 25 then exit;
+  If objInsp1.Width - X < 25 then exit;
+  objInsp1.ColWidths[0] := X; xMovePoint := X;
+ end;
+// ищем разделитель столбцов
+ If abs(X - ObjInsp1.ColWidths[0]) < 3 then
+  ObjInsp1.Cursor := crHSplit else ObjInsp1.Cursor := crDefault;
+end;
+
+procedure TPropEditorForm.ObjInsp1MouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+ If xMovePoint <> 0 then begin
+  xMovePoint := 0;
+  GWriteInteger(Name + '_ColWidth', ObjInsp1.ColWidths[0]);
+ end;
+end;
+
+initialization
+ UpdatePropObject:=TUpdatePropObject.Create(nil);
+ {$IFDEF GEO2BASE}
+  PropEditorStyle := 1;
+ {$ELSE}
+  PropEditorStyle := 0;
+ {$ENDIF}
+  Equal[0]:=EqualRavno;
+  Equal[1]:=EqualNeRavno;
+  Equal[2]:=EqualBRavno;
+  Equal[3]:=EqualMRavno;
+  Equal[4]:=EqualBolshe;
+  Equal[5]:=EqualMenshe;
+  Equal[6]:=EqualLike;
+  Equal[7]:=EqualSet;
+end.

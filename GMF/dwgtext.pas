@@ -154,12 +154,6 @@ function SkiaBaselineFromFullHeight(const AFontName: string; const ABold, AItali
 var
   Typeface: ISkTypeface;
   ProbeFont: ISkFont;
-  FontStyle: TSkFontStyle;
-  Weight: TSkFontWeight;
-  Slant: TSkFontSlant;
-  LocalFontName: string;
-  CutPos: Integer;
-  FontFile: string;
   M: TSkFontMetrics;
   AscentAbs: Single;
   Full: Single;
@@ -168,32 +162,7 @@ begin
   if AFullHeightPix <= 0 then
     Exit;
 
-  LocalFontName := Trim(AFontName);
-  if (LocalFontName <> '') and (LocalFontName[1] = '@') then
-    LocalFontName := Trim(Copy(LocalFontName, 2, MaxInt));
-  CutPos := Pos(',', LocalFontName);
-  if CutPos > 0 then
-    LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
-  CutPos := Pos('(', LocalFontName);
-  if CutPos > 0 then
-    LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
-
-  Weight := TSkFontWeight.Normal;
-  if ABold then
-    Weight := TSkFontWeight.Bold;
-  Slant := TSkFontSlant.Upright;
-  if AItalic then
-    Slant := TSkFontSlant.Italic;
-  FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
-
-  Typeface := nil;
-  FontFile := '';
-  if LocalFontName <> '' then
-    FontFile := GetRegisteredSkiaFontFile(LocalFontName);
-  if FontFile <> '' then
-    Typeface := TSkTypeface.MakeFromFile(FontFile);
-  if (Typeface = nil) and (LocalFontName <> '') then
-    Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+  Typeface := newFontScale.ResolveSkiaTypeface(AFontName, ABold, AItalic);
 
   ProbeFont := TSkFont.Create(Typeface, 100);
   ProbeFont.GetMetrics(M);
@@ -250,9 +219,7 @@ begin
     Ugol,
     XP, YP,
     1,
-    string(fv.FontName),
-    fv.Bl <> 0,
-    fv.It <> 0
+    fv
   );
   Exit;
  end;
@@ -347,12 +314,6 @@ var GM:Double;FDx,fDy:Double;ko2:Double;
     Typeface: ISkTypeface;
     Font: ISkFont;
     ProbeFont: ISkFont;
-    FontStyle: TSkFontStyle;
-    Weight: TSkFontWeight;
-    Slant: TSkFontSlant;
-    LocalFontName: string;
-    CutPos: Integer;
-    FontFile: string;
     ProbeMetrics: TSkFontMetrics;
     Metrics: TSkFontMetrics;
     Bounds: TRectF;
@@ -374,34 +335,9 @@ var GM:Double;FDx,fDy:Double;ko2:Double;
       Oversample := 10;
 
     Paint := TSkPaint.Create;
-    Paint.AntiAlias := True;
+   Paint.AntiAlias := True;
 
-    LocalFontName := Trim(AFontName);
-    if (LocalFontName <> '') and (LocalFontName[1] = '@') then
-      LocalFontName := Trim(Copy(LocalFontName, 2, MaxInt));
-    CutPos := Pos(',', LocalFontName);
-    if CutPos > 0 then
-      LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
-    CutPos := Pos('(', LocalFontName);
-    if CutPos > 0 then
-      LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
-
-    Weight := TSkFontWeight.Normal;
-    if ABold then
-      Weight := TSkFontWeight.Bold;
-    Slant := TSkFontSlant.Upright;
-    if AItalic then
-      Slant := TSkFontSlant.Italic;
-    FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
-
-    Typeface := nil;
-    FontFile := '';
-    if LocalFontName <> '' then
-      FontFile := GetRegisteredSkiaFontFile(LocalFontName);
-    if FontFile <> '' then
-      Typeface := TSkTypeface.MakeFromFile(FontFile);
-    if (Typeface = nil) and (LocalFontName <> '') then
-      Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+    Typeface := newFontScale.ResolveSkiaTypeface(AFontName, ABold, AItalic);
 
     ProbeSize := 100;
     ProbeFont := TSkFont.Create(Typeface, ProbeSize);
@@ -537,7 +473,7 @@ begin
   st.read(FHeight, sizeof(FHeight));
   FName := st.readString;
   FText := st.readString;
-  WriteS(['Load.dwgText=',FName,FText]);
+//  WriteS(['Load.dwgText=',FName,FText]);
   st.read(fcharset, sizeof(fcharset));
   st.read(fbl, sizeof(fbl));
   st.read(fit, sizeof(fit));
@@ -546,7 +482,7 @@ begin
   ffntname := st.ReadString;
   Dc:=0;
   FFontIndex := -1;
-   SetFont(Dc, ffntName, FHeight, FWidth, fCharSet, fbl, fit, fun, fscale);
+  SetFont(Dc, ffntName, FHeight, FWidth, fCharSet, fbl, fit, fun, fscale);
   Active:=0;
   st.read(fvisible, sizeof(fvisible));
   st.read(fBg, sizeof(FBg));

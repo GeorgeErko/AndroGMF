@@ -50,7 +50,7 @@ Type
 
         Constructor  Create(Count1:Byte);
          Constructor Load   (Stream :TBufStream);override;
-         Procedure CreateLayersView(Layers:PCollection;Znaks:PCollection = nil;MapInfo:Boolean =False);virtual;abstract;
+         Procedure CreateLayersView(Layers:PCollection;Znaks:PCollection = nil;MapInfo:Boolean =False);virtual;
          Procedure Store  (Stream :TBufStream);override;
          Function  CreateUndoView:AnsiString;// создает объект на диске для Undo
          Function  GetUndoMax:AnsiString;// возвращает последний объект Undo
@@ -383,11 +383,13 @@ var Layers:PCollection;
 begin
 {       Version:=VerConst;}
 {        ShowMessage(MainPath+'\'+StrPas(About.ClassName));}
+ WriteIn(['LoadClass1']);
  ClName:=MainPath+Slash+SetSlashCorrect(About.ClassName);
  MkLib:=TMosLib.Create(ClName);
  MkLib.Selector := Selector;
  MkLib.LoadZnaks(About.ObjectName);
- If CreateLayerTable then begin
+ WriteIn(['LoadClass2']);
+  If CreateLayerTable then begin
   If LayerTable<>nil then LayerTable.Free;
   LayerTable:=TLayerTable.Create(MkLib);
   {}
@@ -401,9 +403,11 @@ begin
  MkLib.LayerTable:=LayerTable;
  LayerTable.MkLib:=MkLib;
  Selector.GPointCol:=MkLib.PSLib;Selector.GSqwearCol:=MkLib.SSLib;Selector.GLineCol:=MkLib.LSLib;
-//  LayerTable.ResetChildsLayerMkLib;
+ WriteIn(['LoadClass3']);
+ //  LayerTable.ResetChildsLayerMkLib;
  ClassRebuildBlock:=True;
  Build1(Selector,ClName,Twigs,MkLib);
+ WriteIn(['LoadClass4']);
 end;
 
   procedure TForm1.StoreClassLib;
@@ -472,7 +476,109 @@ end;
      urlNum:='';dbName:='';
    end;
 
-  Constructor TForm1.Load;
+procedure TForm1.CreateLayersView(Layers: PCollection;Znaks:PCollection = nil;MapInfo:Boolean =False);
+ var ID:Double;I,J:Integer;W:Byte;P:Pointer;L:TLot;PD:TPointDot;
+     Tw:TTwig;
+ Function Find:boolean;
+  var I:Integer;
+  begin
+   Result:=False;
+   For I:=0 to Layers.Count-1 do
+    If Round(TExt(Layers[I]).Num*100)/100=Round(ID*100)/100 then Result:=True;
+  end;
+ Function FindZnak(Num:Integer):boolean;
+  var I:Integer;
+  begin
+   Result:=False;
+   For I:=0 to Znaks.Count-1 do
+    If TLong(Znaks[I]).Num=Num then Result:=True;
+  end;
+ begin
+  exit;
+  If not MapInfo then
+  For I:=0 to Twigs.BlockList.Count-1 do begin
+   TGeoBlock(Twigs.BlockList[I]).TwgForm.CreateLayersView(Layers,Znaks);
+  end;
+  For I:=0 to Twigs.LotsCount-1 do
+   begin
+    L:=Twigs.LAt(I);
+    ID:=L.ClassCode;
+    if not Find then Layers.Insert(TExt.Create(ID));
+     If L.DataFonts<>nil then
+      For J:=0 to L.DataFonts.Count-1 do
+       begin
+        ID:=TEFont(L.DataFonts[J]).ClassCode;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     If L.DataPoints<>nil then
+      For J:=0 to L.DataPoints.Count-1 do
+       begin
+        ID:=TPointDot(L.DataPoints[J]).Code;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     If L.Fonts<>nil then
+      For J:=0 to L.Fonts.Count-1 do
+       begin
+        ID:=TEFont(L.Fonts[J]).ClassCode;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     If L.Lines<>nil then
+      For J:=0 to L.Lines.Count-1 do
+       begin
+        ID:=TClassTwig(L.Lines[J]).Code;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+    If Znaks<>nil then
+     For J:=0 to L.Coord.Count-1 do begin
+      Tw:=L.GetTwig(Twigs,J);
+      If Tw.UZnak<>-1 then If not FindZnak(Tw.UZnak) then
+       Znaks.Insert(TLong.Create(Tw.UZnak));
+     end;
+   end;
+  For I:=0 to Twigs.AnyCount-1 do
+   begin
+    P:=Twigs.AAT(I,W);
+    If W=TWG_Font then
+     begin
+      ID:=TEFont(P).ClassCode;
+      if not Find then Layers.Insert(TExt.Create(ID));
+     end else
+    If W=Twg_Point then
+     begin
+      PD:=TPointDot(P);
+      ID:=PD.Code;
+      if not Find then Layers.Insert(TExt.Create(ID));
+    // If PD.userObj<>nil then begin
+     // If PD.userObj.objType  = TWG_Block then TGeoBlock(PD.userObj).TwgForm.CreateLayersView(Layers,Znaks);
+    // end;
+     If PD.DataFonts<>nil then
+      For J:=0 to PD.DataFonts.Count-1 do
+       begin
+        ID:=TEFont(PD.DataFonts[J]).ClassCode;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     If PD.Fonts<>nil then
+      For J:=0 to PD.Fonts.Count-1 do
+       begin
+        ID:=TEFont(PD.Fonts[J]).ClassCode;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     If PD.Lines<>nil then
+      For J:=0 to PD.Lines.Count-1 do
+       begin
+        ID:=TClassTwig(PD.Lines[J]).Code;
+        if not Find then Layers.Insert(TExt.Create(ID));
+       end;
+     end;
+   end;
+  For I:=0 to Twigs.Bitmaps.Bitmaps.Count-1 do
+   begin
+    ID:=Twigs.Bitmaps.Bitmap[I].Code;
+    if not Find then Layers.Insert(TExt.Create(ID));
+   end;
+ end;
+
+Constructor TForm1.Load;
    var I,J:Integer;
        F:TextFile;
        PP:TPointDot;B:Byte;
@@ -617,6 +723,7 @@ end;
    //    WriteS(['Next2LoadLib=',MainPath+Slash+SetSlashCorrect(About.ClassName),FileExists(MainPath+Slash+SetSlashCorrect(AnsiUpperCase(About.ClassName)))]);
    // Writein(['ClassNAme=', MainPath+Slash+(ExtractFileName(About.ClassName))]);
     DelSubStr(About.ClassName, 'VCLASS\');
+   clFile := MainPath+(About.ClassName);
    If not MirrorObject then
     If FileExists(MainPath+(About.ClassName)) then
      begin
@@ -665,6 +772,7 @@ end;
      end;
 //    If not MirrorObject then Writeln('end load Class');
 //   Version:=10;
+    If not MirrorObject then WriteIn(['Load.PostClassLib']);
     if Version<11 then
      For I:=0 to Twigs.AnyCount-1 do
       begin
@@ -678,11 +786,13 @@ end;
         CreateGUID(PP.GUID);
        end;
       end;
+    If not MirrorObject then  WriteIn(['Load.V11']);
      For I:=Twigs.TwigsCount-1 downTo 1 do
       begin
        if TTwig(Twigs.TAt(I)) is TArcTwig then begin Twigs.AtPut(TWG_Twig,I,TTwig.CreateAsTwig(Twigs.TAt(I),True)); end;
       end;
-{     For I:=Twigs.TwigsCount-1 downTo 1 do
+    If not MirrorObject then  WriteIn(['Load.Twigs']);
+    {     For I:=Twigs.TwigsCount-1 downTo 1 do
       begin
        if TTwig(Twigs.TAt(I)) is TArcTwig then begin Writeln('DA');end;
       end;}
@@ -711,6 +821,8 @@ end;
       L:=Twigs.LAt(I);CreateGUID(L.GUID);
      end;
     end;
+    If not MirrorObject then  WriteIn(['Load.V34']);
+
     If Version>47 then begin
      If not MirrorObject then begin
 //      For I:=0 to FontColEx.Count-1 do TFontViewEx(FontColEx[I]).RecreateLoadedFonts;
@@ -725,6 +837,7 @@ end;
       end;
      end;
     end;
+     If not MirrorObject then WriteIn(['Load.V47']);
    If not MirrorObject then
     With About do begin
      Const_Of_DecimalCoord:=DecimalCoord;
@@ -742,6 +855,7 @@ end;
      Const_Of_PrecCoord :=Round(IntPower(10,DecimalCoord));
     {}
     end;
+    If not MirrorObject then WriteIn(['Load.END']);
  end;
 
   Procedure   TForm1.Store;

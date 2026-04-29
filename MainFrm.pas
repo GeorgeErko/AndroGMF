@@ -55,7 +55,7 @@ type
     procedure PainterDblClick(Sender: TObject);
     procedure ResetInteractionState;
     procedure FinalizeZoom;
-    procedure UpdateStatusGeo(const X, Y: Single);
+    procedure UpdateStatusGeo(const X, Y: Single; Hint: String);
     procedure InitPainterInput;
     procedure SaveBackbufferToFile(const Tag: string);
     procedure RenderSceneToBackbuffer(const Canvas: TCanvas);
@@ -87,6 +87,7 @@ procedure  runFonts;
 
 implementation uses Collect, uExecRegisterClass,
                     System.IOUtils, Writer, newProcs,
+                    System.Zip,
                     FMX.FontManager,
                     {$IFDEF ANDROID} OpenForm, {$ENDIF}
                     EcText, EcDot, EcDot2, EcLot,
@@ -174,6 +175,16 @@ var
  I: Integer;
  B: Byte;
  PP: TPointDot;
+{$IFDEF ANDROID}
+ Ext: string;
+ ZipBaseName: string;
+ ExtractDir: string;
+ Gmfs: TStringDynArray;
+ S: TFileStream;
+ Sig: array[0..3] of Byte;
+ IsZip: Boolean;
+ ResolvedPath: string;
+{$ENDIF}
  procedure RegisterFontsNearGmf(const GmfLocalPath: string);
  var
   Dir: string;
@@ -221,6 +232,40 @@ var
   end;
  end;
 begin
+{$IFDEF ANDROID}
+ ResolvedPath := LocalPath;
+ if ResolvedPath <> '' then begin
+  Ext := LowerCase(ExtractFileExt(ResolvedPath));
+  IsZip := (Ext = '.zip');
+  if not IsZip and (Ext <> '.gmf') then begin
+   try
+    S := TFileStream.Create(ResolvedPath, fmOpenRead or fmShareDenyNone);
+    try
+     if S.Read(Sig, SizeOf(Sig)) = SizeOf(Sig) then
+      IsZip := (Sig[0] = $50) and (Sig[1] = $4B);
+    finally
+     S.Free;
+    end;
+   except
+    IsZip := False;
+   end;
+  end;
+  if IsZip then begin
+   ZipBaseName := ChangeFileExt(ExtractFileName(ResolvedPath), '');
+   if ZipBaseName = '' then ZipBaseName := 'import_zip';
+   ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
+   try
+    ForceDirectories(ExtractDir);
+    TZipFile.ExtractZipFile(ResolvedPath, ExtractDir);
+    Gmfs := TDirectory.GetFiles(ExtractDir, '*.gmf', TSearchOption.soAllDirectories);
+    if Length(Gmfs) > 0 then ResolvedPath := Gmfs[0] else ResolvedPath := '';
+   except
+    ResolvedPath := '';
+   end;
+  end;
+ end;
+ Path := ResolvedPath;
+{$ELSE}
  If Drawer = nil then begin
   Drawer := TogsDrawerCanvas.Create(nil, PanelPainter, Canvas.Scale, nil);
   Selector:= TSelector.Create(Drawer);
@@ -239,13 +284,17 @@ begin
  WriteIn(['Registered']);
  objectRepaintAccess := False;
  Path := LocalPath;
+{$ENDIF}
  if LocalPath = '' then begin WriteIn(['Path Space']); Exit; end;
+{$IFDEF ANDROID}
+ if Path = '' then begin WriteIn(['Path Space']); Exit; end;
+{$ENDIF}
  WriteIn(['Path=', ExtractFilePath(LocalPath), SizeOf(Single), SizeOf(Double)]);
- newProcs.MainPath := ExtractFilePath(LocalPath);
+ newProcs.MainPath := ExtractFilePath(Path);
 //
- RegisterFontsNearGmf(LocalPath);
+ RegisterFontsNearGmf(Path);
 //
- Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
+ Stream := TBufStream.InitFileStream(Path, fmOpenRead);
  Selector.GNForm := TControl(Self);
  Selector.GNForm := TControl(Self);
  WriteIn(['s.Drawer=',Selector.Drawer=nil]);
@@ -381,7 +430,7 @@ begin
  InteractionActive := False;
 end;
 
-procedure TMainForm.UpdateStatusGeo(const X, Y: Single);
+procedure TMainForm.UpdateStatusGeo(const X, Y: Single; Hint: String);
 var
  XPix, YPix: Double;
  XGeo, YGeo: Double;
@@ -420,7 +469,7 @@ procedure TMainForm.PainterMouseDown(Sender: TObject; Button: TMouseButton; Shif
 begin
  if Selector = nil then Exit;
  if ZoomBitmapActive or ZoomActive then Exit;
- UpdateStatusGeo(X, Y);
+ UpdateStatusGeo(X, Y, '');
  PanActive := True;
  ZoomActive := False;
  LastZoomDistance := 0;
@@ -449,7 +498,7 @@ var
  DxGeo, DyGeo: Double;
 begin
  if Selector = nil then Exit;
- UpdateStatusGeo(X, Y);
+ UpdateStatusGeo(X, Y, '');
  if ZoomActive then Exit;
  if not PanActive then Exit;
  if PanBitmapActive then begin

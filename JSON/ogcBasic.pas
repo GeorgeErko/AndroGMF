@@ -4,7 +4,8 @@
 
 interface
 
-uses Classes, SysUtils, FMX.Controls, System.UITypes, FMX.Graphics, Types;
+uses Classes, SysUtils, FMX.Controls, System.UITypes, FMX.Graphics, Types,
+     Writer;
 
 type
   TogsGeometry = class;
@@ -619,7 +620,7 @@ function DeleteMatrix(Matrix: TogsMatrix): Boolean;
 function xMatrix(XBase, X_, Y_, Angle, Scale: Double): Double;
 function yMatrix(YBase, X_, Y_, Angle, Scale: Double): Double;
 
-implementation uses ogcMathUtils, Writer, Math;
+implementation uses ogcMathUtils, Math;
 
 // глобальная переменная - дескриптор Matrix
 var activeMatrix : TogsMatrix = nil;
@@ -849,7 +850,10 @@ end;
 
 procedure TogsSelector.setActiveRect(AValue: TogsRect);
 var scaleX, scaleY: Double;
+    PrevScale: Double;
+    W, H: Double;
 begin
+ PrevScale := fScale;
  factiveRect.Assign(AValue);
 // WriteIn(['activeRect.Width=',factiveRect.Width, factiveRect.Height]);
 // WriteIn(['Drawer.Width=',fDrawer.Width, fDrawer.Height]);
@@ -859,8 +863,30 @@ begin
   factiveRect.Inflate(-1, -1);
  // exit;
  end;
- scaleX := {factiveRect.Width / fglobalRect.Width *} (fDrawer.Width / factiveRect.Width);
- scaleY := {factiveRect.Height / fglobalRect.Height *}  (fDrawer.Height / factiveRect.Height);
+ if fDrawer = nil then begin
+  WriteIn(['setActiveRect', ' ERR=DrawerNil', ' AR=', factiveRect.XMin, factiveRect.YMin, factiveRect.XMax, factiveRect.YMax,
+    ' ARwh=', factiveRect.Width, factiveRect.Height]);
+  Exit;
+ end;
+ W := factiveRect.Width;
+ H := factiveRect.Height;
+ if IsNan(W) or IsInfinite(W) or IsNan(H) or IsInfinite(H) or (W = 0) or (H = 0) then begin
+  WriteIn(['setActiveRect', ' ERR=BadARwh', ' AR=', factiveRect.XMin, factiveRect.YMin, factiveRect.XMax, factiveRect.YMax,
+    ' ARwh=', W, H, ' DrWH=', fDrawer.Width, fDrawer.Height]);
+  fScale := 0;
+  Exit;
+ end;
+ W := Abs(W);
+ H := Abs(H);
+ if (fDrawer.Width = 0) or (fDrawer.Height = 0) then begin
+  WriteIn(['setActiveRect', ' ERR=BadDrawerWH', ' DrWH=', fDrawer.Width, fDrawer.Height,
+    ' AR=', factiveRect.XMin, factiveRect.YMin, factiveRect.XMax, factiveRect.YMax,
+    ' ARwh=', W, H]);
+  fScale := 0;
+  Exit;
+ end;
+ scaleX := {factiveRect.Width / fglobalRect.Width *} (fDrawer.Width / W);
+ scaleY := {factiveRect.Height / fglobalRect.Height *}  (fDrawer.Height / H);
 // WriteIn(['Selector.Params',fdx,fdy,scaleX]);
  {If fDrawer.Width > fDrawer.Height then
      fScale := scaleY
@@ -868,6 +894,14 @@ begin
      fScale := scaleX; }
 //
 fScale := Min(scaleX, scaleY);
+ if (fScale <> PrevScale) and ((fScale < 0.5) or IsNan(fScale) or IsInfinite(fScale) or IsNan(scaleX) or IsInfinite(scaleX) or IsNan(scaleY) or IsInfinite(scaleY)) then
+  WriteIn(['setActiveRect', ' s=', PrevScale, '->', fScale,
+    ' dx=', fDx, ' dy=', fDy,
+    ' AR=', factiveRect.XMin, factiveRect.YMin, factiveRect.XMax, factiveRect.YMax,
+    ' ARwh=', factiveRect.Width, factiveRect.Height,
+    ' GR=', fglobalRect.XMin, fglobalRect.YMin, fglobalRect.XMax, fglobalRect.YMax,
+    ' DrWH=', fDrawer.Width, fDrawer.Height,
+    ' scXY=', scaleX, scaleY]);
 // SelectorMode[smLockedPaint] := fScale = 0;
 end;
 
@@ -989,7 +1023,7 @@ procedure TogsSelector.Move(Dx, Dy: Double);
 begin
  activeRect.Move(Dx, Dy);
 // переустанавливаем локальные параметры ogsSelector
- activeRect:=activeRect;
+ setActiveRect(factiveRect);
 end;
 
 procedure TogsSelector.Scale(X, Y, Koef: Double);
@@ -1986,7 +2020,6 @@ initialization
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsRegisteredClass, 102, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsSortedCollection, 101, 1));
  ogsRegisteredClasses.Add(TogsRegisteredClass.Create(TogsCollection, 100, 1));
-  WriteIn(['ogcBasic']);
 finalization
  ogsRegisteredClasses.Free;
 end.

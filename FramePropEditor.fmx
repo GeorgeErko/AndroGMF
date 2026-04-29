@@ -2,18 +2,4 @@ object PropEditorFrame: TPropEditorFrame
   Size.Width = 316.000000000000000000
   Size.Height = 472.000000000000000000
   Size.PlatformDefault = False
-  object ListBox1: TListBox
-    Position.X = 10.000000000000000000
-    Position.Y = 8.000000000000000000
-    Size.Width = 295.000000000000000000
-    Size.Height = 453.000000000000000000
-    Size.PlatformDefault = False
-    TabOrder = 0
-    DisableFocusEffect = True
-    DefaultItemStyles.ItemStyle = ''
-    DefaultItemStyles.GroupHeaderStyle = ''
-    DefaultItemStyles.GroupFooterStyle = ''
-    Viewport.Width = 291.000000000000000000
-    Viewport.Height = 449.000000000000000000
-  end
 end

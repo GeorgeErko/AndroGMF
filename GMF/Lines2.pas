@@ -25,7 +25,7 @@ procedure DevDrawGeoLine(DC:hdc;GL:TGeoLine;PCTwig:PCollection;PC2:TSortedCollec
 
 function SearchLine(PC:TSortedCollection;Num:Integer):SmallInt;
 {=============================================================}
-Implementation
+Implementation uses Writer;
 
 function LLIB.Compare(Key1, Key2: Pointer): Integer;
 begin
@@ -54,6 +54,8 @@ end;
 initialization
  GlobalLine := nil;
 finalization
+ Writein(['==fin13']);
  If GlobalLine <> nil then
   GlobalLine.Free;
+   Writein(['==fin14']);
 end.

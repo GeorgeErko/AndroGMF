@@ -100,6 +100,8 @@ type
    Procedure DrawHatchLot(Canvas:TCanvas);
    Property HatchTwig[Index:Integer]:TTwig read GetHatchTwig;
    Property onCreateLine2:TNotifyEvent read fOnCreateLine write fOnCreateLine;
+  //
+   Function Hint: String; override;
   end;
 
 implementation uses newProcs, GBFWUndo, EcDot, newResource,
@@ -119,7 +121,6 @@ begin
  Twigs.LayerTable.ActiveLayer := Twigs.LayerTable.NULLLayer;
  GlobalAccuDraw := TAccuDrawFrame.Create(Selector.GNForm);
  GlobalAccuDraw.OnReturn:=Return;
- PropEditorForm := TPropEditorFrame.Create(Selector.GNForm);
  mpTwig:=nil;
 // инструмент для
 // If Assigned(GlobalAccuDraw) then GlobalAccuDraw.OnReturn:=Return;
@@ -176,7 +177,6 @@ begin
   GlobalAccuDraw.Visible := False;
   GlobalAccuDraw.Free;
  end;
- PropEditorForm.Free;
  If paraLineForm<>nil then begin
   paraLineForm.Visible := False;
   paraLineForm.Free;
@@ -486,17 +486,10 @@ begin
    sysDrawSpline,
    sysDrawArc,
    sysDrawCircle,
-   sysDrawRect,
-   sysDrawParaLine,
-   sysLine,
-   sysDrawKvant,
-   sysDrawArc2,
    sysDrawArc3    :begin
                     Kvant:=Quants_For_Arcs;
                     try
                      Quants_For_Arcs:=cirKvant;
-                     if (TSelector(Selector).ovrPainter = nil) then
-                       DrawFixedPoints(Selector.GCanvas);
                      If mpTwig<>nil then begin
                       //If mpTwig.Twig.Coord.Count = 1 then
                        //  Writein([123]);
@@ -533,10 +526,7 @@ begin
                       If fixPoint1.Visible then begin fixPoint2.mX:=X0;fixPoint2.mY:=Y0;end;
                      end;
                      UpdateFixedPoints(fixPoint2.mX,fixPoint2.mY);
-                     if (TSelector(Selector).ovrPainter = nil) then
-                       DrawFixedPoints(Selector.GCanvas)
-                     else
-                      Selector.UpdateOverlay;
+                     Selector.UpdateOverlay;
                     finally
                      Quants_For_Arcs:=Kvant;
                     end;
@@ -578,7 +568,7 @@ begin
                       PD.Selector := Selector;
                      {$ENDIF}
                       If OnAddPrim(PD) then begin
-                       PropEditorForm.SetEnumProperties(PD);
+                      // PropEditorForm.SetEnumProperties(Selector, PD);
                        Twigs.Twigs.Insert(TWG_Point,PD);
                        TPrimUndo(Undo.Last).AddModifiedPrim(PD);
                       end else PD.Free;
@@ -753,7 +743,7 @@ If mpTwig<>nil then With Twigs do begin
                       If isMultiLine then begin
                        If MultiLot=nil then begin
                         Lot:=TLot.Create(Layer.ID,Layer,1); // создаем линейный контур
-                        PropEditorForm.SetEnumProperties(Lot);
+                       // PropEditorForm.SetEnumProperties(Selector, Lot);
                         If (LOperation=sysDrawPoly) {or (LOperation=sysDrawRect)} then Lot.TypeLot:=2 else Lot.TypeLot:=1;
                        end else Lot:=MultiLot;
                       end else begin
@@ -763,7 +753,7 @@ If mpTwig<>nil then With Twigs do begin
                       // else
                         Lot:=TLot.Create(Layer.ID,Layer,1); // создаем линейный контур
                       // end;
-                       PropEditorForm.SetEnumProperties(Lot);
+                      // PropEditorForm.SetEnumProperties(Selector, Lot);
                        If (LOperation=sysDrawPoly) {or (LOperation=sysDrawRect)} then Lot.TypeLot:=2 else Lot.TypeLot:=1;
                         If LOperation = sysDrawLine2 then begin
                          Lot.SetProperty('Цвет',IntToStr(LongInt(TAlphaColors.Red)));Lot.SetProperty('Толщина','0.5');
@@ -806,7 +796,7 @@ If mpTwig<>nil then With Twigs do begin
                         Twigs.Insert(TWG_Twig,Tw);
                         If I<>0 then begin
                          Lot:=TLot.Create(Layer.ID,Layer,1);Lot.TypeLot:=1;
-                         PropEditorForm.SetEnumProperties(Lot);
+                        // PropEditorForm.SetEnumProperties(Selector, Lot);
                         end;
                         Lot.Insert(Twigs.TwigsCount-1);Lot.SetMinMax(Twigs);
                         If OnAddPrim(Lot) then begin
@@ -1214,6 +1204,14 @@ end;
 function TMousePainter.GetTwigStyle: Integer;
 begin
  Result:=ftwigStyle;
+end;
+
+function TMousePainter.Hint: String;
+begin
+ If mpTwig <> nil then
+  Result := Result +' Длина=' + Fmt([mpTwig.Twig.GetLength])
+ else
+  inherited;
 end;
 
 procedure TMousePainter.SetTwigStyle(const Value: Integer);

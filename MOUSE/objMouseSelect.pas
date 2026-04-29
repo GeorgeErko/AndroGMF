@@ -46,7 +46,7 @@ type
   Destructor Destroy;override;
   Procedure SetCur(curName:String);override;
  {}
-  Function emGetDotMarker(var varX,varY:Double;LastPoint:TDot;StvorLine:TStvorLine;out objPoint:TTwgObject;UsePathTwig:Boolean=True;UseGrid:Boolean=True;useSTS:boolean = False):boolean;
+  Function emGetDotMarker(var varX,varY:Double;LastPoint:TDot;StvorLine:TStvorLine;out objPoint:TTwgObject;UsePathTwig:Boolean=True;UseGrid:Boolean=True;useSTS:boolean = False):boolean; virtual;
   Function emGetNearestPoint(X, Y: Double): TDot;
   Function emInsertPointInTwig(X, Y : Double;LotCol:PCollection;selPoints:TNearestPoints):Integer;
   Function emFilterActiveLot(X,Y:Double):boolean;
@@ -93,16 +93,21 @@ end;
 destructor TMouseSelector.Destroy;
 begin
  Error:='0';
+ WriteIn([1]);
  try
  Error:='1';
   Marker.Remove(nil);
+  WriteIn([2]);
   Marker.Free;
+    WriteIn([3]);
   inherited;
- Error:='2';
+    WriteIn([4]);
+     Error:='2';
   fActiveLots.DeleteAll;fActiveLots.Free;
   TemporaryDot.Free;
   markerOrthoTwig.Free;
   OrthoTwigs.Free;
+    WriteIn([5]);
   except
   MessageError('Отладчик : сообщение от '+ClassName+'. Шаг отладки :'+Error);
  end;
@@ -748,7 +753,6 @@ begin
 
  inherited;
  Hook := False;
- exit;
  if LMouseDown then
    Exit;
 
@@ -776,12 +780,11 @@ end;
 procedure TMouseSelector.MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  inherited;
- Hook := False;
+  Hook := False;
 end;
 
 procedure TMouseSelector.DrawTemp(const Canvas: ISkCanvas; PaintOnImage: Boolean);
 begin
- exit;
   inherited;
   if (Marker <> nil) and Marker.Visible then
     Marker.Draw(Canvas, Marker.mX, Marker.mY, True);

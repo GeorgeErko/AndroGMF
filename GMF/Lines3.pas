@@ -255,7 +255,9 @@ end;
 destructor TGeoLine.Destroy;
 begin
   Structura.Free;
-  Points.DeleteAll;Points.Free;
+  If Assigned(Points) then begin
+   Points.DeleteAll;Points.Free;
+  end;
 end;
 
 {-------------------------------------------}

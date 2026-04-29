@@ -1,0 +1,124 @@
+function TEditMap.emGetObject(var X,Y:Double;var TypeLot:Byte;Shift:TShiftState): TTwgObject;
+var D:TDot;PD:TPointDot;
+    Dist:Double;
+    X1,Y1:Double;
+    Twig:TTwig;
+    Lot:TLot;
+    I,N:Integer;
+    B:Byte;
+    Bm:TBmpMgr;
+    P:PCollection;
+Function PointIn(K:Integer):boolean;
+var Tw:TTwig;I:Integer;S:Double;
+begin
+ Result:=False;
+ With Lot do
+ For I:=0 to Coord.Count-1 do
+  begin
+   Tw:=Twigs.Twigs.TAt(TLong(Coord[I]).Num);
+    if Tw.IsVisible(Selector.GPRect) then begin
+     S:=Tw.GetTwigDist(X,Y,X1,Y1);
+    If XRasst(S)<=Twigs.Settings.psAutoDisst*K then begin Result:=True;Break; end;
+    end;
+  end;
+end;
+begin
+ Result:=nil;TypeLot:=0;
+ If (Twigs.Twigs.TwigsCount=1) and (Twigs.Twigs.AnyCount=0) and (Twigs.Twigs.Bitmaps.Count=0) then Exit;
+// Objects.DeleteAll;
+{ D:=emGetNearestPoint(X,Y);
+ If D<>nil then begin
+  If D is TPointDot then begin
+  // Objects.Insert(D);
+   X:=D.XDot;Y:=D.YDot;
+   Result:=D;
+   exit;
+  end;
+ end else}
+(* emGetDotMarker(X,Y,nil,Stvor_,objTemporary,False,False);
+ If objTemporary<>nil then If objTemporary is TPointDot then begin
+  Result:=objTemporary;
+  X:=TPointDot(objTemporary).XDot;Y:=TPointDot(objTemporary).YDot;
+  Marker.Remove(GCanvas);
+  exit;
+ end;
+ With Twigs do begin // èùåì êîíòóð
+   For I:=Twigs.IndexCount-1 downTo 0 do begin
+    Lot:=Twigs.LAtIndex(I);
+//  If Lot.What=125 then begin
+    If (Lot.Closed=0) or (Lot.TypeLot=254) then continue;
+    If not Lot.IsVisible(GPRect) then continue;
+    If Lot.TypeLot=2 then begin
+     If Lot.PointIn(Twigs,X,Y) then {If PointIn(5) then} begin
+      TypeLot:=Lot.TypeLot;
+      Lot.SetSqwear(Twigs);Result:=Lot;{X:=X1;Y:=Y1;}exit;
+     end;
+    end else If PointIn(1) then begin Result:=Lot;X:=X1;Y:=Y1;exit;end;
+//   end;
+    end;
+ end;*)
+{ If Result = nil then With Twigs.Twigs do begin
+   For I:=0 to AnyCount-1 do begin
+    PD:=AAt(I,B);
+    If B=TWG_Point then If PD.isNoClosed then If PD.userObj = nil then If PD.GetZnkFont(X,Y,PD.ClassHandle.ZnakKoef,N)<>-1 then begin
+     Result:=PD;
+     Marker.AssignMarker(GlobalSettings.MarkerView.NameOf['mvPointDot'],GCanvas);
+     X:=PD.XDot;Y:=PD.YDot;
+     exit;
+    end;
+   end;
+ end;$
+}
+ timerNoStarting:=True;
+  emGetDotMarker(X,Y,nil,Stvor_,objTemporary,False,False);
+//  Stvor_.X1:=xyNull;
+  If objTemporary<>nil then If objTemporary is TPointDot then If TPointDot(objTemporary).isNoClosed then begin
+   Result:=objTemporary;
+   X:=TPointDot(objTemporary).XDot;Y:=TPointDot(objTemporary).YDot;
+   exit;
+  end;
+ // çàõâàò áèòìàïà
+  If Marker.Visible then Marker.Remove(GCanvas);
+ //
+ With Twigs do begin // èùåì êîíòóð
+   For I:=Twigs.IndexCount-1 downTo 0 do begin
+    Lot:=Twigs.LAtIndex(I);
+//  If Lot.What=125 then begin
+    If (Lot.Closed=0) or (Lot.TypeLot=254) then continue;
+    If not Lot.IsVisible(Selector.GPRect) then continue;
+    If (Lot.TypeLot=2) then begin
+     If (Lot is TRasterLot) and not((ssShift in Shift) and (ssCtrl in Shift)) then continue;
+     If Lot.PointIn(Twigs,X,Y) then {If PointIn(5) then} begin
+      TypeLot:=Lot.TypeLot;
+      {Lot.SetSqwear(Twigs);}Result:=Lot;{X:=X1;Y:=Y1;}
+      exit;
+     end;
+    end else If PointIn(1) then begin Result:=Lot;X:=X1;Y:=Y1;exit;end;
+//   end;
+    end;
+ end;
+  If Result = nil then With Twigs do
+  For I:=0 to Twigs.Bitmaps.Bitmaps.Count-1 do begin
+   Bm:=Twigs.Bitmaps.Bitmaps[I];
+     With Bm do begin
+      if Box=nil then continue;if Box.Bits=nil then continue;if not CheckVisible then continue; if SqlClose then continue;
+      Twig:=TTwig.Create(0);Twig.Insert(TDot.Create(Left,Top,0));Twig.Insert(TDot.Create(Right,Top,0));Twig.Insert(TDot.Create(Right,Bottom,0));Twig.Insert(TDot.Create(Left,Bottom,0));Twig.Insert(TDot.Create(Left,Top,0));
+     end;
+      P:=PCollection.Create(1);
+      If (XRasst(Twig.GetTwigDist(X,Y,X1,Y1))<=GlobalSettings.Settings.gsPointSize*2) then If (Point_Inside_Polygon(X,Y,Twig.Coord)>-1) then begin
+       Result:=Bm;
+       X:=X1;Y:=Y1;
+      end;
+      P.Free;
+      Twig.Free;
+      If Result<>nil then exit;
+  end;
+ { FindTwig(X,Y,0,GMS,GMS,MkLib.LSLib,MkLib.PSLib,0,Dist,False);
+  If ActiveTwig.Count=1 then begin
+   Twig:=Twigs.TAt(TLong(ActiveTwig[0]).Num);
+   Twig.GetTwigDist(X,Y,X1,Y1);
+   Result:=Twig;
+   X:=X1;Y:=Y1;
+   Result:=Twig;
+  end;AllClear;}
+end;

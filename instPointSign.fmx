@@ -4,9 +4,9 @@ object InstPointsFrame: TInstPointsFrame
   Size.Height = 426.000000000000000000
   Size.PlatformDefault = False
   object TC: TTabControl
-    Position.Y = 31.000000000000000000
+    Align = Client
     Size.Width = 384.000000000000000000
-    Size.Height = 234.000000000000000000
+    Size.Height = 395.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     TabPosition = PlatformDefault
@@ -18,13 +18,71 @@ object InstPointsFrame: TInstPointsFrame
     Size.PlatformDefault = False
     TabOrder = 1
     object btnTabs: TButton
-      Align = FitRight
-      Position.X = 350.304351806640600000
-      Size.Width = 33.695648193359380000
+      Align = Right
+      Position.X = 362.000000000000000000
+      Size.Width = 22.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 5
+      Text = '<'
+      TextSettings.Trimming = None
+      OnClick = btnTabsClick
+    end
+    object btnPlus: TButton
+      Tag = 1
+      Align = Right
+      Position.X = 287.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Text = '+'
+      TextSettings.Trimming = None
+      OnClick = btnMinusClick
+    end
+    object btnMinus: TButton
+      Tag = -1
+      Align = Right
+      Position.X = 262.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = '-'
+      TextSettings.Trimming = None
+      OnClick = btnMinusClick
+    end
+    object btnScaleM: TButton
+      Tag = -10
+      Align = Right
+      Position.X = 312.000000000000000000
+      Size.Width = 25.000000000000000000
       Size.Height = 31.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      Text = '<'
+      Text = '-'
+      TextSettings.Trimming = None
+      OnClick = btnMinusClick
+    end
+    object btnScaleP: TButton
+      Tag = 10
+      Align = Right
+      Position.X = 337.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = '+'
+      TextSettings.Trimming = None
+      OnClick = btnMinusClick
+    end
+    object btnSet: TButton
+      Align = Left
+      Size.Width = 22.000000000000000000
+      Size.Height = 31.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 4
+      Text = 'S'
       TextSettings.Trimming = None
       OnClick = btnTabsClick
     end
@@ -47,7 +105,7 @@ object InstPointsFrame: TInstPointsFrame
   end
   object CB: TComboBox
     Position.X = 12.000000000000000000
-    Position.Y = 280.000000000000000000
+    Position.Y = 279.000000000000000000
     Size.Width = 359.000000000000000000
     Size.Height = 25.000000000000000000
     Size.PlatformDefault = False

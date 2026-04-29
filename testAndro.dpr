@@ -86,7 +86,12 @@ uses
   Circle in 'GMF\Circle.pas',
   drawGrid in 'GMF\drawGrid.pas',
   GBFWUndo in 'GMF\GBFWUndo.pas',
-  FrameAccuDraw in 'FrameAccuDraw.pas' {AccuDrawFrame: TFrame};
+  FrameAccuDraw in 'FrameAccuDraw.pas' {AccuDrawFrame: TFrame},
+  objMouseDraw in 'MOUSE\objMouseDraw.pas',
+  instPointSign in 'instPointSign.pas' {InstPointsFrame: TFrame},
+  InstLayerFrame in 'InstLayerFrame.pas' {LayerFrame: TFrame},
+  SelectedObjects in 'GMF\SelectedObjects.pas',
+  objEditMap in 'MOUSE\objEditMap.pas';
 
 {$R *.res}
 

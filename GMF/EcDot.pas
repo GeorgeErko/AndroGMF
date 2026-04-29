@@ -608,7 +608,7 @@ var
     RS:Double;
     Props: Pointer;
 begin
- If Closed then exit;
+// If Closed then exit;
  If userObj<>nil then
    If userObj.objType = TWG_Block then begin
 
@@ -1816,5 +1816,4 @@ initialization
  bmpTrue:=TBitmap.Create;bmpFalse:=TBitmap.Create;bmpMiddle:=TBitmap.Create;bmpInactive:=TBitmap.Create;bmpFalsePlus:=TBitmap.Create;
 finalization
  bmpTrue.Free;bmpFalse.Free;
-// CloseFile(FTest);
 end.

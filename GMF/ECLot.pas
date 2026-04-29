@@ -3580,7 +3580,7 @@ begin
 end;
 begin
  If TypeLot=254 then Exit;
- If (Closed=0) and (not Selector.GGraphSet.ShowClosed) then Exit;
+// If (Closed=0) and (not Selector.GGraphSet.ShowClosed) then Exit;
 // WriteIn(['sel=nil', Selector=nil]);
  //WriteIn([Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  If not isVisible(Selector.GPRect) then exit;

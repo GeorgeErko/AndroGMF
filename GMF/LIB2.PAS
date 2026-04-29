@@ -1,6 +1,6 @@
 Unit lib2;
 {=========================================================================================}
-interface uses lib, Collect;
+interface uses lib, Collect, Writer;
 {=========================================================================================}
 type
   TPart=Class(TTwgObject)
@@ -129,5 +129,8 @@ end;
 initialization
  GlobalSqwear := nil;
 finalization
+ Writein(['==fin11']);
+
  If GlobalSqwear <> nil then GlobalSqwear.Free;
+ Writein(['==fin12']);
 end.

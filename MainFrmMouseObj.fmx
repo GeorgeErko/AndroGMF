@@ -1,17 +1,20 @@
 inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
-  ClientWidth = 904
+  ClientWidth = 923
   DesignerMasterStyle = 3
   inherited Memo1: TMemo
-    Size.Width = 904.000000000000000000
-    Viewport.Width = 904.000000000000000000
-    Viewport.Height = 111.000000000000000000
+    Position.Y = 474.000000000000000000
+    Size.Width = 923.000000000000000000
+    Size.Height = 65.000000000000000000
+    Viewport.Width = 923.000000000000000000
+    Viewport.Height = 65.000000000000000000
   end
   inherited Splitter1: TSplitter
-    Size.Width = 904.000000000000000000
+    Position.Y = 466.000000000000000000
+    Size.Width = 923.000000000000000000
   end
   inherited Panel1: TPanel
-    Size.Width = 904.000000000000000000
+    Size.Width = 923.000000000000000000
     inherited btnOpen: TCornerButton
       Position.X = 11.000000000000000000
       Position.Y = 4.000000000000000000
@@ -48,11 +51,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
       OnClick = LoadClick
     end
     object btnEsc: TCornerButton
+      Anchors = [akTop, akRight, akBottom]
       ControlType = Platform
       StyledSettings = [Family, Style, FontColor]
       Images = imgEsc
       ImageIndex = 0
-      Position.X = 796.000000000000000000
+      Position.X = 862.000000000000000000
       Position.Y = 4.000000000000000000
       Sides = [Top, Left, Bottom, Right]
       Size.Width = 53.000000000000000000
@@ -69,38 +73,62 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
   end
   inherited PanelPainter: TPanel
-    Size.Width = 904.000000000000000000
-    Size.Height = 316.000000000000000000
+    Size.Width = 923.000000000000000000
+    Size.Height = 362.000000000000000000
     inherited SkPainter: TSkPaintBox
       Margins.Left = -1.000000000000000000
       Padding.Left = -1.000000000000000000
-      Size.Width = 631.000000000000000000
-      Size.Height = 316.000000000000000000
+      Size.Width = 455.000000000000000000
+      Size.Height = 362.000000000000000000
     end
     object instPanel: TPanel
       Align = Right
-      Position.X = 636.000000000000000000
+      Position.X = 655.000000000000000000
       Size.Width = 268.000000000000000000
-      Size.Height = 316.000000000000000000
+      Size.Height = 362.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
+      object InstHost: TLayout
+        Align = Client
+        Size.Width = 268.000000000000000000
+        Size.Height = 362.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+      end
     end
     object Splitter2: TSplitter
       Align = Right
       Cursor = crHSplit
       MinSize = 20.000000000000000000
-      Position.X = 630.000000000000000000
+      Position.X = 649.000000000000000000
       Size.Width = 6.000000000000000000
-      Size.Height = 316.000000000000000000
+      Size.Height = 362.000000000000000000
       Size.PlatformDefault = False
+    end
+    object Splitter3: TSplitter
+      Align = Left
+      Cursor = crHSplit
+      MinSize = 20.000000000000000000
+      Position.X = 189.000000000000000000
+      Size.Width = 6.000000000000000000
+      Size.Height = 362.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object instProperties: TLayout
+      Align = Left
+      Size.Width = 189.000000000000000000
+      Size.Height = 362.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
     end
   end
   inherited StatusBar: TStatusBar
-    Size.Width = 904.000000000000000000
+    Position.Y = 443.000000000000000000
+    Size.Width = 923.000000000000000000
   end
   object ToolBarPaint: TToolBar [5]
     Position.Y = 33.000000000000000000
-    Size.Width = 904.000000000000000000
+    Size.Width = 923.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 21
@@ -110,7 +138,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 0
-      Position.X = 4.000000000000000000
+      Position.X = 60.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -123,7 +151,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 10
-      Position.X = 296.000000000000000000
+      Position.X = 352.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -136,7 +164,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 1
-      Position.X = 33.000000000000000000
+      Position.X = 89.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -149,7 +177,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 9
-      Position.X = 236.000000000000000000
+      Position.X = 292.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -162,7 +190,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 6
-      Position.X = 124.000000000000000000
+      Position.X = 180.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -175,7 +203,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 5
-      Position.X = 152.000000000000000000
+      Position.X = 208.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -188,7 +216,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 7
-      Position.X = 179.000000000000000000
+      Position.X = 235.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -201,7 +229,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 8
-      Position.X = 207.000000000000000000
+      Position.X = 263.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -214,7 +242,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 2
-      Position.X = 62.000000000000000000
+      Position.X = 118.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -227,7 +255,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 3
-      Position.X = 94.000000000000000000
+      Position.X = 150.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -240,7 +268,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 4
-      Position.X = 269.000000000000000000
+      Position.X = 325.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -253,12 +281,146 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 11
-      Position.X = 322.000000000000000000
+      Position.X = 378.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
       OnClick = ToolButtonClick
+      object FloatAnimation1: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnInstLine: TSpeedButton
+      Tag = 1
+      StaysPressed = True
+      Align = Right
+      GroupName = 'PaintTools'
+      Images = ToolImageList
+      ImageIndex = 13
+      Position.X = 873.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnClick = ToolInstClick
+      object FloatAnimation3: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnInstPoint: TSpeedButton
+      StaysPressed = True
+      Align = Right
+      GroupName = 'PaintTools'
+      Images = ToolImageList
+      ImageIndex = 12
+      Position.X = 848.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnClick = ToolInstClick
+      object FloatAnimation4: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnInstBlock: TSpeedButton
+      Tag = 2
+      StaysPressed = True
+      Align = Right
+      GroupName = 'PaintTools'
+      Images = ToolImageList
+      ImageIndex = 14
+      Position.X = 898.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnClick = ToolInstClick
+      object FloatAnimation2: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    inline LayerFrame1: TLayerFrame
+      Align = Right
+      Position.X = 466.000000000000000000
+      Size.Width = 382.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 10
+      inherited HeaderLay: TLayout
+        Align = VertCenter
+        Position.Y = 10.000000000000000000
+        Size.Width = 382.000000000000000000
+        inherited HeaderBg: TRectangle
+          Size.Width = 382.000000000000000000
+        end
+        inherited btnDrop: TButton
+          Position.X = 357.000000000000000000
+        end
+      end
+      inherited PopupLayers: TPopup
+        inherited PopupLay: TLayout
+          inherited TreeLayers: TTreeView
+            Viewport.Width = 100.000000000000000000
+            Viewport.Height = 100.000000000000000000
+          end
+        end
+      end
+      inherited ImageList1: TImageList
+        Left = 590
+        Top = 132
+      end
+    end
+    object btnSelect: TSpeedButton
+      Tag = 500
+      StaysPressed = True
+      GroupName = 'PaintTools'
+      Images = ToolImageList
+      ImageIndex = 16
+      Position.X = 28.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      object FloatAnimation5: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnProperties: TSpeedButton
+      Tag = 500
+      StaysPressed = True
+      GroupName = 'PaintTools'
+      Images = ToolImageList
+      ImageIndex = 17
+      Position.X = 437.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnClick = btnPropertiesClick
+      object FloatAnimation6: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
     end
   end
   inherited ImageList1: TImageList
@@ -459,6 +621,129 @@ inherited MainFormMouseObj: TMainFormMouseObj
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Rect.png'
           end>
         Name = 'Rect'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007C49444154388DCD53410E80
+              200CEB8CFF165F5E0F4A32E760033DD884F4C068DA02C0DF202715E6C63700BB
+              6111355008904FCE2C2D53B28EEEB8CE11009619010F6BB0AF9D4A730A7D4736
+              6E377E4B888E03E989451D89E1614715343C2CE4C5F0E2A61C791D35115D7FD8
+              4DC5F70F72F69B5468EB6F84D21584380099CC33019B4E35AD0000000049454E
+              44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instPoint.bmp'
+          end>
+        Name = 'instPoint'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007A49444154388DCDD3D10AC0
+              200805D0EBD87FAF7DB97BD81CCEACCC5E26848175B810017F2BBA5BE1D8F103
+              C0693A913A501860AE7B6469A644137DEBB9C700B039F314EA4194C17A89A6B0
+              5622798930E641160D25EC41A4FA30D9289145DFE7CE421A236F380309B29C48
+              6355EDB2C97E134F5F81DC94A9BA00629334FC529B9B8C0000000049454E44AE
+              426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instLine.bmp'
+          end>
+        Name = 'instLine'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000008849444154388DCDD3D10E80
+              200805D06BEBBFB32FA7078D112A97D54B6C8D36E1A4CC80BF4569A94AAEFC00
+              70BA5C8A29A802888C39F358A6863B5AAEF53E01808D9C45D08E4F8F1E4116A1
+              D80AD2E63E058ACD208F20837968407481601ED2993C6E07F4B6D89985D01463
+              C80A9A61211241BE39441894DAC91DFBFDF2F637B15F4C17279D6F710131BF4F
+              FACB4DDAFA0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instBlock.bmp'
+          end>
+        Name = 'instBlock'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005F49444154388DB594DB0E00
+              100C434BFCFF2FF3E2C165B6749B2622414F2A1AC067F5395240EB1C068561A7
+              D90D938C2ED8CB44C3340305B30E5FFB95A163EFD7066B2408008AB468250A37
+              FC049805D5128957C8909A8A7DB534A57D2F4F0D15B71CF29930311700000000
+              49454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\btnSelect.bmp'
+          end>
+        Name = 'btnSelect'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006D49444154388DB593E10A80
+              300806AFE8C17DF3AF1F1534CA4D671D0C04E721D3C185992863268130535DF8
+              14E83C21D6417EC9C83CE4C4255149F6563825F38AD2B25E414A36BADCE447E3
+              F704BAC5006C132238F6AB21D2516AC32382EE8246BEC82FB85DCD4CED335E1F
+              7F07BEC827EF765872BA0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\btnSelect.bmp'
+          end>
+        Name = 'Item 0'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006549444154388D6360A01738
+              70E0C07F6400E323D370C54429A214A05B820D30303030B0C09C6F6F6F4F94C1
+              8C8C8D58C5590829FAFFBF1E2F1FA2AF01D520EC8A1A51C407DE45D85C884D0F
+              5E17613318976514BB08AB41A36144D8A0014DD9C4F882240000F4B3A4D58A88
+              5B870000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instProps.bmp'
+          end>
+        Name = 'instProps'
       end>
     Destination = <
       item
@@ -542,9 +827,57 @@ inherited MainFormMouseObj: TMainFormMouseObj
             SourceRect.Right = 18.000000000000000000
             SourceRect.Bottom = 18.000000000000000000
           end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instPoint'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instLine'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instBlock'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'btnSelect'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Item 0'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instProps'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
       end>
-    Left = 58
-    Top = 102
+    Left = 404
+    Top = 96
   end
   object imgEsc: TImageList
     Source = <

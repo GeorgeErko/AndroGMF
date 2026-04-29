@@ -1,8 +1,9 @@
-unit newFontScale;
+п»їunit newFontScale;
 interface
 Uses Collect, SysUtils, Types_Dimano, Math, Classes, FMX.Graphics, System.Types,
         System.Skia, FMX.Skia;
-var F: ISkFont;
+
+
 Const KoefZoom:Single = 1;
       styleSym_Height:Char = 'A';
 type
@@ -34,11 +35,12 @@ type
  TFontManagerEx = class;
 
  TFontViewEx = class (TTwgObject)
-  FontScales:PCollection;// коллекция символов
+  FontScales:PCollection;// РєРѕР»Р»РµРєС†РёСЏ СЃРёРјРІРѕР»РѕРІ
   Scale:Integer;
   bl,it,un,ov:Integer;
   FontName:AnsiString;
   CharSet:byte;
+  SkTypeface: ISkTypeface;
   begW:Integer;
   kUp,kUp2,KDown,TE,TI,TH,TD,Kline,kW:Double;
   Index:Integer;
@@ -72,7 +74,109 @@ var Lin:Array[0..10000] of TPoint;
     AllLin:Array[0..20000] of TPoint;
     AllPoly:Array[0..1000] of Integer;
 
+procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
+function GetRegisteredSkiaFontFile(const FamilyName: string): string;
+
+function NormalizeSkiaFontFamilyName(const AFontName: string): string;
+function ResolveSkiaTypeface(const AFontName: string; const ABold, AItalic: Boolean): ISkTypeface;
+function ResolveSkiaTypefaceForView(const AFontView: TFontViewEx): ISkTypeface;
+
 implementation uses Maths_Lines;
+
+var
+  SkiaFontFiles: TStringList;
+
+procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
+var
+  Idx: Integer;
+begin
+  if (FamilyName = '') or (FileName = '') then
+    Exit;
+  if SkiaFontFiles = nil then
+  begin
+    SkiaFontFiles := TStringList.Create;
+    SkiaFontFiles.CaseSensitive := False;
+    SkiaFontFiles.Duplicates := dupIgnore;
+    SkiaFontFiles.Sorted := True;
+  end;
+  Idx := SkiaFontFiles.IndexOfName(FamilyName);
+  if Idx < 0 then
+    SkiaFontFiles.Add(FamilyName + '=' + FileName)
+  else
+  begin
+    SkiaFontFiles.Delete(Idx);
+    SkiaFontFiles.Add(FamilyName + '=' + FileName);
+  end;
+end;
+
+function GetRegisteredSkiaFontFile(const FamilyName: string): string;
+var
+  Idx: Integer;
+begin
+  Result := '';
+  if (SkiaFontFiles = nil) or (FamilyName = '') then
+    Exit;
+  Idx := SkiaFontFiles.IndexOfName(FamilyName);
+  if Idx >= 0 then
+    Result := SkiaFontFiles.ValueFromIndex[Idx];
+end;
+
+function NormalizeSkiaFontFamilyName(const AFontName: string): string;
+var
+  CutPos: Integer;
+begin
+  Result := Trim(AFontName);
+  if (Result <> '') and (Result[1] = '@') then
+    Result := Trim(Copy(Result, 2, MaxInt));
+  CutPos := Pos(',', Result);
+  if CutPos > 0 then
+    Result := Trim(Copy(Result, 1, CutPos - 1));
+  CutPos := Pos('(', Result);
+  if CutPos > 0 then
+    Result := Trim(Copy(Result, 1, CutPos - 1));
+end;
+
+function ResolveSkiaTypeface(const AFontName: string; const ABold, AItalic: Boolean): ISkTypeface;
+var
+  LocalFontName: string;
+  FontStyle: TSkFontStyle;
+  Weight: TSkFontWeight;
+  Slant: TSkFontSlant;
+  FontFile: string;
+begin
+  Result := nil;
+
+  LocalFontName := NormalizeSkiaFontFamilyName(AFontName);
+
+  Weight := TSkFontWeight.Normal;
+  if ABold then
+    Weight := TSkFontWeight.Bold;
+  Slant := TSkFontSlant.Upright;
+  if AItalic then
+    Slant := TSkFontSlant.Italic;
+  FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
+
+  FontFile := '';
+  if LocalFontName <> '' then
+    FontFile := GetRegisteredSkiaFontFile(LocalFontName);
+  if FontFile <> '' then
+    Result := TSkTypeface.MakeFromFile(FontFile);
+  if (Result = nil) and (LocalFontName <> '') then
+    Result := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
+end;
+
+function ResolveSkiaTypefaceForView(const AFontView: TFontViewEx): ISkTypeface;
+begin
+  Result := nil;
+  if AFontView = nil then
+    Exit;
+  if AFontView.SkTypeface <> nil then
+    Exit(AFontView.SkTypeface);
+
+  Result := ResolveSkiaTypeface(string(AFontView.FontName), AFontView.Bl <> 0, AFontView.It <> 0);
+  if Result <> nil then
+    AFontView.SkTypeface := Result;
+end;
 
 { TFontScaleEx }
 constructor TFontScaleEx.CreateView(DC:hDc;S: PChar;It:Boolean);
@@ -83,7 +187,7 @@ var I:Integer;bkMode:Integer;Count:Integer;
     Rect:TRect;
   //  ABC:TABC;
 begin
-//И дальше поставь точку: F. и посмотри, есть ли у ISkFont один из методов:
+//Р РґР°Р»СЊС€Рµ РїРѕСЃС‚Р°РІСЊ С‚РѕС‡РєСѓ: F. Рё РїРѕСЃРјРѕС‚СЂРё, РµСЃС‚СЊ Р»Рё Сѓ ISkFont РѕРґРёРЅ РёР· РјРµС‚РѕРґРѕРІ:
 //f.GetPath
  {$IFDEF WIN65}
  Symbol:=S[0];
@@ -269,7 +373,8 @@ var I:Integer;
     HH:Double;
     FS1:TFontScaleEx;
 begin
- FontName:=FName;Scale:=FS;
+ FontName:=FName; Scale:=FS;
+ bl := bl1; it := it1; un := un1;
  {$IFDEF WIN65}
 // begW:=Trunc(FS*FW/FH);
  FontName:=FName;Scale:=FS;
@@ -308,7 +413,7 @@ var I:Integer;
     FS1:TFontScaleEx;
 begin
 {$IFDEF WIN65}
-(* только по Windows *)
+(* С‚РѕР»СЊРєРѕ РїРѕ Windows *)
  FontScales:=PCollection.Create(1);
  F:=SelectObject(Canvas.Handle,CreateFont(Scale,0,0,0,bl*600+100,It,0,0,CharSet,0,0,0,0,PChar(FontName)));
 { If It = 0 then
@@ -377,7 +482,7 @@ begin
    Max:=Max+(F.A+F.B+F.C)*kW;
 //  Max:=Max+(F.XMax)*kW;
  end;
-{ Рисовка }
+{ Р РёСЃРѕРІРєР° }
  Angle:=Angle/180*Pi;
  Koef:=KOef*KoefZoom;
  For I:=0 to PointCount-1 do begin
@@ -409,7 +514,7 @@ begin
    Max:=Max+(F.A+F.B+F.C)*kW;
 //   Max:=Max+(F.XMax)*kW;
  end;
-{ Рисовка }
+{ Р РёСЃРѕРІРєР° }
  Angle:=Angle/180*Pi;
  Koef:=Koef*KoefZoom;
  For I:=0 to PointCount-1 do begin
@@ -442,7 +547,7 @@ begin
    end;
    Max:=Max+(F.A+F.B+F.C)*kW;
  end;
-{ Рисовка }
+{ Р РёСЃРѕРІРєР° }
  Angle:=Angle/180*Pi;
  Koef:=Koef*KoefZoom;
  For I:=0 to PointCount-1 do begin

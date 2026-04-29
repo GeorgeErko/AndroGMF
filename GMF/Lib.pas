@@ -155,6 +155,7 @@ TPoint_Sign=Class(TTD)
   MRect:TMRect;
  //
   Selector: TSelector;
+  LocalScale: Double;
   constructor Create(a,b:single;Name:String = '';Ind:SmallInt = -1);
   constructor Load(ST:TBufStream);Override;
   Procedure Store(ST:TBufStream);Override;
@@ -1214,5 +1215,9 @@ end;
 initialization
  GlobalPoint := nil;
 finalization
+ Writein(['==fin9']);
+
  If GlobalPoint <> nil then GlobalPoint.Free;
+  Writein(['==fin10']);
+
 end.

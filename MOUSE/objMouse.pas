@@ -44,8 +44,6 @@ type
   objTemporary:TTwgObject;
   objMemory:TTwgObject;
   Error:String;
- //
-  mForms:TList;
    class function MouseHook(Operation:Integer):boolean;virtual;
  {}
    Constructor Create(ATwigs:Pointer;AFreeProc:TFreeProc); virtual;
@@ -58,6 +56,7 @@ type
    Procedure MouseUp(Form:TForm2; Button: TMouseButton;Shift: TShiftState;X, Y: Double; var Hook:boolean);virtual;
    Procedure MouseMove(Form:TForm2; Shift: TShiftState;X, Y: Double; var Hook:boolean);virtual;
   {}
+   Procedure DrawTempStatic(const Canvas: ISkCanvas;PaintOnImage:Boolean=False);virtual;// отрисовка статического временного слоя (кэш)
    Procedure DrawTemp(const Canvas: ISkCanvas;PaintOnImage:Boolean=False);virtual;// отрисовка при построении
    Procedure DrawActive(const Canvas:ISkCanvas);virtual;// отрисовка Prims с выделением
    Procedure Draw(const Canvas:ISkCanvas);virtual; // отрисовка Prims
@@ -95,6 +94,8 @@ type
   //
    Procedure Minimize;virtual;
    Procedure Maximize;virtual;
+  //
+   Function Hint: String; virtual;
   end;
 
 implementation uses SysUtils, newProcs, newSettings, FMX.Forms, Writer;
@@ -105,7 +106,6 @@ constructor TKeyMouseHook.Create;
 begin
  WriteIn(['KM', 1]);
  Twigs:=ATwigs;
- mForms:=TList.Create;
  Operation := LOperation;
  WriteIn(['KM', 2]);
  FreeProc:=AFreeProc;
@@ -129,9 +129,9 @@ end;
 
 destructor TKeyMouseHook.Destroy;
 begin
- mForms.Free;
+// mForms.Free;
  Prims.Free;
- if @FreeProc<>nil then FreeProc;
+ if Assigned(FreeProc) then FreeProc;
  ResetCur;
 end;
 
@@ -140,6 +140,10 @@ begin
 end;
 
 procedure TKeyMouseHook.DrawActive(const Canvas: ISkCanvas);
+begin
+end;
+
+procedure TKeyMouseHook.DrawTempStatic(const Canvas: ISkCanvas; PaintOnImage: Boolean);
 begin
 end;
 
@@ -312,16 +316,19 @@ begin
  Result:=Twigs.Undo;
 end;
 
+function TKeyMouseHook.Hint: String;
+begin
+ Result := ClassName;
+end;
+
 procedure TKeyMouseHook.Maximize;
 var I:Integer;
 begin
- For I:=0 to mForms.Count-1 do TForm(mForms[I]).Show;
 end;
 
 procedure TKeyMouseHook.Minimize;
 var I:Integer;
 begin
- For I:=0 to mForms.Count-1 do TForm(mForms[I]).Hide;
 end;
 
 initialization

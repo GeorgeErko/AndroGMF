@@ -1,0 +1,183 @@
+object LayerFrame: TLayerFrame
+  Size.Width = 510.000000000000000000
+  Size.Height = 374.000000000000000000
+  Size.PlatformDefault = False
+  object HeaderLay: TLayout
+    Align = Top
+    Size.Width = 510.000000000000000000
+    Size.Height = 28.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object HeaderBg: TRectangle
+      Align = Contents
+      Sides = []
+      Size.Width = 510.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object btnDrop: TButton
+      Align = Right
+      Images = ImageList1
+      ImageIndex = 1
+      Position.X = 485.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      TextSettings.Trimming = None
+      OnClick = btnDropClick
+    end
+  end
+  object PopupLayers: TPopup
+    PlacementTarget = HeaderLay
+    Size.Width = 460.000000000000000000
+    Size.Height = 280.000000000000000000
+    Size.PlatformDefault = False
+    object PopupLay: TLayout
+      Align = Contents
+      Size.Width = 460.000000000000000000
+      Size.Height = 280.000000000000000000
+      Size.PlatformDefault = False
+      object PopupBg: TRectangle
+        Align = Contents
+        Fill.Color = claWhite
+        HitTest = False
+        Size.Width = 460.000000000000000000
+        Size.Height = 280.000000000000000000
+        Size.PlatformDefault = False
+        Stroke.Color = claSilver
+      end
+      object TreeLayers: TTreeView
+        Align = Client
+        Size.Width = 460.000000000000000000
+        Size.Height = 248.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        OnMouseUp = TreeLayersMouseUp
+        OnChange = TreeLayersChange
+        Viewport.Width = 100.000000000000000000
+        Viewport.Height = 100.000000000000000000
+      end
+      object ButtonsLay: TLayout
+        Align = Bottom
+        Position.Y = 248.000000000000000000
+        Size.Width = 460.000000000000000000
+        Size.Height = 32.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object btnAllOn: TButton
+          Align = Left
+          Size.Width = 70.000000000000000000
+          Size.Height = 32.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          Text = #1042#1082#1083'.'#1074#1089#1077
+          TextSettings.Trimming = None
+          OnClick = btnAllOnClick
+        end
+        object btnAllOff: TButton
+          Align = Left
+          Position.X = 70.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 32.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          Text = #1054#1090#1082#1083'.'#1074#1089#1077
+          TextSettings.Trimming = None
+          OnClick = btnAllOffClick
+        end
+        object btnInvert: TButton
+          Align = Left
+          Position.X = 150.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 32.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          Text = #1048#1085#1074#1077#1088#1090
+          TextSettings.Trimming = None
+          OnClick = btnInvertClick
+        end
+        object btnCancel: TButton
+          Align = Right
+          Position.X = 390.000000000000000000
+          Size.Width = 70.000000000000000000
+          Size.Height = 32.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          Text = #1054#1090#1084#1077#1085#1072
+          TextSettings.Trimming = None
+          OnClick = btnCancelClick
+        end
+        object btnOk: TButton
+          Align = Right
+          Position.X = 340.000000000000000000
+          Size.Width = 50.000000000000000000
+          Size.Height = 32.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+          Text = 'OK'
+          TextSettings.Trimming = None
+          OnClick = btnOkClick
+        end
+      end
+    end
+  end
+  object SizeGrip1: TSizeGrip
+    Position.X = 424.000000000000000000
+    Position.Y = 250.000000000000000000
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000004049444154388D636018058C
+              30464303C37F5235373420F453EE02525D01B31DC309C41882EC74AC7EC06708
+              BABF9908D94608E00C456CAE202BD4C989DE910600D7B411074783629C000000
+              0049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\comboDown.bmp'
+          end>
+        Name = 'comboDown'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009549444154388DD551CB1583
+              300C53FA3A089DC4CE647E4CE66C029BA8075E8AC3335C680FD5C93FC9560204
+              B893C7D89D34237B6E36E60344F6628FCD48919160969037C4C67E81C8B6359B
+              7B5C8BFC034A4CDC8C932AD6D630A9A684DE7BD55A80F40D802E124967BDDB18
+              2C2CEECCCECF6AA716E2E0DADA67F028F835A4BF906DABF35CA2C57ED9F34A3D
+              7A5F5409FCE0176EE30DC7FC750461C3BF030000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\LIST1.BMP'
+          end>
+        Name = 'LIST1'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'comboDown'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'LIST1'
+          end>
+      end>
+    Left = 470
+    Top = 42
+  end
+end

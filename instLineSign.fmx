@@ -1,0 +1,12 @@
+inherited InstLinesFrame: TInstLinesFrame
+  inherited LB: TListBox
+    Viewport.Width = 380.000000000000000000
+    Viewport.Height = 174.000000000000000000
+  end
+  inherited Lay: TLayout
+    inherited SB: THorzScrollBox
+      Viewport.Width = 50.000000000000000000
+      Viewport.Height = 50.000000000000000000
+    end
+  end
+end

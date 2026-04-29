@@ -5,11 +5,10 @@
         <FrameworkType>FMX</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Platform Condition="'$(Platform)'==''">Android64</Platform>
         <TargetedPlatforms>693395</TargetedPlatforms>
         <AppType>Application</AppType>
         <MainSource>testAndro.dpr</MainSource>
-        <ProjectName Condition="'$(ProjectName)'==''">testAndro</ProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -333,7 +332,6 @@
         <DCC_WriteableConstants>true</DCC_WriteableConstants>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <DCC_TypedAtParameter>true</DCC_TypedAtParameter>
         <DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;MATHS=maths_basic;maths=polygons;maths1=maths_basic;maths4=maths_versia;maths8=maths_versia;maths2=maths_basic;maths2=circle_di;maths8=circle_di;maths2=polygons;maths=maths_basic;maths4=polygons;maths3=maths_versia;maths3=circle_di;maths2=maths_versia;maths9=polygons;maths1=intervals;$(DCC_UnitAlias)</DCC_UnitAlias>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -454,6 +452,19 @@
             <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="MOUSE\objMouseDraw.pas"/>
+        <DCCReference Include="instPointSign.pas">
+            <Form>InstPointsFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="InstLayerFrame.pas">
+            <Form>LayerFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="GMF\SelectedObjects.pas"/>
+        <DCCReference Include="MOUSE\objEditMap.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -947,6 +958,12 @@
                 </DeployFile>
                 <DeployFile LocalName="Win32\Debug\testAndro.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
+                        <RemoteName>testAndro.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win64\Debug\testAndro.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win64">
                         <RemoteName>testAndro.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>

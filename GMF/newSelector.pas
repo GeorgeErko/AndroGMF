@@ -68,6 +68,8 @@ Type
 //
  TUpdateProc = procedure(Check:boolean=False) of object;
 //
+ TInvalidateOverlayProc = procedure of object;
+//
  TUpdateSceneMode = (usmNone, usmAdd, usmModify, usmDelete);
  TOnUpdateSceneProc = procedure (UpdateSceneMode: TUpdateSceneMode; Obj: TObject) of object;
 
@@ -80,6 +82,9 @@ Type
    GNForm:TControl;
    ovrPainter: TSkPaintBox;
    ovrPaint: ISkPaint;
+   OverlayDrawOnlyDepth: Integer;
+   OnInvalidateOverlayLive: TInvalidateOverlayProc;
+   OnInvalidateOverlayStatic: TInvalidateOverlayProc;
    HObject,WObject:Double;
    GGraphSet:TGraphSet;
    GLineCol,GSqwearCol,GPointCol:TSortedCollection;
@@ -144,6 +149,8 @@ Type
 var RealScaleLength:TRealScaleLength;
 
 Function ScrRealScaleLength(Drawer: TogsDrawer; Value: Double; Ko: Double): Double;
+Function  MetersToGa(V:Double):Double;
+Function  MetersGaStr(V:Double;UseText:boolean=True):String;
 
 implementation uses EcDot, Intervals, SysUtils, Math, WPTForm0, WPTForm1,
                     drawGrid, Writer;
@@ -155,6 +162,26 @@ begin
  If Ko = 0 then Result := Drawer.ogsSelector.geoDist(Value)
   else
  Result := Value * Ko;
+end;
+
+Function  MetersToGa;
+begin
+ If Const_Of_SqwearMetric=Const_Ga then
+  Result:=V/10000 else Result:=V;
+end;
+
+Function MetersGaStr;
+begin
+{ If UseText then begin
+ If Const_Of_SqwearMetric=Const_Ga then
+  Result:=FloatToStrF(MetersToGa(V),ffFixed,_LD,Const_Of_DecimalSqwear)+' га' else
+  Result:=FloatToStrF(MetersToGa(V),ffFixed,_LD,Const_Of_DecimalSqwear)+' м.кв.';
+ end else begin
+}
+ If Const_Of_SqwearMetric=Const_Ga then
+  Result:=FloatToStrF(MetersToGa(V),ffFixed,_LD,Const_Of_DecimalSqwear) else
+  Result:=FloatToStrF(MetersToGa(V),ffFixed,_LD,Const_Of_DecimalSqwear);
+// end;
 end;
 
 { TMrect }
@@ -464,21 +491,35 @@ end;
 
 procedure TSelector.UpdateImage(UpdateSceneMode:TUpdateSceneMode = usmNone; Obj: TObject = nil);
 begin
+ If OverlayDrawOnlyDepth > 0 then
+  Exit;
  Writein(['ui=1']);
  If UpdateSceneMode = usmNone then
   Drawer.RedrawAll
  else
  begin
   OnUpdateScene(UpdateSceneMode, Obj);
-  ovrPainter.Redraw;
+  if Assigned(OnInvalidateOverlayStatic) then
+   OnInvalidateOverlayStatic;
+  if Assigned(OnInvalidateOverlayLive) then
+   OnInvalidateOverlayLive;
+  if (not Assigned(OnInvalidateOverlayStatic)) and (not Assigned(OnInvalidateOverlayLive)) then
+   if ovrPainter <> nil then
+    ovrPainter.Redraw;
  end;
  Writein(['ui=2']);
 end;
 
 procedure TSelector.UpdateOverlay;
 begin
- If ovrPainter <> nil then
-  ovrPainter.Redraw else
+ If OverlayDrawOnlyDepth > 0 then
+  Exit;
+ if Assigned(OnInvalidateOverlayLive) then
+  OnInvalidateOverlayLive
+ else
+  if ovrPainter <> nil then
+   ovrPainter.Redraw
+  else
    UpdateImage;
 end;
 

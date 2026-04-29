@@ -53,7 +53,7 @@ begin
  ListView1.BeginUpdate;
  try
   ListView1.Items.Clear;
-  Files := TDirectory.GetFiles(TPath.GetDocumentsPath, '*.gmf');
+  Files := TDirectory.GetFiles(TPath.GetDocumentsPath, '*.*');
   for I := 0 to Length(Files) - 1 do begin
    Item := ListView1.Items.Add;
    Item.Text := ExtractFileName(Files[I]);

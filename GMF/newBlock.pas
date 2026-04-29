@@ -1105,6 +1105,8 @@ begin
    If B=TWG_Point then begin
  // äâèãàåì òî÷å÷íûå îáúåêòû
     If PD.ClassHandle.Check = 0 then continue;
+    if TwgForm.FontColEx <> nil then
+      PD.ResetParams(param_idResetFontView, TwgForm.FontColEx);
     If PD.TextManager<>nil then begin
      Zm:='';Xm:=FloatToStrF(-PD.YDot,ffFixed,_LD,PrecXY);Ym:=FloatToStrF(PD.XDot,ffFixed,_LD,PrecXY);
      PD.TextManager.SetSysSpatialData(Xm,Ym,Zm);

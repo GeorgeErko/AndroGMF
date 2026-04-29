@@ -882,6 +882,7 @@ begin
 end;
 
 Procedure TMosLib.CreateGroupView;
+var S: String;
 Function GetLibZnaks(IniName:String;Lib:TSortedCollection;Group:TGroupCollection;Flag:Integer):boolean;
 var I,J,N:Integer;
     Ini:TIniFile;
@@ -937,11 +938,13 @@ begin
  PointGroup:=TGroupCollection.Create(1);
  LineGroup:=TGroupCollection.Create(1);
  SquareGroup:=TGroupCollection.Create(1);
+ GrpName := 'topo500';
+ S := MainPath+GrpName+'.grp';
 If FileExists(MainPath+GrpName+'.grp') then begin
 // MessageInform('Невозможно загрузить файл таблицы групп условных обозначений '+GrpName+'. Загружены значения по умолчанию.');
- GetLibZnaks(SetExtFile(PntZnk,'.grp'),PSLib,PointGroup,0);
- GetLibZnaks(SetExtFile(LineZnk,'.gr1'),LSLib,LineGroup,1);
- GetLibZnaks(SetExtFile(SqwZnk,'.gr2'),SSLib,SquareGroup,2);
+ GetLibZnaks(SetExtFile(S,'.grp'),PSLib,PointGroup,0);
+ GetLibZnaks(SetExtFile(S,'.gr1'),LSLib,LineGroup,1);
+ GetLibZnaks(SetExtFile(S,'.gr2'),SSLib,SquareGroup,2);
 end;
 {}
 end;
