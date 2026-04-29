@@ -50,3 +50,6 @@ Linux64/
 *.log
 *.tmp
 *.cache
+
+*.rar
+/WIN/WORKPATH/
