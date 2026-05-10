@@ -25,7 +25,6 @@ type
     btnCancel: TButton;
     btnOk: TButton;
     ImageList1: TImageList;
-    SizeGrip1: TSizeGrip;
     procedure btnDropClick(Sender: TObject);
     procedure chkLayerChange(Sender: TObject);
     procedure TreeLayersChange(Sender: TObject);
@@ -84,8 +83,11 @@ type
     destructor Destroy; override;
     procedure RefreshUI;
     property LayerTable: TLayerTable read FLayerTable write SetLayerTable;
+    procedure SetActiveLayerByName(LayerName: String);
     property ActiveLayer: TResource read GetActiveLayer write SetActiveLayer;
   end;
+
+var LayerFrame: TLayerFrame;
 
 implementation
 
@@ -100,11 +102,13 @@ begin
  C := FindComponent('PopupSizeGrip');
  if (C <> nil) and (C is TSizeGrip) then Exit;
  Grip := TSizeGrip.Create(Self);
+ Grip.Size.Height := 3; Grip.Size.Width := 3;
  Grip.Name := 'PopupSizeGrip';
  Grip.Stored := False;
- Grip.Parent := PopupLay;
- Grip.Position.X := PopupLay.Width - Grip.Width - 2;
- Grip.Position.Y := PopupLay.Height - Grip.Height - 2;
+ Grip.Parent := PopupLayers;
+ Grip.Align := TAlignLayout.Bottom;
+// Grip.Position.X := PopupLayers.Width - Grip.Width - 2;
+// Grip.Position.Y := PopupLayers.Height - Grip.Height - 2;
  Grip.Anchors := [TAnchorKind.akRight, TAnchorKind.akBottom];
  Grip.OnMouseDown := PopupGripMouseDown;
  Grip.OnMouseMove := PopupGripMouseMove;
@@ -113,11 +117,11 @@ end;
 
 procedure TLayerFrame.LoadPopupSize;
 var
- W, H: Integer;
+ W, H: Single;
 begin
  if PopupLayers = nil then Exit;
- W := GReadInteger(Name + '_PopupW', Round(PopupLayers.Width));
- H := GReadInteger(Name + '_PopupH', Round(PopupLayers.Height));
+ W := GReadFloat('Layers_PopupW', PopupLayers.Width);
+ H := GReadFloat('Layers_PopupH', PopupLayers.Height);
  if W < 200 then W := 200;
  if H < 160 then H := 160;
  PopupLayers.Width := W;
@@ -127,8 +131,8 @@ end;
 procedure TLayerFrame.SavePopupSize;
 begin
  if PopupLayers = nil then Exit;
- GWriteInteger(Name + '_PopupW', Round(PopupLayers.Width));
- GWriteInteger(Name + '_PopupH', Round(PopupLayers.Height));
+ GWriteFloat('Layers_PopupW', PopupLayers.Width);
+ GWriteFloat('Layers_PopupH', PopupLayers.Height);
 end;
 
 procedure TLayerFrame.PopupGripMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -224,6 +228,12 @@ begin
  if FLayerTable.ActiveLayer = Value then Exit;
  FLayerTable.ActiveLayer := Value;
  SyncHeader;
+end;
+
+procedure TLayerFrame.SetActiveLayerByName(LayerName: String);
+begin
+ if FLayerTable.LayerName[LayerName] <> nil then
+  SetActiveLayer(FLayerTable.LayerName[LayerName]);
 end;
 
 procedure TLayerFrame.RefreshUI;

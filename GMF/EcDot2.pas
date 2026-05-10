@@ -39,6 +39,7 @@ type
  TDotText = class(TPointDot)
   Text:TText;
   TextBitmap: TBitmap;
+  OwnsTextBitmap: Boolean;
   TextDirty: Boolean;
   BaseLinePix: Single;
   BaseLineXPix: Single;
@@ -301,6 +302,7 @@ begin
  What:=1;
  GyperLink:=TStringList.Create;
  TextBitmap := nil;
+ OwnsTextBitmap := True;
  TextDirty := True;
 end;
 
@@ -309,6 +311,7 @@ begin
  inherited;
  Text := TText.CreateAs(TDotText(P).Text);
  TextBitmap := nil;
+ OwnsTextBitmap := True;
  TextDirty := True;
  GyperLink:=TStringList.Create;
  GyperLink.Text:=TDotText(P).GyperLink.Text;
@@ -322,6 +325,7 @@ begin
  inherited;
  Text := TText.CreateAs(TDotText(P).Text);
  TextBitmap := nil;
+ OwnsTextBitmap := True;
  TextDirty := True;
  GyperLink:=TStringList.Create;
  GyperLink.Text:=TDotText(P).GyperLink.Text;
@@ -338,12 +342,13 @@ begin
  GyperLink:=TStringList.Create;
  GyperLink.Text:=Stream.ReadString;
  TextBitmap := nil;
+ OwnsTextBitmap := True;
  TextDirty := True;
 end;
 
 function TDotText.ResetParams(ParamID:Integer;Params:Pointer):boolean;
 const
- NominalPxHeight: Integer = 100;
+ lodFixedHeight: Integer = 40;
 var
   W: Integer;
   S: string;
@@ -360,6 +365,9 @@ var
   FontSize: Single;
   ScaleK: Single;
   Metrics: TSkFontMetrics;
+  Bounds: TRectF;
+  TightAscentAbs: Single;
+  ScaleCorr: Single;
   BaselineY: Single;
   DebugPaint: ISkPaint;
   YTop: Single;
@@ -371,6 +379,8 @@ var
   Surface: ISkSurface;
   Paint: ISkPaint;
   D: TBitmapData;
+  DataPtr: Pointer;
+  RowBytes: Integer;
 begin
  inherited ResetParams(ParamID, Params);
  What:=1;
@@ -383,7 +393,13 @@ begin
      if Text.FontView <> nil then
      begin
       if TextBitmap = nil then
-       TextBitmap := TBitmap.Create;
+       if OwnsTextBitmap then
+        TextBitmap := TBitmap.Create
+       else
+       begin
+        Result := False;
+        Exit;
+       end;
 
       if (not TextDirty) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
       begin
@@ -432,70 +448,67 @@ begin
        if Typeface = nil then
         Typeface := TSkTypeface.MakeFromName(Family, TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant));
 
-       FontSize := NominalPxHeight;
+       FontSize := lodFixedHeight;
        Font := TSkFont.Create(Typeface, FontSize);
 
        Font.GetMetrics(Metrics);
        if (-Metrics.Ascent) > 0.01 then
        begin
-        ScaleK := NominalPxHeight / (-Metrics.Ascent);
+        ScaleK := lodFixedHeight / (-Metrics.Ascent);
         FontSize := FontSize * ScaleK;
         Font := TSkFont.Create(Typeface, FontSize);
+       end;
+
+       Paint := TSkPaint.Create;
+       Paint.AntiAlias := True;
+       Font.MeasureText(S, Bounds, Paint);
+       TightAscentAbs := -Bounds.Top;
+       if TightAscentAbs > 0.01 then
+       begin
+        ScaleCorr := lodFixedHeight / TightAscentAbs;
+        if Abs(ScaleCorr - 1) > 1e-4 then
+        begin
+         FontSize := FontSize * ScaleCorr;
+         Font := TSkFont.Create(Typeface, FontSize);
+         Font.MeasureText(S, Bounds, Paint);
+         TightAscentAbs := -Bounds.Top;
+        end;
        end;
 
        BaseLineXPix := 2;
        RightPadPix := 4;
 
-       W := Round(Length(S) * FontSize * 0.6);
+       W := Trunc(Bounds.Width + 0.9999);
        W := W + Round(BaseLineXPix + RightPadPix);
        if W < 2 then W := 2;
-       Font.GetMetrics(Metrics);
-       BaseLinePix := -Metrics.Ascent + 2;
-       SymbolTopPix := BaseLinePix + Metrics.Ascent;
-       SymbolHeightPix := -Metrics.Ascent;
-       H := (-Metrics.Ascent + Metrics.Descent) + 4;
+
+       SymbolTopPix := 2;
+       SymbolHeightPix := TightAscentAbs;
+       if SymbolHeightPix <= 0 then
+        SymbolHeightPix := lodFixedHeight;
+       BaseLinePix := SymbolTopPix + SymbolHeightPix;
+       H := BaseLinePix + 2;
        TextBitmap.SetSize(W, Round(H));
 
        if TextBitmap.Map(TMapAccess.Write, D) then
        try
         ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-        Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
+        DataPtr := D.Data;
+        RowBytes := D.Pitch;
+        if RowBytes < 0 then
+        begin
+         RowBytes := -RowBytes;
+         DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (TextBitmap.Height - 1));
+        end;
+        Surface := TSkSurface.MakeRasterDirect(ImgInfo, DataPtr, RowBytes);
         if Surface <> nil then
         begin
-         Paint := TSkPaint.Create;
-         Paint.AntiAlias := True;
          Paint.Color := WinColorToAlphaColor(Text.Color);
          Surface.Canvas.Clear(0);
 
          BaselineY := BaseLinePix;
 
-         Surface.Canvas.DrawSimpleText(S, 2, BaselineY, Font, Paint);
-
-         DebugPaint := TSkPaint.Create;
-         DebugPaint.AntiAlias := True;
-         DebugPaint.Color := TAlphaColor($FFFF0000);
-         DebugPaint.StrokeWidth := 2;
-         DebugPaint.Style := TSkPaintStyle.Stroke;
-
-         YTop := 0;
-         YBaseline := BaseLinePix;
-         YAscent := BaseLinePix + Metrics.Ascent;
-         YDescent := BaseLinePix + Metrics.Descent;
-         YBottom := TextBitmap.Height - 1;
-
-         Surface.Canvas.DrawLine(0, YTop, TextBitmap.Width, YTop, DebugPaint);
-         Surface.Canvas.DrawLine(0, YAscent, TextBitmap.Width, YAscent, DebugPaint);
-         Surface.Canvas.DrawLine(0, YBaseline, TextBitmap.Width, YBaseline, DebugPaint);
-         Surface.Canvas.DrawLine(0, YDescent, TextBitmap.Width, YDescent, DebugPaint);
-         Surface.Canvas.DrawLine(0, YBottom, TextBitmap.Width, YBottom, DebugPaint);
-
-         Surface.Canvas.DrawRect(TRectF.Create(0, 0, TextBitmap.Width - 1, TextBitmap.Height - 1), DebugPaint);
-
-         Surface.Canvas.DrawCircle(2, YTop, 4, DebugPaint);
-         Surface.Canvas.DrawCircle(2, YAscent, 4, DebugPaint);
-         Surface.Canvas.DrawCircle(2, YBaseline, 4, DebugPaint);
-         Surface.Canvas.DrawCircle(2, YDescent, 4, DebugPaint);
-         Surface.Canvas.DrawCircle(2, YBottom, 4, DebugPaint);
+         Surface.Canvas.DrawSimpleText(S, BaseLineXPix - Bounds.Left, BaselineY, Font, Paint);
         end
        finally
         TextBitmap.Unmap(D);
@@ -686,7 +699,7 @@ end;
 
 function TDotText.GetSect: TSect;
 const
- NominalPxHeight: Single = 100;
+ lodFixedHeight: Single = 40;
 var
  GX, GY: Double;
  SX, SY: Double;
@@ -711,8 +724,8 @@ begin
  end;
  try
  N := 0;
- GX := Text.Height / NominalPxHeight;
- GY := Text.Height / NominalPxHeight;
+ GX := Text.Height / lodFixedHeight;
+ GY := Text.Height / lodFixedHeight;
  SX := GX;
  SY := GY;
  if XKoef <> 0 then
@@ -770,7 +783,7 @@ end;
 
 destructor TDotText.Destroy;
 begin
- if TextBitmap <> nil then
+ if OwnsTextBitmap and (TextBitmap <> nil) then
   TextBitmap.Free;
  if GyperLink <> nil then
   GyperLink.Free;
@@ -793,63 +806,45 @@ end;
 
 procedure TDotText.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection; FontViewEx: TFontManagerEx;
  AlwaysShowAttr: Boolean);
+label VectorText;
 const
- NominalPxHeight: Single = 100;
- DebugDirectSkia = True;
+ lodFixedHeight: Single = 40;
 var
  S: Single;
  SX, SY: Single;
  H, W: Single;
+ HPix: Single;
  OffX, OffY: Single;
  AnchorPix: TPointF;
  St: TCanvasSaveState;
  Dst: TRectF;
  XP, YP: Double;
+ TxtColor: TAlphaColor;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  if Text = nil then Exit;
- // Skia direct text path (debug)
- if DebugDirectSkia and (Drawer is TogsDrawerSkia) then
+ HPix := Selector.XRasst(Text.Height);
+
+ // Skia path: draw raster TextBitmap onto Skia canvas (LOD)
+ if (Drawer is TogsDrawerSkia) and (HPix <= 40) then
  begin
   if Selector.GetScale = 0 then Exit;
-  // DrawTextAlignedPix expects font size as Top->Baseline height.
-  if TogsDrawerSkia(Drawer).UseWorldCoords then
-   H := Text.Height
-  else
-   H := Selector.XRasst(Text.Height);
+  if (TextBitmap = nil) or TextDirty or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+   if FontViewEx <> nil then
+    ResetParams(1, FontViewEx)
+   else
+    TextDirty := True;
+  if (TextBitmap = nil) or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+   goto VectorText;
+
+  H := HPix;
   if H <= 0 then Exit;
 
-  Text.GetXPYP(XP, YP);
-  if TogsDrawerSkia(Drawer).UseWorldCoords then
-   AnchorPix := PointF(Single(XDot), Single(YDot))
+  if SymbolHeightPix > 0 then
+   S := H / SymbolHeightPix
   else
-   AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
-
-  TogsDrawerSkia(Drawer).DrawTextAlignedPix(
-    AnchorPix,
-    string(Text.Text),
-    WinColorToAlphaColor(Text.Color),
-    H,
-    Ugol,
-    XP, YP,
-    XKoef,
-    Text.FontView
-  );
-  Exit;
- end;
-
- // Skia path: draw raster TextBitmap onto Skia canvas
- if (Drawer is TogsDrawerSkia) and (TextBitmap <> nil) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
- begin
-  if Selector.GetScale = 0 then Exit;
-  H := Selector.XRasst(Text.Height);
-  if H <= 0 then Exit;
-
-  if BaseLinePix > 0 then
-   S := H / BaseLinePix
-  else
-   S := H / NominalPxHeight;
+   S := H / lodFixedHeight;
   SX := S;
   SY := S;
   if XKoef <> 0 then
@@ -881,6 +876,34 @@ begin
   Exit;
  end;
 
+ // Skia vector text path
+ if (Drawer is TogsDrawerSkia) then
+ begin
+VectorText:
+  if Selector.GetScale = 0 then Exit;
+  if TogsDrawerSkia(Drawer).UseWorldCoords then
+   H := Text.Height
+  else
+   H := Selector.XRasst(Text.Height);
+  if H <= 0 then Exit;
+
+  Text.GetXPYP(XP, YP);
+  AnchorPix := PointF(Single(XDot), Single(YDot));
+  TxtColor := WinColorToAlphaColor(Text.Color);
+
+  TogsDrawerSkia(Drawer).DrawTextAlignedPix(
+    AnchorPix,
+    string(Text.Text),
+    TxtColor,
+    H,
+    Ugol,
+    XP, YP,
+    XKoef,
+    Text.FontView
+  );
+  Exit;
+ end;
+
  // FMX canvas path (legacy)
  if Drawer.Canvas = nil then Exit;
  if TextBitmap = nil then Exit;
@@ -892,7 +915,7 @@ begin
  if BaseLinePix > 0 then
   S := H / BaseLinePix
  else
-  S := H / NominalPxHeight;
+  S := H / lodFixedHeight;
  SX := S;
  SY := S;
  if XKoef <> 0 then

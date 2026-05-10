@@ -465,6 +465,23 @@
         </DCCReference>
         <DCCReference Include="GMF\SelectedObjects.pas"/>
         <DCCReference Include="MOUSE\objEditMap.pas"/>
+        <DCCReference Include="COMPS\DlgPropColorEditor.pas"/>
+        <DCCReference Include="COMPS\DlgPropFontEditor.pas"/>
+        <DCCReference Include="COMPS\DlgRootPropEditor.pas">
+            <Form>RootPropEditorForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="COMPS\DropDownButton.pas"/>
+        <DCCReference Include="GMF\LBN.pas"/>
+        <DCCReference Include="COMPS\tstForm.pas">
+            <Form>tsts2DF</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="COMPS\tst2.pas">
+            <Form>tst2Frame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

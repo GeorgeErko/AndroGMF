@@ -9,7 +9,7 @@ uses
   FMX.TabControl, FMX.Controls.Presentation,
   WPTForm2, newLayersTable, System.ImageList, FMX.ImgList, FMX.Layouts,
   FMX.ListBox, FMX.ScrollBox, FMX.Skia,
-  Lib, System.Skia;
+  Lib, System.Skia, instLayerFrame;
 
 type
   TInstPointsFrame = class(TFrame)
@@ -38,15 +38,32 @@ type
    FVisRows: Integer;
    FScale: Single;
    TilesLay: TLayout;
+   FDragScaleActive: Boolean;
+   FDragScaleTileIdx: Integer;
+   FDragScaleStart: Single;
+   FDragScaleStartDist: Single;
+   FDragScaleKey: AnsiString;
+   FDragScaleTileControl: TControl;
+   FDirtyScales: TStringList;
+   procedure MarkDirtyScale(const AKey: AnsiString; const AObj: TObject);
+   procedure DragScaleUpdateFromControlCoords(const AControl: TControl; const AX, AY: Single);
+   procedure DragScaleCommit;
+   procedure LoadAllLocalScalesFromRegistry; virtual;
+   procedure SaveAllLocalScalesToRegistry; virtual;
    procedure InvalidateTiles; virtual;
    procedure EnsureSelectedTileVisible; virtual;
-   procedure ClearExtraResources; virtual;
+    procedure ClearExtraResources; virtual;
     procedure SetTwgForm(const Value: TForm2); virtual;
     procedure ChangeTab(Sender: TObject);
     procedure EnsureControls; virtual;
     procedure InitControls; virtual;
     procedure TileDraw(Sender: TObject; const Canvas: ISkCanvas; const Dest: TRectF; const Opacity: Single); virtual;
     procedure TileClick(Sender: TObject);
+    procedure TileMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+    procedure TileMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+    procedure TileMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+    procedure SBMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+    procedure SBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
   // доступ к коллекции знаков
     function GetZnacksCount(TabName_: String): Integer; virtual;
     function GetZnakIndex(TabName_:String;Index:Integer):Integer;virtual;
@@ -54,6 +71,8 @@ type
     function GetZnakLayer(TabName_:String;Index:Integer):String;virtual;
     function GetZnakPoint(TabName_:String;Index:Integer):TPoint_Sign;virtual;
   public
+   constructor Create(AOwner: TComponent); override;
+   destructor Destroy; override;
    function Group: TGroupCollection; virtual;
    property TwgForm: TForm2 read FTwgForm write SetTwgForm;
    property Scale: Single read FScale write FScale;
@@ -73,7 +92,8 @@ var
  GTileStrokePaint: ISkPaint;
  GTileFillPaint: ISkPaint;
 
-implementation uses newProcs, newSelector, ogcDrawerSkia, Writer;
+implementation uses newProcs, newSelector, ogcDrawerSkia, FMX.Platform, Writer,
+                    FramePropEditor;
 
 {$R *.fmx}
 
@@ -96,6 +116,66 @@ end;
 function SignLocalScaleKey(const AFrameName, ATabName: string; const ASign: TPoint_Sign): AnsiString;
 begin
  Result := AnsiString(AFrameName + '_' + ATabName + '_LocalScale_' + IntToStr(ASign.MyInd));
+end;
+
+procedure TInstPointsFrame.LoadAllLocalScalesFromRegistry;
+var I: Integer;
+    TabName: String;
+    Idx: Integer;
+    Sign: TPoint_Sign;
+    K: AnsiString;
+begin
+ if Group = nil then Exit;
+ for I := 0 to Group.Count - 1 do
+ begin
+  TabName := Group[I].Name;
+  if TabName = '' then Continue;
+  for Idx := 0 to GetZnacksCount(TabName) - 1 do
+  begin
+   Sign := GetZnakPoint(TabName, Idx);
+   if Sign = nil then Continue;
+   K := SignLocalScaleKey(Name, TabName, Sign);
+   Sign.LocalScale := GReadFloat(K, Sign.LocalScale);
+   if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
+  end;
+ end;
+end;
+
+procedure TInstPointsFrame.MarkDirtyScale(const AKey: AnsiString; const AObj: TObject);
+var N: Integer;
+begin
+ if AKey = '' then Exit;
+ if AObj = nil then Exit;
+ if FDirtyScales = nil then
+ begin
+  FDirtyScales := TStringList.Create;
+  FDirtyScales.Sorted := True;
+  FDirtyScales.Duplicates := dupIgnore;
+ end;
+ N := FDirtyScales.IndexOf(string(AKey));
+ if N < 0 then
+  FDirtyScales.AddObject(string(AKey), AObj)
+ else
+  FDirtyScales.Objects[N] := AObj;
+end;
+
+procedure TInstPointsFrame.SaveAllLocalScalesToRegistry;
+var I: Integer;
+    TabName: String;
+    Idx: Integer;
+    Sign: TPoint_Sign;
+    K: AnsiString;
+begin
+ if (FDirtyScales = nil) or (FDirtyScales.Count = 0) then Exit;
+ for I := 0 to FDirtyScales.Count - 1 do
+ begin
+  K := AnsiString(FDirtyScales[I]);
+  Sign := TPoint_Sign(FDirtyScales.Objects[I]);
+  if Sign = nil then Continue;
+  if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
+  GWriteFloat(K, Sign.LocalScale);
+ end;
+ FDirtyScales.Clear;
 end;
 
 procedure TileOnPoly(Obj: Integer; Poly: PGeoPoint; penColor, brushColor: Integer; lineWidth: Double; useColor: Boolean; isPolygon: Boolean); stdcall;
@@ -251,6 +331,29 @@ begin
  end;
 end;
 
+constructor TInstPointsFrame.Create(AOwner: TComponent);
+begin
+ inherited Create(AOwner);
+ if (AOwner <> nil) and (Name = 'InstPointsFrame') then begin
+  TControl(AOwner).Width := GReadFloat(Name + '_W',TControl(AOwner).Width);
+  Writein(['Load=', Name, Width, TControl(AOwner).Name]);
+ end;
+end;
+
+destructor TInstPointsFrame.Destroy;
+begin
+if Name = 'InstPointsFrame' then begin
+ GWriteFloat(Name + '_W', TControl(Owner).Width);
+    Writein(['Save=', Name, Width]);
+end;
+ try
+  SaveAllLocalScalesToRegistry;
+ finally
+  FreeAndNil(FDirtyScales);
+  inherited;
+ end;
+end;
+
 procedure TInstPointsFrame.btnTabsClick(Sender: TObject);
 var I: Integer;
     H: Single;
@@ -284,25 +387,30 @@ var Delta: Integer;
     Idx: Integer;
     Sign: TPoint_Sign;
     K: AnsiString;
+    I: Integer;
+    TabName: String;
+    DeltaScale: Single;
 begin
  if Abs(TControl(Sender).Tag) = 10  then begin
-  Sign := nil;
-  if (Group <> nil) and (FTabName <> '') and (CB <> nil) then
+  if Group = nil then Exit;
+  DeltaScale := 0.1 * (TControl(Sender).Tag / 10);
+  for I := 0 to Group.Count - 1 do
   begin
-   Idx := CB.ItemIndex;
-   if (Idx >= 0) and (Idx < GetZnacksCount(FTabName)) then
-    Sign := GetZnakPoint(FTabName, Idx);
+   TabName := Group[I].Name;
+   if TabName = '' then Continue;
+   for Idx := 0 to GetZnacksCount(TabName) - 1 do
+   begin
+    Sign := GetZnakPoint(TabName, Idx);
+    if Sign = nil then Continue;
+    if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
+    Sign.LocalScale := Sign.LocalScale + DeltaScale;
+    if Sign.LocalScale < 0.1 then Sign.LocalScale := 0.1;
+    if Sign.LocalScale > 10 then Sign.LocalScale := 10;
+    K := SignLocalScaleKey(Name, TabName, Sign);
+    MarkDirtyScale(K, Sign);
+   end;
   end;
-  if Sign <> nil then
-  begin
-   K := SignLocalScaleKey(Name, FTabName, Sign);
-   Sign.LocalScale := GReadFloat(K, Sign.LocalScale);
-   Sign.LocalScale := Sign.LocalScale + (0.5 * TControl(Sender).Tag/10);
-   if Sign.LocalScale < 0.1 then Sign.LocalScale := 0.1;
-   if Sign.LocalScale > 10 then Sign.LocalScale := 10;
-   GWriteFloat(K, Sign.LocalScale);
-  end;
-  RebuildTiles;
+  InvalidateTiles;
  end else begin
   Delta := -4;
   if TControl(Sender).Tag <> 0 then
@@ -385,11 +493,13 @@ end;
 procedure TInstPointsFrame.SetTwgForm(const Value: TForm2);
 var I: Integer; Tab: TTabItem;
 begin
+ SaveAllLocalScalesToRegistry;
  ClearTilesAndResources;
  FTwgForm := Value;
 // заполнение вкладок
  If Group = nil then Exit;
  InitControls;
+ LoadAllLocalScalesFromRegistry;
 
  if CB <> nil then CB.Parent := nil;
  if SB <> nil then SB.Parent := nil;
@@ -426,6 +536,8 @@ begin
  SB.Stored := False;
   SB.ShowScrollBars := True;
   SB.AutoHide := True;
+  SB.OnMouseMove := SBMouseMove;
+  SB.OnMouseUp := SBMouseUp;
  Lay.Stored := False;
  Lay.Align := TAlignLayout.None;
  Lay.Position.X := 0;
@@ -532,6 +644,9 @@ begin
    T.Tag := Idx;
    T.OnDraw := TileDraw;
    T.OnClick := TileClick;
+   T.OnMouseDown := TileMouseDown;
+   T.OnMouseMove := TileMouseMove;
+   T.OnMouseUp := TileMouseUp;
   end;
  finally
   TilesLay.EndUpdate;
@@ -543,16 +658,28 @@ var Idx: Integer;
 begin
  if not (Sender is TControl) then exit;
  Idx := TControl(Sender).Tag;
- if (CB <> nil) and (Idx >= 0) and (Idx < CB.Items.Count) then
- begin
+ if (CB <> nil) and (Idx >= 0) and (Idx < CB.Items.Count) then begin
+  LayerFrame.SetActiveLayerByName(Group.Group[TC.TabIndex].Item[Idx].znakLayer);
   CB.ItemIndex := Idx;
+ // передаем знак в TPropEditorFrame (PropEditorForm)
+  if PropEditorForm.ActivePropRow <> nil then
+   if (PropEditorForm.ActivePropRow.TypeName = 'PointType') or
+       (PropEditorForm.ActivePropRow.TypeName = 'PointType') then begin
+    PropEditorForm.ActivePropRow.Value := IntToStr(Group.Group[TC.TabIndex].Item[Idx].znakNum);
+   // update
+   end else
+   if (PropEditorForm.ActivePropRow.TypeName = 'Block') then begin
+    PropEditorForm.ActivePropRow.Value := Group.Group[TC.TabIndex].Item[Idx].znakName;
+   end;
   InvalidateTiles;
  end;
 end;
 
 procedure TInstPointsFrame.CBChange(Sender: TObject);
 begin
+ if CB.ItemIndex = -1 then Exit;
  EnsureSelectedTileVisible;
+ LayerFrame.SetActiveLayerByName(Group.Group[TC.TabIndex].Item[CB.ItemIndex].znakLayer);
  InvalidateTiles;
 end;
 
@@ -612,6 +739,144 @@ begin
    TSkPaintBox(TilesLay.Controls[I]).Redraw;
 end;
 
+procedure TInstPointsFrame.TileMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var
+ Idx: Integer;
+ Sign: TPoint_Sign;
+ H: Single;
+ CenterY: Single;
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not (Sender is TControl) then Exit;
+ if (Group = nil) or (FTabName = '') then Exit;
+ Idx := TControl(Sender).Tag;
+ if (Idx < 0) or (Idx >= GetZnacksCount(FTabName)) then Exit;
+ Sign := GetZnakPoint(FTabName, Idx);
+ if Sign = nil then Exit;
+
+ // select tile
+ if (CB <> nil) and (Idx >= 0) and (Idx < CB.Items.Count) then
+  CB.ItemIndex := Idx;
+
+ // remember tile index where the drag started
+ FDragScaleActive := True;
+ FDragScaleTileIdx := Idx;
+ FDragScaleKey := SignLocalScaleKey(Name, FTabName, Sign);
+ FDragScaleTileControl := TControl(Sender);
+ if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
+ FDragScaleStart := Sign.LocalScale;
+ H := TControl(Sender).Height;
+ if H <= 1 then H := 1;
+ CenterY := H * 0.5;
+ FDragScaleStartDist := Abs(Y - CenterY);
+ InvalidateTiles;
+end;
+
+procedure TInstPointsFrame.TileMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+var
+ Idx: Integer;
+begin
+ if not FDragScaleActive then Exit;
+ if not (Sender is TControl) then Exit;
+ Idx := TControl(Sender).Tag;
+ if Idx <> FDragScaleTileIdx then Exit;
+ DragScaleUpdateFromControlCoords(TControl(Sender), X, Y);
+end;
+
+procedure TInstPointsFrame.TileMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not FDragScaleActive then Exit;
+ DragScaleCommit;
+end;
+
+procedure TInstPointsFrame.SBMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+var
+ AbsPt: TPointF;
+ LocalPt: TPointF;
+begin
+ if not FDragScaleActive then Exit;
+ if SB = nil then Exit;
+ if FDragScaleTileControl = nil then Exit;
+ // Convert SB local coords -> screen/absolute -> active tile local coords
+ AbsPt := SB.LocalToAbsolute(PointF(X, Y));
+ LocalPt := FDragScaleTileControl.AbsoluteToLocal(AbsPt);
+ DragScaleUpdateFromControlCoords(FDragScaleTileControl, LocalPt.X, LocalPt.Y);
+end;
+
+procedure TInstPointsFrame.SBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not FDragScaleActive then Exit;
+ DragScaleCommit;
+end;
+
+procedure TInstPointsFrame.DragScaleUpdateFromControlCoords(const AControl: TControl; const AX, AY: Single);
+var
+ Idx: Integer;
+ Sign: TPoint_Sign;
+ H: Single;
+ CenterY: Single;
+ Dist: Single;
+ DeltaDist: Single;
+ NewScale: Single;
+begin
+ if not FDragScaleActive then Exit;
+ if (Group = nil) or (FTabName = '') then Exit;
+ Idx := FDragScaleTileIdx;
+ if (Idx < 0) or (Idx >= GetZnacksCount(FTabName)) then Exit;
+ Sign := GetZnakPoint(FTabName, Idx);
+ if Sign = nil then Exit;
+ if AControl = nil then Exit;
+
+ H := AControl.Height;
+ if H <= 1 then Exit;
+
+ CenterY := H * 0.5;
+ Dist := Abs(AY - CenterY);
+ DeltaDist := Dist - FDragScaleStartDist;
+ // debug-friendly: linear scale from delta distance to center
+ NewScale := FDragScaleStart + (DeltaDist * 0.1);
+ if NewScale < 0.1 then NewScale := 0.1;
+ if NewScale > 10 then NewScale := 10;
+ Sign.LocalScale := NewScale;
+ MarkDirtyScale(SignLocalScaleKey(Name, FTabName, Sign), Sign);
+ InvalidateTiles;
+end;
+
+procedure TInstPointsFrame.DragScaleCommit;
+var
+ Idx: Integer;
+ Sign: TPoint_Sign;
+begin
+ if not FDragScaleActive then Exit;
+ Idx := FDragScaleTileIdx;
+ FDragScaleActive := False;
+
+ if (Group = nil) or (FTabName = '') then
+ begin
+  FDragScaleKey := '';
+  FDragScaleTileIdx := -1;
+  FDragScaleTileControl := nil;
+  Exit;
+ end;
+ if (Idx < 0) or (Idx >= GetZnacksCount(FTabName)) then
+ begin
+  FDragScaleKey := '';
+  FDragScaleTileIdx := -1;
+  FDragScaleTileControl := nil;
+  Exit;
+ end;
+ Sign := GetZnakPoint(FTabName, Idx);
+ if Sign <> nil then
+  if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
+
+ FDragScaleKey := '';
+ FDragScaleTileIdx := -1;
+ FDragScaleTileControl := nil;
+ InvalidateTiles;
+end;
+
 procedure TInstPointsFrame.TileDraw(Sender: TObject; const Canvas: ISkCanvas; const Dest: TRectF; const Opacity: Single);
 var Idx: Integer;
     Sign: TPoint_Sign;
@@ -625,7 +890,6 @@ var Idx: Integer;
     Geo: TGeometryEvents;
     R: TRectF;
     Pad: Single;
-    K: AnsiString;
     IsSelected: Boolean;
 begin
  if not (Sender is TControl) then exit;
@@ -662,8 +926,6 @@ begin
  if R.Width <= 1 then Exit;
  if R.Height <= 1 then Exit;
 
- K := SignLocalScaleKey(Name, FTabName, Sign);
- Sign.LocalScale := GReadFloat(K, Sign.LocalScale);
  if Sign.LocalScale <= 0 then Sign.LocalScale := 1;
 
  PixPerMm := Min(R.Width, R.Height) * FScale * Sign.LocalScale / 48;

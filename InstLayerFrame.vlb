@@ -1,0 +1,13 @@
+﻿[HeaderLay]
+Coordinates=162,78,77,36
+
+[HeaderBg]
+Coordinates=80,78,72,36
+
+[btnDrop]
+Coordinates=10,78,60,58
+
+[]
+Coordinates=249,78,90,36
+Visible=True
+

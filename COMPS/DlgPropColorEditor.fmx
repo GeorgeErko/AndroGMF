@@ -1,0 +1,197 @@
+inherited PropColorEditorForm: TPropColorEditorForm
+  Caption = 'RootPropEditorForm'
+  ClientHeight = 363
+  ClientWidth = 516
+  DesignerMasterStyle = 0
+  inherited Panel1: TPanel
+    Position.Y = 314.000000000000000000
+    Size.Width = 516.000000000000000000
+    inherited Button1: TButton
+      Position.X = 242.000000000000000000
+    end
+    inherited Button2: TButton
+      Position.X = 330.000000000000000000
+    end
+    inherited Button3: TButton
+      Position.X = 419.000000000000000000
+    end
+  end
+  object TabControl1: TTabControl
+    Align = Client
+    Size.Width = 314.000000000000000000
+    Size.Height = 314.000000000000000000
+    Size.PlatformDefault = False
+    TabIndex = 0
+    TabOrder = 1
+    TabPosition = Top
+    Sizes = (
+      314s
+      288s
+      314s
+      288s
+      314s
+      288s)
+    object Tab256: TTabItem
+      CustomIcon = <
+        item
+        end>
+      TextSettings.Trimming = None
+      IsSelected = True
+      Size.Width = 70.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = 'CAD 256 '
+      ExplicitSize.cx = 50.000000000000000000
+      ExplicitSize.cy = 50.000000000000000000
+      object Paint256: TPaintBox
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Position.X = 10.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 293.000000000000000000
+        Size.Height = 272.000000000000000000
+        Size.PlatformDefault = False
+      end
+    end
+    object Tab16: TTabItem
+      CustomIcon = <
+        item
+        end>
+      TextSettings.Trimming = None
+      IsSelected = False
+      Size.Width = 60.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = 'CAD 16'
+      ExplicitSize.cx = 50.000000000000000000
+      ExplicitSize.cy = 50.000000000000000000
+      object Paint16: TPaintBox
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Position.X = 8.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 293.000000000000000000
+        Size.Height = 272.000000000000000000
+        Size.PlatformDefault = False
+      end
+    end
+    object TabGrad: TTabItem
+      CustomIcon = <
+        item
+        end>
+      TextSettings.Trimming = None
+      IsSelected = False
+      Size.Width = 71.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      StyleLookup = ''
+      TabOrder = 0
+      Text = #1043#1088#1072#1076#1080#1077#1085#1090
+      ExplicitSize.cx = 50.000000000000000000
+      ExplicitSize.cy = 50.000000000000000000
+      object PaintGrad: TPaintBox
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Position.X = 8.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 293.000000000000000000
+        Size.Height = 272.000000000000000000
+        Size.PlatformDefault = False
+      end
+    end
+  end
+  object RightLay: TLayout
+    Align = Right
+    Position.X = 314.000000000000000000
+    Size.Width = 202.000000000000000000
+    Size.Height = 314.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    object PreviewRect: TRectangle
+      Position.X = 24.000000000000000000
+      Position.Y = 34.000000000000000000
+      Size.Width = 157.000000000000000000
+      Size.Height = 109.000000000000000000
+      Size.PlatformDefault = False
+      Stroke.Kind = None
+    end
+    object LabR: TLabel
+      Position.X = 14.000000000000000000
+      Position.Y = 161.000000000000000000
+      Text = 'R:'
+    end
+    object TrackR: TTrackBar
+      CanParentFocus = True
+      Max = 255.000000000000000000
+      Orientation = Horizontal
+      Position.X = 51.000000000000000000
+      Position.Y = 160.000000000000000000
+      Size.Width = 144.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+    end
+    object LabG: TLabel
+      Position.X = 14.000000000000000000
+      Position.Y = 194.000000000000000000
+      Text = 'G:'
+    end
+    object TrackG: TTrackBar
+      CanParentFocus = True
+      Max = 255.000000000000000000
+      Orientation = Horizontal
+      Position.X = 51.000000000000000000
+      Position.Y = 194.000000000000000000
+      Size.Width = 144.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+    end
+    object LabB: TLabel
+      Position.X = 14.000000000000000000
+      Position.Y = 232.000000000000000000
+      Text = 'B:'
+    end
+    object TrackB: TTrackBar
+      CanParentFocus = True
+      Max = 255.000000000000000000
+      Orientation = Horizontal
+      Position.X = 51.000000000000000000
+      Position.Y = 229.000000000000000000
+      Size.Width = 144.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+    end
+    object LabA: TLabel
+      Position.X = 14.000000000000000000
+      Position.Y = 268.000000000000000000
+      Text = 'A:'
+    end
+    object TrackA: TTrackBar
+      CanParentFocus = True
+      Max = 255.000000000000000000
+      Orientation = Horizontal
+      Position.X = 51.000000000000000000
+      Position.Y = 266.000000000000000000
+      Size.Width = 144.000000000000000000
+      Size.Height = 19.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      Value = 255.000000000000000000
+    end
+    object Label1: TLabel
+      Align = Top
+      Margins.Left = 10.000000000000000000
+      Margins.Top = 5.000000000000000000
+      Position.X = 10.000000000000000000
+      Position.Y = 5.000000000000000000
+      Size.Width = 192.000000000000000000
+      Size.Height = 17.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1062#1074#1077#1090
+      TabOrder = 4
+    end
+  end
+end

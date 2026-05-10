@@ -12,9 +12,9 @@ uses
 
 type
   TMainFormSkia = class(TMainForm)
+    btnPDF: TCornerButton;
     SkPainter: TSkPaintBox;
     Popup1: TPopup;
-    btnPDF: TCornerButton;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
@@ -40,23 +40,22 @@ type
     ZoomActive: Boolean;
     InteractionActive: Boolean;
     BaseDx, BaseDy, BaseScale: Double;
-
+  //
     procedure InitSkPainterInput;
-
+  //
     procedure SkPainterResize(Sender: TObject);
-
+  //
     procedure RequestRebuildScene;
-
+  //
     procedure RenderSceneToBackbufferSkia;
-
-    procedure OpenGmfFileSkia(const LocalPath: string);
+  //
     procedure btnOpenClickSkia(Sender: TObject);
     procedure btnLocalOpenClickSkia(Sender: TObject);
     procedure btnPaintClickSkia(Sender: TObject);
     procedure btnPlusClickSkia(Sender: TObject);
-
+  //
     procedure SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
-
+  //
     procedure ResetInteractionState;
     procedure BuildCachedPicture;
     procedure BuildCachedPictureFromList;
@@ -93,13 +92,14 @@ type
     procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); virtual;
     procedure UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
   protected
+    MousePos: TPointF;
     procedure UpdateStatusGeo(const X, Y: Single; Hint: String);
+    procedure OpenGmfFileSkia(const LocalPath: string); virtual;
   public
-   MousePos: TPointF;
     destructor Destroy; override;
     procedure OpenGmfFile(const LocalPath: string); override;
     function ExportSceneToPdf(const AFileName: string = ''): string;
-
+   //
     procedure InvalidateCachedPictureOnly;
   end;
 
@@ -114,7 +114,7 @@ uses Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontMana
 {$IFDEF ANDROID}
      , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
-     ;
+     , Lib;
 
 type
   TBitmapAccess = class(TBitmap);
@@ -500,7 +500,6 @@ var
     except
     end;
   end;
-
   procedure localSetGabarites;
   var
     I, J: Integer;
@@ -520,7 +519,6 @@ var
       Selector.AddCoord(PP.XDot, PP.YDot);
     end;
   end;
-
 begin
   if FDrawerSkia = nil then
   begin
@@ -595,6 +593,8 @@ begin
 
     Selector.UpdateRects(True);
     objectRepaintAccess := True;
+    TwgForm.Twigs.BlockList.CreateBitmaps;
+    PLib(TwgForm.MkLib.PntLib).CreateBitmaps;
 
     SceneDirty := True;
     BuildCachedPicture;
@@ -809,7 +809,7 @@ begin
     Exit;
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
-  S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
+  S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo]);//, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
   if FStatusLabel <> nil then
     FStatusLabel.Text := S + ' '+Hint;
 end;
@@ -817,6 +817,7 @@ end;
 procedure TMainFormSkia.upmClick(Sender: TObject);
 begin
  Memo1.GoToTextEnd;
+ ExportSceneToPdf(MainPath + 'test.pdf')
 end;
 
 procedure TMainFormSkia.RenderSceneToBackbufferSkia;
@@ -901,10 +902,13 @@ begin
           PPoint := PP;
          // if PPoint.Closed then
          //   Continue;
+         // if PPoint.userObj <> nil then exit;
           try
             FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
             try
+            //  WriteIn(['p1=',I]);
               PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx);
+            // WriteIn(['p2=',I]);
             finally
               FDrawerSkia.EndPrimitive;
             end;
@@ -1633,4 +1637,6 @@ begin
   end;
 end;
 
+initialization
+ newProcs.MainPath := TPath.GetLibraryPath;
 end.

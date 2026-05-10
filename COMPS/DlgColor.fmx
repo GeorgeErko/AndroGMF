@@ -1,0 +1,43 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = #1056#1077#1076#1072#1082#1090#1086#1088' '#1089#1074#1086#1081#1089#1090#1074#1072
+  ClientHeight = 257
+  ClientWidth = 351
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object Panel1: TPanel
+    Align = Bottom
+    Position.Y = 208.000000000000000000
+    Size.Width = 351.000000000000000000
+    Size.Height = 49.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object Button1: TButton
+      Default = True
+      ModalResult = 1
+      Position.X = 72.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 1
+      Text = 'Ok'
+      TextSettings.Trimming = None
+    end
+    object Button2: TButton
+      Cancel = True
+      Position.X = 170.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 2
+      Text = 'Cancel'
+      TextSettings.Trimming = None
+    end
+    object Button3: TButton
+      Position.X = 259.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 3
+      Text = #1055#1086' '#1089#1083#1086#1102
+      TextSettings.Trimming = None
+    end
+  end
+end

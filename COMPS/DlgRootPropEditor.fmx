@@ -1,0 +1,47 @@
+object RootPropEditorForm: TRootPropEditorForm
+  Left = 0
+  Top = 0
+  Caption = #1056#1077#1076#1072#1082#1090#1086#1088' '#1089#1074#1086#1081#1089#1090#1074#1072
+  ClientHeight = 257
+  ClientWidth = 349
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object Panel1: TPanel
+    Align = Bottom
+    Position.Y = 208.000000000000000000
+    Size.Width = 349.000000000000000000
+    Size.Height = 49.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object Button1: TButton
+      Anchors = [akRight]
+      Default = True
+      ModalResult = 1
+      Position.X = 80.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 0
+      Text = 'Ok'
+      TextSettings.Trimming = None
+    end
+    object Button2: TButton
+      Anchors = [akRight]
+      Cancel = True
+      Position.X = 168.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 1
+      Text = 'Cancel'
+      TextSettings.Trimming = None
+    end
+    object Button3: TButton
+      Anchors = [akRight]
+      Position.X = 257.000000000000000000
+      Position.Y = 15.000000000000000000
+      TabOrder = 2
+      Text = #1055#1086' '#1089#1083#1086#1102
+      TextSettings.Trimming = None
+      OnClick = Button3Click
+    end
+  end
+end

@@ -8,7 +8,7 @@ uses
   MainFrmSkia, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
   FMX.Memo, objMouse, System.IOUtils, WPTForm2, instPointSign, FMX.Ani,
-  InstLineSign, InstBlockSign, InstLayerFrame, FramePropEditor;
+  InstLineSign, InstBlockSign, InstLayerFrame, FramePropEditor, DlgRootPropEditor;
 
 type
   TMainFormMouseObj = class(TMainFormSkia)
@@ -30,7 +30,6 @@ type
     btnEsc: TCornerButton;
     imgEsc: TImageList;
     instPanel: TPanel;
-    InstHost: TLayout;
     Splitter2: TSplitter;
     FloatAnimation1: TFloatAnimation;
     btnInstLine: TSpeedButton;
@@ -45,6 +44,8 @@ type
     instProperties: TLayout;
     btnProperties: TSpeedButton;
     FloatAnimation6: TFloatAnimation;
+    instHost: TLayout;
+    Button1: TButton;
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -52,6 +53,8 @@ type
     procedure ToolInstClick(Sender: TObject);
     procedure instPanelResize(Sender: TObject);
     procedure btnPropertiesClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -85,6 +88,9 @@ type
    procedure PaintOverlayLive(const ACanvas: ISkCanvas; const Rect: TRectF); override;
    procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); override;
    procedure UpdateEscButton(Index: Integer);
+   procedure ActivateToolsEvent(Sender: TObject);
+  //
+   procedure OpenGmfFileSkia(const LocalPath: string); override;
   public
    procedure RequestOverlayRedraw;
    property OverlayPainter: TSkPaintBox read FOverlayPainter;
@@ -95,7 +101,7 @@ var
   MainFormMouseObj: TMainFormMouseObj;
 
 implementation uses objMouseSelect, objMouseDraw, objEditMap, UpdateMessages,
-                    Writer, newSelector;
+                    Writer, newSelector, LBN, newProcs, tstForm;
 
 {$R *.fmx}
 
@@ -110,29 +116,52 @@ var
 
 procedure TMainFormMouseObj.FormCreate(Sender: TObject);
 begin
- InstPoints := TInstPointsFrame.Create(nil);
+// загружаем uf,fhbns панелей
+ instProperties.Width := GReadFloat(Name + '_instPropertiesW',  instProperties.Width);
+ skPainter.Width := GReadFloat(Name + '_skPainterW',  skPainter.Width);
+ instProperties.Visible := GReadInteger(Name + '_instPropertiesVis',  0) = 1;
+ instPanel.Width:= GReadFloat(Name + '_instPanelW', instPanel.Width);
+//
+ LayerFrame := FindComponent('LayerFrame1') as TLayerFrame;
+//
+ InstPoints := TInstPointsFrame.Create(instHost);
  InstLines := TInstLinesFrame.Create(nil);
  InstBlocks := TInstBlocksFrame.Create(nil);
-
+//
  InstPoints.Parent := InstHost;
  InstLines.Parent := InstHost;
  InstBlocks.Parent := InstHost;
-
+//
  InstPoints.Align := TAlignLayout.Client;
  InstLines.Align := TAlignLayout.Client;
  InstBlocks.Align := TAlignLayout.Client;
-
+//
  InstPoints.Visible := False;
  InstLines.Visible := False;
  InstBlocks.Visible := False;
-
- FPropEditor := TPropEditorFrame.Create(nil);
+//
+ ToolInstClick(btnInstPoint);
+ btnPropertiesClick(btnProperties);
+//
+ FPropEditor := TPropEditorFrame.Create(instProperties);
  FPropEditor.Parent := instProperties;
  FPropEditor.Align := TAlignLayout.Client;
  FPropEditor.Visible := True;
+ FPropEditor.OnActivateSignInstrument := ActivateToolsEvent;
  PropEditorForm := FPropEditor;
-
+//
  instPanel.OnResize := instPanelResize;
+end;
+
+procedure TMainFormMouseObj.FormDestroy(Sender: TObject);
+begin
+  inherited;
+// сохраняем  панели
+ GWriteFloat(Name + '_instPropertiesW',  instProperties.Width);
+ GWriteInteger(Name + '_instPropertiesVis',  ord(instProperties.Visible));
+ GWriteFloat(Name + '_skPainterW',  skPainter.Width);
+ GWriteInteger(Name + '_instPanelVis', ord(instPanel.Visible));
+ GWriteFloat(Name + '_instPanelW', instPanel.Width);
 end;
 
 procedure TMainFormMouseObj.PaintOverlayStatic(const ACanvas: ISkCanvas; const Rect: TRectF);
@@ -165,6 +194,7 @@ begin
   OpenGmfFile(TPath.GetDocumentsPath+'/18.gmf')
 {$ELSE}
   OpenGmfFile('C:\!!!ГЗ\Борт\19.gmf')
+//   OpenGmfFile('C:\!!!ГЗ\Борт\29488_ul._Generala_Belova,_vl._19,_korp._3Kam.gmf');
 {$ENDIF}
 end;
 
@@ -180,6 +210,17 @@ begin
     FInteractionWatchTimer.Enabled := True;
     FInteractionWatchTimer.OnTimer := InteractionWatchTimer;
   end;
+end;
+
+procedure TMainFormMouseObj.OpenGmfFileSkia(const LocalPath: string);
+begin
+ if Selector<> nil then WriteIn(['1=', Selector.Drawer.ClassName]);
+  MouseObject := nil;
+ if Selector<> nil then WriteIn(['2=',Selector.Drawer.ClassName]);
+  inherited;
+ if Selector<> nil then WriteIn(['3=',Selector.Drawer.ClassName]);
+  MouseObject := nil;
+ if Selector<> nil then WriteIn(['4=',Selector.Drawer.ClassName]);
 end;
 
 procedure TMainFormMouseObj.SetTwgForm(const Value: TForm2);
@@ -211,12 +252,22 @@ begin
  InstLines.TwgForm  := Value;
  InstBlocks.TwgForm := Value;
   WriteIn(['================2']);
+ FreeAndNil(ListByName);
+ ListByName:=TListByName.Create;
+ ListByName.LoadFromFile(MainPath+'Names.txt', oghObjectType(TwgForm));
+ FreeAndNil(ListByName);
+ ListByDicts:=TListByName.Create;
+ ListByDicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', oghObjectType(TwgForm));
 end;
 
 procedure TMainFormMouseObj.ToolButtonClick(Sender: TObject);
 var Op: Integer;
 begin
  if Selector = nil then exit;
+ if MouseObject <> nil then
+  if MouseObject.LOperation = TSpeedButton(Sender).Tag then
+   TSpeedButton(Sender).IsPressed := False;
+//
  if not TSpeedButton(Sender).IsPressed then
    MouseObject := nil
  else begin
@@ -238,12 +289,30 @@ end;
 procedure TMainFormMouseObj.ToolInstClick(Sender: TObject);
 var
  TagV: Integer;
+procedure UpdateSkPainter;
+begin
+ If (btnInstPoint.IsPressed) or (btnInstLine.IsPressed) or (btnInstBlock.IsPressed) then
+  begin
+ //  skPainter.Align := TAlignLayout.Left;
+ //  InstPanel.Align := TAlignLayout.Right;
+   InstPanel.Visible := True;
+   Splitter2.Visible := True;
+   Splitter2.Position.X := InstPanel.Position.X;
+   skPainter.Align := TAlignLayout.Client;
+  // InstPanel.Align := TAlignLayout.Client;
+  end else begin
+   InstPanel.Visible := False;
+   Splitter2.Visible := False;
+   skPainter.Align := TAlignLayout.Client;
+  end;
+end;
 begin
 // показываем панель знаков (точечные, линейные, блоки)
-
- if not (Sender is TControl) then Exit;
  TagV := TControl(Sender).Tag;
-
+ If Sender <> btnInstPoint then btnInstPoint.IsPressed := False;
+ If Sender <> btnInstLine then btnInstLine.IsPressed := False;
+ If Sender <> btnInstBlock then btnInstBlock.IsPressed := False;
+//
  if InstPoints <> nil then
  begin
   InstPoints.Parent := nil;
@@ -254,16 +323,16 @@ begin
   InstLines.Parent := nil;
   InstLines.Visible := False;
  end;
-
  if InstBlocks <> nil then
  begin
   InstBlocks.Parent := nil;
   InstBlocks.Visible := False;
  end;
-
+//
+ UpdateSkPainter;
 case TagV of
   0:
-   if InstPoints <> nil then
+   if btnInstPoint.IsPressed then
    begin
     InstPoints.Parent := InstHost;
     InstPoints.Align := TAlignLayout.Client;
@@ -271,7 +340,7 @@ case TagV of
     InstPoints.BringToFront;
    end;
   1:
-   if InstLines <> nil then
+   if btnInstLine.IsPressed then
    begin
     InstLines.Parent := InstHost;
     InstLines.Align := TAlignLayout.Client;
@@ -279,7 +348,7 @@ case TagV of
     InstLines.BringToFront;
    end;
   2:
-   if InstBlocks <> nil then
+   if btnInstBlock.IsPressed then
    begin
     InstBlocks.Parent := InstHost;
     InstBlocks.Align := TAlignLayout.Client;
@@ -287,8 +356,6 @@ case TagV of
     InstBlocks.BringToFront;
    end;
  end;
-
-
 end;
 
 procedure TMainFormMouseObj.UpdateEscButton(Index: Integer);
@@ -320,19 +387,30 @@ procedure TMainFormMouseObj.RequestOverlayRedraw;
 begin
   FOverlayPendingRedraw := True;
   InvalidateOverlayAll;
-  if SkPainter <> nil then
+ if SkPainter <> nil then
     SkPainter.Redraw;
 end;
 
 procedure TMainFormMouseObj.btnPropertiesClick(Sender: TObject);
 begin
 // показываем/прячем TPropEditor
- if instProperties = nil then
-  Exit;
+// btnProperties.IsPressed := not btnProperties.Visible;
+ If btnProperties.IsPressed then begin
+  instProperties.Position.X:= -100;
+  instProperties.Visible := True;
+  Splitter3.Visible := True;
+  Splitter3.Position.X := instProperties.Width;
+ end else begin
+  instProperties.Visible := False;
+  Splitter3.Visible := False;
+ end;
+ btnProperties.IsPressed := instProperties.Visible;
+end;
 
- instProperties.Visible := not instProperties.Visible;
- if (btnProperties <> nil) then
-  btnProperties.IsPressed := instProperties.Visible;
+procedure TMainFormMouseObj.Button1Click(Sender: TObject);
+begin
+// instHost.Width := instHost.Width +30;
+ tsts2DF.Show;
 end;
 
 procedure TMainFormMouseObj.CaptureOverlayInteractionImage;
@@ -472,6 +550,21 @@ begin
  MouseObject := nil;
 end;
 
+procedure TMainFormMouseObj.ActivateToolsEvent(Sender: TObject);
+var Btn: TSpeedButton;
+begin
+ If Sender = nil then exit;
+ Btn := nil;
+ If TPropRow(Sender).TypeName = 'PointType' then Btn := btnInstPoint else
+ If TPropRow(Sender).TypeName = 'LineType' then Btn := btnInstLine else
+ If TPropRow(Sender).TypeName = 'Block' then Btn := btnInstBlock;
+//
+ If Btn <> nil then begin
+  Btn.IsPressed := True;
+  ToolInstClick(Btn);
+ end;
+end;
+
 procedure TMainFormMouseObj.btnEscClick(Sender: TObject);
 var I: Integer;
 begin
@@ -590,9 +683,5 @@ end;
 initialization
  RegisterClass(TLayerFrame);
 finalization
- Writein(['==fin21']);
-
  UnRegisterClass(TLayerFrame);
-  Writein(['==fin22']);
-
 end.

@@ -1,0 +1,45 @@
+inherited PropFontEditorForm: TPropFontEditorForm
+  Caption = 'PropFontForm'
+  ClientHeight = 319
+  ClientWidth = 450
+  DesignerMasterStyle = 0
+  inherited Panel1: TPanel
+    Position.Y = 270.000000000000000000
+    Size.Width = 450.000000000000000000
+    TabOrder = 1
+    inherited Button1: TButton
+      Position.X = 174.000000000000000000
+    end
+    inherited Button2: TButton
+      Position.X = 262.000000000000000000
+    end
+    inherited Button3: TButton
+      Position.X = 351.000000000000000000
+    end
+  end
+  object SkPreview: TSkPaintBox
+    Align = Bottom
+    Margins.Left = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 4.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 242.000000000000000000
+    Size.Width = 434.000000000000000000
+    Size.Height = 24.000000000000000000
+    Size.PlatformDefault = False
+  end
+  object ListBox1: TListBox
+    Align = Client
+    Size.Width = 450.000000000000000000
+    Size.Height = 242.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    DisableFocusEffect = True
+    ItemHeight = 24.000000000000000000
+    DefaultItemStyles.ItemStyle = ''
+    DefaultItemStyles.GroupHeaderStyle = ''
+    DefaultItemStyles.GroupFooterStyle = ''
+    Viewport.Width = 446.000000000000000000
+    Viewport.Height = 238.000000000000000000
+  end
+end

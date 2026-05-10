@@ -9,16 +9,29 @@ uses
   instPointSign, System.ImageList, FMX.ImgList, FMX.Layouts, FMX.ListBox,
   FMX.Controls.Presentation, FMX.TabControl,
   newLayersTable, FMX.ScrollBox, FMX.Skia, System.Skia,
-  Lines3, Collect, GMFLTDrawer, newSelector, ogcDrawerSkia;
+  Lines3, Collect, GMFLTDrawer, newSelector, ogcDrawerSkia, FMX.ExtCtrls;
 
 type
   TInstLinesFrame = class(TInstPointsFrame)
+    procedure btnMinusClick(Sender: TObject);
   private
    FVSB: TVertScrollBox;
    FEnsuringControls: Boolean;
+   FDragScaleActiveL: Boolean;
+   FDragScaleTileIdxL: Integer;
+   FDragScaleStartL: Single;
+   FDragScaleStartXL: Single;
+   FDragScaleTileControlL: TControl;
    procedure VSBResize(Sender: TObject);
+   procedure VSBMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+   procedure VSBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
    procedure CBChange(Sender: TObject);
    procedure EnsureSelectedTileVisible; virtual;
+   procedure TileMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+   procedure TileMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+   procedure TileMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+   procedure DragScaleUpdateFromControlCoords(const AControl: TControl; const AX, AY: Single);
+   procedure DragScaleCommit;
   public
    function Group: TGroupCollection; override;
   protected
@@ -26,16 +39,157 @@ type
    procedure InitControls; override;
    procedure RebuildTiles; override;
    procedure TileDraw(Sender: TObject; const Canvas: ISkCanvas; const Dest: TRectF; const Opacity: Single); override;
+   procedure LoadAllLocalScalesFromRegistry; override;
+   procedure SaveAllLocalScalesToRegistry; override;
   end;
 
 var
   InstLinesFrame: TInstLinesFrame;
 
-implementation uses ogcBasic, types_dimano;
+implementation uses ogcBasic, types_dimano, newProcs;
 
 {$R *.fmx}
 
 { TInstLinesFrame }
+
+function LineLocalScaleKey(const AFrameName, ATabName: string; const ALineId: Integer): AnsiString; forward;
+
+procedure TInstLinesFrame.TileMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var Idx: Integer;
+    GL: TGeoLine;
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not (Sender is TControl) then Exit;
+ if (Group = nil) or (FTabName = '') then Exit;
+ Idx := TControl(Sender).Tag;
+ if (Idx < 0) or (Idx >= GetZnacksCount(FTabName)) then Exit;
+ GL := TGeoLine(Group.GroupByName[FTabName].Item[Idx].Znak);
+ if GL = nil then Exit;
+
+ if (CB <> nil) and (Idx >= 0) and (Idx < CB.Items.Count) then
+  CB.ItemIndex := Idx;
+
+ FDragScaleActiveL := True;
+ FDragScaleTileIdxL := Idx;
+ FDragScaleTileControlL := TControl(Sender);
+ if GL.LocalScale <= 0 then GL.LocalScale := 1;
+ FDragScaleStartL := GL.LocalScale;
+ FDragScaleStartXL := X;
+ InvalidateTiles;
+end;
+
+procedure TInstLinesFrame.TileMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+var Idx: Integer;
+begin
+ if not FDragScaleActiveL then Exit;
+ if not (Sender is TControl) then Exit;
+ Idx := TControl(Sender).Tag;
+ if Idx <> FDragScaleTileIdxL then Exit;
+ DragScaleUpdateFromControlCoords(TControl(Sender), X, Y);
+end;
+
+procedure TInstLinesFrame.TileMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not FDragScaleActiveL then Exit;
+ DragScaleCommit;
+end;
+
+procedure TInstLinesFrame.VSBMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
+var AbsPt: TPointF;
+    LocalPt: TPointF;
+begin
+ if not FDragScaleActiveL then Exit;
+ if FVSB = nil then Exit;
+ if FDragScaleTileControlL = nil then Exit;
+ AbsPt := FVSB.LocalToAbsolute(PointF(X, Y));
+ LocalPt := FDragScaleTileControlL.AbsoluteToLocal(AbsPt);
+ DragScaleUpdateFromControlCoords(FDragScaleTileControlL, LocalPt.X, LocalPt.Y);
+end;
+
+procedure TInstLinesFrame.VSBMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ if Button <> TMouseButton.mbLeft then Exit;
+ if not FDragScaleActiveL then Exit;
+ DragScaleCommit;
+end;
+
+procedure TInstLinesFrame.DragScaleUpdateFromControlCoords(const AControl: TControl; const AX, AY: Single);
+var Idx: Integer;
+    GL: TGeoLine;
+    DeltaX: Single;
+    NewScale: Single;
+begin
+ if not FDragScaleActiveL then Exit;
+ if (Group = nil) or (FTabName = '') then Exit;
+ Idx := FDragScaleTileIdxL;
+ if (Idx < 0) or (Idx >= GetZnacksCount(FTabName)) then Exit;
+ GL := TGeoLine(Group.GroupByName[FTabName].Item[Idx].Znak);
+ if GL = nil then Exit;
+ if AControl = nil then Exit;
+//
+ DeltaX := AX - FDragScaleStartXL;
+ NewScale := FDragScaleStartL + (DeltaX * 0.01);
+ if NewScale < 0.1 then NewScale := 0.1;
+ if NewScale > 10 then NewScale := 10;
+ GL.LocalScale := NewScale;
+ MarkDirtyScale(LineLocalScaleKey(Name, FTabName, GL.IdNum), GL);
+ InvalidateTiles;
+end;
+
+procedure TInstLinesFrame.DragScaleCommit;
+begin
+ if not FDragScaleActiveL then Exit;
+ FDragScaleActiveL := False;
+ FDragScaleTileIdxL := -1;
+ FDragScaleTileControlL := nil;
+ InvalidateTiles;
+end;
+
+function LineLocalScaleKey(const AFrameName, ATabName: string; const ALineId: Integer): AnsiString;
+begin
+ Result := AnsiString(AFrameName + '_' + ATabName + '_LineLocalScale_' + IntToStr(ALineId));
+end;
+
+procedure TInstLinesFrame.LoadAllLocalScalesFromRegistry;
+var I: Integer;
+    TabName: String;
+    Idx: Integer;
+    GL: TGeoLine;
+    K: AnsiString;
+begin
+ if Group = nil then Exit;
+ for I := 0 to Group.Count - 1 do
+ begin
+  TabName := Group[I].Name;
+  if TabName = '' then Continue;
+  for Idx := 0 to GetZnacksCount(TabName) - 1 do
+  begin
+   GL := TGeoLine(Group.GroupByName[TabName].Item[Idx].Znak);
+   if GL = nil then Continue;
+   K := LineLocalScaleKey(Name, TabName, GL.IdNum);
+   GL.LocalScale := GReadFloat(K, GL.LocalScale);
+   if GL.LocalScale <= 0 then GL.LocalScale := 1;
+  end;
+ end;
+end;
+
+procedure TInstLinesFrame.SaveAllLocalScalesToRegistry;
+var I: Integer;
+    GL: TGeoLine;
+    K: AnsiString;
+begin
+ if (FDirtyScales = nil) or (FDirtyScales.Count = 0) then Exit;
+ for I := 0 to FDirtyScales.Count - 1 do
+ begin
+  K := AnsiString(FDirtyScales[I]);
+  GL := TGeoLine(FDirtyScales.Objects[I]);
+  if GL = nil then Continue;
+  if GL.LocalScale <= 0 then GL.LocalScale := 1;
+  GWriteFloat(K, GL.LocalScale);
+ end;
+ FDirtyScales.Clear;
+end;
 
 function TInstLinesFrame.Group: TGroupCollection;
 begin
@@ -71,6 +225,8 @@ begin
   FVSB.ShowScrollBars := True;
   FVSB.AutoHide := True;
   FVSB.OnResize := VSBResize;
+  FVSB.OnMouseMove := VSBMouseMove;
+  FVSB.OnMouseUp := VSBMouseUp;
  end;
 
  PrevOnResize := FVSB.OnResize;
@@ -106,6 +262,38 @@ begin
  finally
   FEnsuringControls := False;
  end;
+end;
+
+procedure TInstLinesFrame.btnMinusClick(Sender: TObject);
+var Idx: Integer;
+    GL: TGeoLine;
+    K: AnsiString;
+    DeltaScale: Single;
+    I: Integer;
+    TabName: String;
+begin
+ if Abs(TControl(Sender).Tag) = 10  then begin
+  if Group = nil then Exit;
+  DeltaScale := 0.1 * (TControl(Sender).Tag / 10);
+  for I := 0 to Group.Count - 1 do
+  begin
+   TabName := Group[I].Name;
+   if TabName = '' then Continue;
+   for Idx := 0 to GetZnacksCount(TabName) - 1 do
+   begin
+    GL := TGeoLine(Group.GroupByName[TabName].Item[Idx].Znak);
+    if GL = nil then Continue;
+    if GL.LocalScale <= 0 then GL.LocalScale := 1;
+    GL.LocalScale := GL.LocalScale + DeltaScale;
+    if GL.LocalScale < 0.1 then GL.LocalScale := 0.1;
+    if GL.LocalScale > 10 then GL.LocalScale := 10;
+    K := LineLocalScaleKey(Name, TabName, GL.IdNum);
+    MarkDirtyScale(K, GL);
+   end;
+  end;
+  InvalidateTiles;
+ end else
+  inherited;
 end;
 
 procedure TInstLinesFrame.CBChange(Sender: TObject);
@@ -211,6 +399,9 @@ begin
    T.Tag := Idx;
    T.OnDraw := TileDraw;
    T.OnClick := TileClick;
+   T.OnMouseDown := TileMouseDown;
+   T.OnMouseMove := TileMouseMove;
+   T.OnMouseUp := TileMouseUp;
   end;
  finally
   TilesLay.EndUpdate;
@@ -292,7 +483,8 @@ begin
      Canvas.ClipRect(SampleRect);
      DrawerSkia.BeginFrame(Canvas, Dest);
      try
-      DrawGeoLine(DrawerSkia, GL, SampleLine, 10, 1, 0, False, $000000);
+      if GL.LocalScale <= 0 then GL.LocalScale := 1;
+      DrawGeoLine(DrawerSkia, GL, SampleLine, 10 * GL.LocalScale, 1, 0, False, $000000);
      finally
       DrawerSkia.EndFrame;
      end;

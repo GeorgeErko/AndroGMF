@@ -107,6 +107,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      XKoef,YKoef:Single;
     {}
      TextManager:TTextManager;
+     BlockTextBitmaps:PCollection;
      GUID:TGUID;
      Symbol:ShortInt;
     {}
@@ -240,7 +241,7 @@ type
 var FTest:TextFile;
 {-----------------------------------------------------------------------}
 implementation uses newBlock, Polygons, WptForm2, ECText, WPTwigs, newForm0, dwgText,
-                    Writer;
+                    Writer, EcDot2;
 {----------------------------------------------------------------------}
 { TDot                                                                 }
 {----------------------------------------------------------------------}
@@ -580,6 +581,14 @@ destructor TPointDot.Destroy;
  begin
   Inherited Destroy;
   If TextManager<>nil then TextManager.Free;
+  If BlockTextBitmaps<>nil then
+   begin
+    while BlockTextBitmaps.Count>0 do begin
+     if TObject(BlockTextBitmaps[0])<>nil then TObject(BlockTextBitmaps[0]).Free;
+     BlockTextBitmaps.AtDelete(0);
+    end;
+    BlockTextBitmaps.Free;
+   end;
   if DataFonts<>nil then DataFonts.Free;
   if Fonts<>nil then Fonts.Free;
   If Lines<>nil then Lines.Free;
@@ -608,7 +617,7 @@ var
     RS:Double;
     Props: Pointer;
 begin
-// If Closed then exit;
+// If Closed then exit;              9
  If userObj<>nil then
    If userObj.objType = TWG_Block then begin
 
@@ -622,7 +631,7 @@ begin
   If BlockVisible then begin
    Props := TGeoBlock(userObj).txtProperties;
    If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
-    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv);
+    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,BlockTextBitmaps);
    TGeoBlock(userObj).txtProperties := Props;
    What := 20;
    If Selector.PointVisible(XDot, YDot) then
@@ -1580,7 +1589,7 @@ begin
  With Result do begin
   Left:=XDot;Top:=YDot;Right:=XDot;Bottom:=YDot;
 //  If What =-1 then exit;
-  SetTextManager;
+//  SetTextManager;
   try
   if Selector.GPointCol<>nil then
    begin
@@ -1596,7 +1605,7 @@ begin
      end;
    end;
   finally
-   ResetTextManager;
+  // ResetTextManager;
   end;
  end;
 end;
@@ -1623,11 +1632,33 @@ begin
 end;
 
 function TPointDot.ResetParams(ParamID: Integer;Params: Pointer):boolean;
+var I2: Integer; PD2: TPointDot; B2: Byte;
 begin
  Result:=False;
  case ParamID of
   1:If userObj<>nil then begin
-     If userObj.objType = TWG_Block then Result:=userObj.ResetParams(ParamID,Params);
+     If userObj.objType = TWG_Block then
+     begin
+      if (TGeoBlock(userObj).TwgForm<>nil) then
+      begin
+       if BlockTextBitmaps=nil then BlockTextBitmaps:=PCollection.Create(1);
+       if BlockTextBitmaps.Count<>TGeoBlock(userObj).TwgForm.Twigs.AnyCount then
+       begin
+        while BlockTextBitmaps.Count>0 do begin
+         if TObject(BlockTextBitmaps[0])<>nil then TObject(BlockTextBitmaps[0]).Free;
+         BlockTextBitmaps.AtDelete(0);
+        end;
+        for I2:=0 to TGeoBlock(userObj).TwgForm.Twigs.AnyCount-1 do begin
+         PD2:=TGeoBlock(userObj).TwgForm.Twigs.AAt(I2,B2);
+         if (B2=TWG_Point) and (PD2 is TDotText) then
+          BlockTextBitmaps.Insert(TBitmap.Create)
+         else
+          BlockTextBitmaps.Insert(nil);
+        end;
+       end;
+      end;
+      Result:=userObj.ResetParams(ParamID,Params);
+     end;
     end;
  end;
 end;

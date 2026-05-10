@@ -55,6 +55,9 @@ type
    Buffer:TMemoryStream;
  //
    Selector:TSelector;
+   ogsRect: TogsRect;
+   BlockBitmap: TBitmap;
+   BlockX, BlockY: Integer; // координаты X,Y блока на BlockBitmap
    class function objType:Integer;override;
    Constructor CreateForm(Form:TForm2);
    Constructor Create(Form:TForm2;objCol: PCollection);
@@ -76,7 +79,7 @@ type
    Procedure DrawTemp(Canvas:TCanvas;XB,YB,Angle,XKoef,YKoef:Double;Data:Pointer = nil);override;
    Function Draw(Canvas:TCanvas;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean):boolean;override;
    Procedure DrawMarker(Canvas:TCanvas);
-   Function Draw32(Drawer:TogsDrawer;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean):boolean;
+   Function Draw32(Drawer:TogsDrawer;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean; TextBitmaps: PCollection):boolean;
   //
    Function GetName: AnsiString;override;
    Function GetCheck: byte;override;
@@ -128,7 +131,7 @@ implementation uses TwgColle, newSettings, newForm0, ecLot,
                     maths_basic, Lines2,
                     Lines3, EcDot2, newFontScale, Circle_di,
                     Intervals, Types_Dimano, Polygons, Writer, tmpPainter,
-                    System.UITypes;
+                    System.UITypes, System.Types, ogcDrawerSkia;
 
 { TGeoBlock }
 
@@ -230,7 +233,9 @@ destructor TGeoBlock.Destroy;
 begin
  If not DontFreeTwgForm then begin TwgForm.Free; end;
  If Buffer<>nil then Buffer.Free;
+ If BlockBitmap<>nil then BlockBitmap.Free;
  If Properties<>nil then Properties.Free;
+ FreeAndNil(ogsRect);
 end;
 
 constructor TGeoBlock.Load(Buf: TBufStream);
@@ -845,7 +850,7 @@ begin
      Twig1.Coord.Insert(TDot.Create(D.XDot+Dx,D.YDot+Dy,ord(J=0)));
      D:=TDot(Twig1.Coord.At(J));
      XX:=D.XDot;YY:=D.YDot;
-//     Stf.Add(FloatToStrF(XX,ffFixed,_LD,0)+' '+FloatToStrF(YY,ffFixed,_LD,0));
+//     Stf.2Add(FloatToStrF(XX,ffFixed,_LD,0)+' '+FloatToStrF(YY,ffFixed,_LD,0));
      xx1:=XB+((xx-Xb)*XKoef*cos(Ugol)-((yy-yb)*YKoef*sin(Ugol)));
      yy1:=YB+((xx-xb)*XKoef*sin(Ugol)+((yy-yb)*YKoef*cos(Ugol)));
 //     Stf.Add(FloatToStrF(XX1,ffFixed,_LD,0)+' '+FloatToStrF(YY1,ffFixed,_LD,0));
@@ -1069,7 +1074,7 @@ begin
 end;
 
 function TGeoBlock.Draw32(Drawer: TogsDrawer; XB, YB, Angle, XKoef,
-  YKoef: Double; Extrusion, Inv: boolean): boolean;
+  YKoef: Double; Extrusion, Inv: boolean; TextBitmaps: PCollection): boolean;
 var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
     Dx,Dy:Double;XM,YM,ZM:String;
     PrecXY,PrecZ:Integer;
@@ -1079,18 +1084,128 @@ var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
     dupForm,oldForm:TForm2;
     D1,D2:TDot;
     Sect:TShortSect;
+    oldBitmap: Pointer;
+    AnchorPix: TPointF;
+    DstW, DstH: Single;
+    SX, SY: Single;
+    Dst: TRectF;
+Procedure DrawPoints;
+var I: Integer;
+begin
+ With TwgForm do
+  For I:=0 to Twigs.AnyCount-1 do begin
+   PD:=Twigs.AAt(I,B);
+   If B=TWG_Point then begin
+ // äâèãàåì òî÷å÷íûå îáúåêòû
+    If PD.ClassHandle.Check = 0 then continue;
+   // if TwgForm.FontColEx <> nil then
+    //  PD.ResetParams(param_idResetFontView, TwgForm.FontColEx);
+    If PD.TextManager<>nil then begin
+     Zm:='';Xm:=FloatToStrF(-PD.YDot,ffFixed,_LD,PrecXY);Ym:=FloatToStrF(PD.XDot,ffFixed,_LD,PrecXY);
+     PD.TextManager.SetSysSpatialData(Xm,Ym,Zm);
+    end;
+    oldValue:=#0;
+    if PD is TDotText then
+    begin
+     if (TextBitmaps <> nil) and (I < TextBitmaps.Count) then
+     begin
+       oldBitmap := TDotText(PD).TextBitmap;
+       TDotText(PD).TextBitmap := TBitmap(TextBitmaps[I]);
+       TDotText(PD).OwnsTextBitmap := False;
+     end;
+     If (txtProperties<>nil) and (TDotText(PD).Text.AttrName<>'') then begin
+      Value:=txtProperties.PropValue[TDotText(PD).Text.AttrName];
+      If Value<>nil then begin
+       oldValue:=TDotText(PD).Text.Text;
+       TDotText(PD).Text.Text:=Value.Value;
+       TDotText(PD).TextDirty := True;
+      end;
+     end;
+    end;
+    PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
+    If oldValue<>#0 then begin
+     TDotText(PD).Text.Text:=oldValue;
+     TDotText(PD).Selected:=False;
+    // TDotText(PD).TextDirty := True;
+     TDotText(PD).TextBitmap := oldBitmap;
+     TDotText(PD).OwnsTextBitmap := True;
+    end;
+   end;
+  end;
+end;
 begin
  // ïîäãîòàâëèâàåì àòðèáóòû (ñ÷èòûâàåì çíà÷åíèÿ ïîñëå çàïÿòîé)
  If not deVisible(XB,YB,Angle,XKoef,YKoef,Sect) then begin
   Result:=True;exit;
  end;
 //
+ Block_Drawing:=True;
+  // LOD: рисуем только BlockBitmap
+ if (BlockBitmap<>nil) and (ogsRect<>nil) and
+    (Selector.XRasst(Width) < 40) and (Selector.YRasst(Height) < 40) then
+ begin
+  AnchorPix := PointF(XB, YB);
+ //
+  Dst := RectF((ogsRect.XMin - (X + TwgForm.XXMin)) * XKoef,
+               (ogsRect.YMin - (Y + TwgForm.YYMin)) * YKoef,
+               (ogsRect.XMax - (X + TwgForm.XXMin)) * XKoef,
+               (ogsRect.YMax - (Y + TwgForm.YYMin)) * YKoef);
+//  WriteIn(['Geo=', AnchorPix.X, AnchorPix.Y, Dst.Left, Dst.Top, Dst.Right, Dst.Bottom]);
+
+  if Drawer is TogsDrawerSkia then
+  begin
+   BlockBitmap.SaveToFile(MainPath  + Format('BB_begore_%p.jpg',[Pointer(BlockBitmap)]));
+   TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, BlockBitmap, Dst, Angle);
+{   begin
+    var P0, P1, P2, P3: TPointF; var oldUWC: Boolean; var C, S: Single;
+    P0 := PointF(Dst.Left, Dst.Top);
+    P1 := PointF(Dst.Right, Dst.Top);
+    P2 := PointF(Dst.Right, Dst.Bottom);
+    P3 := PointF(Dst.Left, Dst.Bottom);
+    if Abs(Angle) > 1e-6 then
+    begin
+     C := Cos(Angle);
+     S := Sin(Angle);
+     P0 := PointF(P0.X * C - P0.Y * S, P0.X * S + P0.Y * C);
+     P1 := PointF(P1.X * C - P1.Y * S, P1.X * S + P1.Y * C);
+     P2 := PointF(P2.X * C - P2.Y * S, P2.X * S + P2.Y * C);
+     P3 := PointF(P3.X * C - P3.Y * S, P3.X * S + P3.Y * C);
+    end;
+    P0 := PointF(P0.X + AnchorPix.X, P0.Y + AnchorPix.Y);
+    P1 := PointF(P1.X + AnchorPix.X, P1.Y + AnchorPix.Y);
+    P2 := PointF(P2.X + AnchorPix.X, P2.Y + AnchorPix.Y);
+    P3 := PointF(P3.X + AnchorPix.X, P3.Y + AnchorPix.Y);
+//    oldUWC := Drawer.UseWorldCoords;
+//    Drawer.UseWorldCoords := True;
+    try
+     Drawer.Pen.penColor := TAlphaColor($FFFF0000);
+     Drawer.Pen.penWidth := 0.2;
+     Drawer.DrawLine(P0.X, P0.Y, P1.X, P1.Y, False);
+     Drawer.DrawLine(P1.X, P1.Y, P2.X, P2.Y, False);
+     Drawer.DrawLine(P2.X, P2.Y, P3.X, P3.Y, False);
+     Drawer.DrawLine(P3.X, P3.Y, P0.X, P0.Y, False);
+    finally
+//     Drawer.UseWorldCoords := oldUWC;
+    end;
+   end;}
+ end;
+  Result := True;
+  Block_Drawing := False;
+  dePaint(XB,YB,Angle,XKoef,YKoef);
+  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
+  DrawPoints();
+  TwgForm.Twigs.TwigsLarge.Free;TwgForm.Twigs.LotsLarge.Free;TwgForm.Twigs.AnyLarge.Free;
+  TwgForm.Twigs.TwigsLarge:=oldTwigsLarge;TwgForm.Twigs.LotsLarge:=oldLotsLarge;TwgForm.Twigs.AnyLarge:=oldAnyLarge;
+  exit;
+ end;
+ //dePaint(XB,YB,Angle,XKoef,Ykoef);
  Block_Drawing:=True; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
  dePaint(XB,YB,Angle,XKoef,Ykoef);
  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
  If (Selector.XRasst(Width) <= Selector.GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=Selector.GGraphSet.fPntZnk)
-     and (not GlobalRender) then exit;
- //dePaint(XB,YB,Angle,XKoef,Ykoef);
+     and (not GlobalRender) then begin
+      exit;
+     end;
  With TwgForm, Selector.GGraphSet do begin
   Dx:=XB-(X+TwgForm.XXMin);Dy:=YB-(Y+TwgForm.YYMin);
   XBlock:=XB;YBlock:=YB;
@@ -1100,39 +1215,14 @@ begin
      Lot.SetMinMax2(TwgForm.Twigs);
      Lot.Draw32(TwgForm.Twigs);
    end;
-  For I:=0 to Twigs.AnyCount-1 do begin
-   PD:=Twigs.AAt(I,B);
-   If B=TWG_Point then begin
- // äâèãàåì òî÷å÷íûå îáúåêòû
-    If PD.ClassHandle.Check = 0 then continue;
-    if TwgForm.FontColEx <> nil then
-      PD.ResetParams(param_idResetFontView, TwgForm.FontColEx);
-    If PD.TextManager<>nil then begin
-     Zm:='';Xm:=FloatToStrF(-PD.YDot,ffFixed,_LD,PrecXY);Ym:=FloatToStrF(PD.XDot,ffFixed,_LD,PrecXY);
-     PD.TextManager.SetSysSpatialData(Xm,Ym,Zm);
-    end;
-    oldValue:=#0;
-    If (txtProperties<>nil) and (PD is TDotText) then If TDotText(PD).Text.AttrName<>'' then begin
-     Value:=txtProperties.PropValue[TDotText(PD).Text.AttrName];
-     If Value<>nil then begin
-      oldValue:=TDotText(PD).Text.Text;
-      TDotText(PD).Text.Text:=Value.Value;
-     end;
-    end;
-    PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
-    If oldValue<>#0 then begin
-     TDotText(PD).Text.Text:=oldValue;
-     TDotText(PD).Selected:=False;
-    end;
-   end;
-  end;
+   DrawPoints();
   finally
-  Block_Drawing:=False; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
+   Block_Drawing:=False; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
   //GGraphSet.UslPoint:=UP;
   //GGraphSet.TvdPoint:=TP;
   //GGraphSet.AllPoint:=AP;
-  Twigs.TwigsLarge.Free;Twigs.LotsLarge.Free;Twigs.AnyLarge.Free;
-  Twigs.TwigsLarge:=oldTwigsLarge;Twigs.LotsLarge:=oldLotsLarge;Twigs.AnyLarge:=oldAnyLarge;
+   Twigs.TwigsLarge.Free;Twigs.LotsLarge.Free;Twigs.AnyLarge.Free;
+   Twigs.TwigsLarge:=oldTwigsLarge;Twigs.LotsLarge:=oldLotsLarge;Twigs.AnyLarge:=oldAnyLarge;
   end;
  end;
 end;

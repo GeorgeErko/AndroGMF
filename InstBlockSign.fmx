@@ -1,7 +1,7 @@
 inherited InstBlocksFrame: TInstBlocksFrame
   Size.Height = 434.000000000000000000
   inherited TC: TTabControl
-    Size.Height = 403.000000000000000000
+    Size.Height = 409.000000000000000000
   end
   inherited LB: TListBox
     Viewport.Width = 380.000000000000000000

@@ -6,7 +6,7 @@ object InstPointsFrame: TInstPointsFrame
   object TC: TTabControl
     Align = Client
     Size.Width = 384.000000000000000000
-    Size.Height = 395.000000000000000000
+    Size.Height = 401.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     TabPosition = PlatformDefault
@@ -14,14 +14,17 @@ object InstPointsFrame: TInstPointsFrame
   object Panel1: TPanel
     Align = Top
     Size.Width = 384.000000000000000000
-    Size.Height = 31.000000000000000000
+    Size.Height = 25.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
     object btnTabs: TButton
       Align = Right
+      Images = ImageList1
+      ImageIndex = 2
+      Margins.Left = 2.000000000000000000
       Position.X = 362.000000000000000000
       Size.Width = 22.000000000000000000
-      Size.Height = 31.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 5
       Text = '<'
@@ -31,58 +34,67 @@ object InstPointsFrame: TInstPointsFrame
     object btnPlus: TButton
       Tag = 1
       Align = Right
-      Position.X = 287.000000000000000000
+      Images = ImageList1
+      ImageIndex = 1
+      Margins.Left = 2.000000000000000000
+      Position.X = 281.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 31.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 3
-      Text = '+'
       TextSettings.Trimming = None
       OnClick = btnMinusClick
     end
     object btnMinus: TButton
       Tag = -1
       Align = Right
-      Position.X = 262.000000000000000000
+      Images = ImageList1
+      ImageIndex = 0
+      Margins.Left = 2.000000000000000000
+      Position.X = 254.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 31.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
-      Text = '-'
       TextSettings.Trimming = None
       OnClick = btnMinusClick
     end
     object btnScaleM: TButton
       Tag = -10
       Align = Right
-      Position.X = 312.000000000000000000
+      Images = ImageList1
+      ImageIndex = 3
+      Margins.Left = 2.000000000000000000
+      Position.X = 308.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 31.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
-      Text = '-'
       TextSettings.Trimming = None
       OnClick = btnMinusClick
     end
     object btnScaleP: TButton
       Tag = 10
       Align = Right
-      Position.X = 337.000000000000000000
+      Images = ImageList1
+      ImageIndex = 4
+      Margins.Left = 2.000000000000000000
+      Position.X = 335.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 31.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
-      Text = '+'
       TextSettings.Trimming = None
       OnClick = btnMinusClick
     end
     object btnSet: TButton
       Align = Left
-      Size.Width = 22.000000000000000000
-      Size.Height = 31.000000000000000000
+      Images = ImageList1
+      ImageIndex = 5
+      Size.Width = 25.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 4
-      Text = 'S'
       TextSettings.Trimming = None
       OnClick = btnTabsClick
     end
@@ -126,8 +138,168 @@ object InstPointsFrame: TInstPointsFrame
     end
   end
   object ImageList1: TImageList
-    Source = <>
-    Destination = <>
+    Source = <
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000004C49444154388D6360A01260
+              64606060686868F88F4B41434303D16AF02A2204607A99C835001D8C1A441830
+              621324148BF0E8A6858B887201317A075F600F638358600C5C31474C31425500
+              0090911C98AB0225270000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Minus.bmp'
+          end>
+        Name = '3Minus'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005949444154388D6360A01260
+              64606060686868F88F4B41434303D16AF02A2204607A99C835001DD0CFA08686
+              86FFC4787DF0798D119B2021AFC0A39B162E22E80242813D78D3110B2105D802
+              161B18C45EC31533C41423540500FC942817B73ACAF70000000049454E44AE42
+              6082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Plus.bmp'
+          end>
+        Name = '3Plus'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000003C49444154388DEDCEB10D00
+              200C03C1B0F98FE6CD424B032625285F5B2747748F272981743BC0EF1C768538
+              AC84EC30870C87495A1F1DF7A567DD4F4D4E0C37B0FB232C1E0000000049454E
+              44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Combo_64.bmp'
+          end>
+        Name = '3Combo_64'
+      end
+      item
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005249444154388DDD91C10A00
+              200843B52FDF9FDB29483351F0E42E0AB9293DA2B1E2D3009068100047EFABEB
+              A2C10A3FD0E886F1F8B2411E51E5CD50136721DBF00A7E3655A91224A6BA5BB2
+              215F6F1BB5C1DA795E0C0E17D614490000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Minus_znak.bmp'
+          end>
+        Name = '3Minus_znak'
+      end
+      item
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005F49444154388DDD91C10EC0
+              200843655FFEFE9C9D964C563648CC0EF68209B6B5750C01C00157BB0C47E7F2
+              2F42761DBEA200F6B65FF6A2CC7DA7B20BB8477DF0AA42AAAF895B89E6C2D0A2
+              78A7230B734247C8C3942E559194BBECD736C609C58D1612755D72E700000000
+              49454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Plus_znak.bmp'
+          end>
+        Name = '3Plus_znak'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007849444154388DCD53410EC0
+              200893650FE7E7EE440467A1243BAC8991282D25CA187F8358A0AAD3C5724E5F
+              80F9FEA203E3DD44AE2F009D662D640E5F3C24C4B419B857A76A715EBA996EC1
+              BCCCD1EE2075C208CD6D4FAB9DC802C8E2EE29A10A9450258679C988A0570B3C
+              6644A87F13844CBD3BFD9FE201D51F2A8F7DD5BCA70000000049454E44AE4260
+              82}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Set_znak.bmp'
+          end>
+        Name = '3Set_znak'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = '3Minus'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Plus'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Combo_64'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Minus_znak'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Plus_znak'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Set_znak'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end>
     Left = 346
     Top = 43
   end

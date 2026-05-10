@@ -3557,6 +3557,7 @@ begin
  With  Selector do
  try
    If not Twig.isVisible(GRect) then exit;
+  //  GGraphSet.ViewZnaks := 0; ClassHandle.Znak := 0;
     If (ClassHandle.Standart = 1) and (GGraphSet.ViewZnaks=1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
       If Ind>-1 then begin

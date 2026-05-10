@@ -103,7 +103,8 @@ type
     procedure DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
       const Color: TAlphaColor; const FontSizePix: Single;
       const AngleRad: Single; const XP, YP: Double;
-      const XKoef: Double = 1; const FontView: TFontViewEx = nil); virtual;
+      const XKoef: Double = 1; const FontView: TFontViewEx = nil;
+      const AAntiAlias: Boolean = True); virtual;
 
     procedure DrawBitmapAlignedPix(const AnchorPix: TPointF;
       const Bitmap: TBitmap; const Dst: TRectF; const AngleRad: Single);
@@ -134,6 +135,7 @@ type
     FCurrentUserObject: TObject;
     ForgDrawer: TogsDrawer;
     procedure ConsiderLine(const X0, Y0, X1, Y1: Double);
+    procedure ConsiderLinePix(const X0, Y0, X1, Y1: Double);
     procedure ConsiderPolygon(const Points: TogsCollection);
   public
     constructor CreateCapture(Selector: TogsSelector); reintroduce;
@@ -151,7 +153,7 @@ type
     procedure DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
       const Color: TAlphaColor; const FontSizePix: Single;
       const AngleRad: Single; const XP, YP: Double;
-      const XKoef: Double = 1; const FontView: TFontViewEx = nil); override;
+      const XKoef: Double = 1; const FontView: TFontViewEx = nil; const AAntiAlias: Boolean = True); override;
 
     procedure DrawBitmapAlignedPix(const AnchorPix: TPointF;
       const Bitmap: TBitmap; const Dst: TRectF; const AngleRad: Single); override;
@@ -418,10 +420,10 @@ begin
   if FSkCanvas <> nil then
   begin
     Paint := TSkPaint.Create;
-    Paint.AntiAlias := True;
+    Paint.AntiAlias := False;
     Paint.Style := TSkPaintStyle.Stroke;
     Paint.Color := EnsureOpaqueAlpha(Pen.penColor);
-    if Pen.penWidth > 0 then
+   if Pen.penWidth > 0 then
     begin
       if FUseWorldCoords and (ogsSelector.GetScale > 0) then begin
         D := Max(0.03, Pen.penWidth);
@@ -437,7 +439,7 @@ begin
   else if Canvas <> nil then begin
     Canvas.Stroke.Kind := TBrushKind.Solid;
     Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
-    Canvas.Stroke.Thickness := Max(1.0, Pen.penWidth);
+   Canvas.Stroke.Thickness := Max(1.0, Pen.penWidth);
     Canvas.DrawLine(P0, P1, 1);
   end;
 end;
@@ -679,6 +681,7 @@ var
   C, S: Single;
   P0, P1, P2, P3: TPointF;
   X0, Y0, X1, Y1: Double;
+  MS: TMemoryStream;
 begin
   if Disable then
     Exit;
@@ -688,19 +691,38 @@ begin
     Exit;
 
   Img := nil;
-  if Bitmap.Map(TMapAccess.Read, D) then
+
+{$IFDEF ANDROID}
+  // На Android создаём изображение через кодек (SaveToStream + MakeFromEncodedStream),
+  // чтобы обойти возможные несоответствия формата сырых пикселей.
+  MS := TMemoryStream.Create;
   try
-    ImgInfo := TSkImageInfo.Create(Bitmap.Width, Bitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
-    Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
-    if Surface <> nil then
-    begin
-      Pixmap := Surface.PeekPixels;
-      if Pixmap <> nil then
-        Img := TSkImage.MakeFromRaster(Pixmap);
-    end;
+    Bitmap.SaveToStream(MS);
+    MS.Position := 0;
+    Img := TSkImage.MakeFromEncodedStream(MS);
   finally
-    Bitmap.Unmap(D);
+    MS.Free;
   end;
+{$ENDIF}
+
+  // Общий путь: если по какой‑то причине Img всё ещё nil, пробуем чтение сырых пикселей.
+  if Img = nil then
+  begin
+    if Bitmap.Map(TMapAccess.Read, D) then
+    try
+      ImgInfo := TSkImageInfo.Create(Bitmap.Width, Bitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+      Surface := TSkSurface.MakeRasterDirect(ImgInfo, D.Data, D.Pitch);
+      if Surface <> nil then
+      begin
+        Pixmap := Surface.PeekPixels;
+        if Pixmap <> nil then
+          Img := TSkImage.MakeFromRaster(Pixmap);
+      end;
+    finally
+      Bitmap.Unmap(D);
+    end;
+  end;
+
   if Img = nil then
     Exit;
 
@@ -742,10 +764,11 @@ begin
   try
     if UseWorldCoords then
     begin
-      DrawLine(P0.X, P0.Y, P1.X, P1.Y, False);
-      DrawLine(P1.X, P1.Y, P2.X, P2.Y, False);
-      DrawLine(P2.X, P2.Y, P3.X, P3.Y, False);
-      DrawLine(P3.X, P3.Y, P0.X, P0.Y, False);
+    //  DrawLine(P0.X, P0.Y, P1.X, P1.Y, False);
+    //  DrawLine(P1.X, P1.Y, P2.X, P2.Y, False);
+    //  DrawLine(P2.X, P2.Y, P3.X, P3.Y, False);
+    //  DrawLine(P3.X, P3.Y, P0.X, P0.Y, False);
+//     WriteIn(['DrawRect=',P0.X, P0.Y, P1.X, P1.Y,  P2.X, P2.Y, P3.X, P3.Y]);
     end
     else
     begin
@@ -770,7 +793,7 @@ end;
 
 procedure TogsDrawerSkia.DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
   const Color: TAlphaColor; const FontSizePix: Single; const AngleRad: Single;
-  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx);
+  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean);
 var
   Paint: ISkPaint;
   DebugPaint: ISkPaint;
@@ -807,7 +830,7 @@ begin
     Exit;
 
   Paint := TSkPaint.Create;
-  Paint.AntiAlias := True;
+  Paint.AntiAlias := AAntiAlias;
   Paint.Color := EnsureOpaqueAlpha(Color);
 
   if FontView <> nil then
@@ -882,14 +905,15 @@ begin
     if Abs(XKoef - 1) > 1e-6 then
       FSkCanvas.Scale(Single(XKoef), 1);
     FSkCanvas.DrawSimpleText(Text, DrawX, DrawY, Font, Paint);
-
+  //
+    DebugDrawTextBounds := False;
     if DebugDrawTextBounds then
     begin
       DebugPaint := TSkPaint.Create;
       DebugPaint.AntiAlias := True;
       DebugPaint.Style := TSkPaintStyle.Stroke;
       DebugPaint.Color := Paint.Color;
-      DebugPaint.StrokeWidth := 1;
+      DebugPaint.StrokeWidth := 0.1;
       FSkCanvas.DrawLine(R.Left, R.Top, R.Right, R.Top, DebugPaint);
       FSkCanvas.DrawLine(R.Right, R.Top, R.Right, R.Bottom, DebugPaint);
       FSkCanvas.DrawLine(R.Right, R.Bottom, R.Left, R.Bottom, DebugPaint);
@@ -911,8 +935,13 @@ constructor TogsCaptureDrawerSkia.CreateCapture(Selector: TogsSelector);
 begin
   inherited Create(nil, nil, nil);
   ForgDrawer := Selector.ogsDrawer;
+//  WriteIn(['CreateCapture=', ForgDrawer.ClassName]);
   Width := ForgDrawer.Width;
   Height := ForgDrawer.Height;
+  if ForgDrawer is TogsDrawerSkia then
+    UseWorldCoords := TogsDrawerSkia(ForgDrawer).UseWorldCoords
+  else
+    UseWorldCoords := True;
   Selector.ogsDrawer := Self;
   fOgsSelector := Selector;
   fDrawerMode := dmCapture;
@@ -920,8 +949,10 @@ end;
 
 destructor TogsCaptureDrawerSkia.Destroy;
 begin
+ if (fogsSelector <> nil) and (fogsSelector.ogsDrawer = Self) then
+  fogsSelector.ogsDrawer := ForgDrawer;
+//   WriteIn(['FreeCapture=', ForgDrawer.ClassName]);
  inherited;
- fogsSelector.ogsDrawer := ForgDrawer;
 end;
 
 procedure TogsCaptureDrawerSkia.BeginCapture(const X, Y: Double; var Params: TCaptureRec);
@@ -977,13 +1008,11 @@ begin
   end
   else
   begin
-    PX := ogsSelector.XPix(FCaptureX);
-    PY := ogsSelector.YPix(FCaptureY);
-    AX := ogsSelector.XPix(X0);
-    AY := ogsSelector.YPix(Y0);
-    BX := ogsSelector.XPix(X1);
-    BY := ogsSelector.YPix(Y1);
-    Threshold := FCapture^.CaptureParam;
+    ConsiderLinePix(
+      ogsSelector.XPix(X0), ogsSelector.YPix(Y0),
+      ogsSelector.XPix(X1), ogsSelector.YPix(Y1)
+    );
+    Exit;
   end;
 
   VX := BX - AX;
@@ -1047,6 +1076,73 @@ begin
      // Writein([Format('capLine obj=%s dist=%.6f score=%.3f thr=%.6f', [FCurrentUserObject.ClassName, DistPix, DistScore, Threshold])])
     else
      // Writein([Format('capLine obj=nil dist=%.6f score=%.3f thr=%.6f', [DistPix, DistScore, Threshold])]);
+  end;
+end;
+
+procedure TogsCaptureDrawerSkia.ConsiderLinePix(const X0, Y0, X1, Y1: Double);
+var PX, PY: Double; AX, AY: Double; BX, BY: Double;
+    VX, VY, WX, WY: Double; C1, C2, T: Double; CX, CY: Double;
+    DistPix: Double; DistScore: Double; Threshold: Double;
+begin
+  if (FCapture = nil) or (ogsSelector = nil) then
+    Exit;
+  if not (ckLine in FCapture^.CaptureFor) then
+    Exit;
+  if UseWorldCoords then
+    Exit;
+
+  PX := ogsSelector.XPix(FCaptureX);
+  PY := ogsSelector.YPix(FCaptureY);
+  AX := X0;
+  AY := Y0;
+  BX := X1;
+  BY := Y1;
+  Threshold := FCapture^.CaptureParam;
+
+  VX := BX - AX;
+  VY := BY - AY;
+  WX := PX - AX;
+  WY := PY - AY;
+  C1 := VX * WX + VY * WY;
+  if C1 <= 0 then
+  begin
+    CX := AX;
+    CY := AY;
+    DistPix := Hypot(PX - AX, PY - AY);
+  end
+  else
+  begin
+    C2 := VX * VX + VY * VY;
+    if C2 <= 1e-18 then
+    begin
+      CX := AX;
+      CY := AY;
+      DistPix := Hypot(PX - AX, PY - AY);
+    end
+    else if C1 >= C2 then
+    begin
+      CX := BX;
+      CY := BY;
+      DistPix := Hypot(PX - BX, PY - BY);
+    end
+    else
+    begin
+      T := C1 / C2;
+      CX := AX + T * VX;
+      CY := AY + T * VY;
+      DistPix := Hypot(PX - CX, PY - CY);
+    end;
+  end;
+
+  DistScore := DistPix;
+  if (DistPix <= Threshold) and
+     ((FCapture^.resObject = nil) or (DistScore < FCapture^.resCapture)) then
+  begin
+    FCapture^.resCapture := Round(DistScore);
+    FCapture^.resObject := FCurrentUserObject;
+    FCapture^.resCaptureOf := ckLine;
+    FCapture^.XCapture := ogsSelector.XGeo(Round(CX));
+    FCapture^.YCapture := ogsSelector.YGeo(Round(CY));
   end;
 end;
 
@@ -1187,13 +1283,20 @@ var
   AnchorC: TPointF;
   C, S: Single;
   P0, P1, P2, P3: TPointF;
+  AnchorPixLocal: TPointF;
 begin
   if (FCapture = nil) or (ogsSelector = nil) then
     Exit;
   if not (ckLine in FCapture^.CaptureFor) then
     Exit;
 
-  AnchorC := AnchorPix;
+  AnchorPixLocal := AnchorPix;
+  if not UseWorldCoords then
+    AnchorPixLocal := PointF(
+      ogsSelector.XPix(AnchorPixLocal.X),
+      ogsSelector.YPix(AnchorPixLocal.Y)
+    );
+  AnchorC := AnchorPixLocal;
 
   P0 := PointF(Dst.Left, Dst.Top);
   P1 := PointF(Dst.Right, Dst.Top);
@@ -1214,15 +1317,25 @@ begin
   P2 := PointF(P2.X + AnchorC.X, P2.Y + AnchorC.Y);
   P3 := PointF(P3.X + AnchorC.X, P3.Y + AnchorC.Y);
 
-  ConsiderLine(ogsSelector.XGeo(Round(P0.X)), ogsSelector.YGeo(Round(P0.Y)), ogsSelector.XGeo(Round(P1.X)), ogsSelector.YGeo(Round(P1.Y)));
-  ConsiderLine(ogsSelector.XGeo(Round(P1.X)), ogsSelector.YGeo(Round(P1.Y)), ogsSelector.XGeo(Round(P2.X)), ogsSelector.YGeo(Round(P2.Y)));
-  ConsiderLine(ogsSelector.XGeo(Round(P2.X)), ogsSelector.YGeo(Round(P2.Y)), ogsSelector.XGeo(Round(P3.X)), ogsSelector.YGeo(Round(P3.Y)));
-  ConsiderLine(ogsSelector.XGeo(Round(P3.X)), ogsSelector.YGeo(Round(P3.Y)), ogsSelector.XGeo(Round(P0.X)), ogsSelector.YGeo(Round(P0.Y)));
+  if UseWorldCoords then
+  begin
+    ConsiderLine(P0.X, P0.Y, P1.X, P1.Y);
+    ConsiderLine(P1.X, P1.Y, P2.X, P2.Y);
+    ConsiderLine(P2.X, P2.Y, P3.X, P3.Y);
+    ConsiderLine(P3.X, P3.Y, P0.X, P0.Y);
+  end
+  else
+  begin
+    ConsiderLinePix(P0.X, P0.Y, P1.X, P1.Y);
+    ConsiderLinePix(P1.X, P1.Y, P2.X, P2.Y);
+    ConsiderLinePix(P2.X, P2.Y, P3.X, P3.Y);
+    ConsiderLinePix(P3.X, P3.Y, P0.X, P0.Y);
+  end;
 end;
 
 procedure TogsCaptureDrawerSkia.DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
   const Color: TAlphaColor; const FontSizePix: Single; const AngleRad: Single;
-  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx);
+  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean);
 var
   Paint: ISkPaint;
   Typeface: ISkTypeface;
@@ -1244,6 +1357,7 @@ var
   AscentAlign: Single;
   ScaleCorr: Single;
   AnchorC: TPointF;
+  AnchorPixLocal: TPointF;
   C, S: Single;
   R: TRectF;
   SX, SY: Single;
@@ -1256,10 +1370,16 @@ begin
   if Text = '' then
     Exit;
 
-    AnchorC := AnchorPix;
+    AnchorPixLocal := AnchorPix;
+    if not UseWorldCoords then
+      AnchorPixLocal := PointF(
+        ogsSelector.XPix(AnchorPixLocal.X),
+        ogsSelector.YPix(AnchorPixLocal.Y)
+      );
+    AnchorC := AnchorPixLocal;
 
     Paint := TSkPaint.Create;
-    Paint.AntiAlias := False;
+    Paint.AntiAlias := AAntiAlias;
 
     if FontView <> nil then
       LocalFontName := newFontScale.NormalizeSkiaFontFamilyName(string(FontView.FontName))
@@ -1350,10 +1470,22 @@ begin
     P2 := PointF(P2.X + AnchorC.X, P2.Y + AnchorC.Y);
     P3 := PointF(P3.X + AnchorC.X, P3.Y + AnchorC.Y);
 
-    ConsiderLine(ogsSelector.XGeo(Round(P0.X)), ogsSelector.YGeo(Round(P0.Y)), ogsSelector.XGeo(Round(P1.X)), ogsSelector.YGeo(Round(P1.Y)));
-    ConsiderLine(ogsSelector.XGeo(Round(P1.X)), ogsSelector.YGeo(Round(P1.Y)), ogsSelector.XGeo(Round(P2.X)), ogsSelector.YGeo(Round(P2.Y)));
-    ConsiderLine(ogsSelector.XGeo(Round(P2.X)), ogsSelector.YGeo(Round(P2.Y)), ogsSelector.XGeo(Round(P3.X)), ogsSelector.YGeo(Round(P3.Y)));
-    ConsiderLine(ogsSelector.XGeo(Round(P3.X)), ogsSelector.YGeo(Round(P3.Y)), ogsSelector.XGeo(Round(P0.X)), ogsSelector.YGeo(Round(P0.Y)));
+  //  Writein(['Text=', Text, UseWorldCoords,P0.X, P0.Y, P1.X, P1.Y ]);
+
+    if UseWorldCoords then
+    begin
+      ConsiderLine(P0.X, P0.Y, P1.X, P1.Y);
+      ConsiderLine(P1.X, P1.Y, P2.X, P2.Y);
+      ConsiderLine(P2.X, P2.Y, P3.X, P3.Y);
+      ConsiderLine(P3.X, P3.Y, P0.X, P0.Y);
+    end
+    else
+    begin
+      ConsiderLinePix(P0.X, P0.Y, P1.X, P1.Y);
+      ConsiderLinePix(P1.X, P1.Y, P2.X, P2.Y);
+      ConsiderLinePix(P2.X, P2.Y, P3.X, P3.Y);
+      ConsiderLinePix(P3.X, P3.Y, P0.X, P0.Y);
+    end;
 end;
 
 initialization

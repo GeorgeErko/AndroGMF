@@ -91,13 +91,22 @@ uses
   instPointSign in 'instPointSign.pas' {InstPointsFrame: TFrame},
   InstLayerFrame in 'InstLayerFrame.pas' {LayerFrame: TFrame},
   SelectedObjects in 'GMF\SelectedObjects.pas',
-  objEditMap in 'MOUSE\objEditMap.pas';
+  objEditMap in 'MOUSE\objEditMap.pas',
+  DlgPropColorEditor in 'COMPS\DlgPropColorEditor.pas',
+  DlgPropFontEditor in 'COMPS\DlgPropFontEditor.pas',
+  DlgRootPropEditor in 'COMPS\DlgRootPropEditor.pas' {RootPropEditorForm},
+  DropDownButton in 'COMPS\DropDownButton.pas',
+  LBN in 'GMF\LBN.pas',
+  tstForm in 'COMPS\tstForm.pas' {tsts2DF},
+  tst2 in 'COMPS\tst2.pas' {tst2Frame: TFrame};
 
 {$R *.res}
 
 begin
   Application.Initialize;
    Application.CreateForm(TMainFormMouseObj, MainFormMouseObj);
+  Application.CreateForm(TRootPropEditorForm, RootPropEditorForm);
+  Application.CreateForm(Ttsts2DF, tsts2DF);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;
 end.

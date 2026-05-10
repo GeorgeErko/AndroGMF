@@ -2,4 +2,64 @@ object PropEditorFrame: TPropEditorFrame
   Size.Width = 316.000000000000000000
   Size.Height = 472.000000000000000000
   Size.PlatformDefault = False
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000004749444154388DED94310A00
+              3008C4BCE2FFBF9C4E05DBC541C4A599BC251C280AC00A4812C0AA4ACE5C1245
+              BE684A24C9C246D3DCD2C863788F3CCB2D8DBE28C7CDEE77300AC006F7D7152F
+              9C094DC40000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Points.bmp'
+          end>
+        Name = '3Points'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000003C49444154388DEDCEB10D00
+              200C03C1B0F98FE6CD424B032625285F5B2747748F272981743BC0EF1C768538
+              AC84EC30870C87495A1F1DF7A567DD4F4D4E0C37B0FB232C1E0000000049454E
+              44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Combo_64.bmp'
+          end>
+        Name = '3Combo_64'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = '3Points'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = '3Combo_64'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end>
+    Left = 252
+    Top = 28
+  end
 end

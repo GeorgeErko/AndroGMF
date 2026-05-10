@@ -177,6 +177,7 @@ end;
 
 PLIB=Class(TSortedCollection)
   function Compare(Key1,Key2:Pointer):Integer;Override;
+  procedure CreateBitmaps;
 end;
 
 function SearchThis(PC:TSortedCollection;Num:Integer):SmallInt;
@@ -981,6 +982,7 @@ var
   Ko2:Double;
   Vis:Boolean;
   X1,Y1:Integer;
+  W, H: Double;
 begin
 // if not Drawing then Exit;
 Ko2:=Ko;
@@ -1003,18 +1005,19 @@ end;
      Sect:=GetRect(Abs(Ko));
          BB:=isVisible(Ko);
      // WriteIn([MyNameis]);
-          BB:=True;
+         // BB:=True;
            if not BB {and not UseFont} then Exit;
-           If (XRasst(XMax-XMin)<=2) and (YRasst(YMax-YMin)<=2) and (not GlobalRender) then begin
+           W := Abs(Sect.Right-Sect.Left); H := Abs(Sect.Bottom-Sect.Top);
+           If (XRasst(W)<=10) and (YRasst(H)<=10) and (not GlobalRender) then begin
             If useLine then begin
              If BB then begin
                //If gGraphSet.FPntZnk>=2 then exit;
               // Writeln(1);
                // Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
                // Canvas.PenWidth:=round(Ko*Mxx*koefLine);
-                X1:=XPix(XMin);Y1:=YPix(YMin);
+                X1:=XPix(x);Y1:=YPix(y);
              //  Dc:=GCanvas.Handle;
-                 Drawer.DrawLine(X1,Y1,X1+2,Y1); Drawer.DrawLine(X1,Y1+1,X1+2,Y1+1);
+               //  Drawer.DrawLine(X1,Y1,X1+2,Y1); Drawer.DrawLine(X1,Y1+1,X1+2,Y1+1);
               // Writeln(2);
                end;
              end;
@@ -1211,6 +1214,11 @@ if pc=nil then exit;
 end;
 
 {==============================================================================}
+
+procedure PLIB.CreateBitmaps;
+begin
+
+end;
 
 initialization
  GlobalPoint := nil;

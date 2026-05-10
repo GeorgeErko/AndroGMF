@@ -27,11 +27,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 41
+      TabOrder = 64
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 40
+      TabOrder = 63
     end
     object btnPDF: TCornerButton
       Images = ImageList1

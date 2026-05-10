@@ -29,6 +29,7 @@ object LayerFrame: TLayerFrame
     end
   end
   object PopupLayers: TPopup
+    Align = Client
     PlacementTarget = HeaderLay
     Size.Width = 460.000000000000000000
     Size.Height = 280.000000000000000000
@@ -50,7 +51,7 @@ object LayerFrame: TLayerFrame
       object TreeLayers: TTreeView
         Align = Client
         Size.Width = 460.000000000000000000
-        Size.Height = 248.000000000000000000
+        Size.Height = 255.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
         OnMouseUp = TreeLayersMouseUp
@@ -60,15 +61,15 @@ object LayerFrame: TLayerFrame
       end
       object ButtonsLay: TLayout
         Align = Bottom
-        Position.Y = 248.000000000000000000
+        Position.Y = 255.000000000000000000
         Size.Width = 460.000000000000000000
-        Size.Height = 32.000000000000000000
+        Size.Height = 25.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         object btnAllOn: TButton
           Align = Left
           Size.Width = 70.000000000000000000
-          Size.Height = 32.000000000000000000
+          Size.Height = 25.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 0
           Text = #1042#1082#1083'.'#1074#1089#1077
@@ -79,7 +80,7 @@ object LayerFrame: TLayerFrame
           Align = Left
           Position.X = 70.000000000000000000
           Size.Width = 80.000000000000000000
-          Size.Height = 32.000000000000000000
+          Size.Height = 25.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 1
           Text = #1054#1090#1082#1083'.'#1074#1089#1077
@@ -90,7 +91,7 @@ object LayerFrame: TLayerFrame
           Align = Left
           Position.X = 150.000000000000000000
           Size.Width = 80.000000000000000000
-          Size.Height = 32.000000000000000000
+          Size.Height = 25.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 2
           Text = #1048#1085#1074#1077#1088#1090
@@ -101,7 +102,7 @@ object LayerFrame: TLayerFrame
           Align = Right
           Position.X = 390.000000000000000000
           Size.Width = 70.000000000000000000
-          Size.Height = 32.000000000000000000
+          Size.Height = 25.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 4
           Text = #1054#1090#1084#1077#1085#1072
@@ -112,7 +113,7 @@ object LayerFrame: TLayerFrame
           Align = Right
           Position.X = 340.000000000000000000
           Size.Width = 50.000000000000000000
-          Size.Height = 32.000000000000000000
+          Size.Height = 25.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 3
           Text = 'OK'
@@ -121,10 +122,6 @@ object LayerFrame: TLayerFrame
         end
       end
     end
-  end
-  object SizeGrip1: TSizeGrip
-    Position.X = 424.000000000000000000
-    Position.Y = 250.000000000000000000
   end
   object ImageList1: TImageList
     Source = <

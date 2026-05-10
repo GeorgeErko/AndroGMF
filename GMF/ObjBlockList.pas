@@ -26,6 +26,8 @@ type
     //
      Function GetBlockNames:TStrings;
      Function FindByProperty(PropName,PropValue:AnsiString):Pointer;
+    //
+     procedure CreateBitmaps;
    end;
 
 
@@ -77,7 +79,10 @@ type
 
 
 implementation uses newBlock, SysUtils, newProcs, userObject, newProperties,
-                    Writer;
+                    Writer,
+                    newSelector, ogcDrawerCanvas, ogcDrawerSkia,
+                    FMX.Controls, EcLot, WPTwigs, ogcBasic, System.UITypes,
+                    System.Types;
 { TBlockList }
 
 Function ByBlock(P:Pointer):TGeoBlock; // ретипизация TGeoBlock
@@ -164,12 +169,90 @@ end;
 
 function TBlockList.thisLayerExists(PR: TResource;
   List: TStrings): boolean;
-var I:Integer;  
+var I:Integer;
 begin
  Result:=False;
  For I:=0 to Blocks.Count-1 do If TGeoBlock(Block[I]).LayerExists(PR) then List.Add('"'+TGeoBlock(Block[I]).Name+'"');
  Result:=List.Count>0;
 end;
+
+procedure TBlockList.CreateBitmaps;
+var I, J, K:Integer;
+    Lot: TLot; Twig : TTwig; Drawer: TogsDrawerCanvas;
+    newSelector: TSelector; oldSelector: Pointer;
+    Control: TControl;
+begin
+ Control := TControl.Create(nil);
+ Control.Width := 100; Control.Height := 100;
+ try
+  For K := 0 to Blocks.Count-1 do
+   With TGeoBlock(Blocks[K]) do begin
+    try
+     Drawer := TogsDrawerCanvas.Create(nil, Control, 1, nil);
+     newSelector := TSelector.Create(Drawer);
+     Drawer.ogsSelector := newSelector;
+     newSelector.GNForm := Control;
+     GlobalRender := True;
+     Drawer.BeginPaint;
+     Drawer.Clear(0);
+     for I := 1 to TwgForm.Twigs.TwigsCount - 1 do begin
+      Twig := TwgForm.Twigs.TAt(I);
+      for J := 0 to Twig.Coord.Count - 1 do
+        newSelector.AddCoord(Twig[J].XDot, Twig[J].YDot);
+     end;
+     newSelector.UpdateRects(True);
+     For I := 0 to  TwgForm.Twigs.IndexCount-1 do begin
+      Lot:=TwgForm.Twigs.LAtIndex(I);If Lot.ClassHandle.Check = 0 then continue;
+      Lot.SetMinMax2(TwgForm.Twigs);
+      oldSelector := Lot.Selector; Lot.Selector := newSelector;
+      GlobalRender := True;
+      try
+       Lot.Draw32(TwgForm.Twigs);
+      finally
+       Lot.Selector := oldSelector;
+       GlobalRender := False;
+      end;
+     end;
+    {
+     // временный тест: рисуем диагональный крест через Canvas/Drawer
+     if (Drawer <> nil) and (Drawer.Canvas <> nil) then
+     begin
+      Drawer.Canvas.Stroke.Kind := TBrushKind.Solid;
+      Drawer.Canvas.Stroke.Thickness := 2;
+
+      Drawer.Canvas.Stroke.Color := TAlphaColorRec.Red;
+      Drawer.Canvas.DrawLine(PointF(0, 0),
+                             PointF(Control.Width, Control.Height), 1);
+
+      Drawer.Canvas.Stroke.Color := TAlphaColorRec.Blue;
+      Drawer.Canvas.DrawLine(PointF(0, Control.Height),
+                             PointF(Control.Width, 0), 1);
+     end;
+    }
+     Drawer.EndPaint;
+    // копируем битмап в блок (уже с нарисованным крестом через Drawer.Canvas)
+     if BlockBitmap = nil then
+      BlockBitmap := TBitmap.Create;
+   //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
+     BlockBitmap.Assign(Drawer.Bitmap);
+   //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
+     FreeAndNil(ogsRect);
+     ogsRect := TogsRect.Create;
+     ogsRect.InsertRect(newSelector.ActiveRect);
+     BlockX := newSelector.XPix(X + TwgForm.XXMin); BlockY := newSelector.YPix(Y + TwgForm.YYMin);
+     finally
+      // отладочное сохранение при необходимости
+    //  ShowMessage(MainPath + Name +'.jpg');
+    //  BlockBitmap.SaveToFile(MainPath + Name +'.jpg');
+      newSelector.Free;
+      Drawer.Free;
+     end;
+   end;
+  finally
+   Control.Free;
+  end;
+end;
+
 
 { TLinkFiles }
 

@@ -2,7 +2,7 @@
 interface
  uses Collect, Classes, FMX.Controls, WpTForm2, FMX.Graphics, newSelector,
       UpdateMessages, UndoColNew, System.UITypes, System.Types, System.Skia,
-      drawTwigs;
+      drawTwigs, InstLayerFrame;
 
 const
  keyNone=-1;

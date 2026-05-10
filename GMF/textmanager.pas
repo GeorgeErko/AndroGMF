@@ -1,7 +1,7 @@
 ﻿unit textmanager;
 
 interface
-uses Sysutils, Classes, Collect, EMath;
+uses Sysutils, Classes, Collect, EMath, FMX.Graphics;
 
 const
   tpBold = 1;
@@ -43,11 +43,17 @@ type
     procedure AfterLoad(znaks: PCollection);
 //    procedure AfterLoad2(znaks: PCollection);
     function CreateTexts(znaks: PCollection): PCollection;
+    procedure ClearTextBitmaps;
+    procedure BuildTextBitmaps;
+    procedure EnsureTextBitmapsSize;
+    procedure UpdateTextBitmaps;
   public
     FVars: TStringList;
     FSave: PCollection;
+    oldBmp: TList;
     FValues: PCollection;
     FTexts: PCollection;
+    FTextBitmaps: PCollection;
     UpdateResults:Boolean;
     constructor Create;
     constructor CreateAsTextManager(T:TTextManager;Znaks:PCollection);
@@ -94,6 +100,8 @@ begin
   FSave := PCollection.Create(1);
   FTexts := PCollection.Create(1);
   FValues := PCollection.Create(1);
+  FTextBitmaps := PCollection.Create(1);
+  oldBmp := TList.Create;
 end;
 
 constructor TTextManager.Load(buf: TBufStream);
@@ -103,6 +111,8 @@ var ss: TCStrings;
 begin
   FSave := PCollection.Create(1);
   FTexts := PCollection.Create(1);
+  FTextBitmaps := PCollection.Create(1);
+  oldBmp := TList.Create;
 
 {  ss := TCStrings(buf.get);
   s := ss.GetStrings;}
@@ -162,17 +172,76 @@ begin
 //  WriteS(['Free']);
 //  WriteS(['end']);
   FSave.Free;
+
+  ClearTextBitmaps;
+  if FTextBitmaps <> nil then
+  begin
+    FTextBitmaps.Free;
+    FTextBitmaps := nil;
+  end;
 // BLOCK_DEBUG:=True;
 // BLOCK_DEBUG:=False;
   FTexts.DeleteAll;
   FTexts.free;
   If FVars<>nil then FVars.Free;
+  oldBmp.Free;
+end;
+
+procedure TTextManager.ClearTextBitmaps;
+var I: Integer;
+begin
+  if FTextBitmaps = nil then Exit;
+  for I := 0 to FTextBitmaps.Count - 1 do
+    if TObject(FTextBitmaps[I]) <> nil then
+      TObject(FTextBitmaps[I]).Free;
+  FTextBitmaps.DeleteAll;
+end;
+
+procedure TTextManager.BuildTextBitmaps;
+var I: Integer;
+    B: TBitmap;
+begin
+  if (FTexts = nil) or (FTextBitmaps = nil) then Exit;
+  ClearTextBitmaps;
+  for I := 0 to FTexts.Count - 1 do
+  begin
+    B := TBitmap.Create;
+    FTextBitmaps.Insert(B);
+    TDWG_Text(FTexts[I]).TextBitmap := B;
+  end;
+end;
+
+procedure TTextManager.EnsureTextBitmapsSize;
+var I: Integer;
+begin
+  if (FTexts = nil) or (FTextBitmaps = nil) then Exit;
+
+  while FTextBitmaps.Count > FTexts.Count do
+  begin
+    I := FTextBitmaps.Count - 1;
+    if TObject(FTextBitmaps[I]) <> nil then
+      TObject(FTextBitmaps[I]).Free;
+    FTextBitmaps.AtDelete(I);
+  end;
+
+  while FTextBitmaps.Count < FTexts.Count do
+    FTextBitmaps.Insert(TBitmap.Create);
+end;
+
+procedure TTextManager.UpdateTextBitmaps;
+var I: Integer;
+begin
+  if (FTexts = nil) or (FTextBitmaps = nil) then Exit;
+  EnsureTextBitmapsSize;
+  for I := 0 to FTexts.Count - 1 do
+    TDWG_Text(FTexts[I]).TextBitmap := TBitmap(FTextBitmaps[I]);
 end;
 
 procedure TTextManager.SetZnaks(znaks: PCollection);
 begin
   FTexts.DeleteAll;FTexts.Free;
   FTexts := CreateTexts(znaks);
+  BuildTextBitmaps;
   if FVars <> nil then
   begin
     AfterLoad(znaks);
@@ -182,7 +251,7 @@ end;
 
 procedure TTextManager.Update(znaks: PCollection);
 var col: PCollection;
-   tmp: PCollection;
+    tmp: PCollection;
           function xxx(const s: AnsiString): boolean;
           var j, i: integer;
           begin
@@ -256,6 +325,8 @@ begin
     end;
     FValues.free;
     FValues := col;
+
+  //  UpdateTextBitmaps;
   finally
     indlist.free;
     tmp.deleteall;
@@ -373,6 +444,7 @@ var i: integer;
   tp: TTextParams;
 begin
   FSave.freeall;
+  oldBmp.Clear;
   for i := 0 to FTexts.count - 1  do
   begin
    with TDwg_text(FTexts[i]) do
@@ -388,7 +460,8 @@ begin
      tp := TTextParams.Create(FText, FX, FY, FAng, FHeight, FWidth, b, FTextAlignX, FTextAlignY, ShiftX,ShiftY, FBg);
      FSave.Insert(tp);
      tp := TTextParams(FValues[i]);
-
+    //
+     oldBmp.Add(TDwg_text(FTexts[i]).TextBitmap);
      FText := tp.FValue;
     // If FText = '2.43' then
      FAng := tp.FUgol;
@@ -413,6 +486,8 @@ begin
      If BackGround <>0 then begin
       FBg:=BackGround = 2;
      end;
+    UpdateTextBitmaps;
+      // TextDirty := True;
 //     Writeln('ShiftXY=',ShiftX,' ',ShiftY);
      //Writeln('FI=',fFontIndex,' ',tp.tmFontIndex,' ',tp.FValue);
    end;
@@ -444,6 +519,9 @@ begin
        ShiftX:=tp.ShiftX;
        ShiftY:=tp.ShiftY;
        FBg:=tp.FBg;
+       if i <= oldBmp.Count then
+        TextBitmap := oldBmp[I];
+      // TextDirty := True;
     end;
   end;
   FSave.FreeAll;
@@ -529,11 +607,13 @@ begin
   DT:=FTexts[I];
   If AnsiUpperCase(DT.FName)=AnsiUpperCase(V) then begin
    TTextParams(FValues[I]).FValue:=Value;
+   DT.TextDirty := True;
    Result:=True;
    exit;
   end else
   If (V = '*') and (I=0) then begin
    TTextParams(FValues[I]).FValue:=Value;
+   DT.TextDirty := True;
    Result:=True;
    exit;
   end;
@@ -550,6 +630,7 @@ begin
    TTextParams(FValues[I]).FUgol:=Angle;
    TTextParams(FValues[I]).FH:=H;
    TTextParams(FValues[I]).FW:=W;
+   DT.TextDirty := True;
    Result:=True;
    exit;
   end;

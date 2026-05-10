@@ -61,6 +61,7 @@ TGeoLine=class(TTD)
 	Structura:PCollection;
 	NameOf:array[0..59] of AnsiChar;
   IdNum:SmallInt;
+  LocalScale: Double;
   Points:PCollection;
   Layer:TResource;
 	constructor Create(Name:String = '';Id:Integer = -1);
@@ -234,6 +235,7 @@ begin
  StrPCopy(NameOf,AnsiString(Name));
  WriteIn(['NameLine=',NameOf]);
  IdNum:=Id;
+ LocalScale := 1;
 end;
 {-------------------------------------------}
 procedure TGeoLine.CreatePoints(P: TSortedCollection);

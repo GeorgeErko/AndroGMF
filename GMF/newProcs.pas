@@ -123,7 +123,7 @@ function GStrToFloat(S: AnsiString): Double;
  var I:Integer;
   begin
    Result:='';
-   For I:=1 to Length(S) do If S[1]=Mask then
+   For I:=1 to Length(S) do If S[I]=Mask then
     Result:=Result+#13#10 else Result:=Result+S[I];
   end;
 
@@ -449,7 +449,7 @@ end;
 
 function RGBToCol(R, G, B: Byte): TColorRef;
 begin
-Result := MakeColor(R, G, B);
+ Result := MakeColor(R, G, B);
 end;
 
 function GetR(Color: TColor): Byte;

@@ -1,0 +1,26 @@
+object tsts2DF: Ttsts2DF
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 60
+  ClientWidth = 354
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnMouseDown = FormMouseDown
+  DesignerMasterStyle = 0
+  object PopupBox1: TPopupBox
+    Items.Strings = (
+      'wae'
+      'gvnm'
+      'ghk')
+    ItemIndex = 0
+    Position.X = 211.000000000000000000
+    Position.Y = 14.000000000000000000
+    Size.Width = 114.000000000000000000
+    Size.Height = 27.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+  end
+end

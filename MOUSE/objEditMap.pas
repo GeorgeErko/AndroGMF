@@ -41,7 +41,7 @@ type
     property Objects: TSelectedObjects read GetObjects;
   end;
 
-implementation uses TwgColle, mpMarker, Writer, TwgDraw;
+implementation uses TwgColle, mpMarker, Writer, TwgDraw, instLayerFrame;
 
 function TMouseEditMap.emGetDotMarker(var varX, varY: Double; LastPoint: TDot; StvorLine: TStvorLine;
   out objPoint: TTwgObject; UsePathTwig: Boolean; UseGrid: Boolean; useSTS: boolean): boolean;
@@ -50,8 +50,9 @@ var
   I: Integer;
   W: Byte;
   CaptureDrawer: TogsCaptureDrawerSkia;
-  Params: TCaptureRec;
   PrevDrawer: TogsDrawer;
+  Params: TCaptureRec;
+  OwnCapture: Boolean;
   Lot: TLot;
   PP: TPointDot;
 begin
@@ -76,16 +77,16 @@ begin
   YClick := varY;
 
   CaptureDrawer := nil;
-  PrevDrawer := nil;
+  OwnCapture := False;
   With Twigs do
   try
-    PrevDrawer := Selector.ogsDrawer;
+//   WriteIn(['CreateCapture.emGetMarker=', Selector.Drawer.ClassName]);
+    PrevDrawer := Selector.Drawer;
     CaptureDrawer := TogsCaptureDrawerSkia.CreateCapture(Selector);
     Params := CRClearParams([ckLine]);
     Params.CaptureParam := GlobalSettings.Settings.gsPointSize * 2;
     CaptureDrawer.BeginCapture(XClick, YClick, Params);
-    if PrevDrawer is TogsDrawerSkia then
-      CaptureDrawer.UseWorldCoords := TogsDrawerSkia(PrevDrawer).UseWorldCoords;
+    CaptureDrawer.UseWorldCoords := True;
 
     for I := Twigs.IndexCount - 1 downto 0 do
     begin
@@ -117,7 +118,7 @@ begin
 
       CaptureDrawer.BeginPrimitive(Int64(NativeInt(PP)), PP);
       try
-        PP.Draw32(CaptureDrawer, MkLib.PSLib, FontColEx);
+        PP.Draw32(CaptureDrawer, MkLib.PSLib, FontColEx, True);
       finally
         CaptureDrawer.EndPrimitive;
       end;
@@ -142,10 +143,146 @@ begin
         Marker.Remove(nil);
     end;
   finally
-    if CaptureDrawer <> nil then
+    CaptureDrawer.EndCapture;
+    CaptureDrawer.Free;
+//    WriteIn(['FreeCapture.emGetMarker=', Selector.Drawer.ClassName]);
+  end;
+end;
+
+function TMouseEditMap.emGetObject(var X, Y: Double; var TypeLot: Byte; Shift: TShiftState): TTwgObject;
+var
+  X1, Y1: Double;
+  XClick, YClick: Double;
+  Twig: TTwig;
+  Lot: TLot;
+  I, J, K: Integer;
+  W: Byte;
+  PP: TPointDot;
+  Bm: TBmpMgr;
+  CaptureDrawer: TogsCaptureDrawerSkia;
+  PrevDrawer: TogsDrawer;
+  Params: TCaptureRec;
+  Tw: TTwig;
+  OwnCapture: Boolean;
+  function PointIn(K: Integer): Boolean;
+  var
+    Tw: TTwig;
+    J: Integer;
+    S: Double;
+  begin
+    Result := False;
+    with Lot do
+      for J := 0 to Coord.Count - 1 do
+      begin
+        Tw := Twigs.Twigs.TAt(TLong(Coord[J]).Num);
+        if Tw.IsVisible(Selector.GRect) then
+        begin
+          S := Tw.GetTwigDist(X, Y, X1, Y1);
+          if Selector.XRasst(S) <= Twigs.Settings.psAutoDisst * K then
+          begin
+            Result := True;
+            Break;
+          end;
+        end;
+      end;
+  end;
+begin
+  Result := nil;
+  TypeLot := 0;
+  FLastCapturedKind := ckPoint;
+  FLastCapturedObject := nil;
+  FLastHitX := 0;
+  FLastHitY := 0;
+  XClick := X;
+  YClick := Y;
+  FLastCaptureX := XClick;
+  FLastCaptureY := YClick;
+
+  if (Twigs.Twigs.TwigsCount = 1) and (Twigs.Twigs.AnyCount = 0) and (Twigs.Twigs.Bitmaps.Count = 0) then
+    Exit;
+
+  emGetDotMarker(X, Y, nil, Stvor_, objTemporary, False, False);
+  if (objTemporary <> nil) and (objTemporary is TPointDot) and (not (objTemporary is TDotText)) and TPointDot(objTemporary).isNoClosed then
+  begin
+    Result := objTemporary;
+    X := TPointDot(objTemporary).XDot;
+    Y := TPointDot(objTemporary).YDot;
+    Exit;
+  end;
+
+  if (Marker <> nil) and Marker.Visible then
+    Marker.Remove(nil);
+
+  with Twigs do begin
+    CaptureDrawer := nil;
+    PrevDrawer := Selector.Drawer;
+    OwnCapture := False;
+    try
+//     WriteIn(['CreateCapture.emGetObj=', Selector.Drawer.ClassName]);
+      CaptureDrawer := TogsCaptureDrawerSkia.CreateCapture(Selector);
+      Params := CRClearParams([ckLine, ckPolygon]);
+      Params.CaptureParam := GlobalSettings.Settings.gsPointSize * 2;
+      CaptureDrawer.BeginCapture(XClick, YClick, Params);
+      CaptureDrawer.UseWorldCoords := True;
+
+    for I := Twigs.AnyCount - 1 downto 0 do
     begin
+      PP := Twigs.AAt(I, W);
+      if (W <> TWG_Point) or (PP = nil) then
+        Continue;
+      if not PP.isNoClosed then
+        Continue;
+      if not PP.isVisible then
+        Continue;
+
+      PP.Selector := Selector;
+      CaptureDrawer.BeginPrimitive(Int64(NativeInt(PP)), PP);
+      try
+        PP.Draw32(CaptureDrawer, MkLib.PSLib, FontColEx, True);
+      finally
+        CaptureDrawer.EndPrimitive;
+      end;
+
+      if Params.resObject = PP then
+      begin
+        TypeLot := 0;
+        Result := TTwgObject(PP);
+        Exit;
+      end;
+    end;
+
+    for I := Twigs.IndexCount - 1 downto 0 do
+    begin
+      Lot := Twigs.LAtIndex(I);
+      if (Lot.Closed = 0) or (Lot.TypeLot = 254) then
+        Continue;
+      if not Lot.IsVisible(Selector.GPRect) then
+        Continue;
+
+      Lot.Selector := Selector;
+      CaptureDrawer.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
+      try
+        Lot.Draw32(Twigs);
+      finally
+        CaptureDrawer.EndPrimitive;
+      end;
+
+      if Params.resObject = Lot then
+      begin
+        TypeLot := Lot.TypeLot;
+        Result := Lot;
+//        WriteIn(['lot.exit']);
+        Exit;
+      end;
+    end;
+    finally
+      FLastCapturedKind := Params.resCaptureOf;
+      FLastCapturedObject := Params.resObject;
+      FLastHitX := Params.XCapture;
+      FLastHitY := Params.YCapture;
       CaptureDrawer.EndCapture;
       CaptureDrawer.Free;
+//      WriteIn(['FreeCapture.emGetObj=', Selector.Drawer.ClassName]);
     end;
   end;
 end;
@@ -195,8 +332,14 @@ procedure TMouseEditMap.AddSelection(Obj: TTwgObject);
 begin
   if (Obj = nil) or (FObjects = nil) then
     Exit;
-  if FObjects.IndexOf(Obj) < 0 then
-    FObjects.Insert(Obj);
+  if FObjects.IndexOf(Obj) < 0 then begin
+   FObjects.Insert(Obj);
+   If Assigned(LayerFrame) then
+    If Obj is TLot then
+     LayerFrame.ActiveLayer := TLot(Obj).ClassHandle else
+      If Obj is TPointDot then
+       LayerFrame.ActiveLayer := TPointDot(Obj).ClassHandle else
+  end;
   if Selector <> nil then
     Selector.UpdateOverlay;
 end;
@@ -210,155 +353,16 @@ begin
   Idx := FObjects.IndexOf(Obj);
   if Idx >= 0 then
     FObjects.AtDelete(Idx)
-  else
-    FObjects.Insert(Obj);
+  else begin
+   FObjects.Insert(Obj);
+   If Assigned(LayerFrame) then
+    If Obj is TLot then
+     LayerFrame.ActiveLayer := TLot(Obj).ClassHandle else
+      If Obj is TPointDot then
+       LayerFrame.ActiveLayer := TPointDot(Obj).ClassHandle else
+  end;
   if Selector <> nil then
     Selector.UpdateOverlay;
-end;
-
-function TMouseEditMap.emGetObject(var X, Y: Double; var TypeLot: Byte; Shift: TShiftState): TTwgObject;
-var
-  X1, Y1: Double;
-  XClick, YClick: Double;
-  Twig: TTwig;
-  Lot: TLot;
-  I, J, K: Integer;
-  W: Byte;
-  PP: TPointDot;
-  Bm: TBmpMgr;
-  CaptureDrawer: TogsCaptureDrawerSkia;
-  Params: TCaptureRec;
-  PrevDrawer: TogsDrawer;
-  Tw: TTwig;
-  function PointIn(K: Integer): Boolean;
-  var
-    Tw: TTwig;
-    J: Integer;
-    S: Double;
-  begin
-    Result := False;
-    with Lot do
-      for J := 0 to Coord.Count - 1 do
-      begin
-        Tw := Twigs.Twigs.TAt(TLong(Coord[J]).Num);
-        if Tw.IsVisible(Selector.GRect) then
-        begin
-          S := Tw.GetTwigDist(X, Y, X1, Y1);
-          if Selector.XRasst(S) <= Twigs.Settings.psAutoDisst * K then
-          begin
-            Result := True;
-            Break;
-          end;
-        end;
-      end;
-  end;
-
-begin
-  Result := nil;
-  TypeLot := 0;
-  FLastCapturedKind := ckPoint;
-  FLastCapturedObject := nil;
-  FLastHitX := 0;
-  FLastHitY := 0;
-  XClick := X;
-  YClick := Y;
-  FLastCaptureX := XClick;
-  FLastCaptureY := YClick;
-
-  if (Twigs.Twigs.TwigsCount = 1) and (Twigs.Twigs.AnyCount = 0) and (Twigs.Twigs.Bitmaps.Count = 0) then
-    Exit;
-
-  emGetDotMarker(X, Y, nil, Stvor_, objTemporary, False, False);
-  if (objTemporary <> nil) and (objTemporary is TPointDot) and (not (objTemporary is TDotText)) and TPointDot(objTemporary).isNoClosed then
-  begin
-    Result := objTemporary;
-    X := TPointDot(objTemporary).XDot;
-    Y := TPointDot(objTemporary).YDot;
-    Exit;
-  end;
-
-  if (Marker <> nil) and Marker.Visible then
-    Marker.Remove(nil);
-
-  with Twigs do begin
-    CaptureDrawer := nil;
-    PrevDrawer := nil;
-    try
-      CaptureDrawer := TogsCaptureDrawerSkia.CreateCapture(Selector);
-      Params := CRClearParams([ckLine, ckPolygon]);
-      Params.CaptureParam := GlobalSettings.Settings.gsPointSize * 2;
-      CaptureDrawer.BeginCapture(XClick, YClick, Params);
-      PrevDrawer := Selector.ogsDrawer;
-      if PrevDrawer is TogsDrawerSkia then
-        CaptureDrawer.UseWorldCoords := TogsDrawerSkia(PrevDrawer).UseWorldCoords;
-
-    for I := Twigs.IndexCount - 1 downto 0 do
-    begin
-      Lot := Twigs.LAtIndex(I);
-      if (Lot.Closed = 0) or (Lot.TypeLot = 254) then
-        Continue;
-      if not Lot.IsVisible(Selector.GPRect) then
-        Continue;
-
-      Lot.Selector := Selector;
-      CaptureDrawer.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
-      try
-        Lot.Draw32(Twigs);
-      finally
-        CaptureDrawer.EndPrimitive;
-      end;
-
-      if Params.resObject = Lot then
-      begin
-        TypeLot := Lot.TypeLot;
-        Result := Lot;
-        Exit;
-      end;
-    end;
-
-    for I := Twigs.AnyCount - 1 downto 0 do
-    begin
-      PP := Twigs.AAt(I, W);
-      if (W <> TWG_Point) or (PP = nil) then
-        Continue;
-      if not PP.isNoClosed then
-        Continue;
-      if not PP.isVisible then
-        Continue;
-
-      PP.Selector := Selector;
-      CaptureDrawer.BeginPrimitive(Int64(NativeInt(PP)), PP);
-      try
-        PP.Draw32(CaptureDrawer, MkLib.PSLib, FontColEx);
-      finally
-        CaptureDrawer.EndPrimitive;
-      end;
-
-      if Params.resObject = PP then
-      begin
-        TypeLot := 0;
-        Result := TTwgObject(PP);
-        Exit;
-      end;
-    end;
-    finally
-      FLastCapturedKind := Params.resCaptureOf;
-      FLastCapturedObject := Params.resObject;
-      FLastHitX := Params.XCapture;
-      FLastHitY := Params.YCapture;
-
-      if Params.resObject <> nil then
-       // WriteIn([Format('capResult kind=%d res=%d obj=%s', [Ord(Params.resCaptureOf), Params.resCapture, TObject(Params.resObject).ClassName])])
-      else
-       // Writein([Format('capResult kind=%d res=%d obj=nil', [Ord(Params.resCaptureOf), Params.resCapture])]);
-      if PrevDrawer <> nil then
-      if CaptureDrawer <> nil then
-      begin
-        CaptureDrawer.EndCapture;
-        CaptureDrawer.Free;
-      end;
-    end;
-  end;
 end;
 
 procedure TMouseEditMap.MouseDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
@@ -430,7 +434,7 @@ begin
   Paint.AntiAlias := True;
   Paint.Style := TSkPaintStyle.Stroke;
   Paint.Color := TAlphaColors.Lime;
-  Paint.StrokeWidth := Single(geoDist(3));
+  Paint.StrokeWidth := Single(geoDist(2));
 
   if FObjects = nil then
     Exit;

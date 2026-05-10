@@ -1,6 +1,8 @@
 inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
   ClientWidth = 923
+  WindowState = wsMaximized
+  OnDestroy = FormDestroy
   DesignerMasterStyle = 3
   inherited Memo1: TMemo
     Position.Y = 474.000000000000000000
@@ -71,6 +73,17 @@ inherited MainFormMouseObj: TMainFormMouseObj
       YRadius = 3.000000000000000000
       OnClick = btnEscClick
     end
+    object Button1: TButton
+      Position.X = 376.000000000000000000
+      Position.Y = 4.000000000000000000
+      Size.Width = 75.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 57
+      Text = 'Button1'
+      TextSettings.Trimming = None
+      OnClick = Button1Click
+    end
   end
   inherited PanelPainter: TPanel
     Size.Width = 923.000000000000000000
@@ -127,18 +140,22 @@ inherited MainFormMouseObj: TMainFormMouseObj
     Size.Width = 923.000000000000000000
   end
   object ToolBarPaint: TToolBar [5]
+    Margins.Right = 2.000000000000000000
     Position.Y = 33.000000000000000000
-    Size.Width = 923.000000000000000000
+    Size.Width = 921.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 21
     object btnToolLine: TSpeedButton
       Tag = 100111
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 0
-      Position.X = 60.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 28.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -148,10 +165,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolPoint: TSpeedButton
       Tag = 10010
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 10
-      Position.X = 352.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 298.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -161,10 +181,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolPolyline: TSpeedButton
       Tag = 10011
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 1
-      Position.X = 89.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 55.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -174,10 +197,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolPolygon: TSpeedButton
       Tag = 10012
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 9
-      Position.X = 292.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 244.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -187,10 +213,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolSpline: TSpeedButton
       Tag = 10013
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 6
-      Position.X = 180.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 136.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -200,10 +229,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolArc: TSpeedButton
       Tag = 10014
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 5
-      Position.X = 208.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 163.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -213,10 +245,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolCircle: TSpeedButton
       Tag = 10015
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 7
-      Position.X = 235.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 190.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -226,10 +261,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolRect: TSpeedButton
       Tag = 10016
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 8
-      Position.X = 263.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 217.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -239,10 +277,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolParaline: TSpeedButton
       Tag = 10017
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 2
-      Position.X = 118.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 82.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -252,10 +293,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolMultiline: TSpeedButton
       Tag = 10020
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 3
-      Position.X = 150.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 109.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -265,10 +309,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolMultiAngle: TSpeedButton
       Tag = 10019
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 4
-      Position.X = 325.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 271.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -278,10 +325,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnToolText: TSpeedButton
       Tag = -1
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 11
-      Position.X = 378.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 325.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -298,10 +348,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Tag = 1
       StaysPressed = True
       Align = Right
-      GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 13
-      Position.X = 873.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 867.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -317,10 +367,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnInstPoint: TSpeedButton
       StaysPressed = True
       Align = Right
-      GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 12
-      Position.X = 848.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 840.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -337,10 +387,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Tag = 2
       StaysPressed = True
       Align = Right
-      GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 14
-      Position.X = 898.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 894.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -355,7 +405,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     inline LayerFrame1: TLayerFrame
       Align = Right
-      Position.X = 466.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 456.000000000000000000
       Size.Width = 382.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -387,10 +438,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnSelect: TSpeedButton
       Tag = 500
       StaysPressed = True
+      Align = Left
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 16
-      Position.X = 28.000000000000000000
+      Margins.Left = 1.000000000000000000
+      Margins.Right = 1.000000000000000000
+      Position.X = 1.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -406,10 +460,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnProperties: TSpeedButton
       Tag = 500
       StaysPressed = True
-      GroupName = 'PaintTools'
+      Align = Right
       Images = ToolImageList
       ImageIndex = 17
-      Position.X = 437.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 429.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False

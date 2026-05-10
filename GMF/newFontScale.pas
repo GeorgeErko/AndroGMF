@@ -90,7 +90,7 @@ procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
 var
   Idx: Integer;
 begin
-  if (FamilyName = '') or (FileName = '') then
+    if (FamilyName = '') or (FileName = '') then
     Exit;
   if SkiaFontFiles = nil then
   begin
