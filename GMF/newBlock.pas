@@ -3,7 +3,7 @@
 interface uses //tmpPainter,
                Collect, Classes, SysUtils, EcDot, WpTwigs, WPTForm2, newLayersTable,
                FMX.Graphics, UserObject, newConsts, newResource,
-               TwgDraw, newProperties, newSelector, Lib, ogcBasic;
+               TwgDraw, newProperties, newSelector, Lib, ogcBasic, TwgBitmaps;
 
 const
  Const_Block_Footer=4.3;
@@ -56,7 +56,7 @@ type
  //
    Selector:TSelector;
    ogsRect: TogsRect;
-   BlockBitmap: TBitmap;
+   BlockBitmap: TTwgBitmap;
    BlockX, BlockY: Integer; // координаты X,Y блока на BlockBitmap
    class function objType:Integer;override;
    Constructor CreateForm(Form:TForm2);
@@ -79,7 +79,10 @@ type
    Procedure DrawTemp(Canvas:TCanvas;XB,YB,Angle,XKoef,YKoef:Double;Data:Pointer = nil);override;
    Function Draw(Canvas:TCanvas;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean):boolean;override;
    Procedure DrawMarker(Canvas:TCanvas);
-   Function Draw32(Drawer:TogsDrawer;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean; TextBitmaps: PCollection):boolean;
+  //
+   Function  GetGabarites(MRect_:TMRect; XB, YB, kX, kY, Angle:Double): Integer; override;
+   Function  GetGabaritesDebug(MRect_:TMRect; XB, YB, kX, kY, Angle:Double; Drawer:TogsDrawer; Bitmaps:TTwgBitmaps = nil): Integer;
+   Function Draw32(Drawer:TogsDrawer;XB,YB,Angle,XKoef,YKoef:Double;Extrusion,Inv:boolean; TextBitmaps: TTwgBitmaps):boolean;
   //
    Function GetName: AnsiString;override;
    Function GetCheck: byte;override;
@@ -1073,8 +1076,100 @@ begin
  Result:=True;
 end;
 
+function TGeoBlock.GetGabarites(MRect_:TMRect; XB, YB, kX, kY, Angle: Double): Integer;
+begin
+ Result := GetGabaritesDebug(MRect_, XB, YB, kX, kY, Angle, nil);
+end;
+
+function TGeoBlock.GetGabaritesDebug(MRect_:TMRect; XB, YB, kX, kY, Angle: Double; Drawer: TogsDrawer; Bitmaps: TTwgBitmaps): Integer;
+var I, J: Integer; B: Byte;
+    Twig: TTwig;
+    D: TDot;
+    PD: TPointDot;
+    DT: TDotText;
+    Dx, Dy, X0, Y0, xx, yy, xx1, yy1: Double;
+    mRect, mRectSource, mText, mTextOne: TMRect;
+    Sect, SourceSect: TSect;
+    TextBitmap: TTwgBitmap;
+    oldValue, txtValue: String;
+begin
+ Result := 0;
+ X0:=X+TwgForm.XXMin;Y0:=Y+TwgForm.YYMin;
+ Dx:=XB-X0;Dy:=YB-Y0;
+ mRect := TMRect.Create;
+ mRectSource := TMRect.Create;
+ With TwgForm do begin
+ // двигаем точки сегментов, сегменты ставляем в коллекцию
+  For I := 1  to Twigs.TwigsCount-1 do begin
+   Twig := Twigs.TAt(I);
+    For J := 0 to Twig.Coord.Count-1 do begin
+     D := Twig.Coord[J];
+     xx := D.XDot ; yy := D.YDot;
+     mRectSource.Insert(xx, yy);
+     xx1 := XB + ((xx - X0) * kX * cos(Angle) - ((yy - Y0) * kY * sin(Angle)));
+     yy1 := YB + ((xx - X0) * kX * sin(Angle) + ((yy - Y0) * kY * cos(Angle)));
+     mRect.Insert(xx1, yy1);
+    end;
+  end;
+  Result := 1;
+  if Bitmaps<>nil then begin
+   if mRectSource.Iter<>0 then begin
+    SourceSect := mRectSource.Sect;
+    Bitmaps.Bitmap.SetTransformedBounds(SourceSect, X0, Y0, XB, YB, kX, kY, Angle);
+   end;
+   Bitmaps.FreeAll;
+  end;
+ // вычисляем габариты по тексту
+  mText := TMRect.Create;
+  For I := 0 to Twigs.AnyCount - 1 do begin
+   PD := Twigs.AAt(I, B);
+   If not (PD is TDotText) then begin
+    if Bitmaps<>nil then Bitmaps.Insert(Bitmaps);
+    continue;
+   end;
+   begin
+    DT :=  TDotText(PD);
+   //
+    txtValue := #0;
+    If (txtProperties<>nil) and (TDotText(PD).Text.AttrName<>'') then
+     txtValue := txtProperties.PropValue[TDotText(PD).Text.AttrName].Value;
+    oldValue := DT.Text.Text;
+    If txtValue <> #0 then DT.Text.Text := txtValue;
+    mTextOne := TMRect.Create;
+    TextBitmap := nil;
+    try
+     if Bitmaps<>nil then TextBitmap := TTwgBitmap.Create(DT);
+     DT.GetGabaritesDebug(mTextOne, X0, Y0, kX, kY, Angle, Drawer, Dx, Dy, TextBitmap);
+     if mTextOne.Iter<>0 then begin
+      mText.Insert(mTextOne.XMin + Dx, mTextOne.YMin + Dy);
+      mText.Insert(mTextOne.XMax + Dx, mTextOne.YMax + Dy);
+      if Bitmaps<>nil then begin
+       Bitmaps.Insert(TextBitmap);
+       TextBitmap := nil;
+      end;
+     end;
+    finally
+     if TextBitmap<>nil then TextBitmap.Free;
+     mTextOne.Free;
+    end;
+    DT.Text.Text := oldValue;
+   end;
+  end;
+  if mText.Iter <> 0 then begin
+   mRect.Insert(mText.XMin, mText.YMin);
+   mRect.Insert(mText.XMax, mText.YMax);
+  end;
+  mText.Free;
+ end;
+  Sect := mRect.Sect;
+  MRect_.Insert(Sect.Left, Sect.Top);
+  MRect_.Insert(Sect.Right, Sect.Bottom);
+ mRectSource.Free;
+ mRect.Free;
+end;
+
 function TGeoBlock.Draw32(Drawer: TogsDrawer; XB, YB, Angle, XKoef,
-  YKoef: Double; Extrusion, Inv: boolean; TextBitmaps: PCollection): boolean;
+  YKoef: Double; Extrusion, Inv: boolean; TextBitmaps: TTwgBitmaps): boolean;
 var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
     Dx,Dy:Double;XM,YM,ZM:String;
     PrecXY,PrecZ:Integer;
@@ -1084,7 +1179,9 @@ var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
     dupForm,oldForm:TForm2;
     D1,D2:TDot;
     Sect:TShortSect;
-    oldBitmap: Pointer;
+    oldBitmap: TTwgBitmap;
+    TextBitmapChanged: Boolean;
+    oldInBlockDrawing: Boolean;
     AnchorPix: TPointF;
     DstW, DstH: Single;
     SX, SY: Single;
@@ -1105,28 +1202,42 @@ begin
      PD.TextManager.SetSysSpatialData(Xm,Ym,Zm);
     end;
     oldValue:=#0;
+    TextBitmapChanged:=False;
     if PD is TDotText then
     begin
-     if (TextBitmaps <> nil) and (I < TextBitmaps.Count) then
+     if False and (TextBitmaps <> nil) and (I < TextBitmaps.Count) and (TextBitmaps[I]<>Pointer(TextBitmaps)) then
      begin
        oldBitmap := TDotText(PD).TextBitmap;
-       TDotText(PD).TextBitmap := TBitmap(TextBitmaps[I]);
+       TDotText(PD).TextBitmap := TTwgBitmap(TextBitmaps[I]);
        TDotText(PD).OwnsTextBitmap := False;
+       TextBitmapChanged:=True;
      end;
      If (txtProperties<>nil) and (TDotText(PD).Text.AttrName<>'') then begin
       Value:=txtProperties.PropValue[TDotText(PD).Text.AttrName];
       If Value<>nil then begin
-       oldValue:=TDotText(PD).Text.Text;
+       oldValue:=TDotText(PD).Text.Text;;
        TDotText(PD).Text.Text:=Value.Value;
        TDotText(PD).TextDirty := True;
       end;
      end;
     end;
-    PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
+    oldInBlockDrawing:=False;
+    if PD is TDotText then begin
+     oldInBlockDrawing:=TDotText(PD).InBlockDrawing;
+     TDotText(PD).InBlockDrawing:=True;
+    end;
+    try
+     PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
+    finally
+     if PD is TDotText then
+      TDotText(PD).InBlockDrawing:=oldInBlockDrawing;
+    end;
     If oldValue<>#0 then begin
      TDotText(PD).Text.Text:=oldValue;
      TDotText(PD).Selected:=False;
     // TDotText(PD).TextDirty := True;
+    end;
+    If TextBitmapChanged then begin
      TDotText(PD).TextBitmap := oldBitmap;
      TDotText(PD).OwnsTextBitmap := True;
     end;
@@ -1141,7 +1252,8 @@ begin
 //
  Block_Drawing:=True;
   // LOD: рисуем только BlockBitmap
- if (BlockBitmap<>nil) and (ogsRect<>nil) and
+ if (BlockBitmap<>nil) and (ogsRect<>nil) and (Drawer is TogsDrawerSkia) and
+    TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing and
     (Selector.XRasst(Width) < 40) and (Selector.YRasst(Height) < 40) then
  begin
   AnchorPix := PointF(XB, YB);
@@ -1152,43 +1264,7 @@ begin
                (ogsRect.YMax - (Y + TwgForm.YYMin)) * YKoef);
 //  WriteIn(['Geo=', AnchorPix.X, AnchorPix.Y, Dst.Left, Dst.Top, Dst.Right, Dst.Bottom]);
 
-  if Drawer is TogsDrawerSkia then
-  begin
-   BlockBitmap.SaveToFile(MainPath  + Format('BB_begore_%p.jpg',[Pointer(BlockBitmap)]));
-   TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, BlockBitmap, Dst, Angle);
-{   begin
-    var P0, P1, P2, P3: TPointF; var oldUWC: Boolean; var C, S: Single;
-    P0 := PointF(Dst.Left, Dst.Top);
-    P1 := PointF(Dst.Right, Dst.Top);
-    P2 := PointF(Dst.Right, Dst.Bottom);
-    P3 := PointF(Dst.Left, Dst.Bottom);
-    if Abs(Angle) > 1e-6 then
-    begin
-     C := Cos(Angle);
-     S := Sin(Angle);
-     P0 := PointF(P0.X * C - P0.Y * S, P0.X * S + P0.Y * C);
-     P1 := PointF(P1.X * C - P1.Y * S, P1.X * S + P1.Y * C);
-     P2 := PointF(P2.X * C - P2.Y * S, P2.X * S + P2.Y * C);
-     P3 := PointF(P3.X * C - P3.Y * S, P3.X * S + P3.Y * C);
-    end;
-    P0 := PointF(P0.X + AnchorPix.X, P0.Y + AnchorPix.Y);
-    P1 := PointF(P1.X + AnchorPix.X, P1.Y + AnchorPix.Y);
-    P2 := PointF(P2.X + AnchorPix.X, P2.Y + AnchorPix.Y);
-    P3 := PointF(P3.X + AnchorPix.X, P3.Y + AnchorPix.Y);
-//    oldUWC := Drawer.UseWorldCoords;
-//    Drawer.UseWorldCoords := True;
-    try
-     Drawer.Pen.penColor := TAlphaColor($FFFF0000);
-     Drawer.Pen.penWidth := 0.2;
-     Drawer.DrawLine(P0.X, P0.Y, P1.X, P1.Y, False);
-     Drawer.DrawLine(P1.X, P1.Y, P2.X, P2.Y, False);
-     Drawer.DrawLine(P2.X, P2.Y, P3.X, P3.Y, False);
-     Drawer.DrawLine(P3.X, P3.Y, P0.X, P0.Y, False);
-    finally
-//     Drawer.UseWorldCoords := oldUWC;
-    end;
-   end;}
- end;
+ TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, BlockBitmap.Bitmap, Dst, Angle);
   Result := True;
   Block_Drawing := False;
   dePaint(XB,YB,Angle,XKoef,YKoef);
@@ -1202,10 +1278,10 @@ begin
  Block_Drawing:=True; // îòðèñîâàëè áëîê, óñòàíîâèëè ïðèçíàê îòðèñîâàííîãî áëîêà
  dePaint(XB,YB,Angle,XKoef,Ykoef);
  PrecXY:=Const_Of_PrecCoord;PrecZ:=Const_Of_PrecHeight;
- If (Selector.XRasst(Width) <= Selector.GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=Selector.GGraphSet.fPntZnk)
-     and (not GlobalRender) then begin
-      exit;
-     end;
+// If (Selector.XRasst(Width) <= Selector.GGraphSet.fPntZnk) and (Selector.YRasst(Height)<=Selector.GGraphSet.fPntZnk)
+//     and (not GlobalRender) then begin
+//      exit;
+//     end;
  With TwgForm, Selector.GGraphSet do begin
   Dx:=XB-(X+TwgForm.XXMin);Dy:=YB-(Y+TwgForm.YYMin);
   XBlock:=XB;YBlock:=YB;

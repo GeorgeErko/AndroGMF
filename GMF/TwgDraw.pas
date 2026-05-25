@@ -38,9 +38,10 @@ var LotRgn:TRegion;
        Function  GetSelector:TSelector;virtual;abstract;
        Procedure SetSelector(S:TSelector);virtual;abstract;
        Property Selector:TSelector read GetSelector write SetSelector;
-       Function  GetGabarites:TSect;virtual;abstract; // габариты с учетом поворота-масштабирования
+       Function  GetGabarites(MRect_:TMRect; X, Y, kX, kY, Angle:Double) : Integer; virtual; abstract; // габариты с учетом поворота-масштабирования
        Procedure SetGabarites(MRect_:TMRect);virtual;abstract;
-       Procedure SetGabaritesBlock(MRect_:TMRect;X,Y,kX,kY,Angle:Double);virtual;abstract;
+       Procedure SetGabaritesBlock(MRect_:TMRect; X, Y, kX, kY, Angle:Double);virtual;abstract;
+       Function  GetSect:TSect;virtual;
      // Процедура захвата примитива во фрагмент; возвращается набор точек и подписей
        Function GetPrim(R:TSect;Col:PCollection):Boolean;virtual;abstract;
        Function GetHint(P:Pointer=nil):AnsiString;virtual;abstract;
@@ -86,6 +87,14 @@ Implementation uses Intervals, Types_Dimano, Polygons;
 procedure TTD.ApplyInternalProps(Obj: TTD);
 begin
  //
+end;
+
+function TTD.GetSect: TSect;
+begin
+ Result.Left:=0;
+ Result.Right:=0;
+ Result.Top:=0;
+ Result.Bottom:=0;
 end;
 
 procedure TTD.binDrawBrush(Buf: TMemoryStream);

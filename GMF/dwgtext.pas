@@ -3,7 +3,7 @@
 interface
 Uses Collect, SysUtils, Polygons,
      Circle_di, FMX.Graphics, newFontScale, Types_Dimano, TwgDraw, newResource,
-     newSelector, System.Types, maths_basic;
+     newSelector, System.Types, maths_basic, TwgBitmaps;
 
 const
     pointDrawText:boolean=True;
@@ -23,7 +23,7 @@ type
     FX, FY: single;
     FName: AnsiString;
     FText: AnsiString;
-    TextBitmap: TBitmap;
+    TextBitmap: TTwgBitmap;
     TextDirty: Boolean;
     BaseLinePix: Single;
     BaseLineXPix: Single;
@@ -77,6 +77,7 @@ type
     Function TextAlign: Byte;
     Procedure GetRect(var L,T,R,B:Single);
    //
+    Function IsTextVisible: Boolean;
     Function isVisible: Boolean;
     Function GetParams(MXX,MYY,ko,Ugol,X1,Y1:Double;ItsTest:Integer):TFontViewEx;
     Procedure Draw32(X,Y:Double;Selector:TSelector;MXX,MYY,ko,Ugol:Double; r, g, b: byte; useclasColor: boolean; X1,Y1:Double;itstest:Integer);
@@ -97,8 +98,36 @@ begin
   Result := TAlphaColor($FF000000 or (R shl 16) or (G shl 8) or B);
 end;
 
+function SkiaBaselineFromFullHeight(const AFontName: string; const ABold, AItalic: Boolean;
+  const AFullHeightPix: Single): Single;
+var
+  Typeface: ISkTypeface;
+  ProbeFont: ISkFont;
+  M: TSkFontMetrics;
+  AscentAbs: Single;
+  Full: Single;
+begin
+  Result := AFullHeightPix;
+  if AFullHeightPix <= 0 then
+    Exit;
+
+  Typeface := newFontScale.ResolveSkiaTypeface(AFontName, ABold, AItalic);
+
+  ProbeFont := TSkFont.Create(Typeface, 100);
+  ProbeFont.GetMetrics(M);
+  AscentAbs := -M.Ascent;
+  Full := (-M.Ascent) + M.Descent;
+  if (AscentAbs > 0.01) and (Full > 0.01) then
+    Result := AFullHeightPix * (AscentAbs / Full);
+end;
+
 
 { TDWG_Text }
+
+function TDWG_Text.IsTextVisible: Boolean;
+begin
+ Result:=FVisible;
+end;
 
 constructor TDWG_Text.Create(x, y: single; DC:hDc; const txt, fntName:AnsiString; H,W :single;
                 CharSet: Byte; bl1, it1, un1 :Integer; fS:Integer=10);
@@ -234,17 +263,17 @@ var
      SymbolHeightPix := lodFixedHeight;
    BaseLinePix := SymbolTopPix + SymbolHeightPix;
 
-   TextBitmap.SetSize(W, Round(BaseLinePix + 2));
+   TextBitmap.Bitmap.SetSize(W, Round(BaseLinePix + 2));
 
-   if TextBitmap.Map(TMapAccess.Write, D) then
+   if TextBitmap.Bitmap.Map(TMapAccess.Write, D) then
    try
-     ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+     ImgInfo := TSkImageInfo.Create(TextBitmap.Bitmap.Width, TextBitmap.Bitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
      DataPtr := D.Data;
      RowBytes := D.Pitch;
      if RowBytes < 0 then
      begin
        RowBytes := -RowBytes;
-       DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (TextBitmap.Height - 1));
+       DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (TextBitmap.Bitmap.Height - 1));
      end;
      Surface := TSkSurface.MakeRasterDirect(ImgInfo, DataPtr, RowBytes);
      if Surface <> nil then
@@ -254,31 +283,9 @@ var
        Surface.Canvas.DrawSimpleText(AText, BaseLineXPix - Bounds.Left, BaselineY, Font, Paint);
      end;
    finally
-     TextBitmap.Unmap(D);
+     TextBitmap.Bitmap.Unmap(D);
    end;
   end;
-function SkiaBaselineFromFullHeight(const AFontName: string; const ABold, AItalic: Boolean;
-  const AFullHeightPix: Single): Single;
-var
-  Typeface: ISkTypeface;
-  ProbeFont: ISkFont;
-  M: TSkFontMetrics;
-  AscentAbs: Single;
-  Full: Single;
-begin
-  Result := AFullHeightPix;
-  if AFullHeightPix <= 0 then
-    Exit;
-
-  Typeface := newFontScale.ResolveSkiaTypeface(AFontName, ABold, AItalic);
-
-  ProbeFont := TSkFont.Create(Typeface, 100);
-  ProbeFont.GetMetrics(M);
-  AscentAbs := -M.Ascent;
-  Full := (-M.Ascent) + M.Descent;
-  if (AscentAbs > 0.01) and (Full > 0.01) then
-    Result := AFullHeightPix * (AscentAbs / Full);
-end;
 function GetS(S:String):string;
 var N:Integer;
 begin
@@ -323,16 +330,16 @@ begin
   TxtColor := ColorToAlphaColor(Col);
 
   HPix := Selector.pixDist(H);
-  if HPix <= 40 then
+  if (HPix <= 40) and TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing then
   begin
     if (TextBitmap <> nil) then
     begin
-      if TextDirty or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+      if TextDirty or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
       begin
         BuildTextBitmapSkia(S, fv, TxtColor);
         TextDirty := False;
       end;
-      if (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
+      if (TextBitmap.Bitmap.Width > 0) and (TextBitmap.Bitmap.Height > 0) then
       begin
         if TogsDrawerSkia(Drawer).UseWorldCoords then
           H := Selector.pixDist(HBaseline)
@@ -345,10 +352,10 @@ begin
         SX := ScaleS;
         SY := ScaleS;
 
-        WPix := TextBitmap.Width * SX;
-        HPix2 := TextBitmap.Height * SY;
+        WPix := TextBitmap.Bitmap.Width * SX;
+        HPix2 := TextBitmap.Bitmap.Height * SY;
 
-        OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
+        OffX := (BaseLineXPix + (TextBitmap.Bitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
         if YP < 0 then
           OffY := BaseLinePix * SY
         else
@@ -363,7 +370,7 @@ begin
         end;
 
         Dst := RectF(-OffX, -OffY, -OffX + WPix, -OffY + HPix2);
-        TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(Anchor, TextBitmap, Dst, Ugol);
+        TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(Anchor, TextBitmap.Bitmap, Dst, Ugol);
         Exit;
       end;
     end;
@@ -738,13 +745,99 @@ end;
 
 procedure TDWG_Text.SetGabarites(MRect_: TMRect);
 begin
- ShowMessage('1');
+ SetGabaritesBlock(MRect_, 0, 0, 1, 1, 0);
 end;
 
 procedure TDWG_Text.SetGabaritesBlock(MRect_: TMRect; X, Y, kX, kY,
  Angle: Double);
+var P0, P1, P2, P3: TPointF;
+    Ko, C, S, AnchorX, AnchorY: Double;
+    OldXF, OldYF, OldX2, OldY2, OldDX, OldDY, OldUgol1, OldXFOld, OldYFOld: Double;
+    FV: TFontViewEx;
+    Paint: ISkPaint;
+    Typeface: ISkTypeface;
+    Font, ProbeFont: ISkFont;
+    Metrics, ProbeMetrics: TSkFontMetrics;
+    Bounds, R: TRectF;
+    TextString: string;
+    ProbeSize, AscentRatio, EffectiveFontSize, FontSizePix, FullFontSizePix, Oversample: Single;
+    TightAscentAbs, ScaleCorr, DrawX, DrawY, AscentAlign: Single;
+ procedure InsertPoint(const P: TPointF);
+ begin
+  if MRect_<>nil then MRect_.Insert(P.X, P.Y);
+ end;
+ function GetTextString(S: String): string;
+ var N:Integer;
+ begin
+  N:=Pos('\\',S);
+  If N<>0 then begin
+   S[N]:=' ';
+   Result:=S;
+  end else Result:=S;
+ end;
+ function TransformPoint(const P: TPointF): TPointF;
+ begin
+  Result.X:=AnchorX+(P.X*C-P.Y*S);
+  Result.Y:=AnchorY+(P.X*S+P.Y*C);
+ end;
 begin
- ShowMessage('2');
+ if not FVisible then Exit;
+ if (Selector=nil) or (FFontIndex=-1) or (FText='') then Exit;
+ Ko:=kX;
+ if Ko=0 then Ko:=1;
+ OldXF:=XF;OldYF:=YF;OldX2:=X2;OldY2:=Y2;OldDX:=DX;OldDY:=DY;OldUgol1:=Ugol1;OldXFOld:=XFOld;OldYFOld:=YFOld;
+ try
+  FV:=GetParams(1, 1, Ko, Angle, X, Y, 0);
+  if FV=nil then Exit;
+  AnchorX:=XF;
+  AnchorY:=YF;
+ finally
+  XF:=OldXF;YF:=OldYF;X2:=OldX2;Y2:=OldY2;DX:=OldDX;DY:=OldDY;Ugol1:=OldUgol1;XFOld:=OldXFOld;YFOld:=OldYFOld;
+ end;
+ FullFontSizePix:=Abs(RealScaleLength(Selector.Drawer, FHeight, Ko));
+ if FullFontSizePix<=0 then Exit;
+ FontSizePix:=SkiaBaselineFromFullHeight(string(FV.FontName), FV.Bl<>0, FV.It<>0, FullFontSizePix);
+ TextString:=GetTextString(string(FText));
+ Paint:=TSkPaint.Create;
+ Paint.AntiAlias:=True;
+ Typeface:=newFontScale.ResolveSkiaTypefaceForView(FV);
+ Oversample:=1;
+ if (Selector.Drawer<>nil) and (Selector.Drawer is TogsDrawerSkia) and TogsDrawerSkia(Selector.Drawer).UseWorldCoords then
+  Oversample:=10;
+ ProbeSize:=100;
+ ProbeFont:=TSkFont.Create(Typeface, ProbeSize);
+ ProbeFont.GetMetrics(ProbeMetrics);
+ if (-ProbeMetrics.Ascent)>0.01 then AscentRatio:=(-ProbeMetrics.Ascent)/ProbeSize else AscentRatio:=1;
+ EffectiveFontSize:=(FontSizePix/AscentRatio)*Oversample;
+ Font:=TSkFont.Create(Typeface, EffectiveFontSize);
+ Font.GetMetrics(Metrics);
+ Font.MeasureText(TextString, Bounds, Paint);
+ TightAscentAbs:=-Bounds.Top;
+ if TightAscentAbs>0.01 then begin
+  ScaleCorr:=(FontSizePix*Oversample)/TightAscentAbs;
+  if Abs(ScaleCorr-1)>1e-4 then begin
+   EffectiveFontSize:=EffectiveFontSize*ScaleCorr;
+   Font:=TSkFont.Create(Typeface, EffectiveFontSize);
+   Font.GetMetrics(Metrics);
+   Font.MeasureText(TextString, Bounds, Paint);
+   TightAscentAbs:=-Bounds.Top;
+  end;
+ end;
+ DrawX:=-(Bounds.Left+FTextAlignX*Bounds.Width);
+ if TightAscentAbs>0.01 then AscentAlign:=TightAscentAbs else AscentAlign:=FontSizePix*Oversample;
+ if FTextAlignY<0 then DrawY:=0 else DrawY:=AscentAlign*(1-FTextAlignY);
+ R:=TRectF.Create((DrawX+Bounds.Left)/Oversample, (DrawY+Bounds.Top)/Oversample, (DrawX+Bounds.Right)/Oversample, (DrawY+Bounds.Bottom)/Oversample);
+ C:=Cos(Angle);S:=Sin(Angle);
+ P0:=TransformPoint(PointF(R.Left, R.Top));
+ P1:=TransformPoint(PointF(R.Right, R.Top));
+ P2:=TransformPoint(PointF(R.Right, R.Bottom));
+ P3:=TransformPoint(PointF(R.Left, R.Bottom));
+ InsertPoint(P0);
+ InsertPoint(P1);
+ InsertPoint(P2);
+ InsertPoint(P3);
+ if TextBitmap<>nil then
+  TextBitmap.SetBounds(P0.X, P0.Y, P1.X, P1.Y, P2.X, P2.Y, P3.X, P3.Y);
 end;
 
 function TDWG_Text.TextAlign: Byte;

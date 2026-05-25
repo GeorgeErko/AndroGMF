@@ -1,7 +1,7 @@
 ﻿Unit lib;
 interface Uses Collect, Twgdraw, newConsts, Maths_Basic,
-               Classes,Circle_di, Polygons, FMX.Graphics, newSelector, DWGText,
-               System.Types, ogcBasic;
+               Classes,Circle_di, Polygons, FMX.Graphics, FMX.Types, newSelector, DWGText,
+               System.Types, ogcBasic, TwgBitmaps;
 {==============================================================================}
 
 const VerConstOfZnk=1;
@@ -156,18 +156,21 @@ TPoint_Sign=Class(TTD)
  //
   Selector: TSelector;
   LocalScale: Double;
+  SignBitmap: TTwgBitmap;
   constructor Create(a,b:single;Name:String = '';Ind:SmallInt = -1);
   constructor Load(ST:TBufStream);Override;
   Procedure Store(ST:TBufStream);Override;
   Destructor Destroy;Override;
  //
   Procedure SetGabarites(MRect_:TMRect);override;
-  Procedure SetGabaritesBlock(MRect_:TMRect; X_,Y_,kX,kY,Angle:Double);override;
+  Procedure SetGabaritesBlock(MRect_:TMRect; X_,Y_, kX, kY, Angle:Double);override;
+  Function GetGabarites(MRect_:TMRect; X_,Y_, kX, kY, Angle:Double; TextBitmaps, Bitmaps:TTwgBitmaps):Integer;
  //
   Procedure DrawTo(Geometry: TGeometryEvents);
   Procedure DrawTextTo(txt: TDWG_Text; Geometry: TGeometryEvents);
   Function GetRect(Ko:Double):newSelector.TSect;
   Function GetRect1: TSect;
+  Function GeometrySect: TSect;
  //
   Procedure GetRealSector(PP:PCollection;KO:Double);
   Function isVisible(Ko:Double):boolean;
@@ -188,8 +191,13 @@ var Ar:Array[0..10000] of TPoint;
     DeviceHor,DeviceVert:Double;
 var
  GlobalPoint: TPoint_Sign;
-implementation Uses Types_Dimano, SysUtils, LConvEncoding, Writer, newProcs,
-                    ogcMathUtils;
+ GSignBmp: TBitmap;
+ GSignBmpCanvas: TCanvas;
+ GSignSect: TSect;
+ GSignScale, GSignDX, GSignDY: Single;
+
+ implementation Uses Types_Dimano, SysUtils, LConvEncoding, Writer, newProcs,
+                    ogcMathUtils, Math.Vectors, System.UITypes, ogcDrawerSkia;
 
 { TGeoPoint }
 
@@ -277,10 +285,10 @@ procedure TDWG_Line.SetGabaritesBlock(MRect_: TMRect; X, Y, kX, kY,
  Angle: Double);
 var XX,YY,XX1,YY1:Double;
 begin
- XX:=X+(x_b*kX*cos(Angle)-y_b*kX*sin(Angle));
- YY:=Y+(x_B*kY*sin(Angle)+y_b*kY*cos(Angle));
- XX1:=X+(x_e*kX*cos(Angle)-y_e*kX*sin(Angle));
- YY1:=Y+(y_e *kY*cos(Angle)+x_E*kY*sin(Angle));
+ XX:=X+(x_b*kX*cos(Angle)-y_b*kY*sin(Angle));
+ YY:=Y+(x_B*kX*sin(Angle)+y_b*kY*cos(Angle));
+ XX1:=X+(x_e*kX*cos(Angle)-y_e*kY*sin(Angle));
+ YY1:=Y+(y_e*kY*cos(Angle)+x_E*kX*sin(Angle));
  MRect_.Insert(XX,YY);MRect_.Insert(XX1,YY1);
 end;
 
@@ -384,6 +392,7 @@ var I:Integer;Col:PCollection;
 begin
  Col:=Arc_Rotate2(X,Y,Angle,x+x_1*kX,y+y_1*kY,x+x_2*kX,y+y_2*kY,
                                          x+xu_1*kX,y+yu_1*kY,x+xu_2*kX,y+yu_2*kY,N);
+ If Col = nil then exit;
  For I:=0 to Col.Count-1 do MRect_.Insert(TDot1(Col[I]).X,TDot1(Col[I]).Y);
  Col.Free;
 end;
@@ -634,13 +643,13 @@ end;
 
 procedure TDWG_Poly.SetGabaritesBlock(MRect_: TMRect; X, Y, kX, kY,
  Angle: Double);
-var I:Integer;XX,YY:Double;
+var I:Integer;X0,Y0,XX,YY:Double;
 begin
  For I:=0 to Vertex.Count-1 do
   begin
-   XX:=TPn(Vertex.At(I)).X;YY:=TPn(Vertex.At(I)).Y;
-   XX:=x+(XX*kX*cos(Angle)-YY*kX*sin(Angle));
-   YY:=y+(XX*kY*sin(Angle)+YY*kY*cos(Angle));
+   X0:=TPn(Vertex.At(I)).X;Y0:=TPn(Vertex.At(I)).Y;
+   XX:=x+(X0*kX*cos(Angle)-Y0*kX*sin(Angle));
+   YY:=y+(X0*kY*sin(Angle)+Y0*kY*cos(Angle));
    MRect_.Insert(XX,YY);
   end;
 end;
@@ -746,11 +755,13 @@ begin
  MethodCol:=PCollection.Create(1);
  Drawing:=True;
  StrPCopy(MyNameIs,AnsiString(Name));MyInd:=Ind;
+ SignBitmap := nil;
 end;
 {---------------------------------------------------------}
 destructor TPoint_Sign.Destroy;
 begin
  If MRect<>nil then MRect.Free;
+ if SignBitmap<>nil then SignBitmap.Free;
  MethodCol.Destroy;
 end;
 
@@ -764,6 +775,57 @@ begin
   pp:=MethodCol[I];
 //  WriteMsg(['Meth=',ord(pp.Mt)]);
   TTD(pp.pt).SetGabaritesBlock(MRect_,X_,Y_,kX,kY,Angle);
+ end;
+end;
+
+function TPoint_Sign.GetGabarites(MRect_: TMRect; X_, Y_, kX, kY, Angle: Double; TextBitmaps, Bitmaps: TTwgBitmaps): Integer;
+var I, TextIndex:Integer;PP:TMeth;
+    mRect, mSource:TMRect;
+    SourceSect:TSect;
+    TextBitmap:TTwgBitmap;
+begin
+ Result:=0;
+ if Bitmaps<>nil then Bitmaps.DeleteAll;
+ mRect:=TMRect.Create;
+ mSource:=TMRect.Create;
+ try
+  TextIndex:=0;
+  For I:=0 to MethodCol.Count-1 do begin
+   PP:=MethodCol[I];
+   if PP.mt=m_Text then begin
+    TextBitmap:=nil;
+    if TDWG_Text(PP.pt).IsTextVisible then begin
+     if (TextBitmaps<>nil) and (TextIndex<TextBitmaps.Count) then
+      TextBitmap:=TTwgBitmap(TextBitmaps[TextIndex])
+     else if Bitmaps<>nil then
+      TextBitmap:=TTwgBitmap.Create(TDWG_Text(PP.pt));
+     TDWG_Text(PP.pt).TextBitmap:=TextBitmap;
+     TDWG_Text(PP.pt).SetGabaritesBlock(mRect, X_, Y_, kX, kY, Angle);
+    end;
+    if Bitmaps<>nil then begin
+     if TextBitmap<>nil then Bitmaps.Insert(TextBitmap) else Bitmaps.Insert(Bitmaps);
+    end;
+    Inc(TextIndex);
+    Continue;
+   end;
+   TTD(PP.pt).SetGabarites(mSource);
+   TTD(PP.pt).SetGabaritesBlock(mRect, X_, Y_, kX, kY, Angle);
+   if Bitmaps<>nil then Bitmaps.Insert(Bitmaps);
+  end;
+  if (Bitmaps<>nil) and (mSource.Iter<>0) then begin
+   SourceSect:=mSource.Sect;
+   Bitmaps.Bitmap.SetTransformedBounds(SourceSect, 0, 0, X_, Y_, kX, kY, Angle);
+  end;
+  if mRect.Iter<>0 then begin
+   Result:=1;
+   if MRect_<>nil then begin
+    MRect_.Insert(mRect.Sect.Left, mRect.Sect.Top);
+    MRect_.Insert(mRect.Sect.Right, mRect.Sect.Bottom);
+   end;
+  end;
+ finally
+  mSource.Free;
+  mRect.Free;
  end;
 end;
 
@@ -901,6 +963,41 @@ Function TPoint_Sign.GetRect1:TSect;
    end;
  end;
 
+function TPoint_Sign.GeometrySect: TSect;
+var I: Integer;
+    pp: TMeth;
+    mRect: TogsRect;
+    L,T,R,B,L1,T1,R1,B1:Single;
+begin
+ mRect := TogsRect.Create;
+ for I:=0 to Methodcol.count-1 do begin
+ 	pp:=MethodCol.At(i);
+	case pp.mt of
+	 m_Line: with TDWG_Line(pp.pt) do begin
+	          mRect.Insert(X_B, Y_B);
+	          mRect.Insert(X_E, Y_E);
+	          useLine:=True;
+	         end;
+	 m_arc,
+	 m_Pie:  with TDWG_Arc(pp.pt) do begin
+	          mRect.Insert(X_1, Y_1);
+	          mRect.Insert(X_2, Y_2);
+	          mRect.Insert(Xu_1, Yu_1);
+	          mRect.Insert(Xu_2, Yu_2);
+	          useLine:=True;
+	         end;
+	 m_Poly: with TDWG_Poly(pp.pt) do begin
+	          GetRect(L1,T1,R1,B1);
+	          mRect.Insert(L1, T1);
+	          mRect.Insert(R1, B1);
+	          useLine:=True;
+	         end;
+	end;
+ end;
+ Result := mRect.Sect;
+ mRect.Free;
+end;
+
 function TPoint_Sign.isVisible;
 var PP:PCollection;
 begin
@@ -976,13 +1073,24 @@ var
 	p3:TDWG_Poly;
   p4:TDwg_Text;
   p5:TDwg_Pie;
-	i:Integer;
+	i, J:Integer;
 	OldX,OldY:Double;
   BB:Boolean;
   Ko2:Double;
   Vis:Boolean;
   X1,Y1:Integer;
   W, H: Double;
+  AnchorPix: TPointF; Dst: TRectF;
+  WW,HH,OffX,OffY:Single;
+ procedure DrawText(DT: TDWG_Text);
+ begin
+  If (ShowAttr)and(ShowAttr2) then
+                       begin
+                        If Ko2<0 then
+                         DT.Draw32(x,y,Selector,MXX,MYY,Ko2,Ugol,R,G,B, bkcolor, OldX, OldY, Flag) else
+                         DT.Draw32(x,y,Selector,MXX,MYY,Ko,Ugol,R,G,B, bkcolor, OldX, OldY, Flag);
+                       end;
+ end;
 begin
 // if not Drawing then Exit;
 Ko2:=Ko;
@@ -1008,6 +1116,31 @@ end;
          // BB:=True;
            if not BB {and not UseFont} then Exit;
            W := Abs(Sect.Right-Sect.Left); H := Abs(Sect.Bottom-Sect.Top);
+           // LOD: draw SignBitmap for small signs instead of vector geometry
+           if (SignBitmap<>nil) and (Drawer is TogsDrawerSkia) and
+             TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing and
+             (XRasst(W) < 40) and (YRasst(H) < 40) and
+             (XRasst(W) > 0) and (YRasst(H) > 0) then
+           begin
+            if TogsDrawerSkia(Drawer).UseWorldCoords then
+            begin
+             AnchorPix := PointF(Single(X), Single(Y));
+             WW := XRasst(W) / GetScale;
+             HH := YRasst(H) / GetScale;
+            end else
+            begin
+             AnchorPix := PointF(XPix(X), YPix(Y));
+             WW := XRasst(W);
+             HH := YRasst(H);
+            end;
+            OffX := WW * 0.5; OffY := HH * 0.5;
+            Dst := RectF(-OffX, -OffY, -OffX + WW, -OffY + HH);
+            TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, SignBitmap.Bitmap, Dst, Ugol);
+            For J := 0 to Methodcol.Count-1 do
+             if TMeth(MethodCol.At(J)).mt = m_Text then
+               DrawText(TMeth(MethodCol.At(J)).pt);
+            exit;
+           end;
            If (XRasst(W)<=10) and (YRasst(H)<=10) and (not GlobalRender) then begin
             If useLine then begin
              If BB then begin
@@ -1073,22 +1206,15 @@ for i:=0 to Methodcol.Count-1 do With Selector do begin
       // Writeln('endPoly',I);
 		       end else
                 if pp.mt=m_Pie then begin
-			p5:=pp.pt;
+			           p5:=pp.pt;
 		 	//if BB then p5.draw32(x,y,Canvas,MXX,MYY,ko,Ugol,R,G,B,bkColor);
-                end else
-                 If (ShowAttr)and(ShowAttr2) then
-                       begin
-                       // Writeln('begText',I);
-                         p4 := pp.pt;
-                        If Ko2<0 then
-                         p4.Draw32(x,y,Selector,GMS,GMS,Ko2,Ugol,R,G,B, bkcolor, OldX, OldY, Flag) else
-                         p4.Draw32(x,y,Selector,MXX,MYY,Ko,Ugol,R,G,B, bkcolor, OldX, OldY, Flag);
-                       // Writeln('endText',I);
-//                         UseFont:=True;
-                       end;
+                end else begin
+                 p4 := pp.pt;
+                 DrawText(p4);
+                end;
         end;
 		  end;
-{  If ShowDot then begin // ïîêàçûâàåì òî÷êó ïðèâÿçêè
+{  If ShowDot then begin // iieacuaaai oi?eo i?eaycee
    SetPixel(DC,Round(X),Round(Y),rgb(255,0,0));
   end;
 }
@@ -1201,7 +1327,6 @@ begin
 end;
 {---------------------------------------------------------}
 
-
 function SearchThis;
 var I:Integer;
 begin
@@ -1215,17 +1340,94 @@ end;
 
 {==============================================================================}
 
-procedure PLIB.CreateBitmaps;
+procedure SignBitmapOnPoly(Obj: Integer; Poly: PGeoPoint; penColor, brushColor: Integer; lineWidth: Double; useColor: Boolean; isPolygon: Boolean); stdcall;
+var I: Integer;
+    P: PGeoPoint;
+    Points: TPolygon;
+    StrokeColor, FillColor: TAlphaColor;
 begin
+ if (GSignBmpCanvas = nil) or (Poly = nil) or (Poly.Count < 1) then Exit;
+ SetLength(Points, Poly.Count);
+ P := Poly;
+ for I := 0 to Poly.Count - 1 do begin
+  Points[I] := PointF(
+   Single(P.X) * GSignScale + GSignDX,
+   Single(P.Y) * GSignScale + GSignDY
+  );
+  P := P.Next;
+  if P = nil then Break;
+ end;
+ StrokeColor := TAlphaColor($FF000000 or (Cardinal(penColor) and $00FFFFFF));
+ FillColor := TAlphaColor($FF000000 or (Cardinal(brushColor) and $00FFFFFF));
+ GSignBmpCanvas.Stroke.Kind := TBrushKind.Solid;
+ GSignBmpCanvas.Stroke.Color := StrokeColor;
+ if lineWidth > 0 then
+  GSignBmpCanvas.Stroke.Thickness := lineWidth * GSignScale
+ else
+  GSignBmpCanvas.Stroke.Thickness := 1;
+ if isPolygon and useColor then begin
+  GSignBmpCanvas.Fill.Kind := TBrushKind.Solid;
+  GSignBmpCanvas.Fill.Color := FillColor;
+  GSignBmpCanvas.FillPolygon(Points,1);
+ end;
+ GSignBmpCanvas.DrawPolygon(Points,1);
+end;
 
+procedure SignBitmapOnText(Obj: Integer; X, Y: Double; FontName: PChar; txtHeight, txtAngle, txtScale: Double;
+                     txtColor: Integer; Align: byte; Bl, It, Un: Boolean; Text, AttrName: PChar); stdcall;
+begin
+ // текст для иконок знаков не используем
+end;
+
+{==============================================================================}
+
+procedure PLIB.CreateBitmaps;
+var I: Integer;
+    PS: TPoint_Sign;
+    Sect: TSect;
+    W0,H0,Pad,InnerW,InnerH,Scale: Single;
+    Geo: TGeometryEvents;
+begin
+ for I := 0 to Count - 1 do begin
+  PS := TPoint_Sign(At(I));
+  if PS = nil then Continue;
+//  WriteIn([PS.MyNameIs, PS.MethodCol = nil]);
+  Sect := PS.GeometrySect; // используем локальный сектор знака только для геометрии
+  W0 := Abs(Sect.Right - Sect.Left); H0 := Abs(Sect.Bottom - Sect.Top);
+  if W0 <= 0 then W0 := 1;
+  if H0 <= 0 then H0 := 1;
+  Pad := 2;
+  InnerW := 100 - Pad * 2; InnerH := 100 - Pad * 2;
+  if (InnerW <= 0) or (InnerH <= 0) then Continue;
+  if InnerW / W0 < InnerH / H0 then Scale := InnerW / W0 else Scale := InnerH / H0;
+  GSignSect := Sect;
+  GSignScale := Scale;
+  // как в TileDraw: Xpix = X*Scale + DX, Ypix = Y*Scale + DY, центрируем в прямоугольнике Pad..100-Pad
+  GSignDX := Pad + (InnerW - W0 * Scale) * 0.5 - Sect.Left * Scale;
+  GSignDY := Pad + (InnerH - H0 * Scale) * 0.5 - Sect.Top * Scale;
+  if PS.SignBitmap = nil then PS.SignBitmap := TTwgBitmap.Create(PS);
+  PS.SignBitmap.Bitmap.SetSize(100,100);
+  GSignBmp := PS.SignBitmap.Bitmap;
+  GSignBmpCanvas := GSignBmp.Canvas;
+  GSignBmpCanvas.BeginScene;
+  try
+   GSignBmpCanvas.Clear(0);
+   Geo := TGeometryEvents.Create(0, SignBitmapOnPoly, SignBitmapOnText);
+   try
+    PS.DrawTo(Geo);
+   finally
+    Geo.Free;
+   end;
+  finally
+   GSignBmpCanvas.EndScene;
+   PS.SignBitmap.Bitmap.SaveToFile(MainPath + IntToStr(PS.MyInd)+'.bmp');
+   GSignBmpCanvas := nil; GSignBmp := nil;
+  end;
+ end;
 end;
 
 initialization
  GlobalPoint := nil;
 finalization
- Writein(['==fin9']);
-
  If GlobalPoint <> nil then GlobalPoint.Free;
-  Writein(['==fin10']);
-
 end.

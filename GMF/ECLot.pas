@@ -187,6 +187,7 @@ Type
       Procedure     MinMax(X,Y:Double);
       Procedure     SetMinMax(Twf:TTwigsCollect);virtual;
       Procedure     SetMinMax2(Twf:TTwigsCollect);virtual;
+      Function      GetSect:TSect;override;
       Function      IsVisible(R:TRect):Boolean;
       Procedure     Insert(Index:LongInt);
       Procedure     AtPut (Num:LongInt;Index:LongInt);
@@ -758,6 +759,14 @@ end;
     If X<XMin then XMin:=X;
     If Y>YMax then YMax:=Y;
     If Y<YMin then YMin:=Y;
+   end;
+
+    function TLot.GetSect: TSect;
+   begin
+    Result.Left:=XMin;
+    Result.Right:=XMax;
+    Result.Top:=YMax;
+    Result.Bottom:=YMin;
    end;
 
     function TLot.IsVisible(R: Trect): Boolean;

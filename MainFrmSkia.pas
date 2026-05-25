@@ -15,10 +15,12 @@ type
     btnPDF: TCornerButton;
     SkPainter: TSkPaintBox;
     Popup1: TPopup;
+    CheckBox1: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
     procedure btnPDFClick(Sender: TObject);
+    procedure CheckBox1Change(Sender: TObject);
   private
     FStatusLabel: TLabel;
     FDrawerSkia: TogsDrawerSkia;
@@ -58,7 +60,6 @@ type
   //
     procedure ResetInteractionState;
     procedure BuildCachedPicture;
-    procedure BuildCachedPictureFromList;
    //
     procedure DoExportPdfWithName(const AName: string);
    //
@@ -594,7 +595,7 @@ begin
     Selector.UpdateRects(True);
     objectRepaintAccess := True;
     TwgForm.Twigs.BlockList.CreateBitmaps;
-    PLib(TwgForm.MkLib.PntLib).CreateBitmaps;
+    PLib(TwgForm.MkLib.PSLib).CreateBitmaps;
 
     SceneDirty := True;
     BuildCachedPicture;
@@ -605,7 +606,7 @@ begin
   InitSkPainterInput;
   SkPainterResize(SkPainter);
 
-  SceneDirty := (FCachedPicture = nil);
+  SceneDirty := (FDrawerSkia = nil) or (FDrawerSkia.SkiaList.Count = 0);
   GlobalRender := False;
 //  if SkPainter <> nil then
  //   SkPainter.Redraw;
@@ -881,6 +882,7 @@ begin
               begin
                 FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
                 try
+                // GGraphSet.ViewZnaks := 0;
                   Lot.Draw32(TwgForm.Twigs);
                 finally
                   FDrawerSkia.EndPrimitive;
@@ -982,7 +984,6 @@ begin
         if (TwgForm <> nil) and objectRepaintAccess then
         begin
           RenderSceneToBackbufferSkia;
-          FDrawerSkia.DrawSkiaList(RecCanvas);
         end;
       finally
         FDrawerSkia.EndFrame;
@@ -993,71 +994,12 @@ begin
   finally
     FBuildingScene := False;
    // SceneProgressHide;
-    FCachedPicture := Recorder.FinishRecording;
-    if FCachedPicture <> nil then
-      SceneDirty := False;
+    Recorder.FinishRecording;
+    FCachedPicture := nil;
+    SceneDirty := False;
 
     Dt := TThread.GetTickCount64 - T0;
     WriteIn(['BuildCachedPicture exit', ' ms=', Dt, ' Dirty=', SceneDirty, ' PicNil=', FCachedPicture = nil, ' Cnt=', Iff(FDrawerSkia <> nil, FDrawerSkia.SkiaList.Count, -1)]);
-  end;
-end;
-
-procedure TMainFormSkia.BuildCachedPictureFromList;
-var
-  Recorder: ISkPictureRecorder;
-  RecCanvas: ISkCanvas;
-  R: TRectF;
-  PrevWorld: Boolean;
-  Pad: Single;
-begin
-  if FBuildingScene then
-    Exit;
-  if FDrawerSkia = nil then
-    Exit;
-  if SkPainter = nil then
-    Exit;
-  if (SkPainter.Width <= 0) or (SkPainter.Height <= 0) then
-    Exit;
-
-  if (FDrawerSkia.SkiaList = nil) or (FDrawerSkia.SkiaList.Count = 0) then
-    Exit;
-
-  if (Selector <> nil) and (Selector.GlobalRect <> nil) and Selector.GlobalRect.isRect then
-  begin
-    R := TRectF.Create(Single(Selector.GlobalRect.XMin), Single(Selector.GlobalRect.YMin),
-      Single(Selector.GlobalRect.XMax), Single(Selector.GlobalRect.YMax));
-    Pad := 1000;
-    R.Inflate(Pad, Pad);
-  end
-  else if (Selector <> nil) and (Selector.ActiveRect <> nil) and Selector.ActiveRect.isRect then
-  begin
-    R := TRectF.Create(Single(Selector.ActiveRect.XMin), Single(Selector.ActiveRect.YMin),
-      Single(Selector.ActiveRect.XMax), Single(Selector.ActiveRect.YMax));
-    Pad := 1000;
-    R.Inflate(Pad, Pad);
-  end
-  else
-    R := TRectF.Create(-10000000, -10000000, 10000000, 10000000);
-
-  Recorder := TSkPictureRecorder.Create;
-  RecCanvas := Recorder.BeginRecording(R);
-  try
-    FBuildingScene := True;
-    PrevWorld := FDrawerSkia.UseWorldCoords;
-    FDrawerSkia.UseWorldCoords := True;
-    try
-      FDrawerSkia.BeginFrame(RecCanvas, R);
-      try
-        FDrawerSkia.DrawSkiaList(RecCanvas);
-      finally
-        FDrawerSkia.EndFrame;
-      end;
-    finally
-      FDrawerSkia.UseWorldCoords := PrevWorld;
-    end;
-  finally
-    FBuildingScene := False;
-    FCachedPicture := Recorder.FinishRecording;
   end;
 end;
 
@@ -1088,6 +1030,12 @@ procedure TMainFormSkia.InvalidateOverlayAll;
 begin
   FOverlayStaticDirty := True;
   FOverlayLiveDirty := True;
+end;
+
+procedure TMainFormSkia.CheckBox1Change(Sender: TObject);
+begin
+ TogsDrawerSkia(FDrawerSkia).DebugRoughDrawing  := CheckBox1.IsChecked;
+ SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.ClearOverlayAllCaches;
@@ -1499,25 +1447,12 @@ end;
 
 procedure TMainFormSkia.SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
 var
-  Pivot: TPointF;
-  F: Single;
-  DebugPaint: ISkPaint;
-  DebugFont: ISkFont;
-  DebugTypeface: ISkTypeface;
-  Family: string;
-  FontFile: string;
-  I: Integer;
   ViewScale: Single;
   Tx, Ty: Single;
-  Img: ISkImage;
-  Paint: ISkPaint;
-  DstRect: TRectF;
-  Pic: ISkPicture;
+  VisibleWorld: TRectF;
   T0, Dt: UInt64;
   RAct: TogsRect;
   OverlayPaint: ISkPaint;
-const
-  DebugDirectSkia = false;
 begin
   T0 := TThread.GetTickCount64;
   try
@@ -1569,54 +1504,22 @@ begin
       RequestRebuildScene;
     end;
 
-    if (FCachedPicture = nil) then
-    begin
-      if (not SceneDirty) and (FDrawerSkia.SkiaList.Count > 0) then
-      begin
-        BuildCachedPictureFromList;
-      end;
-
-      if (FCachedPicture = nil) then
-      begin
-        WriteIn(['SkPainterDraw exit: no pic', ' Dirty=', SceneDirty, ' Cnt=', FDrawerSkia.SkiaList.Count]);
-        SceneDirty := True;
-        RequestRebuildScene;
-        PaintBefore(ACanvas, ADest);
-        Exit;
-      end;
-    end;
-
-    Pic := FCachedPicture;
-    if (Pic <> nil) and (Selector <> nil) then
+    if (ACanvas <> nil) and (FDrawerSkia.SkiaList.Count > 0) and (Selector <> nil) then
     begin
       ViewScale := Single(Selector.GetScale);
       if ViewScale > 0 then
       begin
         Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
         Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
+        VisibleWorld := TRectF.Create(Single(Selector.GlobalRect.XMin + Selector.GetDx),
+          Single(Selector.GlobalRect.YMin + Selector.GetDy),
+          Single(Selector.GlobalRect.XMin + Selector.GetDx + ADest.Width / ViewScale),
+          Single(Selector.GlobalRect.YMin + Selector.GetDy + ADest.Height / ViewScale));
         ACanvas.Save;
         try
           ACanvas.Translate(Tx, Ty);
           ACanvas.Scale(ViewScale, ViewScale);
-          ACanvas.DrawPicture(Pic);
-        finally
-          ACanvas.Restore;
-        end;
-      end;
-    end;
-
-    if (Pic = nil) and (ACanvas <> nil) and (FDrawerSkia.SkiaList.Count > 0) and (Selector <> nil) then
-    begin
-      ViewScale := Single(Selector.GetScale);
-      if ViewScale > 0 then
-      begin
-        Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
-        Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
-        ACanvas.Save;
-        try
-          ACanvas.Translate(Tx, Ty);
-          ACanvas.Scale(ViewScale, ViewScale);
-          FDrawerSkia.DrawSkiaList(ACanvas);
+          FDrawerSkia.DrawSkiaListVisible(ACanvas, VisibleWorld);
         finally
           ACanvas.Restore;
         end;

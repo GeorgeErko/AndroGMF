@@ -47,6 +47,7 @@ type
   TogsSkiaList = class(TObjectList<TogsSkiaObject>)
   public
     procedure DrawAll(const ACanvas: ISkCanvas);
+    procedure DrawVisible(const ACanvas: ISkCanvas; const AVisibleWorld: TRectF);
   end;
 
   TogsDrawerSkia = class(TogsSpacer)
@@ -61,6 +62,8 @@ type
     FUseWorldCoords: Boolean;
     FSkiaList: TogsSkiaList;
     FDebugDrawTextBounds: Boolean;
+    FDebugRoughDrawing: Boolean;
+    FDebugBitmapDrawing: Boolean;
     FPrimitiveRecorder: ISkPictureRecorder;
     FPrimitiveCanvas: ISkCanvas;
     FPrimitiveOldCanvas: ISkCanvas;
@@ -75,7 +78,6 @@ type
     function GetCanvas: TCanvas; override;
     procedure SetPen(AValue: TogsPen); override;
     procedure SetBrush(AValue: TogsBrush); override;
-    property SkCanvas: ISkCanvas read FSkCanvas;
   public
     constructor Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent; SkPainter_: TSkPaintBox);
     destructor Destroy; override;
@@ -116,6 +118,7 @@ type
 
     procedure ClearSkiaList;
     procedure DrawSkiaList(const ACanvas: ISkCanvas);
+    procedure DrawSkiaListVisible(const ACanvas: ISkCanvas; const AVisibleWorld: TRectF);
 
     procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD);
     procedure EndPrimitive;
@@ -123,8 +126,11 @@ type
     property Bitmap: TBitmap read FBitmap;
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
     property DebugDrawTextBounds: Boolean read FDebugDrawTextBounds write FDebugDrawTextBounds;
+    property DebugRoughDrawing: Boolean read FDebugRoughDrawing write FDebugRoughDrawing;
+    property DebugBitmapDrawing: Boolean read FDebugBitmapDrawing write FDebugBitmapDrawing;
     property SkiaList: TogsSkiaList read FSkiaList;
     property skPainter: TSkPaintBox read FskPainter;
+    property SkCanvas: ISkCanvas read FSkCanvas;
   end;
 
   TogsCaptureDrawerSkia = class(TogsDrawerSkia)
@@ -236,6 +242,21 @@ begin
     Items[I].Draw(ACanvas);
 end;
 
+procedure TogsSkiaList.DrawVisible(const ACanvas: ISkCanvas; const AVisibleWorld: TRectF);
+var
+  I: Integer;
+  R: TRectF;
+begin
+  if ACanvas = nil then
+    Exit;
+  for I := 0 to Count - 1 do
+  begin
+    R := Items[I].BoundsWorld;
+    if R.IsEmpty or R.IntersectsWith(AVisibleWorld) then
+      Items[I].Draw(ACanvas);
+  end;
+end;
+
 procedure TogsDrawerSkia.BeginFrame(const ACanvas: ISkCanvas; const ADest: TRectF);
 begin
   FSkCanvas := ACanvas;
@@ -267,6 +288,12 @@ begin
     FSkiaList.DrawAll(ACanvas);
 end;
 
+procedure TogsDrawerSkia.DrawSkiaListVisible(const ACanvas: ISkCanvas; const AVisibleWorld: TRectF);
+begin
+  if FSkiaList <> nil then
+    FSkiaList.DrawVisible(ACanvas, AVisibleWorld);
+end;
+
 procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD);
 begin
   if FSkCanvas = nil then
@@ -288,6 +315,7 @@ procedure TogsDrawerSkia.EndPrimitive;
 var
   Obj: TogsSkiaObject;
   L: TResource;
+  Sect: TSect;
 begin
   if FPrimitiveRecorder = nil then
     Exit;
@@ -295,7 +323,15 @@ begin
     Obj := TogsSkiaObject.Create;
     Obj.Id := FPrimitiveId;
     Obj.UserObject := FPrimitiveUserObject;
-    Obj.BoundsWorld := FPrimitiveBoundsWorld;
+    if FPrimitiveUserObject <> nil then
+    begin
+      Sect := FPrimitiveUserObject.GetSect;
+      Obj.BoundsWorld := TRectF.Create(Single(Sect.Left), Single(Sect.Bottom), Single(Sect.Right), Single(Sect.Top));
+      if Obj.BoundsWorld.IsEmpty then
+        Obj.BoundsWorld := FPrimitiveBoundsWorld;
+    end
+    else
+      Obj.BoundsWorld := FPrimitiveBoundsWorld;
     Obj.Picture := FPrimitiveRecorder.FinishRecording;
     L := nil;
     if FPrimitiveUserObject <> nil then

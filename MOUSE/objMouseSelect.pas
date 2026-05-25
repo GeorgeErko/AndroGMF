@@ -490,7 +490,7 @@ begin;
           oldTwigs:=Twigs;
           Twigs:=TGeoBlock(PP.userObj).TwgForm;
           If Twigs = nil then begin { нулевой Twigs } Moved:=False; continue;end;
-           If not PP.BlockVisible{(PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,)} then begin Moved:=False;continue;end;
+           If not {!!!! PP.BlockVisible} True then begin Moved:=False;continue;end;
           Moved:=True;
           PP.userObj.MoveTo(PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,PP.Extrusion);
           saveTemporaryTwig:=objTemporaryTwig;

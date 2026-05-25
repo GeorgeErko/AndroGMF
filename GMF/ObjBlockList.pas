@@ -1,6 +1,6 @@
 ﻿unit ObjBlockList;
 
-interface Uses Collect, FMX.Graphics, newResource, Classes;
+interface Uses Collect, FMX.Graphics, newResource, Classes, TwgBitmaps;
 
 type
   TBlockList=class(TTwgObject)
@@ -232,9 +232,9 @@ begin
      Drawer.EndPaint;
     // копируем битмап в блок (уже с нарисованным крестом через Drawer.Canvas)
      if BlockBitmap = nil then
-      BlockBitmap := TBitmap.Create;
+      BlockBitmap := TTwgBitmap.Create;
    //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
-     BlockBitmap.Assign(Drawer.Bitmap);
+     BlockBitmap.Bitmap.Assign(Drawer.Bitmap);
    //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
      FreeAndNil(ogsRect);
      ogsRect := TogsRect.Create;

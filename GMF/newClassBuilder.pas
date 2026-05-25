@@ -25,6 +25,7 @@ var Res:TResource;UZnak:TPoint_Sign;P:PCollection;
     Sect:TSect;
     Color:Integer;
     propValue:TPropValue;
+    BlockSect: TSect;
 begin
  Res:=LayerTable.SearchLayer(PP.Code);
  if Res=nil then Res:=LayerTable.NullLayer;
@@ -72,7 +73,7 @@ begin
      end;
     end;
  end;
-
+ //
   PP.ResetParams(0,nil); // TTextDot.What := 1;
     If PP.userObj<>nil then begin
       Case PP.userObj.objType of
@@ -87,7 +88,7 @@ begin
                       // PP.userObj:=Block;
                    end else PP.userObj:=nil;
                    If PP.userObj<>nil then begin
-                     TGeoBlock(PP.userObj).deVisible(PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,PP.BlockSect);
+                     TGeoBlock(PP.userObj).deVisible(PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,BlockSect);
                     If binQuickPaint then begin
                      If PP.Buffer<>nil then PP.Buffer.Free;
                      PP.Buffer:=TMemoryStream.Create;
@@ -101,6 +102,7 @@ begin
       end;
    end;
  If PP is TPointMessage then PP.What:=0;
+ PP.SetGabarites(nil);
 end;
 
 Function Build1(View:TSelector;ClassName1:AnsiString;var TWF:TTwigsCollect;var MosLib:TMosLib;MirrorObject:Boolean=False):Boolean;

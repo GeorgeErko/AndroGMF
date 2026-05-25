@@ -1,7 +1,7 @@
 ﻿unit textmanager;
 
 interface
-uses Sysutils, Classes, Collect, EMath, FMX.Graphics;
+uses Sysutils, Classes, Collect, EMath, FMX.Graphics, TwgBitmaps;
 
 const
   tpBold = 1;
@@ -53,7 +53,7 @@ type
     oldBmp: TList;
     FValues: PCollection;
     FTexts: PCollection;
-    FTextBitmaps: PCollection;
+    FTextBitmaps: TTwgBitmaps;
     UpdateResults:Boolean;
     constructor Create;
     constructor CreateAsTextManager(T:TTextManager;Znaks:PCollection);
@@ -100,7 +100,7 @@ begin
   FSave := PCollection.Create(1);
   FTexts := PCollection.Create(1);
   FValues := PCollection.Create(1);
-  FTextBitmaps := PCollection.Create(1);
+  FTextBitmaps := TTwgBitmaps.Create(1);
   oldBmp := TList.Create;
 end;
 
@@ -111,7 +111,7 @@ var ss: TCStrings;
 begin
   FSave := PCollection.Create(1);
   FTexts := PCollection.Create(1);
-  FTextBitmaps := PCollection.Create(1);
+  FTextBitmaps := TTwgBitmaps.Create(1);
   oldBmp := TList.Create;
 
 {  ss := TCStrings(buf.get);
@@ -173,12 +173,7 @@ begin
 //  WriteS(['end']);
   FSave.Free;
 
-  ClearTextBitmaps;
-  if FTextBitmaps <> nil then
-  begin
-    FTextBitmaps.Free;
-    FTextBitmaps := nil;
-  end;
+ FreeAndNil(FTextBitmaps);
 // BLOCK_DEBUG:=True;
 // BLOCK_DEBUG:=False;
   FTexts.DeleteAll;
@@ -191,21 +186,18 @@ procedure TTextManager.ClearTextBitmaps;
 var I: Integer;
 begin
   if FTextBitmaps = nil then Exit;
-  for I := 0 to FTextBitmaps.Count - 1 do
-    if TObject(FTextBitmaps[I]) <> nil then
-      TObject(FTextBitmaps[I]).Free;
-  FTextBitmaps.DeleteAll;
+  FTextBitmaps.FreeAll;
 end;
 
 procedure TTextManager.BuildTextBitmaps;
 var I: Integer;
-    B: TBitmap;
+    B: TTwgBitmap;
 begin
   if (FTexts = nil) or (FTextBitmaps = nil) then Exit;
   ClearTextBitmaps;
   for I := 0 to FTexts.Count - 1 do
   begin
-    B := TBitmap.Create;
+    B := TTwgBitmap.Create(TDWG_Text(FTexts[I]));
     FTextBitmaps.Insert(B);
     TDWG_Text(FTexts[I]).TextBitmap := B;
   end;
@@ -225,7 +217,7 @@ begin
   end;
 
   while FTextBitmaps.Count < FTexts.Count do
-    FTextBitmaps.Insert(TBitmap.Create);
+    FTextBitmaps.Insert(TTwgBitmap.Create(TDWG_Text(FTexts[FTextBitmaps.Count])));
 end;
 
 procedure TTextManager.UpdateTextBitmaps;
@@ -234,7 +226,7 @@ begin
   if (FTexts = nil) or (FTextBitmaps = nil) then Exit;
   EnsureTextBitmapsSize;
   for I := 0 to FTexts.Count - 1 do
-    TDWG_Text(FTexts[I]).TextBitmap := TBitmap(FTextBitmaps[I]);
+    TDWG_Text(FTexts[I]).TextBitmap := TTwgBitmap(FTextBitmaps[I]);
 end;
 
 procedure TTextManager.SetZnaks(znaks: PCollection);
@@ -519,8 +511,8 @@ begin
        ShiftX:=tp.ShiftX;
        ShiftY:=tp.ShiftY;
        FBg:=tp.FBg;
-       if i <= oldBmp.Count then
-        TextBitmap := oldBmp[I];
+       if i < oldBmp.Count then
+        TextBitmap := TTwgBitmap(oldBmp[I]);
       // TextDirty := True;
     end;
   end;

@@ -35,11 +35,7 @@ Type
 
  TSect = ogcbasic.TSect;
 
- TShortSect=record
-   Case boolean of
-    False:(Left,Top,Right,Bottom:Double);
-    True:(XA,YA,XB,YB:Double);
-  end;
+ TShortSect = ogcbasic.TSect;
 
  PSect=^TSect;
 

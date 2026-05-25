@@ -398,6 +398,7 @@
         <DCCReference Include="GMF\Tata3.pas"/>
         <DCCReference Include="GMF\textmanager.pas"/>
         <DCCReference Include="GMF\tmppainter.pas"/>
+        <DCCReference Include="GMF\TwgBitmaps.pas"/>
         <DCCReference Include="GMF\TwgColle.pas"/>
         <DCCReference Include="GMF\TwgDraw.pas"/>
         <DCCReference Include="GMF\Types_dimano.pas"/>

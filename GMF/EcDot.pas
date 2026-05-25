@@ -2,7 +2,7 @@
 Interface uses System.Classes, Collect, TwgDraw, Lib,
                SysUtils, FMX.Graphics, newResource, newConsts, newProcs, Maths_basic, Types_dimano,
                TextManager, UserObject, ObjBlockList, Maths_Lines, newFontScale, newProperties,
-               newSelector, lib2, System.UITypes, System.Types, ogcBasic;
+               newSelector, lib2, System.UITypes, System.Types, ogcBasic, TwgBitmaps;
 
 { Точка-семантический код = TWG_Dot  }
  Const
@@ -107,7 +107,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      XKoef,YKoef:Single;
     {}
      TextManager:TTextManager;
-     BlockTextBitmaps:PCollection;
+     BlockTextBitmaps:TTwgBitmaps;
      GUID:TGUID;
      Symbol:ShortInt;
     {}
@@ -124,11 +124,10 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      TexX,TexY:Double;
      Trees:PCollection;
     {}
-     BlockSect:TShortSect;
-     ZnakSect:TShortSect;
      Buffer:TMemoryStream;
     {}
      Selector:TSelector;
+     Sect: TSect;
     //
      FDrawerObject: TObject;
        Function  GetSelector:TSelector;override;
@@ -193,7 +192,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      Procedure ApplyInternalProps(Obj:TTD);override;
      Function PointInSect(Sect:TSect;invertSelect:Boolean):boolean;virtual;
      Function PointInSect2(P:PCollection;invertSelect:Boolean):boolean;virtual;
-     Function GetSect:TSect;virtual;
+     Function GetSect:TSect;override;
+     Function GetGabarites(MRect_:TMRect; X, Y, kX, kY, Angle:Double) : Integer;override;
      Function ResetParams(ParamID: Integer;Params: Pointer):boolean;override;
      Procedure ChangeXYKoef(XK,YK:Double);override;
      Function isBlock:Boolean;
@@ -203,8 +203,6 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      Procedure CreateTrees(TreeNames:AnsiString);// создаем диапазон Trees - копии точки Self
      Procedure ReCreateTrees(TreeNames:AnsiString);// редактируем диапазон Trees
     //
-     Function BlockVisible:boolean;
-     Function ZnakVisible:boolean;
      Procedure renderGabarites;
    // Рисование
      Function  DrawUserObject:Boolean;
@@ -241,7 +239,7 @@ type
 var FTest:TextFile;
 {-----------------------------------------------------------------------}
 implementation uses newBlock, Polygons, WptForm2, ECText, WPTwigs, newForm0, dwgText,
-                    Writer, EcDot2;
+                    Writer, EcDot2, ogcDrawerSkia;
 {----------------------------------------------------------------------}
 { TDot                                                                 }
 {----------------------------------------------------------------------}
@@ -459,8 +457,7 @@ begin
    Trees.Insert(TPointDot.CreateAsPoint_(P.Trees[I]));
   end;
  end;
- BlockSect:=P.BlockSect;
- ZnakSect:=P.ZnakSect;
+ Sect := P.Sect;
  Buffer:=nil;
 end;
 
@@ -526,8 +523,7 @@ begin
      Trees.Insert(TPointDot.CreateAsPointDot_(P.Trees[I],False));
     end;
   end;
-  BlockSect:=P.BlockSect;
-  ZnakSect:=P.ZnakSect;
+  Sect:=P.Sect;
   Buffer:=nil;
  end;
 
@@ -580,15 +576,9 @@ constructor TPointDot.CreateTaheo(PR: TResource; TInd: Integer; Nm: AnsiString;
 destructor TPointDot.Destroy;
  begin
   Inherited Destroy;
+  If (TextManager<>nil) and (BlockTextBitmaps<>nil) then BlockTextBitmaps.DeleteAll;
   If TextManager<>nil then TextManager.Free;
-  If BlockTextBitmaps<>nil then
-   begin
-    while BlockTextBitmaps.Count>0 do begin
-     if TObject(BlockTextBitmaps[0])<>nil then TObject(BlockTextBitmaps[0]).Free;
-     BlockTextBitmaps.AtDelete(0);
-    end;
-    BlockTextBitmaps.Free;
-   end;
+  FreeAndNil(BlockTextBitmaps);
   if DataFonts<>nil then DataFonts.Free;
   if Fonts<>nil then Fonts.Free;
   If Lines<>nil then Lines.Free;
@@ -616,32 +606,106 @@ var
     Brush: TogsBrush;
     RS:Double;
     Props: Pointer;
+procedure GetGabaritesForDraw(MRect_: TMRect; Drawer_: TogsDrawer);
+var KXX, KYY: Double; Props: Pointer;
+    mRect: TMRect;
+    PZ: TPoint_Sign;
+    TextBitmaps: TTwgBitmaps;
+    DebugBitmap: Boolean;
+    N: Integer;
+begin
+ DebugBitmap := (Drawer_ is TogsDrawerSkia) and TogsDrawerSkia(Drawer_).DebugRoughDrawing and TogsDrawerSkia(Drawer_).DebugBitmapDrawing;
+ if XKoef = 0 then KXX := 1 else KXX := XKoef;
+ if YKoef = 0 then KYY := 1 else KYY := YKoef;
+ if (userObj <> nil) and (userObj.objType = TWG_Block) then begin
+  mRect := TMRect.Create;
+  try
+   Props := TGeoBlock(userObj).txtProperties;
+   If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
+   if BlockTextBitmaps = nil then BlockTextBitmaps := TTwgBitmaps.Create(1);
+   TGeoBlock(userObj).GetGabaritesDebug(mRect, XDot, YDot, KXX, KYY, Ugol, Drawer_, BlockTextBitmaps);
+   BlockTextBitmaps.CalcSect;
+   TGeoBlock(userObj).txtProperties := Props;
+   if mRect.Iter <> 0 then begin
+    Sect := mRect.Sect;
+    if MRect_ <> nil then begin
+     MRect_.Insert(Sect.Left, Sect.Top);
+     MRect_.Insert(Sect.Right, Sect.Bottom);
+    end;
+   end;
+  finally
+   mRect.Free;
+  end;
+ end else begin
+  if (Selector<>nil) and (Selector.GPointCol<>nil) then begin
+   N:=SearchThis(Selector.GPointCol,(abs(What)));
+   if N<>-1 then begin
+    mRect := TMRect.Create;
+    try
+     if TextManager<>nil then TextManager.UpdateText(GlassFont);
+     PZ:=Selector.GPointCol.At(N);
+     if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
+     if DebugBitmap and (TextManager<>nil) then TextBitmaps:=TextManager.FTextBitmaps else TextBitmaps:=nil;
+     PZ.GetGabarites(mRect, XDot, YDot, Koef, Koef, Ugol, TextBitmaps, BlockTextBitmaps);
+     BlockTextBitmaps.CalcSect;
+     if TextManager<>nil then TextManager.Restore;
+     if mRect.Iter<>0 then begin
+      Sect := mRect.Sect;
+      if MRect_<>nil then begin
+       MRect_.Insert(Sect.Left, Sect.Top);
+       MRect_.Insert(Sect.Right, Sect.Bottom);
+      end;
+     end;
+    finally
+     mRect.Free;
+    end;
+    Exit;
+   end;
+  end;
+  GetGabarites(MRect_, 0, 0, 0, 0, 0);
+ end;
+end;
+procedure DrawGabariteSect;
+begin
+ if Drawer = nil then
+  Exit;
+ GetGabaritesForDraw(nil, Drawer);
+ if BlockTextBitmaps<>nil then begin
+  BlockTextBitmaps.DrawSect(Drawer, $FFFF0000, $FF000000, 0.03);
+  BlockTextBitmaps.DrawBounds(Drawer, $FFFF0000, $FF000000, 0.03);
+ end;
+end;
 begin
 // If Closed then exit;              9
+ if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing then begin
+  DrawGabariteSect;
+  exit;
+ end;
  If userObj<>nil then
    If userObj.objType = TWG_Block then begin
 
-//   GetProperty('Ðàñòÿæåíèå');
+//   GetProperty('?anoy?aiea');
 //   TGeoBlock(userObj).XText:=1;
- //  If GetProperty('Ðàñòÿæåíèå')<>byLayer then TGeoBlock(userObj).XText:=
+ //  If GetProperty('?anoy?aiea')<>byLayer then TGeoBlock(userObj).XText:=
 //   try TGeoBlock(userObj).XText:=StrToFloat(S);except TGeoBlock(userObj).XText:=1;end;
    TGeoBlock(userObj).XText:=blockStretch;
  //  TGeoBlock(userObj).txtProperties:=Properties;
  //  buffer := nil;
-  If BlockVisible then begin
+  If {BlockVisible} True then begin
    Props := TGeoBlock(userObj).txtProperties;
    If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
-    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,BlockTextBitmaps);
+    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,nil);
    TGeoBlock(userObj).txtProperties := Props;
    What := 20;
    If Selector.PointVisible(XDot, YDot) then
    //inherited Draw32(Drawer, 0, 0, GMS, GMS)
   end;
   //
-   If Bind<>nil then begin // ïðèâÿçêà ê çíàêó
+   If Bind<>nil then begin // i?eaycea e ciaeo
     //Bitmap.PenColor:=clRed32;
    // DrawLine32(XDot,YDot,Bind.XDot,Bind.YDot);
    end;
+  DrawGabariteSect;
   exit;
  end;// if UserObj<>nil
  If not ((Code<>-1) and (ClassHandle<>nil)) then exit;
@@ -656,7 +720,7 @@ begin
    If N<>-1 then PZ:=GPointCol.FList[N] else PZ:=nil;//ClassHandle.Point;
     If PZ<>nil then begin
       //If not ZnakVisible then exit;
-         // óñòàíàâëèâàåì çíà÷åíèÿ äëÿ çíàêà
+         // onoaiaaeeaaai cia?aiey aey ciaea
         if TextManager<>nil then TextManager.UpdateText(GlassFont);
          PZ.X:=XDot;PZ.Y:=YDot;PZ.Ugol:=Ugol;
          With GlobalSettings do
@@ -672,8 +736,8 @@ begin
      end else Goto 1;
    end else Goto 1;
       If (Bind<>nil)and (GlobalSettings.Settings.gsBinds) then begin
-       // ?????? ìîæåò è íàäî îòîáðàæàòü
-           If Bind<>nil then begin // ïðèâÿçêà ê çíàêó
+       // ?????? ii?ao e iaai ioia?a?aou
+           If Bind<>nil then begin // i?eaycea e ciaeo
             //Drawer.Bitmap.PenColor:=clRed32;
            // DrawLine32(XDot,YDot,Bind.XDot,Bind.YDot);
            end;
@@ -681,19 +745,20 @@ begin
      end else Goto 1;
       // If What<>-1 then
       If (Bind<>nil)and (GlobalSettings.Settings.gsBinds) then begin
-        If Bind<>nil then begin // ïðèâÿçêà ê çíàêó
+        If Bind<>nil then begin // i?eaycea e ciaeo
          //Drawer.Bitmap.PenColor:=clRed32;
          //DrawLine32(XDot,YDot,Bind.XDot,Bind.YDot);
         end;
       end;
     1:
-    { òîëüêî â ñëó÷àå âèäèìîñòè âûâîäèì òî÷êó }
+    { oieuei a neo?aa aeaeiinoe auaiaei oi?eo }
     RS:=XGeoRasst(GGraphSet.RPoint);
     If (XDot>Grect.Left-RS) and (XDot<Grect.Right+RS) and
        (YDot<Grect.Top+RS) and (YDot>Grect.Bottom-RS) then
        // inherited Draw32(Drawer,0,0,GMS,GMS);
       // PSetPixelDbl(XDot,YDot);
      // DeleteObject(SelectObject(Handle,Pen1));
+    DrawGabariteSect;
     end;
 end;
 
@@ -714,10 +779,10 @@ begin
    TGeoBlock(userObj).txtProperties:=Properties;
   end;
 {  If Buffer<>nil then begin
-  If (BlockVisible) then With BlockSect do
+  If (!!!! BlockVisible) then With BlockSect do
    If(YRasst(Bottom-Top)>GGraphSet.fPntZnk) or (XRasst(Right-Left)>GGraphSet.fPntZnk) then DrawBuffer(Buffer,nil,GFontColEx);
   end else}
-  If BlockVisible then
+  If {!!!! BlockVisible} True then
    Result:=userObj.Draw(Selector.GCanvas,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv);
 // if Properties<>nil then userObj.ReSetAttribs(Props);
 // Props.Free;
@@ -1611,18 +1676,67 @@ begin
 end;
 
 procedure TPointDot.SetGabarites(MRect_: TMRect);
-var N:Integer;PZ:TPoint_Sign;
 begin
- MRect_.Insert(XDot,YDot);
-exit;
- If userObj <> nil then begin
- end else
- With Selector do begin
-  N:=SearchThis(GPointCol,(abs(What)));
-    If N<>-1 then begin
-     PZ:=GPointCol.At(N);
-     PZ.SetGabaritesBlock(nil,XDot,YDot,Ugol,XKoef,YKoef);
-    end;
+ GetGabarites(MRect_,0,0,1,1,0);
+end;
+
+function TPointDot.GetGabarites(MRect_: TMRect; X, Y, kX, kY, Angle: Double): Integer;
+var N:Integer; PZ:TPoint_Sign;
+    mRect:TMRect; R:TSect;
+    KXX,KYY:Double; Transform:Boolean;
+    TextBitmaps: TTwgBitmaps;
+    Props: Pointer;
+procedure InsertExternalDot(XX,YY:Double);
+var XX1,YY1:Double;
+begin
+ XX1:=X+((XX-X)*kX*cos(Angle)-((YY-Y)*kY*sin(Angle)));
+ YY1:=Y+((XX-X)*kX*sin(Angle)+((YY-Y)*kY*cos(Angle)));
+ MRect_.Insert(XX1,YY1);
+end;
+begin
+ Result:=1;
+ Transform := MRect_ <> nil;
+ if not Transform then begin
+  X:=0;Y:=0;kX:=0;kY:=0;Angle:=0;
+ end;
+ mRect:=TMRect.Create;
+ try
+  if XKoef=0 then KXX:=1 else KXX:=XKoef;
+  if YKoef=0 then KYY:=1 else KYY:=YKoef;
+  mRect.Insert(XDot,YDot);
+  if (userObj<>nil) and (userObj.objType=TWG_Block) then begin
+   Props := TGeoBlock(userObj).txtProperties;
+   If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
+   if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
+      TGeoBlock(userObj).GetGabaritesDebug(mRect,XDot,YDot,KXX,KYY,Ugol,nil,BlockTextBitmaps);
+  BlockTextBitmaps.CalcSect;
+   TGeoBlock(userObj).txtProperties := Props;
+  end else
+  if (Selector<>nil) and (Selector.GPointCol<>nil) then begin
+   N:=SearchThis(Selector.GPointCol,(abs(What)));
+   If N<>-1 then begin
+    if TextManager<>nil then TextManager.UpdateText(GlassFont);
+    PZ:=Selector.GPointCol.At(N);
+    if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
+    if TextManager<>nil then TextBitmaps:=TextManager.FTextBitmaps else TextBitmaps:=nil;
+    PZ.GetGabarites(mRect,XDot,YDot,Koef,Koef,Ugol,TextBitmaps,BlockTextBitmaps);
+    BlockTextBitmaps.CalcSect;
+    if TextManager<>nil then TextManager.Restore;
+   end;
+  end;
+ //
+  if mRect.Iter<>0 then begin
+   Sect:= mRect.Sect;
+   if MRect_<>nil then begin
+    R:=Sect;
+    InsertExternalDot(R.Left,R.Top);
+    InsertExternalDot(R.Right,R.Top);
+    InsertExternalDot(R.Right,R.Bottom);
+    InsertExternalDot(R.Left,R.Bottom);
+   end;
+  end;
+ finally
+  mRect.Free;
  end;
 end;
 
@@ -1641,19 +1755,19 @@ begin
      begin
       if (TGeoBlock(userObj).TwgForm<>nil) then
       begin
-       if BlockTextBitmaps=nil then BlockTextBitmaps:=PCollection.Create(1);
+       if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
        if BlockTextBitmaps.Count<>TGeoBlock(userObj).TwgForm.Twigs.AnyCount then
        begin
-        while BlockTextBitmaps.Count>0 do begin
-         if TObject(BlockTextBitmaps[0])<>nil then TObject(BlockTextBitmaps[0]).Free;
-         BlockTextBitmaps.AtDelete(0);
-        end;
+        if TextManager<>nil then
+         BlockTextBitmaps.DeleteAll
+        else
+         BlockTextBitmaps.FreeAll;
         for I2:=0 to TGeoBlock(userObj).TwgForm.Twigs.AnyCount-1 do begin
          PD2:=TGeoBlock(userObj).TwgForm.Twigs.AAt(I2,B2);
          if (B2=TWG_Point) and (PD2 is TDotText) then
-          BlockTextBitmaps.Insert(TBitmap.Create)
+          BlockTextBitmaps.Insert(TTwgBitmap.Create(TDotText(PD2)))
          else
-          BlockTextBitmaps.Insert(nil);
+          BlockTextBitmaps.Insert(BlockTextBitmaps);
         end;
        end;
       end;
@@ -1748,39 +1862,6 @@ begin
   St.Free;
   raise Exception.Create('При разборе диапазона ['+TreeNames+'] возникла ошибка: неверное количество аргументов');
  end;
-end;
-
-function TPointDot.BlockVisible: boolean;
-begin
- Result:=True;
- If GlobalRender then exit;
- With Selector do
- With GRect do begin
-  If BlockSect.Right<Left then begin Result:=False;Exit;end;
-  If BlockSect.Left>Right then begin Result:=False;Exit;end;
-  If BlockSect.Top>Top then begin Result:=False;Exit;end;
-  If BlockSect.Bottom<Bottom then begin Result:=False;Exit;end;
- end;
-end;
-
-function TPointDot.ZnakVisible: boolean;
-begin
- Result:=True;
- //Selector.GCanvas.Pen.Color:=RGBToCol(255,0,0);
- With Selector.GRect do begin
- {
-  If ZnakSect.Right<Left then begin Result:=False;Exit;end;
-  If ZnakSect.Left>Right then begin Result:=False;Exit;end;
-  If ZnakSect.Top>Top then begin Result:=False;Exit;end;
-  If ZnakSect.Bottom<Bottom then begin Result:=False;Exit;end;
- }
-With ZnakSect do begin
-//   PMoveTo(Left,Top);PLineTo(Right,Top);PLineTo(Right,Bottom);PLineTo(Left,Bottom);PLineTo(Left,Top);
-//   AllocConsole;
-//   Writeln(XPix(Left),' ',YPix(Top));Writeln(XPix(Right),' ',YPix(Bottom));Writeln('-------------------');
-  end;
- end;
- Result:=False;
 end;
 
 procedure TPointDot.renderGabarites;

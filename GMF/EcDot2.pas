@@ -1,7 +1,7 @@
 ﻿unit EcDot2;
 
 interface uses Collect, newFontScale, newSelector, TwgDraw, Classes,
-               SysUtils, EcDot, ogcBasic,
+               SysUtils, EcDot, ogcBasic, TwgBitmaps,
                System.Types, System.UITypes, FMX.Graphics, FMX.TextLayout,
                ogcDrawerSkia,
                System.Skia,
@@ -38,7 +38,7 @@ type
 
  TDotText = class(TPointDot)
   Text:TText;
-  TextBitmap: TBitmap;
+  TextBitmap: TTwgBitmap;
   OwnsTextBitmap: Boolean;
   TextDirty: Boolean;
   BaseLinePix: Single;
@@ -47,6 +47,7 @@ type
   SymbolTopPix: Single;
   SymbolHeightPix: Single;
   Selected:Boolean;
+  InBlockDrawing:Boolean;
   GyperLink:TStrings;
   FontColEx:TFontManagerEx; // коллекция символов. должно присваивается через bufStream
 //  textSect:TSect;
@@ -70,6 +71,8 @@ type
   Function GetSect:TSect;override;
   Procedure ChangeXYKoef(XK,YK:Double);override;
  //
+  Function GetGabarites(MRect_:TMRect; X, Y, kX, kY, Angle:Double) : Integer;override;
+  Function GetGabaritesDebug(MRect_:TMRect; X, Y, kX, kY, Angle:Double; Drawer:TogsDrawer; DebugDx:Double = 0; DebugDy:Double = 0; BoundsBitmap:TTwgBitmap = nil) : Integer;
   Procedure SetGabarites(MRect_:TMRect);override;
  //
   Procedure Draw32(Drawer: TogsDrawer;PntZnk:TSortedCollection;FontViewEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);override;
@@ -394,14 +397,14 @@ begin
      begin
       if TextBitmap = nil then
        if OwnsTextBitmap then
-        TextBitmap := TBitmap.Create
+        TextBitmap := TTwgBitmap.Create(Self)
        else
        begin
         Result := False;
         Exit;
        end;
 
-      if (not TextDirty) and (TextBitmap.Width > 0) and (TextBitmap.Height > 0) then
+      if (not TextDirty) and (TextBitmap.Bitmap.Width > 0) and (TextBitmap.Bitmap.Height > 0) then
       begin
        Result := True;
        Exit;
@@ -488,17 +491,17 @@ begin
         SymbolHeightPix := lodFixedHeight;
        BaseLinePix := SymbolTopPix + SymbolHeightPix;
        H := BaseLinePix + 2;
-       TextBitmap.SetSize(W, Round(H));
+       TextBitmap.Bitmap.SetSize(W, Round(H));
 
-       if TextBitmap.Map(TMapAccess.Write, D) then
+       if TextBitmap.Bitmap.Map(TMapAccess.Write, D) then
        try
-        ImgInfo := TSkImageInfo.Create(TextBitmap.Width, TextBitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+        ImgInfo := TSkImageInfo.Create(TextBitmap.Bitmap.Width, TextBitmap.Bitmap.Height, TSkColorType.BGRA8888, TSkAlphaType.Premul);
         DataPtr := D.Data;
         RowBytes := D.Pitch;
         if RowBytes < 0 then
         begin
          RowBytes := -RowBytes;
-         DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (TextBitmap.Height - 1));
+         DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (TextBitmap.Bitmap.Height - 1));
         end;
         Surface := TSkSurface.MakeRasterDirect(ImgInfo, DataPtr, RowBytes);
         if Surface <> nil then
@@ -511,7 +514,7 @@ begin
          Surface.Canvas.DrawSimpleText(S, BaseLineXPix - Bounds.Left, BaselineY, Font, Paint);
         end
        finally
-        TextBitmap.Unmap(D);
+        TextBitmap.Bitmap.Unmap(D);
        end;
        TextDirty := False;
        Result:=True;
@@ -717,7 +720,7 @@ begin
   Result := inherited GetSect;
   exit;
  end;
- if (TextBitmap = nil) or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+ if (TextBitmap = nil) or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
  begin
   Result := inherited GetSect;
   Exit;
@@ -731,13 +734,13 @@ begin
  if XKoef <> 0 then
   SX := SX * XKoef;
 
- W := TextBitmap.Width * SX;
- H := TextBitmap.Height * SY;
+ W := TextBitmap.Bitmap.Width * SX;
+ H := TextBitmap.Bitmap.Height * SY;
 
   N := 1;
   Text.GetXPYP(XP, YP);
    N := 2;
- OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * XP) * SX;
+ OffX := (BaseLineXPix + (TextBitmap.Bitmap.Width - BaseLineXPix - RightPadPix) * XP) * SX;
  if YP < 0 then
   OffY := BaseLinePix * SY
  else
@@ -774,6 +777,107 @@ end;
 procedure TDotText.ChangeXYKoef(XK, YK: Double);
 begin
  XKoef:=XK;Text.Height:=Text.Height*YK;
+end;
+
+function TDotText.GetGabarites(MRect_: TMRect; X, Y, kX, kY, Angle: Double): Integer;
+begin
+ Result := GetGabaritesDebug(MRect_, X, Y, kX, kY, Angle, nil);
+end;
+
+function TDotText.GetGabaritesDebug(MRect_: TMRect; X, Y, kX, kY, Angle: Double; Drawer: TogsDrawer; DebugDx: Double = 0; DebugDy: Double = 0; BoundsBitmap: TTwgBitmap = nil): Integer;
+var S: string; Typeface: ISkTypeface; Font: ISkFont; ProbeFont: ISkFont;
+    Paint: ISkPaint; Metrics: TSkFontMetrics; ProbeMetrics: TSkFontMetrics;
+    Bounds: TRectF; XP, YP: Double; FontSize: Single; ProbeSize: Single;
+    AscentRatio: Single; TightAscentAbs: Single; ScaleCorr: Single;
+    Oversample: Single;
+    DrawX, DrawY: Single; AscentAlign: Single; SX: Single; R: TRectF;
+    P0, P1, P2, P3: TPointF;
+    X0, Y0, X1, Y1, X2, Y2, X3, Y3: Double;
+    procedure TransformTextDot(P: TPointF; var TX, TY: Double);
+    var rx, ry: Double;
+    begin
+     rx := XDot + P.X * Cos(Ugol) - P.Y * Sin(Ugol);
+     ry := YDot + P.X * Sin(Ugol) + P.Y * Cos(Ugol);
+     TX := X + ((rx - X) * kX * Cos(Angle) - ((ry - Y) * kY * Sin(Angle)));
+     TY := Y + ((rx - X) * kX * Sin(Angle) + ((ry - Y) * kY * Cos(Angle)));
+    end;
+    procedure InsertTextDot(P: TPointF);
+    var xx1, yy1: Double;
+    begin
+     TransformTextDot(P, xx1, yy1);
+     MRect_.Insert(xx1, yy1);
+    end;
+begin
+ Result := 0;
+ if MRect_ = nil then exit;
+ if (Text = nil) or (Text.FontView = nil) or (Text.Text = '') then begin
+  MRect_.Insert(XDot, YDot);
+  exit;
+ end;
+ S := string(Text.Text);
+ Paint := TSkPaint.Create;
+ Paint.AntiAlias := True;
+ Typeface := ResolveSkiaTypefaceForView(Text.FontView);
+ Oversample := 1;
+ if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).UseWorldCoords then
+  Oversample := 10;
+ ProbeSize := 100;
+ ProbeFont := TSkFont.Create(Typeface, ProbeSize);
+ ProbeFont.GetMetrics(ProbeMetrics);
+ if (-ProbeMetrics.Ascent) > 0.01 then
+  AscentRatio := (-ProbeMetrics.Ascent) / ProbeSize
+ else
+  AscentRatio := 1;
+ FontSize := (Text.Height / AscentRatio) * Oversample;
+ Font := TSkFont.Create(Typeface, FontSize);
+ Font.GetMetrics(Metrics);
+ Font.MeasureText(S, Bounds, Paint);
+ TightAscentAbs := -Bounds.Top;
+ if TightAscentAbs > 0.01 then begin
+  ScaleCorr := (Text.Height * Oversample) / TightAscentAbs;
+  if Abs(ScaleCorr - 1) > 1e-4 then begin
+   FontSize := FontSize * ScaleCorr;
+   Font := TSkFont.Create(Typeface, FontSize);
+   Font.GetMetrics(Metrics);
+   Font.MeasureText(S, Bounds, Paint);
+  end;
+ end;
+ Text.GetXPYP(XP, YP);
+ DrawX := -(Bounds.Left + Single(XP) * Bounds.Width);
+ AscentAlign := Text.Height * Oversample;
+ if YP < 0 then
+  DrawY := 0
+ else
+  DrawY := AscentAlign * (1 - Single(YP));
+ R := TRectF.Create(DrawX + Bounds.Left, DrawY + Bounds.Top, DrawX + Bounds.Right, DrawY + Bounds.Bottom);
+ if Abs(Oversample - 1) > 1e-6 then begin
+  R.Left := R.Left / Oversample;
+  R.Top := R.Top / Oversample;
+  R.Right := R.Right / Oversample;
+  R.Bottom := R.Bottom / Oversample;
+ end;
+ SX := XKoef;
+ if Abs(SX) < 1e-6 then
+  SX := 1;
+ R.Left := R.Left * SX;
+ R.Right := R.Right * SX;
+ P0 := PointF(R.Left, R.Top);
+ P1 := PointF(R.Right, R.Top);
+ P2 := PointF(R.Right, R.Bottom);
+ P3 := PointF(R.Left, R.Bottom);
+ if BoundsBitmap<>nil then begin
+  TransformTextDot(P0, X0, Y0);
+  TransformTextDot(P1, X1, Y1);
+  TransformTextDot(P2, X2, Y2);
+  TransformTextDot(P3, X3, Y3);
+  BoundsBitmap.SetBounds(X0 + DebugDx, Y0 + DebugDy, X1 + DebugDx, Y1 + DebugDy,
+                         X2 + DebugDx, Y2 + DebugDy, X3 + DebugDx, Y3 + DebugDy);
+ end;
+ InsertTextDot(P0);
+ InsertTextDot(P1);
+ InsertTextDot(P2);
+ InsertTextDot(P3);
+ Result := 1;
 end;
 
 procedure TDotText.SetGabarites(MRect_: TMRect);
@@ -820,22 +924,45 @@ var
  Dst: TRectF;
  XP, YP: Double;
  TxtColor: TAlphaColor;
+ TextBounds: TTwgBitmap;
+ MRect: TMRect;
+ DebugBitmap: Boolean;
+procedure DrawTextGabarites;
+begin
+ if InBlockDrawing then Exit;
+ TextBounds:=TTwgBitmap.Create(Self);
+ MRect:=TMRect.Create;
+ try
+  GetGabaritesDebug(MRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBounds);
+  TextBounds.DrawSect(Drawer, $FFFF0000, 0.03);
+  TextBounds.DrawBounds(Drawer, $FFFF0000, 0.03);
+ finally
+  MRect.Free;
+  TextBounds.Free;
+ end;
+end;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  if Text = nil then Exit;
+ DebugBitmap := (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing;
+ if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing then begin
+  DrawTextGabarites;
+  if not DebugBitmap then
+   Exit;
+ end;
  HPix := Selector.XRasst(Text.Height);
 
  // Skia path: draw raster TextBitmap onto Skia canvas (LOD)
- if (Drawer is TogsDrawerSkia) and (HPix <= 40) then
+ if (Drawer is TogsDrawerSkia) and (HPix <= 40) and DebugBitmap then
  begin
   if Selector.GetScale = 0 then Exit;
-  if (TextBitmap = nil) or TextDirty or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+  if (TextBitmap = nil) or TextDirty or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
    if FontViewEx <> nil then
     ResetParams(1, FontViewEx)
    else
     TextDirty := True;
-  if (TextBitmap = nil) or (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then
+  if (TextBitmap = nil) or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
    goto VectorText;
 
   H := HPix;
@@ -850,11 +977,11 @@ begin
   if XKoef <> 0 then
    SX := SX * XKoef;
 
-  W := TextBitmap.Width * SX;
-  H := TextBitmap.Height * SY;
+  W := TextBitmap.Bitmap.Width * SX;
+  H := TextBitmap.Bitmap.Height * SY;
 
   Text.GetXPYP(XP, YP);
-  OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
+  OffX := (BaseLineXPix + (TextBitmap.Bitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
   if YP < 0 then
    OffY := BaseLinePix * SY
   else
@@ -872,7 +999,8 @@ begin
    AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
 
   Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
-  TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, TextBitmap, Dst, Ugol);
+  TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, TextBitmap.Bitmap, Dst, Ugol);
+  DrawTextGabarites;
   Exit;
  end;
 
@@ -901,13 +1029,14 @@ VectorText:
     XKoef,
     Text.FontView
   );
+  DrawTextGabarites;
   Exit;
  end;
 
  // FMX canvas path (legacy)
  if Drawer.Canvas = nil then Exit;
  if TextBitmap = nil then Exit;
- if (TextBitmap.Width <= 0) or (TextBitmap.Height <= 0) then Exit;
+ if (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then Exit;
 
  H := Selector.XRasst(Text.Height);
  if H <= 0 then Exit;
@@ -921,11 +1050,11 @@ VectorText:
  if XKoef <> 0 then
   SX := SX * XKoef;
 
- W := TextBitmap.Width * SX;
- H := TextBitmap.Height * SY;
+ W := TextBitmap.Bitmap.Width * SX;
+ H := TextBitmap.Bitmap.Height * SY;
 
  Text.GetXPYP(XP, YP);
- OffX := (BaseLineXPix + (TextBitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
+ OffX := (BaseLineXPix + (TextBitmap.Bitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
  if YP < 0 then
   OffY := BaseLinePix * SY
  else
@@ -937,12 +1066,12 @@ VectorText:
   Drawer.Canvas.MultiplyMatrix(TMatrix.CreateTranslation(AnchorPix.X, AnchorPix.Y));
   Drawer.Canvas.MultiplyMatrix(TMatrix.CreateRotation(Ugol));
   Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
-  Drawer.Canvas.DrawBitmap(TextBitmap, RectF(0, 0, TextBitmap.Width, TextBitmap.Height), Dst, 1, True);
+  Drawer.Canvas.DrawBitmap(TextBitmap.Bitmap, RectF(0, 0, TextBitmap.Bitmap.Width, TextBitmap.Bitmap.Height), Dst, 1, True);
  finally
   Drawer.Canvas.RestoreState(St);
  end;
+ DrawTextGabarites;
 end;
-
 
 initialization
  AlignStrings:=TStringList.Create;
