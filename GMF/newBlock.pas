@@ -1181,7 +1181,6 @@ var I,J:Integer;Lot:TLot;PD:TPointDot;B,UP,TP,AP:Byte;
     Sect:TShortSect;
     oldBitmap: TTwgBitmap;
     TextBitmapChanged: Boolean;
-    oldInBlockDrawing: Boolean;
     AnchorPix: TPointF;
     DstW, DstH: Single;
     SX, SY: Single;
@@ -1221,17 +1220,8 @@ begin
       end;
      end;
     end;
-    oldInBlockDrawing:=False;
-    if PD is TDotText then begin
-     oldInBlockDrawing:=TDotText(PD).InBlockDrawing;
-     TDotText(PD).InBlockDrawing:=True;
-    end;
-    try
+    if not ((TextBitmaps<>nil) and (PD is TDotText)) then
      PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
-    finally
-     if PD is TDotText then
-      TDotText(PD).InBlockDrawing:=oldInBlockDrawing;
-    end;
     If oldValue<>#0 then begin
      TDotText(PD).Text.Text:=oldValue;
      TDotText(PD).Selected:=False;
@@ -1252,8 +1242,7 @@ begin
 //
  Block_Drawing:=True;
   // LOD: рисуем только BlockBitmap
- if (BlockBitmap<>nil) and (ogsRect<>nil) and (Drawer is TogsDrawerSkia) and
-    TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing and
+ if (BlockBitmap<>nil) and (ogsRect<>nil) and
     (Selector.XRasst(Width) < 40) and (Selector.YRasst(Height) < 40) then
  begin
   AnchorPix := PointF(XB, YB);
@@ -1264,7 +1253,11 @@ begin
                (ogsRect.YMax - (Y + TwgForm.YYMin)) * YKoef);
 //  WriteIn(['Geo=', AnchorPix.X, AnchorPix.Y, Dst.Left, Dst.Top, Dst.Right, Dst.Bottom]);
 
- TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, BlockBitmap.Bitmap, Dst, Angle);
+ if Drawer is TogsDrawerSkia then
+  begin
+   BlockBitmap.Bitmap.SaveToFile(MainPath  + Format('BB_begore_%p.jpg',[Pointer(BlockBitmap)]));
+   TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, BlockBitmap.Bitmap, Dst, Angle);
+  end;
   Result := True;
   Block_Drawing := False;
   dePaint(XB,YB,Angle,XKoef,YKoef);

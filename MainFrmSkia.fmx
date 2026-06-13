@@ -27,11 +27,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 69
+      TabOrder = 67
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 67
+      TabOrder = 66
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -47,13 +47,6 @@ inherited MainFormSkia: TMainFormSkia
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnPDFClick
-    end
-    object CheckBox1: TCheckBox
-      Position.X = 564.000000000000000000
-      Position.Y = 8.000000000000000000
-      TabOrder = 68
-      Text = 'CheckBox1'
-      OnChange = CheckBox1Change
     end
   end
   inherited PanelPainter: TPanel

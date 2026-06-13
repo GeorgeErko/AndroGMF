@@ -1,16 +1,16 @@
-п»їUnit ecdot;
+Unit ecdot;
 Interface uses System.Classes, Collect, TwgDraw, Lib,
                SysUtils, FMX.Graphics, newResource, newConsts, newProcs, Maths_basic, Types_dimano,
                TextManager, UserObject, ObjBlockList, Maths_Lines, newFontScale, newProperties,
                newSelector, lib2, System.UITypes, System.Types, ogcBasic, TwgBitmaps;
 
-{ РўРѕС‡РєР°-СЃРµРјР°РЅС‚РёС‡РµСЃРєРёР№ РєРѕРґ = TWG_Dot  }
+{ Точка-семантический код = TWG_Dot  }
  Const
   TWG_Dot=0;
   TWG_Point=102;
   ZNull=1000000;
   GCountDots:Integer = 0;
- // РёРЅРґРµРєСЃС‹ СЃРІРѕР№СЃС‚РІ РґР»СЏ СѓСЃР»РѕРІРЅРѕРіРѕ Р·РЅР°РєР°
+ // индексы свойств для условного знака
   ppColor = 0;
   ppZnak = 1;
   ppScale = 2;
@@ -19,15 +19,15 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
   ppSize = 7;
   ppStyle = 8;
   ppTransp = 9;
- // РґР»СЏ Р±Р»РѕРєР°
+ // для блока
   ppBlock = 0;
   ppBlockAngle = 1;
   ppStretch = 2;
   ppXKoef = 3;
   ppYKoef = 4;
  //
-  ppPointNames:Array[0..9] of AnsiString = ('Р¦РІРµС‚','Р—РЅР°Рє','РњР°СЃС€С‚Р°Р±','РЈРіРѕР»','','','РЁСЂРёС„С‚','Р Р°Р·РјРµСЂ','РЎС‚РёР»СЊ','РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ');
-  ppBlockNames:Array[0..4] of AnsiString = ('Р‘Р»РѕРє','РЈРіРѕР»','Р Р°СЃС‚СЏР¶РµРЅРёРµ','РљРѕСЌС„.X(РјР°С‚)','РљРѕСЌС„.Y(РјР°С‚)');
+  ppPointNames:Array[0..9] of AnsiString = ('Цвет','Знак','Масштаб','Угол','','','Шрифт','Размер','Стиль','Прозрачность');
+  ppBlockNames:Array[0..4] of AnsiString = ('Блок','Угол','Растяжение','Коэф.X(мат)','Коэф.Y(мат)');
 
  var
   bmpTrue,bmpFalse,bmpMiddle,bmpInactive,bmpFalsePlus:TBitmap;
@@ -82,9 +82,9 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
     function GetGUIDStr: AnsiString;
     procedure SetGUIDStr(const Value: AnsiString);
   public
-     ParentIndex:Integer;// РёРЅРґРµРєСЃ РІ РєРѕР»Р»РµРєС†РёРё С‚РѕС‡РµРє
+     ParentIndex:Integer;// индекс в коллекции точек
      TaheoIndex:SmallInt;
-    { РљР»Р°СЃСЃ }
+    { Класс }
      Code:Double;
      ClassHandle:TResource;
     {}
@@ -98,7 +98,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      NLot :Integer;
      Ins  :Integer;
      UID  :PAnsiChar;
-    { РІС‹СЃРѕС‚Р° }
+    { высота }
      Control:Boolean;
     {}
      Inv  :Boolean;
@@ -141,7 +141,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
        Destructor  Destroy;Override;
        constructor Load(Stream:TBufStream);Override;
        Procedure   Store(Stream:TBufStream);Override;
-    { РќРѕРІР°СЏ Р·Р°РіСЂСѓР·РєР° }
+    { Новая загрузка }
        Procedure   LoadNew(Stream:TBufStream);
     {}
        Function      GetDist(x,y:single):single;
@@ -155,10 +155,10 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
       Function isNoClosed:Boolean;
     {}
      Function GetHint(P:Pointer=nil):AnsiString;Override;
-    {Р—Р°С…РІР°С‚}
+    {Захват}
      Function GetDistance(X,Y:Double;Flag:Boolean=False):Double;virtual;
      Function GetMarkedPoint(R:TSect;AllSect:Boolean):boolean;
-    {Р Р°Р±РѕС‚Р° СЃ РїРѕРґРїРёСЃСЏРјРё РІ Р·РЅР°РєР°С…}
+    {Работа с подписями в знаках}
      Procedure SetActiveZnkFont(Active:byte);
      Function GetZnkFont(X,Y,Ko:Double;var What1:Integer):Integer;virtual;
      Procedure SetTextManager;
@@ -168,10 +168,10 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      Procedure MoveLines(Dx,Dy:Double);
     {GUID}
      Property GUIDStr:AnsiString read GetGUIDStr write SetGUIDStr;
-    // Р±Р»РѕРєРё
+    // блоки
      Procedure Move(Dx,Dy:Double);
      Procedure AddUserObject(obj:TUserObject);
-    // СЃРІРѕР№СЃС‚РІР°
+    // свойства
      Function SetProperty(propName:AnsiString;propValue:AnsiString;Obj:TTD = nil):boolean;override;
      Function GetProperty(propName:AnsiString):AnsiString;override;
      Function GetPropValue(propName:AnsiString):Pointer;override;
@@ -192,7 +192,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      Procedure ApplyInternalProps(Obj:TTD);override;
      Function PointInSect(Sect:TSect;invertSelect:Boolean):boolean;virtual;
      Function PointInSect2(P:PCollection;invertSelect:Boolean):boolean;virtual;
-     Function GetSect:TSect;override;
+     Function GetSect:TSect;virtual;
      Function GetGabarites(MRect_:TMRect; X, Y, kX, kY, Angle:Double) : Integer;override;
      Function ResetParams(ParamID: Integer;Params: Pointer):boolean;override;
      Procedure ChangeXYKoef(XK,YK:Double);override;
@@ -200,13 +200,13 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
     //
      Function GetZnak:Integer;
     //
-     Procedure CreateTrees(TreeNames:AnsiString);// СЃРѕР·РґР°РµРј РґРёР°РїР°Р·РѕРЅ Trees - РєРѕРїРёРё С‚РѕС‡РєРё Self
-     Procedure ReCreateTrees(TreeNames:AnsiString);// СЂРµРґР°РєС‚РёСЂСѓРµРј РґРёР°РїР°Р·РѕРЅ Trees
+     Procedure CreateTrees(TreeNames:AnsiString);// создаем диапазон Trees - копии точки Self
+     Procedure ReCreateTrees(TreeNames:AnsiString);// редактируем диапазон Trees
     //
      Procedure renderGabarites;
-   // Р РёСЃРѕРІР°РЅРёРµ
+   // Рисование
      Function  DrawUserObject:Boolean;
-   // Р“Р°Р±Р°СЂРёС‚С‹
+   // Габариты
      Procedure SetGabarites(MRect_:TMRect);override;
    //
      procedure Draw32(Drawer: TogsDrawer; PntZnk:TSortedCollection;FontColEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);virtual;
@@ -239,7 +239,7 @@ type
 var FTest:TextFile;
 {-----------------------------------------------------------------------}
 implementation uses newBlock, Polygons, WptForm2, ECText, WPTwigs, newForm0, dwgText,
-                    Writer, EcDot2, ogcDrawerSkia;
+                    Writer, EcDot2;
 {----------------------------------------------------------------------}
 { TDot                                                                 }
 {----------------------------------------------------------------------}
@@ -315,13 +315,13 @@ implementation uses newBlock, Polygons, WptForm2, ECText, WPTwigs, newForm0, dwg
    Function PN:AnsiString;
     begin
      Case What of
-      0 :Result:='РџСЂРѕСЃС‚Р°СЏ';
-      10:Result:='РЈР·Р»РѕРІР°СЏ';
-      20:Result:='РўРІРµСЂРґР°СЏ';
+      0 :Result:='Простая';
+      10:Result:='Узловая';
+      20:Result:='Твердая';
      end;
     end;
   begin
-   Result:=PN+' С‚РѕС‡РєР°. X='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(YDot,ffFixed,_LD,Const_Of_DecimalCoord);
+   Result:=PN+' точка. X='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(YDot,ffFixed,_LD,Const_Of_DecimalCoord);
   end;
 
 {---------------------------}
@@ -611,10 +611,8 @@ var KXX, KYY: Double; Props: Pointer;
     mRect: TMRect;
     PZ: TPoint_Sign;
     TextBitmaps: TTwgBitmaps;
-    DebugBitmap: Boolean;
     N: Integer;
 begin
- DebugBitmap := (Drawer_ is TogsDrawerSkia) and TogsDrawerSkia(Drawer_).DebugRoughDrawing and TogsDrawerSkia(Drawer_).DebugBitmapDrawing;
  if XKoef = 0 then KXX := 1 else KXX := XKoef;
  if YKoef = 0 then KYY := 1 else KYY := YKoef;
  if (userObj <> nil) and (userObj.objType = TWG_Block) then begin
@@ -645,7 +643,7 @@ begin
      if TextManager<>nil then TextManager.UpdateText(GlassFont);
      PZ:=Selector.GPointCol.At(N);
      if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
-     if DebugBitmap and (TextManager<>nil) then TextBitmaps:=TextManager.FTextBitmaps else TextBitmaps:=nil;
+     if TextManager<>nil then TextBitmaps:=TextManager.FTextBitmaps else TextBitmaps:=nil;
      PZ.GetGabarites(mRect, XDot, YDot, Koef, Koef, Ugol, TextBitmaps, BlockTextBitmaps);
      BlockTextBitmaps.CalcSect;
      if TextManager<>nil then TextManager.Restore;
@@ -677,10 +675,6 @@ begin
 end;
 begin
 // If Closed then exit;              9
- if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing then begin
-  DrawGabariteSect;
-  exit;
- end;
  If userObj<>nil then
    If userObj.objType = TWG_Block then begin
 
@@ -694,7 +688,7 @@ begin
   If {BlockVisible} True then begin
    Props := TGeoBlock(userObj).txtProperties;
    If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
-    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,nil);
+    TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,BlockTextBitmaps);
    TGeoBlock(userObj).txtProperties := Props;
    What := 20;
    If Selector.PointVisible(XDot, YDot) then
@@ -771,9 +765,9 @@ begin
 // if Properties<>nil then userObj.SetAttribs(Properties,Props);
 
   If userObj.objType = TWG_Block then begin
-//   GetProperty('Р Р°СЃС‚СЏР¶РµРЅРёРµ');
+//   GetProperty('Растяжение');
 //   TGeoBlock(userObj).XText:=1;
- //  If GetProperty('Р Р°СЃС‚СЏР¶РµРЅРёРµ')<>byLayer then TGeoBlock(userObj).XText:=
+ //  If GetProperty('Растяжение')<>byLayer then TGeoBlock(userObj).XText:=
 //   try TGeoBlock(userObj).XText:=StrToFloat(S);except TGeoBlock(userObj).XText:=1;end;
    TGeoBlock(userObj).XText:=blockStretch;
    TGeoBlock(userObj).txtProperties:=Properties;
@@ -1001,10 +995,10 @@ var TI:ShortInt;
     end;
   begin
   if UID<>nil then
-   Result:='РўРѕС‡РєР°. РљР»Р°СЃСЃ='+FloatToStrF(Code,ffFixed,_LD,2)+' Р›РµРіРµРЅРґР°='+IntToStr(Symbol)+
-           ' РРјСЏ='+''+ClassHandle.RecString+' ID='+UID+' X='+FloatToStrF(-YDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+GetZ+' thIndex ='+IntToStr(TaheoIndex) else
-   Result:='РўРѕС‡РєР°. РљР»Р°СЃСЃ='+FloatToStrF(Code,ffFixed,_LD,2)+' Р›РµРіРµРЅРґР°='+IntToStr(Symbol)+
-           ' РРјСЏ='+ClassHandle.RecString+' ID '+'[РќРµС‚]'+' X='+FloatToStrF(-YDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+GetZ+' thIndex ='+IntToStr(TaheoIndex)+' '+IntToStr(NLot)+' '+GUIDStr;
+   Result:='Точка. Класс='+FloatToStrF(Code,ffFixed,_LD,2)+' Легенда='+IntToStr(Symbol)+
+           ' Имя='+''+ClassHandle.RecString+' ID='+UID+' X='+FloatToStrF(-YDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+GetZ+' thIndex ='+IntToStr(TaheoIndex) else
+   Result:='Точка. Класс='+FloatToStrF(Code,ffFixed,_LD,2)+' Легенда='+IntToStr(Symbol)+
+           ' Имя='+ClassHandle.RecString+' ID '+'[Нет]'+' X='+FloatToStrF(-YDot,ffFixed,_LD,Const_Of_DecimalCoord)+' Y='+FloatToStrF(XDot,ffFixed,_LD,Const_Of_DecimalCoord)+GetZ+' thIndex ='+IntToStr(TaheoIndex)+' '+IntToStr(NLot)+' '+GUIDStr;
    Result:=Result+' Ins='+IntToStr(Ins);
   end;
 
@@ -1145,7 +1139,7 @@ if TextManager=nil then begin
      PZ.X:=XDot;PZ.Y:=YDot;PZ.Ugol:=Ugol;
     // If PZ.useFont then begin
      // If (PZ.GetDist(X,Y,Koef)=0) then Result:=100;
-    // endР¶
+    // endж
    end;
  exit;
 end;
@@ -1269,15 +1263,15 @@ begin
   exit;
  end;
 }
- If PropName = 'РЈРіРѕР»' then begin Ugol:=StrToFloat(propValue)*Pi/180;Result:=True;exit;end;
+ If PropName = 'Угол' then begin Ugol:=StrToFloat(propValue)*Pi/180;Result:=True;exit;end;
  If UserObj<>nil then begin
   If UserObj.objType = TWG_Block then begin
-   If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµ' then If PropValue = byLayer then  Texture:=nil else Texture:=TForm2(Selector.GTwgForm).Twigs.TextureList.Add(propValue);
-   If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµMX' then try TexX:=StrToFloat(propValue);except TexX:=1;end;
-   If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY' then try TexY:=StrToFloat(propValue); except TexY:=1;end;
-   If propName = 'РљРѕСЌС„.X(РјР°С‚)' then XKoef:=StrToFloat(propValue) else
-   If propName = 'РљРѕСЌС„.Y(РјР°С‚)' then YKoef:=StrToFloat(propValue) else
-   If propName = 'Р‘Р»РѕРє' then begin
+   If propName ='#Изображение' then If PropValue = byLayer then  Texture:=nil else Texture:=TForm2(Selector.GTwgForm).Twigs.TextureList.Add(propValue);
+   If propName ='#ИзображениеMX' then try TexX:=StrToFloat(propValue);except TexX:=1;end;
+   If propName ='#ИзображениеМY' then try TexY:=StrToFloat(propValue); except TexY:=1;end;
+   If propName = 'Коэф.X(мат)' then XKoef:=StrToFloat(propValue) else
+   If propName = 'Коэф.Y(мат)' then YKoef:=StrToFloat(propValue) else
+   If propName = 'Блок' then begin
 {    userObj:=TGeoBlock.CreateAsUserObject(userObj);
     TGeoBlock(userObj).TwgForm.Free;TGeoBlock(userObj).TwgForm:=nil;
     TGeoBlock(userObj).Name:=propValue;}
@@ -1285,7 +1279,7 @@ begin
   //  TGeoBlock(userObj).TwgForm.Free;TGeoBlock(userObj).TwgForm:=nil;
     TGeoBlock(userObj).Name:=propValue;
    end else
-   {If propName = 'Р Р°СЃС‚СЏР¶РµРЅРёРµ' then }Goto 1;
+   {If propName = 'Растяжение' then }Goto 1;
    Result:=True;
    exit;
   end;
@@ -1313,12 +1307,12 @@ begin
   Result:=True;
   If AnsiString(GetProperty(propName)) <> AnsiString(propValue) then begin
    Properties.AddProperty(propName,propValue);
-   If (propName = 'РњР°СЃС€С‚Р°Р±') and (propValue<>byNone) and (propValue<>byLayer) then begin
+   If (propName = 'Масштаб') and (propValue<>byNone) and (propValue<>byLayer) then begin
     XKoef:=GStrToFloat(propValue);YKoef:=GStrToFloat(propValue);
    end;
-  If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµ' then If PropValue = byLayer then  Texture:=nil else Texture:=TForm2(Selector.GTwgForm).Twigs.TextureList.Add(propValue);
-  If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµMX' then try TexX:=StrToFloat(propValue);except TexX:=1;end;
-  If propName ='#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY' then try TexY:=StrToFloat(propValue); except TexY:=1;end;
+  If propName ='#Изображение' then If PropValue = byLayer then  Texture:=nil else Texture:=TForm2(Selector.GTwgForm).Twigs.TextureList.Add(propValue);
+  If propName ='#ИзображениеMX' then try TexX:=StrToFloat(propValue);except TexX:=1;end;
+  If propName ='#ИзображениеМY' then try TexY:=StrToFloat(propValue); except TexY:=1;end;
   end else Result:=False;
  end;
 end;
@@ -1335,29 +1329,29 @@ begin
   V:=Properties.PropValue[propName];
   If (V=nil) then begin
    Result:=byLayer;
-  // РёС‰РµРј РІ TextManager
+  // ищем в TextManager
   Res:='';
    If (Pos('##',PropName)=1) and (TextManager<>nil) then begin
     Res:=TextManager.AttrValue(DelSubStr(propName,'##'));
     If Res<>'' then begin Result:=Res;exit;end;
    end;
-   If PropName = 'РЈРіРѕР»' then Result:=FloatToStrF(Ugol*180/Pi,ffFixed,_LD,1);
+   If PropName = 'Угол' then Result:=FloatToStrF(Ugol*180/Pi,ffFixed,_LD,1);
    If UserObj<>nil then begin
-    If propName = 'РљРѕСЌС„.X(РјР°С‚)' then Result:=FloatToStrF(XKoef,ffFixed,_LD,2) else
-    If propName = 'РљРѕСЌС„.Y(РјР°С‚)' then Result:=FloatToStrF(YKoef,ffFixed,_LD,2) else
-    If propName = 'Р‘Р»РѕРє' then Result:=TGeoBlock(userObj).Name;
+    If propName = 'Коэф.X(мат)' then Result:=FloatToStrF(XKoef,ffFixed,_LD,2) else
+    If propName = 'Коэф.Y(мат)' then Result:=FloatToStrF(YKoef,ffFixed,_LD,2) else
+    If propName = 'Блок' then Result:=TGeoBlock(userObj).Name;
    end;
   end else begin
    Result:=V.Value;
   end;
  end else begin
   Result:=byNone;
-   If PropName = 'РЈРіРѕР»' then
+   If PropName = 'Угол' then
     Result:=FloatToStrF(Ugol*180/Pi,ffFixed,_LD,1);
    If UserObj<>nil then begin
-    If propName = 'РљРѕСЌС„.X(РјР°С‚)' then Result:=FloatToStrF(XKoef,ffFixed,_LD,2) else
-    If propName = 'РљРѕСЌС„.Y(РјР°С‚)' then Result:=FloatToStrF(YKoef,ffFixed,_LD,2) else
-    If propName = 'Р‘Р»РѕРє' then  Result:=TGeoBlock(userObj).Name;
+    If propName = 'Коэф.X(мат)' then Result:=FloatToStrF(XKoef,ffFixed,_LD,2) else
+    If propName = 'Коэф.Y(мат)' then Result:=FloatToStrF(YKoef,ffFixed,_LD,2) else
+    If propName = 'Блок' then  Result:=TGeoBlock(userObj).Name;
    end;
  end;
 //Writeln(FTest,propName,'-----------------------end');
@@ -1390,9 +1384,9 @@ Function FindLayer(propName:AnsiString):boolean;
 var I:Integer;Props:TProperties;
 begin
  Result:=False;
- If (propName = '*РќР°РёРјРµРЅРѕРІР°РЅРёРµ') or (propName = '*РђРґСЂРµСЃ (РѕРїРёСЃР°РЅРёРµ)') or
-    (propName = '*РќР°РёРјРµРЅРѕРІР°РЅРёРµ РїРѕСЃРµР»РµРЅРёСЏ') or (propName = '*РќР°РјРµРЅРѕРІР°РЅРёРµ РїРѕСЃРµР»РµРЅРёСЏ') or (propName = '*ID РђРЎРЈ РћР”РЎ') then exit;
- If (propName = '*Р‘Р°Р»Р°РЅСЃРѕРґРµСЂР¶Р°С‚РµР»СЊ') and ((getProperty('*Р‘Р°Р»Р°РЅСЃРѕРґРµСЂР¶Р°С‚РµР»СЊ')=byLayer) or ((getProperty('*Р‘Р°Р»Р°РЅСЃРѕРґРµСЂР¶Р°С‚РµР»СЊ')='-'))) then exit;
+ If (propName = '*Наименование') or (propName = '*Адрес (описание)') or
+    (propName = '*Наименование поселения') or (propName = '*Наменование поселения') or (propName = '*ID АСУ ОДС') then exit;
+ If (propName = '*Балансодержатель') and ((getProperty('*Балансодержатель')=byLayer) or ((getProperty('*Балансодержатель')='-'))) then exit;
  ClassHandle.CreateProperties;
  try
   Props:=ClassHandle.Properties;
@@ -1426,43 +1420,43 @@ begin
 }
  if UserObj <> nil then begin
   If UserObj.objType = TWG_Block then begin
-    PropNames.Add('Р‘Р»РѕРє');
-    PropNames.Add('РЈРіРѕР»');PropNames.Add('Р Р°СЃС‚СЏР¶РµРЅРёРµ');PropNames.Add('РљРѕСЌС„.X(РјР°С‚)');PropNames.Add('РљРѕСЌС„.Y(РјР°С‚)');
+    PropNames.Add('Блок');
+    PropNames.Add('Угол');PropNames.Add('Растяжение');PropNames.Add('Коэф.X(мат)');PropNames.Add('Коэф.Y(мат)');
     PropTypes.Add('Block');PropTypes.Add('Float');PropTypes.Add('Float');PropTypes.Add('Float');PropTypes.Add('Float');
-    PropValues.Add(GetProperty('Р‘Р»РѕРє'));
-    PropValues.Add(GetProperty('РЈРіРѕР»'));
-    PropValues.Add(GetProperty('Р Р°СЃС‚СЏР¶РµРЅРёРµ'));
+    PropValues.Add(GetProperty('Блок'));
+    PropValues.Add(GetProperty('Угол'));
+    PropValues.Add(GetProperty('Растяжение'));
     PropValues.Add(FloatToStrF(XKoef,ffFixed,_LD,2));
     PropValues.Add(FloatToStrF(YKoef,ffFixed,_LD,2));
     TGeoBlock(userObj).txtProperties:=Properties;
     userObj.GetObjectProps(propNames,propValues,propTypes);
    {If Properties=nil then begin
     Properties:=TProperties.Create;
-    For I:=0 to propNames.Count-1 do If (propNames[I]<>'РЈРіРѕР»')and(propNames[I]<>'Р‘Р»РѕРє') then Properties.AddProperty(propNames[I],propValues[I]);
+    For I:=0 to propNames.Count-1 do If (propNames[I]<>'Угол')and(propNames[I]<>'Блок') then Properties.AddProperty(propNames[I],propValues[I]);
    end else
-   For I:=0 to propNames.Count-1 do If propNames[I]<>'РЈРіРѕР»' then begin
+   For I:=0 to propNames.Count-1 do If propNames[I]<>'Угол' then begin
     Value:=Properties.PropValue[propNames[I]];
     If Value<>nil then begin propValues[I]:=Value.Value;end;
    end;}
   end;
   If Properties<>nil then
    For I:=0 to Properties.Count-1 do begin
-    If (Pos('#',Properties[I].PropName)=1) and (Pos('#РР·Рѕ',Properties[I].PropName)=0) then begin PropNames.Add(Properties[I].PropName);propTypes.Add('AnsiString');propValues.Add(Properties[I].PropValue.Value);end;
+    If (Pos('#',Properties[I].PropName)=1) and (Pos('#Изо',Properties[I].PropName)=0) then begin PropNames.Add(Properties[I].PropName);propTypes.Add('AnsiString');propValues.Add(Properties[I].PropValue.Value);end;
    end;
   If Properties<>nil then
    For I:=0 to Properties.Count-1 do begin
     If Pos('*',Properties[I].PropName)=1 then begin PropNames.Add(Properties[I].PropName);propTypes.Add('AnsiString');propValues.Add(Properties[I].PropValue.Value);end;
    end;
-// РР·РѕР±СЂР°Р¶РµРЅРёРµ
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµ');propTypes.Add('Texture');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµ'));
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµMX');propTypes.Add('AnsiString');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµMX'));
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY');propTypes.Add('AnsiString');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY'));
+// Изображение
+ propNames.Add('#Изображение');propTypes.Add('Texture');propValues.Add(GetProperty('#Изображение'));
+ propNames.Add('#ИзображениеMX');propTypes.Add('AnsiString');propValues.Add(GetProperty('#ИзображениеMX'));
+ propNames.Add('#ИзображениеМY');propTypes.Add('AnsiString');propValues.Add(GetProperty('#ИзображениеМY'));
 //
   exit;
  end;
  tmNames:=nil;
- PropNames.Add('Р¦РІРµС‚');PropNames.Add('Р—РЅР°Рє');PropNames.Add('РњР°СЃС€С‚Р°Р±');PropNames.Add('РЈРіРѕР»');{$IFDEF GEOPLAN}PropNames.Add('#Р“РµРѕРґР°РЅРЅС‹Рµ');PropNames.Add('#Р­РєСЃРїР»РёРєР°С†РёСЏ');{$ENDIF}
- If TextManager<>nil then begin PropNames.Add('РЁСЂРёС„С‚');PropNames.Add('Р Р°Р·РјРµСЂ');PropNames.Add('РЎС‚РёР»СЊ');PropNames.Add('РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ');end;
+ PropNames.Add('Цвет');PropNames.Add('Знак');PropNames.Add('Масштаб');PropNames.Add('Угол');{$IFDEF GEOPLAN}PropNames.Add('#Геоданные');PropNames.Add('#Экспликация');{$ENDIF}
+ If TextManager<>nil then begin PropNames.Add('Шрифт');PropNames.Add('Размер');PropNames.Add('Стиль');PropNames.Add('Прозрачность');end;
   If PropTypes<>nil then begin propTypes.Add('Color');propTypes.Add('PointType');propTypes.Add('Float');propTypes.Add('Float');{$IFDEF GEOPLAN}propTypes.Add('GeoData');propTypes.Add('Explication');{$ENDIF}
    If TextManager<>nil then begin
     propTypes.Add('FontName');propTypes.Add('Float');propTypes.Add('FontStyle');propTypes.Add('Boolean');
@@ -1473,16 +1467,16 @@ begin
     end;
    end;
   end;
-  If propValues<>nil then begin propValues.Add(GetProperty('Р¦РІРµС‚'));propValues.Add(GetProperty('Р—РЅР°Рє'));propValues.Add(GetProperty('РњР°СЃС€С‚Р°Р±'));propValues.Add(GetProperty('РЈРіРѕР»'));{$IFDEF GEOPLAN}propValues.Add('#');propValues.Add('#');{$ENDIF}
+  If propValues<>nil then begin propValues.Add(GetProperty('Цвет'));propValues.Add(GetProperty('Знак'));propValues.Add(GetProperty('Масштаб'));propValues.Add(GetProperty('Угол'));{$IFDEF GEOPLAN}propValues.Add('#');propValues.Add('#');{$ENDIF}
    If TextManager<>nil then begin
-    propValues.Add(GetProperty('РЁСЂРёС„С‚'));propValues.Add(GetProperty('Р Р°Р·РјРµСЂ'));propValues.Add(GetProperty('РЎС‚РёР»СЊ'));propValues.Add(GetProperty('РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ'));
+    propValues.Add(GetProperty('Шрифт'));propValues.Add(GetProperty('Размер'));propValues.Add(GetProperty('Стиль'));propValues.Add(GetProperty('Прозрачность'));
     For I:=0 to tmNames.Count-1 do propValues.Add(tmValues[I]);
    end;
   end;
-// РР·РѕР±СЂР°Р¶РµРЅРёРµ
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµ');propTypes.Add('Texture');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµ'));
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµMX');propTypes.Add('AnsiString');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµMX'));
- propNames.Add('#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY');propTypes.Add('AnsiString');propValues.Add(GetProperty('#РР·РѕР±СЂР°Р¶РµРЅРёРµРњY'));
+// Изображение
+ propNames.Add('#Изображение');propTypes.Add('Texture');propValues.Add(GetProperty('#Изображение'));
+ propNames.Add('#ИзображениеMX');propTypes.Add('AnsiString');propValues.Add(GetProperty('#ИзображениеMX'));
+ propNames.Add('#ИзображениеМY');propTypes.Add('AnsiString');propValues.Add(GetProperty('#ИзображениеМY'));
 //
  If tmNames<>nil then begin tmNames.Free;tmValues.Free;end;
  If Properties<>nil then
@@ -1518,16 +1512,16 @@ begin
  end else begin
 //  If (Obj is Self.ClassType) then Exit;
  //
-{  Index:=propNames.IndexOf('Р¦РІРµС‚');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('Р—РЅР°Рє');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('РњР°СЃС€С‚Р°Р±');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('РЁСЂРёС„С‚');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('РўРµРєСЃС‚');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('Р Р°Р·РјРµСЂ');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('РЎС‚РёР»СЊ');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('#Р“РµРѕРґР°РЅРЅС‹Рµ');If Index<>-1 then propNames.Objects[Index]:=Self;
-  Index:=propNames.IndexOf('#Р­РєСЃРїР»РёРєР°С†РёСЏ');If Index<>-1 then propNames.Objects[Index]:=Self;
+{  Index:=propNames.IndexOf('Цвет');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Знак');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Масштаб');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Шрифт');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Текст');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Размер');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Стиль');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('Прозрачность');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('#Геоданные');If Index<>-1 then propNames.Objects[Index]:=Self;
+  Index:=propNames.IndexOf('#Экспликация');If Index<>-1 then propNames.Objects[Index]:=Self;
 }
   Names:=TStringList.Create;Values:=TStringList.Create;Types:=TStringList.Create;
   GetObjectProps(Names,Values,Types);
@@ -1560,14 +1554,14 @@ var S:AnsiString;
 begin
 With Selector do begin
 //If (GlobalSettings.Settings.gsColorZnaksCheck) then Result:=GlobalSettings.Settings.gsColorZnaks else begin
- S:=GetProperty('Р¦РІРµС‚');
+ S:=GetProperty('Цвет');
  If S=byLayer then Result:=RgbToCol(ClassHandle.RGB.Argb[1],ClassHandle.RGB.Argb[2],ClassHandle.RGB.Argb[3]) else
  If S=byNone then Result:=RGBToCol(ClassHandle.RGB.Argb[1],ClassHandle.RGB.Argb[2],ClassHandle.RGB.Argb[3]) else
  try
   Result:=StrToInt(S);
  except
   Result:=RGBToCol(ClassHandle.RGB.Argb[1],ClassHandle.RGB.Argb[2],ClassHandle.RGB.Argb[3]);
-  SetProperty('Р¦РІРµС‚',byLayer);
+  SetProperty('Цвет',byLayer);
  end;
 end;
 end;
@@ -1596,7 +1590,7 @@ begin
  Code:=PR.ID;ClassHandle:=PR;
  If Znak<>nil then begin
   What:=Znak.MyInd;
-  If (Znak.useFont) {and (Znak.UseAttrType([tt_Number,tt_Z]) or notNumberZ)} then begin // СЃРѕР·РґР°РµРј TextManager Рё СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј РёРјСЏ Рё РІС‹СЃРѕС‚Сѓ РґР»СЏ Р°С‚СЂРёР±СѓС‚РѕРІ
+  If (Znak.useFont) {and (Znak.UseAttrType([tt_Number,tt_Z]) or notNumberZ)} then begin // создаем TextManager и устанавливаем имя и высоту для атрибутов
    CreateTextManager(Znak);
    B:=TextManager.SetSysValue(3,Name);
    If not(B) and notNumberZ then TextManager.SetAttrValue('*',Name);
@@ -1613,9 +1607,9 @@ function TPointDot.GlassFont: byte;
 var S:AnsiString;
 begin
  Result:=0;
- S:=GetProperty('РџСЂРѕР·СЂР°С‡РЅРѕСЃС‚СЊ');
- If S = 'РќРµС‚' then Result:= 1 else
- If S = 'Р”Р°' then Result:=2;
+ S:=GetProperty('Прозрачность');
+ If S = 'Нет' then Result:= 1 else
+ If S = 'Да' then Result:=2;
 end;
 
 function TPointDot.LocalPointName: AnsiString;
@@ -1793,8 +1787,8 @@ end;
 function TPointDot.GetZnak: Integer;
 var S:String;
 begin
- S:=GetProperty('Р—РЅР°Рє');
- If (S=byLayer) or (S=byNone) then Result:=What else try Result:=StrToInt(S);except SetProperty('Р—РЅР°Рє',byLayer);Result:=What;end;
+ S:=GetProperty('Знак');
+ If (S=byLayer) or (S=byNone) then Result:=What else try Result:=StrToInt(S);except SetProperty('Знак',byLayer);Result:=What;end;
 end;
 
 procedure TPointDot.CreateTrees(TreeNames: AnsiString);
@@ -1806,20 +1800,20 @@ begin
   try
    dMin:=StrToInt(Trim(St[0]));dMax:=StrToInt(Trim(St[1]));
   except
-   raise Exception.Create('РџСЂРё СЂР°Р·Р±РѕСЂРµ РґРёР°РїР°Р·РѕРЅР° ['+TreeNames+'] РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: РѕРґРёРЅ РёР· РїР°СЂР°РјРµС‚СЂРѕРІ РЅРµ СЏРІР»СЏРµС‚СЃСЏ С†РµР»С‹Рј С‡РёСЃР»РѕРј.');
+   raise Exception.Create('При разборе диапазона ['+TreeNames+'] возникла ошибка: один из параметров не является целым числом.');
    exit;
   end;
   If Trees<>nil then Trees.Free;
   Trees:=PCollection.Create(1);
    For I:=dMin to dMax do begin
     PD:=TPointDot.CreateAsPointDot_(Self, False, False);
-    PD.TextManager.SetAttrValue('в„– СЂР°СЃС‚РµРЅРёСЏ',IntToStr(I));
+    PD.TextManager.SetAttrValue('№ растения',IntToStr(I));
     Trees.Insert(PD);
    end;
   St.Free;
  end else begin
   St.Free;
-  raise Exception.Create('РџСЂРё СЂР°Р·Р±РѕСЂРµ РґРёР°РїР°Р·РѕРЅР° ['+TreeNames+'] РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: РЅРµРІРµСЂРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ Р°СЂРіСѓРјРµРЅС‚РѕРІ');
+  raise Exception.Create('При разборе диапазона ['+TreeNames+'] возникла ошибка: неверное количество аргументов');
  end;
 end;
 
@@ -1830,7 +1824,7 @@ var I:Integer;
 begin
  Result:=nil;
  For I:=0 to Trees.Count-1 do
-  If TPointDot(Trees[I]).TextManager.AttrValue('в„– СЂР°СЃС‚РµРЅРёСЏ')=S then begin
+  If TPointDot(Trees[I]).TextManager.AttrValue('№ растения')=S then begin
    Result:=Trees[I];
    exit;
   end;
@@ -1842,16 +1836,16 @@ begin
   try
    dMin:=StrToInt(Trim(St[0]));dMax:=StrToInt(Trim(St[1]));
   except
-   raise Exception.Create('РџСЂРё СЂР°Р·Р±РѕСЂРµ РґРёР°РїР°Р·РѕРЅР° ['+TreeNames+'] РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: РѕРґРёРЅ РёР· РїР°СЂР°РјРµС‚СЂРѕРІ РЅРµ СЏРІР»СЏРµС‚СЃСЏ С†РµР»С‹Рј С‡РёСЃР»РѕРј.');
+   raise Exception.Create('При разборе диапазона ['+TreeNames+'] возникла ошибка: один из параметров не является целым числом.');
    exit;
   end;
-   If Trees.Count<>dMin-dMax+1 then begin // РїРµСЂРµСЃРѕР·РґР°РµРј
+   If Trees.Count<>dMin-dMax+1 then begin // пересоздаем
     TreesDup:=PCollection.Create(1);
     For I:=dMin to dMax do begin
      PD:=Found(IntToStr(I));
      If PD=nil then begin
       PD:=TPointDot.CreateAsPointDot_(Self, False, False);
-      PD.TextManager.SetAttrValue('в„– СЂР°СЃС‚РµРЅРёСЏ',IntToStr(I));
+      PD.TextManager.SetAttrValue('№ растения',IntToStr(I));
      end else Trees.AtDelete(Trees.IndexOf(PD));
      TreesDup.Insert(PD);
     end;
@@ -1860,7 +1854,7 @@ begin
   St.Free;
  end else begin
   St.Free;
-  raise Exception.Create('РџСЂРё СЂР°Р·Р±РѕСЂРµ РґРёР°РїР°Р·РѕРЅР° ['+TreeNames+'] РІРѕР·РЅРёРєР»Р° РѕС€РёР±РєР°: РЅРµРІРµСЂРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ Р°СЂРіСѓРјРµРЅС‚РѕРІ');
+  raise Exception.Create('При разборе диапазона ['+TreeNames+'] возникла ошибка: неверное количество аргументов');
  end;
 end;
 

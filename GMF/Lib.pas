@@ -392,7 +392,6 @@ var I:Integer;Col:PCollection;
 begin
  Col:=Arc_Rotate2(X,Y,Angle,x+x_1*kX,y+y_1*kY,x+x_2*kX,y+y_2*kY,
                                          x+xu_1*kX,y+yu_1*kY,x+xu_2*kX,y+yu_2*kY,N);
- If Col = nil then exit;
  For I:=0 to Col.Count-1 do MRect_.Insert(TDot1(Col[I]).X,TDot1(Col[I]).Y);
  Col.Free;
 end;
@@ -794,11 +793,8 @@ begin
    PP:=MethodCol[I];
    if PP.mt=m_Text then begin
     TextBitmap:=nil;
-    if TDWG_Text(PP.pt).IsTextVisible then begin
-     if (TextBitmaps<>nil) and (TextIndex<TextBitmaps.Count) then
-      TextBitmap:=TTwgBitmap(TextBitmaps[TextIndex])
-     else if Bitmaps<>nil then
-      TextBitmap:=TTwgBitmap.Create(TDWG_Text(PP.pt));
+    if TDWG_Text(PP.pt).IsTextVisible and (TextBitmaps<>nil) and (TextIndex<TextBitmaps.Count) then begin
+     TextBitmap:=TTwgBitmap(TextBitmaps[TextIndex]);
      TDWG_Text(PP.pt).TextBitmap:=TextBitmap;
      TDWG_Text(PP.pt).SetGabaritesBlock(mRect, X_, Y_, kX, kY, Angle);
     end;
@@ -1118,9 +1114,8 @@ end;
            W := Abs(Sect.Right-Sect.Left); H := Abs(Sect.Bottom-Sect.Top);
            // LOD: draw SignBitmap for small signs instead of vector geometry
            if (SignBitmap<>nil) and (Drawer is TogsDrawerSkia) and
-             TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing and
-             (XRasst(W) < 40) and (YRasst(H) < 40) and
-             (XRasst(W) > 0) and (YRasst(H) > 0) then
+              (XRasst(W) < 40) and (YRasst(H) < 40) and
+              (XRasst(W) > 0) and (YRasst(H) > 0) then
            begin
             if TogsDrawerSkia(Drawer).UseWorldCoords then
             begin
@@ -1214,7 +1209,7 @@ for i:=0 to Methodcol.Count-1 do With Selector do begin
                 end;
         end;
 		  end;
-{  If ShowDot then begin // iieacuaaai oi?eo i?eaycee
+{  If ShowDot then begin // ïîêàçûâàåì òî÷êó ïðèâÿçêè
    SetPixel(DC,Round(X),Round(Y),rgb(255,0,0));
   end;
 }

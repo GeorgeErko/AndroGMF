@@ -330,7 +330,7 @@ begin
   TxtColor := ColorToAlphaColor(Col);
 
   HPix := Selector.pixDist(H);
-  if (HPix <= 40) and TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing then
+  if HPix <= 40 then
   begin
     if (TextBitmap <> nil) then
     begin

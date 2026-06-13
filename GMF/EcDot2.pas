@@ -47,7 +47,6 @@ type
   SymbolTopPix: Single;
   SymbolHeightPix: Single;
   Selected:Boolean;
-  InBlockDrawing:Boolean;
   GyperLink:TStrings;
   FontColEx:TFontManagerEx; // коллекция символов. должно присваивается через bufStream
 //  textSect:TSect;
@@ -389,10 +388,15 @@ begin
  What:=1;
  case ParamID of
   1:begin
+     if (Params<>nil) and (Text<>nil) and (Text.FontView<>nil) and (Text.FontView.FontColEx<>nil) then begin
+      // keep silent: too verbose for production
+     end;
      If Text.fontIndex>TFontManagerEx(Params).Count-1 then begin
       Text.fontIndex:=0;
      end;
      Text.FontView:=TFontManagerEx(Params)[Text.fontIndex];
+     if (Params<>nil) and (Text<>nil) and (Text.FontView=nil) then
+      WriteIn(['TDotText.ResetParams FontView=nil', 'fontIndex=', Text.fontIndex, 'count=', TFontManagerEx(Params).Count, 'text=', Text.Text]);
      if Text.FontView <> nil then
      begin
       if TextBitmap = nil then
@@ -877,6 +881,19 @@ begin
  InsertTextDot(P1);
  InsertTextDot(P2);
  InsertTextDot(P3);
+  if (Drawer is TogsDrawerSkia) and (TogsDrawerSkia(Drawer).SkCanvas<>nil) then begin
+  TogsDrawerSkia(Drawer).SkCanvas.Save;
+  try
+   TogsDrawerSkia(Drawer).SkCanvas.Translate(X + DebugDx, Y + DebugDy);
+   if Abs(Angle) > 1e-6 then
+    TogsDrawerSkia(Drawer).SkCanvas.Rotate(Angle * 180 / Pi);
+   if (Abs(kX - 1) > 1e-6) or (Abs(kY - 1) > 1e-6) then
+    TogsDrawerSkia(Drawer).SkCanvas.Scale(kX, kY);
+   TogsDrawerSkia(Drawer).DrawTextAlignedPix(PointF(Single(XDot - X), Single(YDot - Y)), S, $FFFF0000, Text.Height, Ugol, XP, YP, XKoef, Text.FontView);
+  finally
+   TogsDrawerSkia(Drawer).SkCanvas.Restore;
+  end;
+ end;
  Result := 1;
 end;
 
@@ -924,37 +941,25 @@ var
  Dst: TRectF;
  XP, YP: Double;
  TxtColor: TAlphaColor;
- TextBounds: TTwgBitmap;
- MRect: TMRect;
- DebugBitmap: Boolean;
-procedure DrawTextGabarites;
-begin
- if InBlockDrawing then Exit;
- TextBounds:=TTwgBitmap.Create(Self);
- MRect:=TMRect.Create;
- try
-  GetGabaritesDebug(MRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBounds);
-  TextBounds.DrawSect(Drawer, $FFFF0000, 0.03);
-  TextBounds.DrawBounds(Drawer, $FFFF0000, 0.03);
- finally
-  MRect.Free;
-  TextBounds.Free;
- end;
-end;
+ mRect: TMRect;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
  if Text = nil then Exit;
- DebugBitmap := (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing and TogsDrawerSkia(Drawer).DebugBitmapDrawing;
- if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugRoughDrawing then begin
-  DrawTextGabarites;
-  if not DebugBitmap then
-   Exit;
- end;
  HPix := Selector.XRasst(Text.Height);
+// TogsDrawerSkia(Drawer).DebugDrawTextBounds := True;
+ if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugDrawTextBounds then
+ begin
+  if Text.FontView=nil then
+   WriteIn(['TDotText.Draw32 FontView=nil', 'HPix=', HPix, 'TextDirty=', Ord(TextDirty), 'TextBitmap=nil=', Ord(TextBitmap=nil), 'text=', Text.Text])
+  else if TextBitmap=nil then
+   WriteIn(['TDotText.Draw32 TextBitmap=nil', 'HPix=', HPix, 'TextDirty=', Ord(TextDirty), 'Font=', Text.FontView.FontName, 'text=', Text.Text])
+  else
+   WriteIn(['TDotText.Draw32 TextBitmap', 'HPix=', HPix, 'TextDirty=', Ord(TextDirty), 'bmp=', TextBitmap.Bitmap.Width, 'x', TextBitmap.Bitmap.Height, 'Font=', Text.FontView.FontName, 'text=', Text.Text]);
+ end;
 
- // Skia path: draw raster TextBitmap onto Skia canvas (LOD)
- if (Drawer is TogsDrawerSkia) and (HPix <= 40) and DebugBitmap then
+ // Skia: always draw vector text, but keep TextBitmap up-to-date for bounds calculations
+ if (Drawer is TogsDrawerSkia) then
  begin
   if Selector.GetScale = 0 then Exit;
   if (TextBitmap = nil) or TextDirty or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
@@ -962,46 +967,6 @@ begin
     ResetParams(1, FontViewEx)
    else
     TextDirty := True;
-  if (TextBitmap = nil) or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
-   goto VectorText;
-
-  H := HPix;
-  if H <= 0 then Exit;
-
-  if SymbolHeightPix > 0 then
-   S := H / SymbolHeightPix
-  else
-   S := H / lodFixedHeight;
-  SX := S;
-  SY := S;
-  if XKoef <> 0 then
-   SX := SX * XKoef;
-
-  W := TextBitmap.Bitmap.Width * SX;
-  H := TextBitmap.Bitmap.Height * SY;
-
-  Text.GetXPYP(XP, YP);
-  OffX := (BaseLineXPix + (TextBitmap.Bitmap.Width - BaseLineXPix - RightPadPix) * Single(XP)) * SX;
-  if YP < 0 then
-   OffY := BaseLinePix * SY
-  else
-   OffY := (SymbolTopPix + SymbolHeightPix * Single(YP)) * SY;
-
-  if TogsDrawerSkia(Drawer).UseWorldCoords then
-  begin
-   AnchorPix := PointF(Single(XDot), Single(YDot));
-   W := W / Selector.GetScale;
-   H := H / Selector.GetScale;
-   OffX := OffX / Selector.GetScale;
-   OffY := OffY / Selector.GetScale;
-  end
-  else
-   AnchorPix := PointF(Selector.XPix(XDot), Selector.YPix(YDot));
-
-  Dst := RectF(-OffX, -OffY, -OffX + W, -OffY + H);
-  TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(AnchorPix, TextBitmap.Bitmap, Dst, Ugol);
-  DrawTextGabarites;
-  Exit;
  end;
 
  // Skia vector text path
@@ -1009,6 +974,8 @@ begin
  begin
 VectorText:
   if Selector.GetScale = 0 then Exit;
+  if TogsDrawerSkia(Drawer).DebugDrawTextBounds then
+   WriteIn(['TDotText.Draw32 VectorText', 'HPix=', HPix, 'UseWorld=', Ord(TogsDrawerSkia(Drawer).UseWorldCoords), 'TextDirty=', Ord(TextDirty), 'TextBitmap=nil=', Ord(TextBitmap=nil)]);
   if TogsDrawerSkia(Drawer).UseWorldCoords then
    H := Text.Height
   else
@@ -1029,7 +996,18 @@ VectorText:
     XKoef,
     Text.FontView
   );
-  DrawTextGabarites;
+
+  if TextBitmap<>nil then
+  begin
+   mRect := TMRect.Create;
+   try
+    GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
+    TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
+    TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
+   finally
+    mRect.Free;
+   end;
+  end;
   Exit;
  end;
 
@@ -1070,7 +1048,19 @@ VectorText:
  finally
   Drawer.Canvas.RestoreState(St);
  end;
- DrawTextGabarites;
+
+ // Draw bounds for TDotText
+ if (Drawer is TogsDrawerSkia) and (TextBitmap<>nil) then
+ begin
+  mRect := TMRect.Create;
+  try
+   GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
+   TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
+   TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
+  finally
+   mRect.Free;
+  end;
+ end;
 end;
 
 initialization
@@ -1089,6 +1079,7 @@ initialization
   Add('вправо-центр');
   Add('вправо-верх');
  end;
+
 finalization
  AlignStrings.Free;
 end.
