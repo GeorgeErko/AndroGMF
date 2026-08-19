@@ -1,4 +1,4 @@
-program testAndro;
+program AndroDebug;
 
 uses
   System.SysUtils,

@@ -46,6 +46,8 @@ type
     FloatAnimation6: TFloatAnimation;
     instHost: TLayout;
     Button1: TButton;
+    btnGPKGB: TButton;
+    btnDoc: TButton;
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -55,6 +57,8 @@ type
     procedure btnPropertiesClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure btnGPKGBClick(Sender: TObject);
+    procedure btnDocClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -101,7 +105,8 @@ var
   MainFormMouseObj: TMainFormMouseObj;
 
 implementation uses objMouseSelect, objMouseDraw, objEditMap, UpdateMessages,
-                    Writer, newSelector, LBN, newProcs, tstForm;
+                    Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
+                    GPKGReader, DlgLocalOpen;
 
 {$R *.fmx}
 
@@ -111,6 +116,37 @@ var
   OverlayStatMaxDt: UInt64;
   OverlayDrawLastTick: UInt64;
   OverlayDrawCount: Integer;
+
+procedure PrintGPKGLayers(const Reader: TGPKGReader);
+var I: Integer;
+    Layer: TGPKGLayer;
+    Sample: TStringList;
+begin
+ if Reader = nil then exit;
+ WriteIn(['layers: ', Reader.GetLayerCount]);
+ for I := 0 to Reader.GetLayerCount - 1 do
+ begin
+  Layer := Reader.GetLayer(I);
+  WriteIn([' layer ', I, ': ', Layer.TableName, ' | ', Layer.Identifier, ' | ', Layer.DataType]);
+  if Layer.GeometryColumn <> '' then
+   WriteIn(['  geom: ', Layer.GeometryColumn, ' | ', Layer.GeometryType, ' | srid=', Layer.SrsId, ' z=', Layer.HasZ, ' m=', Layer.HasM]);
+  if Layer.SrsOrganization <> '' then
+   WriteIn(['  srs: ', Layer.SrsOrganization, ':', Layer.SrsOrganizationCoordSysId]);
+  WriteIn(['  bbox: ', Format('%.6f, %.6f, %.6f, %.6f', [Layer.MinX, Layer.MinY, Layer.MaxX, Layer.MaxY])]);
+  if Layer.LastChange <> '' then
+   WriteIn(['  last_change: ', Layer.LastChange]);
+  if (Layer.GeometryColumn <> '') and SameText(Layer.DataType, 'features') then
+  begin
+   Sample := Reader.GetFeatureSample(Layer.TableName, 2);
+   try
+    if (Sample <> nil) and (Sample.Count > 0) then
+     WriteIn(['  sample: ', Sample[0]]);
+   finally
+    Sample.Free;
+   end;
+  end;
+ end;
+end;
 
 { TMainFormMouseObj }
 
@@ -194,7 +230,7 @@ begin
   OpenGmfFile(TPath.GetDocumentsPath+'/18.gmf')
 {$ELSE}
   OpenGmfFile('C:\!!!ГЗ\Борт\19.gmf')
-//   OpenGmfFile('C:\!!!ГЗ\Борт\29488_ul._Generala_Belova,_vl._19,_korp._3Kam.gmf');
+ //  OpenGmfFile('C:\!!!ГЗ\Борт\29488_ul._Generala_Belova,_vl._19,_korp._3Kam.gmf');
 {$ENDIF}
 end;
 
@@ -413,6 +449,23 @@ begin
  tsts2DF.Show;
 end;
 
+procedure TMainFormMouseObj.btnDocClick(Sender: TObject);
+begin
+ WriteIn(['log ', 100, ' ====================================================================']);
+ inherited;
+ localOpenForm := TlocalOpenForm.Create(Self);
+{$IFDEF ANDROID}
+ localOpenForm.BaseDir := GetAppExternalFilesDir;
+{$ENDIF}
+ localOpenForm.FCallback :=
+  procedure(const LocalPath: string)
+  begin
+   if LocalPath <> '' then
+    ShowMessage(LocalPath);
+  end;
+ localOpenForm.Show;
+end;
+
 procedure TMainFormMouseObj.CaptureOverlayInteractionImage;
 var
   ImgInfo: TSkImageInfo;
@@ -577,6 +630,69 @@ begin
      Selector.UpdateOverlay;
      UpdateEscButton(0);
     end;
+end;
+
+procedure TMainFormMouseObj.btnGPKGBClick(Sender: TObject);
+begin
+ inherited;
+ pickGpkgFile(
+  procedure(const LocalPath: string)
+  var Reader: TGPKGReader;
+   Tables: TStringList;
+   I: Integer;
+   Layer: TGPKGLayer;
+   Msg, S: string;
+  begin
+   if LocalPath = '' then exit;
+   WriteIn(['gpkg: ', LocalPath]);
+   try
+    WriteIn(['size: ', TFile.GetSize(LocalPath)]);
+   except
+   end;
+   Reader := TGPKGReader.Create(LocalPath);
+   try
+    if not Reader.Open then
+    begin
+     ShowMessage('open gpkg failed');
+     exit;
+    end;
+    PrintGPKGLayers(Reader);
+    Msg := 'file: ' + LocalPath + sLineBreak;
+    try
+     Msg := Msg + 'size: ' + IntToStr(TFile.GetSize(LocalPath)) + sLineBreak;
+    except
+    end;
+    Msg := Msg + sLineBreak;
+
+    Tables := Reader.GetTableNames;
+    try
+     Msg := Msg + 'tables:' + sLineBreak;
+     for I := 0 to Tables.Count - 1 do
+      Msg := Msg + ' ' + Tables[I] + sLineBreak;
+    finally
+     Tables.Free;
+    end;
+    Msg := Msg + sLineBreak;
+
+    Msg := Msg + 'layers (gpkg_contents):' + sLineBreak;
+    for I := 0 to Reader.GetLayerCount - 1 do
+    begin
+     Layer := Reader.GetLayer(I);
+     S := Layer.TableName;
+     if Layer.Identifier <> '' then S := S + ' | ' + Layer.Identifier;
+     if Layer.DataType <> '' then S := S + ' | ' + Layer.DataType;
+     if Layer.Description <> '' then S := S + sLineBreak + '  ' + Layer.Description;
+     S := S + sLineBreak + '  bbox: ' +
+      Format('%.6f, %.6f, %.6f, %.6f', [Layer.MinX, Layer.MinY, Layer.MaxX, Layer.MaxY]);
+     if Layer.LastChange <> '' then S := S + sLineBreak + '  last_change: ' + Layer.LastChange;
+     Msg := Msg + S + sLineBreak + sLineBreak;
+    end;
+
+    ShowMessage(Msg);
+   finally
+    Reader.Free;
+   end;
+  end);
 end;
 
 destructor TMainFormMouseObj.Destroy;

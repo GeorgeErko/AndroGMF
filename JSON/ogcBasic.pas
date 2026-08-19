@@ -569,6 +569,7 @@ type
    function pointVisible(X, Y: Double): Boolean;
    function lineVisible(X, Y, X1, Y1: Double): Boolean;
    function RectVisible(Rect: TogsRect): Boolean;
+   function SectVisible(Rect: TSect): Boolean;
    function cutLine(X, Y, X1, Y1: Double; var X_,Y_,X1_,Y1_: Double ): Boolean;
    procedure BeginPaint;
    procedure EndPaint;
@@ -1088,6 +1089,16 @@ end;
 function TogsSelector.RectVisible(Rect: TogsRect): Boolean;
 begin
  Result := Rect.Visiblein(factiveRect);
+end;
+
+function TogsSelector.SectVisible(Rect: TSect): Boolean;
+begin
+ Result := False;
+ If Rect.XMin > factiveRect.XMax then exit;
+ If Rect.YMax > factiveRect.YMax then exit;
+ If Rect.XMax < factiveRect.XMin then exit;
+ If Rect.YMin < factiveRect.YMin then exit;
+ Result := True;
 end;
 
 function TogsSelector.cutLine(X, Y, X1, Y1: Double; var X_, Y_, X1_, Y1_: Double ): Boolean;

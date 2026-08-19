@@ -1,0 +1,27 @@
+inherited MainFormOSM: TMainFormOSM
+  Caption = 'MainFormOSM'
+  DesignerMasterStyle = 3
+  inherited Memo1: TMemo
+    Viewport.Width = 923.000000000000000000
+    Viewport.Height = 65.000000000000000000
+  end
+  inherited Panel1: TPanel
+    object lMas: TLabel
+      Position.X = 540.000000000000000000
+      Position.Y = 6.000000000000000000
+      TabOrder = 82
+    end
+  end
+  inherited ToolBarPaint: TToolBar
+    inherited LayerFrame1: TLayerFrame
+      inherited PopupLayers: TPopup
+        inherited PopupLay: TLayout
+          inherited TreeLayers: TTreeView
+            Viewport.Width = 100.000000000000000000
+            Viewport.Height = 100.000000000000000000
+          end
+        end
+      end
+    end
+  end
+end

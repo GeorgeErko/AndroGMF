@@ -131,6 +131,9 @@ end;
 procedure TMainForm.btnLocalOpenClick(Sender: TObject);
 begin
  localOpenForm := TlocalOpenForm.Create(Self);
+{$IFDEF ANDROID}
+ localOpenForm.BaseDir := GetAppExternalFilesDir;
+{$ENDIF}
  localOpenForm.FCallBack := OpenGmfFile;
  localOpenForm.Show;
 end;
@@ -290,7 +293,11 @@ begin
  if Path = '' then begin WriteIn(['Path Space']); Exit; end;
 {$ENDIF}
  WriteIn(['Path=', ExtractFilePath(LocalPath), SizeOf(Single), SizeOf(Double)]);
+{$IFDEF ANDROID}
+ newProcs.MainPath := TPath.GetDocumentsPath;
+{$ELSE}
  newProcs.MainPath := ExtractFilePath(Path);
+{$ENDIF}
 //
  RegisterFontsNearGmf(Path);
 //
@@ -441,8 +448,8 @@ begin
  if Selector.GetScale = 0 then Exit;
  XPix := X * LastCanvasScale;
  YPix := Y * LastCanvasScale;
- XGeo :=Selector.XGeo(Round(XPix));
- YGeo :=Selector.YGeo(Round(YPix));
+ XGeo := - Selector.YGeo(Round(YPix));
+ YGeo := Selector.XGeo(Round(XPix));;
  S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
  if StatusLabel <> nil then StatusLabel.Text := S;
 end;

@@ -8,7 +8,7 @@
         <Platform Condition="'$(Platform)'==''">Android64</Platform>
         <TargetedPlatforms>693395</TargetedPlatforms>
         <AppType>Application</AppType>
-        <MainSource>testAndro.dpr</MainSource>
+        <MainSource>AndroDebug.dpr</MainSource>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -129,7 +129,7 @@
         <AUP_READ_PHONE_STATE>true</AUP_READ_PHONE_STATE>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
-        <SanitizedProjectName>testAndro</SanitizedProjectName>
+        <SanitizedProjectName>AndroDebug</SanitizedProjectName>
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Android)'!=''">
@@ -137,12 +137,12 @@
         <VerInfo_Keys>package=com.embarcadero.$(MSBuildProjectName);label=$(MSBuildProjectName);versionCode=1;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=;minSdkVersion=23;targetSdkVersion=35</VerInfo_Keys>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <Android_LauncherIcon36>$(ProjectName).Artwork\Android\FM_LauncherIcon_36x36.png</Android_LauncherIcon36>
-        <Android_LauncherIcon48>$(ProjectName).Artwork\Android\FM_LauncherIcon_48x48.png</Android_LauncherIcon48>
-        <Android_LauncherIcon72>$(ProjectName).Artwork\Android\FM_LauncherIcon_72x72.png</Android_LauncherIcon72>
-        <Android_LauncherIcon96>$(ProjectName).Artwork\Android\FM_LauncherIcon_96x96.png</Android_LauncherIcon96>
-        <Android_LauncherIcon144>$(ProjectName).Artwork\Android\FM_LauncherIcon_144x144.png</Android_LauncherIcon144>
-        <Android_LauncherIcon192>$(ProjectName).Artwork\Android\FM_LauncherIcon_192x192.png</Android_LauncherIcon192>
+        <Android_LauncherIcon36>%ProjectName%.Artwork\Android\FM_LauncherIcon_36x36.png</Android_LauncherIcon36>
+        <Android_LauncherIcon48>%ProjectName%.Artwork\Android\FM_LauncherIcon_48x48.png</Android_LauncherIcon48>
+        <Android_LauncherIcon72>%ProjectName%.Artwork\Android\FM_LauncherIcon_72x72.png</Android_LauncherIcon72>
+        <Android_LauncherIcon96>%ProjectName%.Artwork\Android\FM_LauncherIcon_96x96.png</Android_LauncherIcon96>
+        <Android_LauncherIcon144>%ProjectName%.Artwork\Android\FM_LauncherIcon_144x144.png</Android_LauncherIcon144>
+        <Android_LauncherIcon192>%ProjectName%.Artwork\Android\FM_LauncherIcon_192x192.png</Android_LauncherIcon192>
         <Android_SplashImage426>$(ProjectName).Artwork\Android\FM_SplashImage_426x320.png</Android_SplashImage426>
         <Android_SplashImage470>$(ProjectName).Artwork\Android\FM_SplashImage_470x320.png</Android_SplashImage470>
         <Android_SplashImage640>$(ProjectName).Artwork\Android\FM_SplashImage_640x480.png</Android_SplashImage640>
@@ -162,12 +162,12 @@
         <VerInfo_Keys>package=com.embarcadero.$(MSBuildProjectName);label=$(MSBuildProjectName);versionCode=1;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=;minSdkVersion=23;targetSdkVersion=35</VerInfo_Keys>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <Android_LauncherIcon36>$(ProjectName).Artwork\Android\FM_LauncherIcon_36x36.png</Android_LauncherIcon36>
-        <Android_LauncherIcon48>$(ProjectName).Artwork\Android\FM_LauncherIcon_48x48.png</Android_LauncherIcon48>
-        <Android_LauncherIcon72>$(ProjectName).Artwork\Android\FM_LauncherIcon_72x72.png</Android_LauncherIcon72>
-        <Android_LauncherIcon96>$(ProjectName).Artwork\Android\FM_LauncherIcon_96x96.png</Android_LauncherIcon96>
-        <Android_LauncherIcon144>$(ProjectName).Artwork\Android\FM_LauncherIcon_144x144.png</Android_LauncherIcon144>
-        <Android_LauncherIcon192>$(ProjectName).Artwork\Android\FM_LauncherIcon_192x192.png</Android_LauncherIcon192>
+        <Android_LauncherIcon36>%ProjectName%.Artwork\Android\FM_LauncherIcon_36x36.png</Android_LauncherIcon36>
+        <Android_LauncherIcon48>%ProjectName%.Artwork\Android\FM_LauncherIcon_48x48.png</Android_LauncherIcon48>
+        <Android_LauncherIcon72>%ProjectName%.Artwork\Android\FM_LauncherIcon_72x72.png</Android_LauncherIcon72>
+        <Android_LauncherIcon96>%ProjectName%.Artwork\Android\FM_LauncherIcon_96x96.png</Android_LauncherIcon96>
+        <Android_LauncherIcon144>%ProjectName%.Artwork\Android\FM_LauncherIcon_144x144.png</Android_LauncherIcon144>
+        <Android_LauncherIcon192>%ProjectName%.Artwork\Android\FM_LauncherIcon_192x192.png</Android_LauncherIcon192>
         <Android_SplashImage426>$(ProjectName).Artwork\Android\FM_SplashImage_426x320.png</Android_SplashImage426>
         <Android_SplashImage470>$(ProjectName).Artwork\Android\FM_SplashImage_470x320.png</Android_SplashImage470>
         <Android_SplashImage640>$(ProjectName).Artwork\Android\FM_SplashImage_640x480.png</Android_SplashImage640>
@@ -511,7 +511,7 @@
         <BorlandProject>
             <Delphi.Personality>
                 <Source>
-                    <Source Name="MainSource">testAndro.dpr</Source>
+                    <Source Name="MainSource">AndroDebug.dpr</Source>
                 </Source>
                 <Excluded_Packages>
                     <Excluded_Packages Name="$(BDSBIN)\dcloffice2k290.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
@@ -672,19 +672,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_144x144.png" Configuration="Debug" Class="Android_LauncherIcon144">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_144x144.png" Configuration="Release" Class="Android_LauncherIcon144">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_192x192.png" Configuration="Debug" Class="Android_LauncherIcon192">
                     <Platform Name="Android64">
                         <RemoteName>ic_launcher.png</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -696,19 +684,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_36x36.png" Configuration="Debug" Class="Android_LauncherIcon36">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_36x36.png" Configuration="Release" Class="Android_LauncherIcon36">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_48x48.png" Configuration="Debug" Class="Android_LauncherIcon48">
                     <Platform Name="Android64">
                         <RemoteName>ic_launcher.png</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -720,19 +696,7 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_72x72.png" Configuration="Debug" Class="Android_LauncherIcon72">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_72x72.png" Configuration="Release" Class="Android_LauncherIcon72">
-                    <Platform Name="Android64">
-                        <RemoteName>ic_launcher.png</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_LauncherIcon_96x96.png" Configuration="Debug" Class="Android_LauncherIcon96">
                     <Platform Name="Android64">
                         <RemoteName>ic_launcher.png</RemoteName>
                         <Overwrite>true</Overwrite>
@@ -746,6 +710,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_NotificationIcon_24x24.png" Configuration="Debug" Class="Android_NotificationIcon24">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>ic_notification.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -758,6 +723,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_NotificationIcon_36x36.png" Configuration="Debug" Class="Android_NotificationIcon36">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>ic_notification.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -770,6 +736,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_NotificationIcon_48x48.png" Configuration="Debug" Class="Android_NotificationIcon48">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>ic_notification.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -782,6 +749,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_NotificationIcon_72x72.png" Configuration="Debug" Class="Android_NotificationIcon72">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>ic_notification.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -794,6 +762,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_NotificationIcon_96x96.png" Configuration="Debug" Class="Android_NotificationIcon96">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>ic_notification.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -806,6 +775,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_SplashImage_426x320.png" Configuration="Debug" Class="Android_SplashImage426">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>splash_image.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -818,6 +788,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_SplashImage_470x320.png" Configuration="Debug" Class="Android_SplashImage470">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>splash_image.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -830,6 +801,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_SplashImage_640x480.png" Configuration="Debug" Class="Android_SplashImage640">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>splash_image.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -842,6 +814,7 @@
                 </DeployFile>
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_SplashImage_960x720.png" Configuration="Debug" Class="Android_SplashImage960">
                     <Platform Name="Android64">
+                        <Enabled>false</Enabled>
                         <RemoteName>splash_image.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
@@ -849,6 +822,48 @@
                 <DeployFile LocalName="$(ProjectName).Artwork\Android\FM_SplashImage_960x720.png" Configuration="Release" Class="Android_SplashImage960">
                     <Platform Name="Android64">
                         <RemoteName>splash_image.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_144x144.png" Configuration="Debug" Class="Android_LauncherIcon144">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_192x192.png" Configuration="Debug" Class="Android_LauncherIcon192">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_36x36.png" Configuration="Debug" Class="Android_LauncherIcon36">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_48x48.png" Configuration="Debug" Class="Android_LauncherIcon48">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_72x72.png" Configuration="Debug" Class="Android_LauncherIcon72">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="%ProjectName%.Artwork\Android\FM_LauncherIcon_96x96.png" Configuration="Debug" Class="Android_LauncherIcon96">
+                    <Platform Name="Android64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>ic_launcher.png</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -869,9 +884,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Android64\Debug\libtestAndro.so" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Android64\Debug\libAndroDebug.so" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Android64">
-                        <RemoteName>libtestAndro.so</RemoteName>
+                        <RemoteName>libAndroDebug.so</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -918,9 +933,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Android64\Release\libtestAndro.so" Configuration="Release" Class="ProjectOutput">
+                <DeployFile LocalName="Android64\Release\libAndroDebug.so" Configuration="Release" Class="ProjectOutput">
                     <Platform Name="Android64">
-                        <RemoteName>libtestAndro.so</RemoteName>
+                        <RemoteName>libAndroDebug.so</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -967,9 +982,9 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Android\Debug\libtestAndro.so" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Android\Debug\libAndroDebug.so" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Android">
-                        <RemoteName>libtestAndro.so</RemoteName>
+                        <RemoteName>libAndroDebug.so</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -1028,183 +1043,183 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\DO431___.TTF" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>DO431___.TTF</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Dictionary_digits.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Dictionary_digits.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Dictionary_digits_dt.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Dictionary_digits_dt.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Dictionary_digits_odh.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Dictionary_digits_odh.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Dictionary_digits_oo.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Dictionary_digits_oo.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\GOST_A.TTF" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>GOST_A.TTF</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\GOST_B.TTF" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>GOST_B.TTF</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Names.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Names.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Names_dt.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Names_dt.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Names_odh.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Names_odh.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Names_oo.txt" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Names_oo.txt</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Registry.ini" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Registry.ini</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\TOPO500.CLS" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>TOPO500.CLS</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\TOPO500.lb2" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>TOPO500.lb2</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\TOPO500.lb3" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>TOPO500.lb3</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\TOPO500.lib" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>TOPO500.lib</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\attribs.ini" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>attribs.ini</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\bo2.ttf" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>bo2.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\dictionary_digits.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>dictionary_digits.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\dictionary_digits_dt.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>dictionary_digits_dt.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\dictionary_digits_odh.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>dictionary_digits_odh.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\dictionary_digits_oo.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>dictionary_digits_oo.txt</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\do431.ttf" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>do431.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\do431___.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>do431___.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\gost_a.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>gost_a.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\gost_b.ttf" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>gost_b.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\names.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>names.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\names_dt.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>names_dt.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\names_odh.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>names_odh.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\names_oo.txt" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>names_oo.txt</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\registry.ini" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>registry.ini</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.cls" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>topo500.cls</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.gr1" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>topo500.gr1</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.gr2" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>topo500.gr2</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.gr4" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>topo500.gr4</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.grp" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>topo500.grp</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.lb2" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>topo500.lb2</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.lb3" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>topo500.lb3</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\topo500.lib" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal\</RemoteDir>
+                        <RemoteName>topo500.lib</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\txt_____.ttf" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteDir>assets\internal\</RemoteDir>
                         <RemoteName>txt_____.ttf</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\testAndro.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win32\Debug\AndroDebug.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
-                        <RemoteName>testAndro.exe</RemoteName>
+                        <RemoteName>AndroDebug.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win64\Debug\testAndro.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="Win64\Debug\AndroDebug.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
-                        <RemoteName>testAndro.exe</RemoteName>
+                        <RemoteName>AndroDebug.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

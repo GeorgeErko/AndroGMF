@@ -1,0 +1,25 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <VerInfo_Build>1</VerInfo_Build>
+        <PF_KeyStore>Keystore\old\geomaster-release.keystore</PF_KeyStore>
+        <IncludeAndroid_NotificationAccentColor>false</IncludeAndroid_NotificationAccentColor>
+        <PF_KeyStorePass>850847CC5F98079ECF74E53DA45F7BACE44A084E7EB297C397B90FE18E103C82DB0CA39AE3191C25C1B0572EFACEC331BAF736500464228B162345F0E58822DEC90BF31ED507FA8EBFE9AF23071E1D4492563E441DF9</PF_KeyStorePass>
+        <Android_NotificationAccentColor>#000000</Android_NotificationAccentColor>
+        <PF_AliasKey>geomaster_alias</PF_AliasKey>
+        <PF_AliasKeyPass>850847CC5F98079ECF74E53DA45F7BACE44A084E7EB297C397B90FE18E103C82DB0CA39AE3191C25C1B0572EFACEC331BAF736500464228B162345F0E58822DEC90BF31ED507FA8EBFE9AF23071E1D4492563E441DF9</PF_AliasKeyPass>
+        <IncludeAndroid_AdaptiveIcon>true</IncludeAndroid_AdaptiveIcon>
+        <DCC_UnitAlias>WinTypes=Windows;WinProcs=Windows;DbiTypes=BDE;DbiProcs=BDE;DbiErrs=BDE;MATHS=maths_basic;maths=polygons;maths1=maths_basic;maths4=maths_versia;maths8=maths_versia;maths2=maths_basic;maths2=circle_di;maths8=circle_di;maths2=polygons;maths=maths_basic;maths4=polygons;maths3=maths_versia;maths3=circle_di;maths2=maths_versia;maths9=polygons;maths1=intervals;$(DCC_UnitAlias)</DCC_UnitAlias>
+        <Android_BackgroundColor>#FFFFFF</Android_BackgroundColor>
+        <Android_DarkBackgroundColor>#FFFFFF</Android_DarkBackgroundColor>
+        <DCC_WriteableConstants>true</DCC_WriteableConstants>
+        <DCC_IOChecking>false</DCC_IOChecking>
+    </PropertyGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>OptionSet</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality/>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+</Project>

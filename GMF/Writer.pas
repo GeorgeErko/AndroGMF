@@ -14,7 +14,7 @@ Procedure Write_(Params:Array of Const;C:Integer=3);
 Procedure WriteMsg(Params:Array of Const;C:Integer=3);
 Procedure Delay(Sleep: Integer = 1000);
 
-implementation Uses FMX.Types, System.Threading;
+implementation Uses FMX.Types, System.Threading{$IFDEF ANDROID}, Androidapi.Log {$ENDIF};
 
 Function AsParam(Const V:TVarRec;C:Integer=3):AnsiString;
 var S:AnsiString;
@@ -130,12 +130,19 @@ end;
 
 Procedure WriteIn(Params:Array of Const;C:Integer=3);
 begin
+{
  if GLines<>nil then begin
   GLines.BeginUpdate;
   GLines.Add(Fmt(Params,C));
   GLines.EndUpdate;
  end;
+ }
+{$IFDEF ANDROID}
+ __android_log_write(ANDROID_LOG_INFO, PAnsiChar(AnsiString('DELPHI')),
+  PAnsiChar(AnsiString(String(Fmt(Params,C)))));
+{$ELSE}
  Writeln(Fmt(Params,C));
+{$ENDIF}
 end;
 
 Procedure Delay(Sleep: Integer = 1000);

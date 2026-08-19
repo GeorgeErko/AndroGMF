@@ -1,4 +1,4 @@
-unit ogcProperties;
+п»їunit ogcProperties;
 
 
 interface
@@ -6,7 +6,7 @@ interface
 uses Classes, SysUtils, StrUtils, ogcBasic;
 
 const GID: Integer = 0;
-    // значения nil (не инициализирован TogsPropValue) и null для переменных типа объект/массив
+    // Р·РЅР°С‡РµРЅРёСЏ nil (РЅРµ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅ TogsPropValue) Рё null РґР»СЏ РїРµСЂРµРјРµРЅРЅС‹С… С‚РёРїР° РѕР±СЉРµРєС‚/РјР°СЃСЃРёРІ
       nilValue   = '{30B65C70-EE6E-4009-9A98-A5102793DC53}';
       nullValue  = '{1D9E5D3E-0FEA-466A-BAA7-DC7599B9CDC3}';
       ss32: String = ''; //#32#32#32#32;
@@ -25,12 +25,12 @@ type
   TogsPropObject = class;
   TogsProperty = class;
                                                          
-  { TogsPropValue - абстрактный класс для работы со значениями свойств }
+  { TogsPropValue - Р°Р±СЃС‚СЂР°РєС‚РЅС‹Р№ РєР»Р°СЃСЃ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃРѕ Р·РЅР°С‡РµРЅРёСЏРјРё СЃРІРѕР№СЃС‚РІ }
 
   TogsPropValue = class(TogsProperties)
   private
-   fParent: TogsBasic; // родительский элемнт: TogsPropValue, TogsGEometry
-  // Index : Integer; // индекс при чтении файла json в объекте/массиве
+   fParent: TogsBasic; // СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СЌР»РµРјРЅС‚: TogsPropValue, TogsGEometry
+  // Index : Integer; // РёРЅРґРµРєСЃ РїСЂРё С‡С‚РµРЅРёРё С„Р°Р№Р»Р° json РІ РѕР±СЉРµРєС‚Рµ/РјР°СЃСЃРёРІРµ
   //
    procedure SetParent(AValue: TogsBasic); virtual;
    procedure SetPropValue(AValue: TogsPropValue); virtual;
@@ -54,11 +54,11 @@ type
    procedure SetIntValue(AValue: Integer); virtual;
    procedure SetBoolValue(AValue: Boolean); virtual;
   public
-   Level: SmallInt; // уровень в иерархии объектов
+   Level: SmallInt; // СѓСЂРѕРІРµРЅСЊ РІ РёРµСЂР°СЂС…РёРё РѕР±СЉРµРєС‚РѕРІ
    State: TPropState;
    constructor Create(Parent_: TogsPropValue; Level_, Index_: SmallInt);
    constructor CreateAs(ogsObject: TogsBasic); override;
-  // для отладки constructor CreateAs(ogsObject: TogsProperties); overload;
+  // РґР»СЏ РѕС‚Р»Р°РґРєРё constructor CreateAs(ogsObject: TogsProperties); overload;
    function Assign(ogsObject: TogsBasic): boolean; override;
    function TypeOf: TPropType; virtual; abstract;
    property Parent: TogsBasic read fParent write SetParent;
@@ -79,7 +79,7 @@ type
    function Space: String; virtual;
   //
    procedure Sort(SortProc: TListSortCompare); virtual;
-   // доступ к propValue: TogsPropValue
+   // РґРѕСЃС‚СѓРї Рє propValue: TogsPropValue
    property propName : String read GetPropName write SetPropName;
    property propValue: TogsPropValue read GetPropValue write SetPropValue;
    //
@@ -92,7 +92,7 @@ type
    function CompareWith(Schema: TogsPropValue): TogsPropValue;
   end;
 
-  { TogsProperty - свойство с именем и значением типа : атомарное, массив, объект Pr}
+  { TogsProperty - СЃРІРѕР№СЃС‚РІРѕ СЃ РёРјРµРЅРµРј Рё Р·РЅР°С‡РµРЅРёРµРј С‚РёРїР° : Р°С‚РѕРјР°СЂРЅРѕРµ, РјР°СЃСЃРёРІ, РѕР±СЉРµРєС‚ Pr}
 
   TogsProperty = class(TogsPropValue)
   private
@@ -127,7 +127,7 @@ type
    procedure Sort(SortProc: TListSortCompare); override;
   end;
 
-  { TogspropString - строковое значение свойства }
+  { TogspropString - СЃС‚СЂРѕРєРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ СЃРІРѕР№СЃС‚РІР° }
 
   TogsPropString = class(TogsPropValue)
   private
@@ -224,7 +224,7 @@ type
    function ToString : AnsiString; override;
   end;
 
-  { TogsPropArray - массив значений TogsPropValue}
+  { TogsPropArray - РјР°СЃСЃРёРІ Р·РЅР°С‡РµРЅРёР№ TogsPropValue}
 
   TogsPropArray = class(TogsPropValue)
   private
@@ -255,7 +255,7 @@ type
   TogsPropArrayItem = class(TogsPropArray)
   end;
 
-  { TogspropObject - массив значений TogsPropValue }
+  { TogspropObject - РјР°СЃСЃРёРІ Р·РЅР°С‡РµРЅРёР№ TogsPropValue }
 
   TogsPropObject = class(TogsPropArray)
   private
@@ -275,14 +275,14 @@ type
 var nilObject, nullObject : TogsPropValue;
 
 function GeometryType(typeName: String): TjsonGeometryType;
-// тип данных из строки
+// С‚РёРї РґР°РЅРЅС‹С… РёР· СЃС‚СЂРѕРєРё
 function TypeOfString(S: AnsiString): TvarType;
 function DeleteQuotMarks(S: AnsiString): AnsiString;
-// проверка типов
+// РїСЂРѕРІРµСЂРєР° С‚РёРїРѕРІ
 function CheckogsArrayType(P: TogsBasic): Boolean;
 function CheckogsObjectType(P: TogsBasic): Boolean;
 
-implementation uses ogcJSON, Dialogs;
+implementation uses ogcJSON;
 
 function GeometryType(typeName: String): TjsonGeometryType;
 begin
@@ -369,7 +369,7 @@ end;
 
 function TogsPropValue.ToString: AnsiString;
 begin
-// на время отладки
+// РЅР° РІСЂРµРјСЏ РѕС‚Р»Р°РґРєРё
  EAbstractError.Create('TogsPropValue.AsString');
 end;
 
@@ -488,7 +488,7 @@ function TogsPropValue.FindByNames(Params: array of String; out notFoundStr: Str
 var I:Integer;
     propValue: TogsPropValue;
 begin
- // сравниваем Params[] с элементами иерархии json
+ // СЃСЂР°РІРЅРёРІР°РµРј Params[] СЃ СЌР»РµРјРµРЅС‚Р°РјРё РёРµСЂР°СЂС…РёРё json
  Result := nilObject;
  notFoundStr := '';
  propValue := Self;
@@ -497,7 +497,7 @@ begin
   if notFoundStr <> '' then notFoundStr := notFoundStr + '->' + Params[I] else
                             notFoundStr := Params[I];
   If (propValue = nilObject) then exit else begin
-  // Params[I] найден -> переходим на нижний элемент иерархии
+  // Params[I] РЅР°Р№РґРµРЅ -> РїРµСЂРµС…РѕРґРёРј РЅР° РЅРёР¶РЅРёР№ СЌР»РµРјРµРЅС‚ РёРµСЂР°СЂС…РёРё
    notFoundStr := '';
    Result := propValue;
   end;
@@ -511,11 +511,11 @@ var I : Integer;
     propValue: TogsPropValue;
 begin
  Result := nilObject;
- // сравнение на наличие атрибутов в объекте
+ // СЃСЂР°РІРЅРµРЅРёРµ РЅР° РЅР°Р»РёС‡РёРµ Р°С‚СЂРёР±СѓС‚РѕРІ РІ РѕР±СЉРµРєС‚Рµ
  For I := 0 to schemaValue.Count - 1 do begin
   propValue := ownValue[schemaValue.Item[I].propName];
   If not (propValue = nilObject) then exit else
- // первый объект или массив -> запоминаем индекс
+ // РїРµСЂРІС‹Р№ РѕР±СЉРµРєС‚ РёР»Рё РјР°СЃСЃРёРІ -> Р·Р°РїРѕРјРёРЅР°РµРј РёРЅРґРµРєСЃ
   If (Result = nilObject ) and ((propValue is TogsPropArray) or
                                 (propValue is TogsPropObject)) then begin
                                   Result := propValue;
@@ -526,9 +526,9 @@ begin
 end;
 begin
  Result := nilObject;
- // сравниваем пообъектно со схемой, аналогично FindByNames +
- //                                             сравнение типов объектов в иерархи
- // если один из атрибутов на уровне не найден -> объекты неидентичны
+ // СЃСЂР°РІРЅРёРІР°РµРј РїРѕРѕР±СЉРµРєС‚РЅРѕ СЃРѕ СЃС…РµРјРѕР№, Р°РЅР°Р»РѕРіРёС‡РЅРѕ FindByNames +
+ //                                             СЃСЂР°РІРЅРµРЅРёРµ С‚РёРїРѕРІ РѕР±СЉРµРєС‚РѕРІ РІ РёРµСЂР°СЂС…Рё
+ // РµСЃР»Рё РѕРґРёРЅ РёР· Р°С‚СЂРёР±СѓС‚РѕРІ РЅР° СѓСЂРѕРІРЅРµ РЅРµ РЅР°Р№РґРµРЅ -> РѕР±СЉРµРєС‚С‹ РЅРµРёРґРµРЅС‚РёС‡РЅС‹
  ownValue := Self; schemaValue := Schema;
  While True do begin
   If ownValue.ClassType <> schemaValue.ClassType then exit else
@@ -571,7 +571,7 @@ begin
  Assign(ogsObject);
 end;
 
-// перенесено из раздела методов TogsProperty. вернуть!!!
+// РїРµСЂРµРЅРµСЃРµРЅРѕ РёР· СЂР°Р·РґРµР»Р° РјРµС‚РѕРґРѕРІ TogsProperty. РІРµСЂРЅСѓС‚СЊ!!!
 
 function TogsProperty.Assign(ogsObject: TogsBasic): Boolean;
 var Obj: TogsPropValue;
@@ -734,7 +734,7 @@ end;
 procedure TogsPropString.SetStringValue(AValue: String);
 var useMarks: boolean;
 begin
-// временно, до типизации свойств
+// РІСЂРµРјРµРЅРЅРѕ, РґРѕ С‚РёРїРёР·Р°С†РёРё СЃРІРѕР№СЃС‚РІ
  If Length(fValue) >= 2 then
   useMarks := (fValue[1] = '"') and (fValue[Length(fValue)] = '"') else
   useMarks := false;
@@ -774,7 +774,7 @@ constructor TogsPropFloat.Create(Value_: Double; Decimal_: ShortInt = -1);
 begin
  fValue  := Value_;
  If Decimal_ = -1 then
-  fDecimal := GetDecimal(Value_) else  // если 0 - целое число
+  fDecimal := GetDecimal(Value_) else  // РµСЃР»Рё 0 - С†РµР»РѕРµ С‡РёСЃР»Рѕ
   fDecimal := Decimal_;
 end;
 
@@ -786,7 +786,7 @@ end;
 function TogsPropFloat.Assign(ogsObject: TogsBasic): Boolean;
 begin
  If not (ogsObject is TogsPropValue) then begin
-   raise Exception.Create('TogsPropFloat.CreateAs: объект невозможно присвоить ' + ogsObject.ClassName);
+   raise Exception.Create('TogsPropFloat.CreateAs: РѕР±СЉРµРєС‚ РЅРµРІРѕР·РјРѕР¶РЅРѕ РїСЂРёСЃРІРѕРёС‚СЊ ' + ogsObject.ClassName);
    exit;
  end;
  fValue := TogsPropValue(ogsObject).AsFloat;
@@ -890,7 +890,7 @@ end;
 function TogsPropBool.Assign(ogsObject: TogsBasic): Boolean;
 begin
  If not (ogsObject is TogsPropValue) then begin
-   raise Exception.Create('TogsPropBool.CreateAs: объект невозможно присвоить ' + ogsObject.ClassName);
+   raise Exception.Create('TogsPropBool.CreateAs: РѕР±СЉРµРєС‚ РЅРµРІРѕР·РјРѕР¶РЅРѕ РїСЂРёСЃРІРѕРёС‚СЊ ' + ogsObject.ClassName);
    exit;
  end;
  fValue := TogsPropvalue(ogsObject).AsBoolean;
@@ -976,7 +976,7 @@ end;
 function TogsPropNull.Assign(ogsObject: TogsBasic): Boolean;
 begin
  If not (ogsObject is TogsPropValue) then begin
-   raise Exception.Create('TogsPropNull.CreateAs: объект невозможно присвоить ' + ogsObject.ClassName);
+   raise Exception.Create('TogsPropNull.CreateAs: РѕР±СЉРµРєС‚ РЅРµРІРѕР·РјРѕР¶РЅРѕ РїСЂРёСЃРІРѕРёС‚СЊ ' + ogsObject.ClassName);
    exit;
  end;
 end;
@@ -1072,7 +1072,7 @@ var I: Integer; propValue: TogsPropValue;
 begin
 // WriteIn(['Get=',ItemName]);
  For I := 0 to Items.Count - 1 do begin
- // проверяем свойства всех TogsProperty, включая вложенные
+ // РїСЂРѕРІРµСЂСЏРµРј СЃРІРѕР№СЃС‚РІР° РІСЃРµС… TogsProperty, РІРєР»СЋС‡Р°СЏ РІР»РѕР¶РµРЅРЅС‹Рµ
 // WriteIn(['Class=',I,Item[I].ClassName,Item[I].MyName]);
   Result := Item[I][ItemName];
 // WriteIn(['Index=', I, Result.AsString]);
@@ -1090,7 +1090,7 @@ end;
 function TogsPropArray.AddItem(Value: TogsPropValue): TogsPropValue;
 begin
  Result := Value;
-// если последний указатель TogsPropValue = nil -> заменяем
+// РµСЃР»Рё РїРѕСЃР»РµРґРЅРёР№ СѓРєР°Р·Р°С‚РµР»СЊ TogsPropValue = nil -> Р·Р°РјРµРЅСЏРµРј
  If (Items.Count = 0) then Items.Add(Value) else
  If (Items[Items.Count - 1] = nil) then begin
   Items[Items.Count - 1] := Value;
@@ -1130,13 +1130,13 @@ procedure TogsPropArray.Sort(SortProc: TListSortCompare);
 var I: Integer; SortCol: TogsSortedCollection;
 begin
  SortCol := TogsSortedCollection.Create(SortProc);
-// заполняем сортированную коллекцию
+// Р·Р°РїРѕР»РЅСЏРµРј СЃРѕСЂС‚РёСЂРѕРІР°РЅРЅСѓСЋ РєРѕР»Р»РµРєС†РёСЋ
   For I := 0 to Items.Count - 1 do SortCol.Add(Items[I]);
-// перезаписываем Items
+// РїРµСЂРµР·Р°РїРёСЃС‹РІР°РµРј Items
  Items.DeleteAll;
  For I := 0 to SortCol.Count - 1 do begin
   Items.Add(SortCol[I]);
- // сортируем дочерние
+ // СЃРѕСЂС‚РёСЂСѓРµРј РґРѕС‡РµСЂРЅРёРµ
   Item[I].Sort(SortProc);
  end;
  SortCol.DeleteAll;
@@ -1183,7 +1183,7 @@ end;
 function TogsPropObject.AddItem(Value: TogsPropValue): TogsPropValue;
 begin
  Result := Value;
- // последний указатель TogsPropValue = nil -> заменяем
+ // РїРѕСЃР»РµРґРЅРёР№ СѓРєР°Р·Р°С‚РµР»СЊ TogsPropValue = nil -> Р·Р°РјРµРЅСЏРµРј
  If (Items.Count = 0) then Items.Add(Value) else
  If (TogsProperty(Items[Items.Count - 1]).propValue = nil) then begin
   TogsPropValue(Items[Items.Count-1]).AddItem(Value);

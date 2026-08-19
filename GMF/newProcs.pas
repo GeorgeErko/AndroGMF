@@ -15,7 +15,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  var MainPath:AnsiString;
      ApplicationMainForm:TForm;
      GlobalRender: Boolean = False;
-     etcIniName:String = {$IFDEF UNIX}'etc'+ {$ENDIF}SLash+'Registry.ini';
+     etcIniName:String = {$IFDEF UNIX}'etc'+ {$ENDIF}SLash+'registry.ini';
 
 // Конвертация
  Function GStrToFloat(S: AnsiString):Double;
@@ -407,7 +407,7 @@ end;
 function GReadInteger(Name: AnsiString; Def: Integer): Integer;
 var Ini:TIniFile;
 begin
- Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
+ Ini:=TIniFile.Create(MainPath + Slash + etcIniName);
   Result:=Ini.ReadInteger('Registry',Name,Def);
  Ini.Free;
 end;
@@ -415,7 +415,7 @@ end;
 function GReadFloat(Name: AnsiString; Def: Double): Double;
 var Ini:TIniFile;
 begin
- Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
+ Ini:=TIniFile.Create(MainPath + Slash + etcIniName);
   Result:=Ini.ReadFloat('Registry',Name,Def);
  Ini.Free;
 end;

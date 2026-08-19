@@ -420,7 +420,7 @@ begin
    thIndexTwigsXY :=TIndexTwigsXY.Create(1);thIndexTwigsXY.Duplicates:=True;
    thIndexPointsUID:=TIndexPointsUID.Create(1);thIndexPointsUID.Duplicates:=True;
    thIndexLotsUID :=TIndexLotsUID.Create(1);thIndexLotsUID.Duplicates:=True;
-  WriteIn(['LoadF22']);
+  WriteIn(['+*LoadF22']);
 end;
 
 { TForm2 }

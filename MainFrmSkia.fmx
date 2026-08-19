@@ -27,11 +27,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 67
+      TabOrder = 93
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 66
+      TabOrder = 92
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -47,6 +47,18 @@ inherited MainFormSkia: TMainFormSkia
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnPDFClick
+    end
+    object btnClose: TButton
+      Align = Right
+      Images = ImageList1
+      ImageIndex = 6
+      Position.X = 855.000000000000000000
+      Size.Width = 20.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 78
+      TextSettings.Trimming = None
+      OnClick = btnCloseClick
     end
   end
   inherited PanelPainter: TPanel
@@ -264,6 +276,30 @@ inherited MainFormSkia: TMainFormSkia
             FileName = 'C:\!GEOMASTER\Office\doc_map16.bmp'
           end>
         Name = 'doc_map16'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000012249444154388DE591314BC3
+              501485BF24D52C4E82523B09A2A320521C1D742B5270D245FC01EAE2A4A34B27
+              159CBA3A757072503717277F802E22B41DDA4A1B230DAF4D93973CB79847A0CE
+              E299CE799C7BEE795CF8F330D2C2BBAFA9E0FD15E97CA0FC216A3820F605B13F
+              40F65D647193C5D34B6D26971661E38DE9833300BA952362D3C4340D0AD50700
+              9E3616320DCCB490BD4EC2674EAE889C2EF98B9B1F83658D0F888547B77298E8
+              42F52EE18DED650C436B9F0D88BE3E891D87CEF1AE666A95E7B1228129FD5F02
+              7A2D64DF217F5ED34C85DB3AD6C86562E0660234D44B4B2A8DF67E51D3CF2B39
+              35B64128BC8437778A4821686FCD256FA320CA2CD5CE18AF97795C9BC5B26D30
+              0C2C153219089AAB3661103255DA8397EBF1DFF887F80683D1830555D1CACA00
+              00000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\Close.bmp'
+          end>
+        Name = 'Close'
       end>
     Destination = <
       item
@@ -300,6 +336,12 @@ inherited MainFormSkia: TMainFormSkia
         Layers = <
           item
             Name = 'doc_map16'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Close'
           end>
       end>
   end

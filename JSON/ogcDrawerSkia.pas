@@ -28,15 +28,20 @@ type
 
   TogsSkiaObject = class
   private
-    FPicture: ISkPicture;
+    FPictures: array of ISkPicture;
     FId: Int64;
     FUserObject: TObject;
     FBoundsWorld: TRectF;
     FCheck: Byte;
     FLayer: TResource;
+    function GetPicture(Index: Integer): ISkPicture;
+    procedure SetPicture(Index: Integer; Value: ISkPicture);
   public
-    procedure Draw(const ACanvas: ISkCanvas);
-    property Picture: ISkPicture read FPicture write FPicture;
+    constructor Create;
+    destructor Destroy; override;
+    procedure Draw(const ACanvas: ISkCanvas; ALODIndex: Integer = 0);
+    property Picture: ISkPicture index 0 read GetPicture write SetPicture;
+    property Pictures[Index: Integer]: ISkPicture read GetPicture write SetPicture;
     property Id: Int64 read FId write FId;
     property UserObject: TObject read FUserObject write FUserObject;
     property BoundsWorld: TRectF read FBoundsWorld write FBoundsWorld;
@@ -44,29 +49,24 @@ type
     property Layer: TResource read FLayer write FLayer;
   end;
 
-  TogsSkiaList = class(TObjectList<TogsSkiaObject>)
-  public
-    procedure DrawAll(const ACanvas: ISkCanvas);
-  end;
-
-  TogsDrawerSkia = class(TogsSpacer)
+  TogsDrawerSkia = class(TogsDrawer)
   private
+    FOnPaint: TNotifyEvent;
+    FskPainter: TSkPaintBox;
+    FSkCanvas: ISkCanvas;
     FWidth: Integer;
     FHeight: Integer;
-    FBitmap: TBitmap;
-    FInScene: Boolean;
-    FSkPainter: TSkPaintBox;
-    FSkCanvas: ISkCanvas;
     FDest: TRectF;
     FUseWorldCoords: Boolean;
-    FSkiaList: TogsSkiaList;
     FDebugDrawTextBounds: Boolean;
     FPrimitiveRecorder: ISkPictureRecorder;
     FPrimitiveCanvas: ISkCanvas;
     FPrimitiveOldCanvas: ISkCanvas;
     FPrimitiveId: Int64;
+    FPrimitiveLODIndex: Integer;
     FPrimitiveUserObject: TTD;
     FPrimitiveBoundsWorld: TRectF;
+  protected
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
     procedure SetHeight(AValue: Integer); override;
@@ -78,6 +78,9 @@ type
   public
     constructor Create(ogsSelector_: TogsSelector; OnPaint_: TNotifyEvent; SkPainter_: TSkPaintBox);
     destructor Destroy; override;
+
+    function SwapSkCanvas(const ACanvas: ISkCanvas): ISkCanvas;
+    procedure RestoreSkCanvas(const AOldCanvas: ISkCanvas);
 
     procedure BeginFrame(const ACanvas: ISkCanvas; const ADest: TRectF);
     procedure EndFrame;
@@ -113,16 +116,11 @@ type
 
     procedure RedrawAll; override;
 
-    procedure ClearSkiaList;
-    procedure DrawSkiaList(const ACanvas: ISkCanvas);
-
-    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD);
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer = 0);
     procedure EndPrimitive;
 
-    property Bitmap: TBitmap read FBitmap;
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
     property DebugDrawTextBounds: Boolean read FDebugDrawTextBounds write FDebugDrawTextBounds;
-    property SkiaList: TogsSkiaList read FSkiaList;
     property skPainter: TSkPaintBox read FskPainter;
     property SkCanvas: ISkCanvas read FSkCanvas;
   end;
@@ -143,7 +141,7 @@ type
     procedure BeginCapture(const X, Y: Double; var Params: TCaptureRec);
     procedure EndCapture;
 
-    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD); reintroduce;
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer = 0); reintroduce;
     procedure EndPrimitive; reintroduce;
 
     procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); override;
@@ -187,29 +185,63 @@ begin
   fDrawerMode := dmScene;
   FWidth := 1;
   FHeight := 1;
-  FBitmap := TBitmap.Create;
-  FBitmap.SetSize(FWidth, FHeight);
-  FInScene := False;
   FUseWorldCoords := False;
-  FSkiaList := TogsSkiaList.Create(True);
   FSkPainter := SkPainter_;
 end;
 
 destructor TogsDrawerSkia.Destroy;
 begin
-  FSkiaList.Free;
-  FSkiaList := nil;
-   FBitmap.Free;
-   FBitmap := nil;
   inherited;
  end;
 
 { TogsSkiaObject }
 
-procedure TogsSkiaObject.Draw(const ACanvas: ISkCanvas);
+constructor TogsSkiaObject.Create;
 begin
-  if (ACanvas = nil) or (FPicture = nil) then
+  SetLength(FPictures, 0);
+end;
+
+destructor TogsSkiaObject.Destroy;
+begin
+  SetLength(FPictures, 0);
+  inherited;
+end;
+
+function TogsSkiaObject.GetPicture(Index: Integer): ISkPicture;
+begin
+  if (Index >= 0) and (Index < Length(FPictures)) then
+    Result := FPictures[Index]
+  else
+    Result := nil;
+end;
+
+procedure TogsSkiaObject.SetPicture(Index: Integer; Value: ISkPicture);
+begin
+  if Index < 0 then Exit;
+  if Length(FPictures) <= Index then
+    SetLength(FPictures, Index + 1);
+  FPictures[Index] := Value;
+end;
+
+procedure TogsSkiaObject.Draw(const ACanvas: ISkCanvas; ALODIndex: Integer);
+var
+  Pic: ISkPicture;
+begin
+  if (ACanvas = nil) then
     Exit;
+
+  if (ALODIndex >= 0) and (ALODIndex < Length(FPictures)) then
+    Pic := FPictures[ALODIndex]
+  else if Length(FPictures) > 0 then
+    Pic := FPictures[0]
+  else
+    Pic := nil;
+
+  if Pic = nil then
+  begin
+   // WriteIn(['TogsSkiaObject.Draw', 'LOD=', ALODIndex, 'Pic=nil']);
+    Exit;
+  end;
 
   if FLayer <> nil then
   begin
@@ -221,19 +253,19 @@ begin
     if FCheck = 0 then
       Exit;
   end;
-  ACanvas.DrawPicture(FPicture);
+//  WriteIn(['TogsSkiaObject.Draw', 'LOD=', ALODIndex, 'DrawPicture']);
+  ACanvas.DrawPicture(Pic);
 end;
 
-{ TogsSkiaList }
-
-procedure TogsSkiaList.DrawAll(const ACanvas: ISkCanvas);
-var
-  I: Integer;
+function TogsDrawerSkia.SwapSkCanvas(const ACanvas: ISkCanvas): ISkCanvas;
 begin
-  if ACanvas = nil then
-    Exit;
-  for I := 0 to Count - 1 do
-    Items[I].Draw(ACanvas);
+  Result := FSkCanvas;
+  FSkCanvas := ACanvas;
+end;
+
+procedure TogsDrawerSkia.RestoreSkCanvas(const AOldCanvas: ISkCanvas);
+begin
+  FSkCanvas := AOldCanvas;
 end;
 
 procedure TogsDrawerSkia.BeginFrame(const ACanvas: ISkCanvas; const ADest: TRectF);
@@ -242,9 +274,6 @@ begin
   FDest := ADest;
   if FSkCanvas <> nil then
     FSkCanvas.Save;
-
-  if (FBitmap <> nil) and ((FBitmap.Width <> FWidth) or (FBitmap.Height <> FHeight)) then
-    FBitmap.SetSize(FWidth, FHeight);
 end;
 
 procedure TogsDrawerSkia.EndFrame;
@@ -255,26 +284,21 @@ begin
   FSkCanvas := nil;
 end;
 
-procedure TogsDrawerSkia.ClearSkiaList;
-begin
-  if FSkiaList <> nil then
-    FSkiaList.Clear;
-end;
-
-procedure TogsDrawerSkia.DrawSkiaList(const ACanvas: ISkCanvas);
-begin
-  if FSkiaList <> nil then
-    FSkiaList.DrawAll(ACanvas);
-end;
-
-procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD);
+procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer);
 begin
   if FSkCanvas = nil then
     Exit;
   if FPrimitiveRecorder <> nil then
     Exit;
 
+  if (AUserObject <> nil) and (AUserObject.DrawerObject is TogsSkiaObject) and (ALODIndex = LOD1_INDEX) then
+  begin
+    AUserObject.DrawerObject.Free;
+    AUserObject.DrawerObject := nil;
+  end;
+
   FPrimitiveId := AId;
+  FPrimitiveLODIndex := ALODIndex;
   FPrimitiveUserObject := AUserObject;
   FPrimitiveBoundsWorld := FDest;
 
@@ -288,28 +312,40 @@ procedure TogsDrawerSkia.EndPrimitive;
 var
   Obj: TogsSkiaObject;
   L: TResource;
+  LODPic: ISkPicture;
 begin
   if FPrimitiveRecorder = nil then
     Exit;
   try
-    Obj := TogsSkiaObject.Create;
-    Obj.Id := FPrimitiveId;
-    Obj.UserObject := FPrimitiveUserObject;
-    Obj.BoundsWorld := FPrimitiveBoundsWorld;
-    Obj.Picture := FPrimitiveRecorder.FinishRecording;
-    L := nil;
+    LODPic := FPrimitiveRecorder.FinishRecording;
+    if LODPic = nil then
+      Exit;
+
+    if (FPrimitiveLODIndex = LOD1_INDEX) or (FPrimitiveUserObject = nil) or (not (FPrimitiveUserObject.DrawerObject is TogsSkiaObject)) then
+    begin
+      Obj := TogsSkiaObject.Create;
+      Obj.Id := FPrimitiveId;
+      Obj.UserObject := FPrimitiveUserObject;
+      Obj.BoundsWorld := FPrimitiveBoundsWorld;
+      L := nil;
+      if FPrimitiveUserObject <> nil then
+        L := FPrimitiveUserObject.GetLayer;
+      Obj.Layer := L;
+      if L <> nil then
+        Obj.Check := L.Check
+      else
+        Obj.Check := 1;
+      if FPrimitiveUserObject <> nil then
+        FPrimitiveUserObject.DrawerObject := Obj;
+    end
+    else
+    begin
+      Obj := TogsSkiaObject(FPrimitiveUserObject.DrawerObject);
+    end;
+
+    Obj.Pictures[FPrimitiveLODIndex] := LODPic;
     if FPrimitiveUserObject <> nil then
-      L := FPrimitiveUserObject.GetLayer;
-    Obj.Layer := L;
-    if L <> nil then
-      Obj.Check := L.Check
-    else
-      Obj.Check := 1;
-    FPrimitiveUserObject.DrawerObject := Obj;
-    if (FSkiaList <> nil) and (Obj.Picture <> nil) then
-      FSkiaList.Add(Obj)
-    else
-      Obj.Free;
+      FPrimitiveUserObject.Modified := False;
   finally
     FSkCanvas := FPrimitiveOldCanvas;
     FPrimitiveOldCanvas := nil;
@@ -317,6 +353,7 @@ begin
     FPrimitiveRecorder := nil;
     FPrimitiveUserObject := nil;
     FPrimitiveId := 0;
+    FPrimitiveLODIndex := 0;
     FPrimitiveBoundsWorld := TRectF.Empty;
   end;
 end;
@@ -324,8 +361,6 @@ end;
 function TogsDrawerSkia.GetCanvas: TCanvas;
 begin
   Result := nil;
-  if FBitmap <> nil then
-    Result := FBitmap.Canvas;
 end;
 
 procedure TogsDrawerSkia.SetPen(AValue: TogsPen);
@@ -353,8 +388,6 @@ begin
   if AValue < 1 then
     AValue := 1;
   FHeight := AValue;
-  if FBitmap <> nil then
-    FBitmap.SetSize(FWidth, FHeight);
 end;
 
 procedure TogsDrawerSkia.SetWidth(AValue: Integer);
@@ -362,8 +395,6 @@ begin
   if AValue < 1 then
     AValue := 1;
   FWidth := AValue;
-  if FBitmap <> nil then
-    FBitmap.SetSize(FWidth, FHeight);
 end;
 
 procedure TogsDrawerSkia.Clear(AColor: LongInt);
@@ -372,10 +403,6 @@ var
 begin
   if FSkCanvas <> nil then
     FSkCanvas.Clear(AColor);
-
-  if (FBitmap <> nil) and FInScene then
-    FBitmap.Canvas.Clear(AColor);
-
   Paint := nil;
 end;
 
@@ -435,12 +462,6 @@ begin
     else
       Paint.StrokeWidth := 0.03;
     FSkCanvas.DrawLine(P0.X, P0.Y, P1.X, P1.Y, Paint);
-  end
-  else if Canvas <> nil then begin
-    Canvas.Stroke.Kind := TBrushKind.Solid;
-    Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
-   Canvas.Stroke.Thickness := Max(1.0, Pen.penWidth);
-    Canvas.DrawLine(P0, P1, 1);
   end;
 end;
 
@@ -503,14 +524,6 @@ begin
     end   else
       Paint.StrokeWidth := Max(1.0, Pen.penWidth);
     FSkCanvas.DrawPath(Path, Paint);
-  end
-  else if Canvas <> nil then
-  begin
-    for I := 0 to Points.Count - 2 do
-    begin
-      P0 := TlDot(Points.Items[I]);
-      DrawLine(P0.XDot, P0.YDot, TlDot(Points.Items[I + 1]).XDot, TlDot(Points.Items[I + 1]).YDot, False);
-    end;
   end;
 end;
 
@@ -552,12 +565,6 @@ begin
     Paint.Style := TSkPaintStyle.Fill;
     Paint.Color := EnsureOpaqueAlpha(Brush.brColor);
     FSkCanvas.DrawPath(Path, Paint);
-  end
-  else if Canvas <> nil then
-  begin
-    // fallback: use existing canvas drawing by polyline
-    for I := 0 to Points.Count - 2 do
-      DrawLine(TlDot(Points[I]).XDot, TlDot(Points[I]).YDot, TlDot(Points[I + 1]).XDot, TlDot(Points[I + 1]).YDot, False);
   end;
 end;
 
@@ -606,18 +613,11 @@ begin
     else
       Paint.StrokeWidth := Max(1.0, Pen.penWidth);
     FSkCanvas.DrawCircle(C.X, C.Y, R, Paint);
-  end
-  else if Canvas <> nil then
-  begin
-    Canvas.Stroke.Color := EnsureOpaqueAlpha(Pen.penColor);
-    Canvas.DrawEllipse(RectF(C.X - R, C.Y - R, C.X + R, C.Y + R), 1);
   end;
 end;
 
 procedure TogsDrawerSkia.MoveTo(X, Y: Integer);
 begin
-  if Canvas <> nil then
-   // Canvas.MoveTo(PointF(X, Y));
 end;
 
 procedure TogsDrawerSkia.RedrawAll;
@@ -628,8 +628,6 @@ end;
 
 procedure TogsDrawerSkia.LineTo(X, Y: Integer);
 begin
-  if Canvas <> nil then
-   // Canvas.LineTo(PointF(X, Y));
 end;
 
 function TogsDrawerSkia.geoWidth: Double;
@@ -650,20 +648,10 @@ end;
 
 procedure TogsDrawerSkia.BeginPaint;
 begin
-  if FInScene then
-    Exit;
-  if (FBitmap <> nil) and (FBitmap.Canvas <> nil) then
-    if FBitmap.Canvas.BeginScene then
-      FInScene := True;
 end;
 
 procedure TogsDrawerSkia.EndPaint;
 begin
-  if not FInScene then
-    Exit;
-  if (FBitmap <> nil) and (FBitmap.Canvas <> nil) then
-    FBitmap.Canvas.EndScene;
-  FInScene := False;
 end;
 
 procedure TogsDrawerSkia.DrawBitmapAlignedPix(const AnchorPix: TPointF; const Bitmap: TBitmap;
@@ -968,7 +956,7 @@ begin
   FCurrentUserObject := nil;
 end;
 
-procedure TogsCaptureDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD);
+procedure TogsCaptureDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer);
 begin
   FCurrentUserObject := AUserObject;
 end;

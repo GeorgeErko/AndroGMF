@@ -1,8 +1,8 @@
-unit uExecRegisterClass;
+п»їunit uExecRegisterClass;
 
 interface
  uses
-  newProcs,Collect,WpTwigs,WptForm2,WpRects,WpArcs,Types_Dimano,TwgColle,TextManager,RPrims,
+  Classes, newProcs,Collect,WpTwigs,WptForm2,WpRects,WpArcs,Types_Dimano,TwgColle,TextManager,RPrims,
   ObjBlockList,newProperties,newLayersTable,newForm0,newFontScale,newBlock,mpMarker,Lines2,
   Lines3, Lib2,
   Lib,HatchLot,DwgText,ecDot,ecDot2,ecLot,ecText,newResource,
@@ -10,10 +10,19 @@ interface
 
 procedure RegPrimitives;
 
-implementation uses FMX.Forms, System.IOUtils, Writer;
+const
+ StoreLoadFileName: AnsiString = 'C:\!!!Р“Р—\Р‘РѕСЂС‚\!!storeload.gmf';
+ Registered: boolean = false;
+
+procedure Store(Obj: TTwgObject);
+function Load: TTwgObject;
+procedure StoreNLoad(Obj: TTwgObject);
+
+implementation uses FMX.Forms, System.IOUtils, Writer, System.SysUtils;
 
 procedure RegPrimitives;
 begin
+ if Registered then exit;
 // Collect
  RegisterObject(PCollection,50);
  RegisterObject(TSortedCollection,51);
@@ -128,24 +137,24 @@ begin
       RGB.Argb[3]:=120;
       ID:=0;
       Rang:=2.99;
-      RecString:='Новый+Новый';
+      RecString:='РќРѕРІС‹Р№+РќРѕРІС‹Р№';
       SSInd:=-1;
       ZnkInd.LInd :=-1;
       ZnkInd.SpInd :=-1;                                 {89101772713}
       Check:=1;
-     { По базе }
+     { РџРѕ Р±Р°Р·Рµ }
       NBase:=1;
       Hatch:=4;
      { Ver 6 }
-      NameBase:='Нет связей';
-      NameMark:='Не подписывать';
+      NameBase:='РќРµС‚ СЃРІСЏР·РµР№';
+      NameMark:='РќРµ РїРѕРґРїРёСЃС‹РІР°С‚СЊ';
       NameLot:='Erko';
-     { Ver 7 отображение}
-      Lot  :=Ot_Twig;  { Заливка-ветви }
-      Znak :=0;  { Условные знаки }
+     { Ver 7 РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ}
+      Lot  :=Ot_Twig;  { Р—Р°Р»РёРІРєР°-РІРµС‚РІРё }
+      Znak :=0;  { РЈСЃР»РѕРІРЅС‹Рµ Р·РЅР°РєРё }
       ZnakKoef:=0.5;
-      Fon  :=0;  { Непрозрачный фон }
-      Marked:=1;  { Подписывать }
+      Fon  :=0;  { РќРµРїСЂРѕР·СЂР°С‡РЅС‹Р№ С„РѕРЅ }
+      Marked:=1;  { РџРѕРґРїРёСЃС‹РІР°С‚СЊ }
       Standart:=1;
       MakeUsel:=True;
      {}
@@ -190,7 +199,70 @@ begin
      {}
       LineWidth:=-1;
      end;
+ Registered := True;
 end;
 
+
+procedure Store(Obj: TTwgObject);
+var Stream: TBufStream;
+begin
+ Stream := TBufStream.InitFileStream(StoreLoadFileName, fmCreate);
+ try
+  Stream.Put(Obj);
+ finally
+  Stream.Free;
+ end;
+end;
+
+function Load: TTwgObject;
+var Stream: TBufStream;
+begin
+ Result := nil;
+ Stream := TBufStream.InitFileStream(StoreLoadFileName, fmOpenRead);
+ try
+  Result := Stream.Get;
+ finally
+  Stream.Free;
+ end;
+end;
+
+procedure StoreNLoad(Obj: TTwgObject);
+var Loaded: TTwgObject;
+
+ function SerializeObject(AObj: TTwgObject): TBytes;
+ var S: TBufStream; N: Integer;
+ begin
+  S := TBufStream.Create(True);
+  try
+   S.Put(AObj);
+   N := S.Size;
+   SetLength(Result, N);
+   if N <> 0 then
+   begin
+    S.Position := 0;
+    S.Stream.ReadBuffer(Result[0], N);
+   end;
+  finally
+   S.Free;
+  end;
+ end;
+
+var B0, B1: TBytes;
+begin
+ if Obj = nil then
+  raise Exception.Create('StoreNLoad: Obj=nil');
+
+ Store(Obj);
+ Loaded := Load;
+ try
+  B0 := SerializeObject(Obj);
+  B1 := SerializeObject(Loaded);
+
+  if (Length(B0) <> Length(B1)) or ((Length(B0) <> 0) and (not CompareMem(@B0[0], @B1[0], Length(B0)))) then
+   raise Exception.Create('StoreNLoad: mismatch after round-trip');
+ finally
+  Loaded.Free;
+ end;
+end;
 
 end.

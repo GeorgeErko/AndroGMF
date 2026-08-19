@@ -1,7 +1,8 @@
 ﻿{$N+}
 Unit TwgDraw;
  Interface
-  Uses FMX.Objects, FMX.Graphics, System.Types, Collect, newConsts, newResource, Classes, newFontScale, newSelector;
+  Uses FMX.Objects, FMX.Graphics, System.Types, Collect, newConsts, newResource, Classes, newFontScale, newSelector, System.Skia,
+       ogcBasic;
 
  { Процедуры линейного преобразования координат }
 
@@ -9,6 +10,9 @@ Unit TwgDraw;
   its_test=12345;
   its_printer=12346;
   its_Dxf=12347;
+  LOD1_INDEX = 0;
+  LOD2_INDEX = 1;
+  LOD2_TEXT_HEIGHT_THRESHOLD = 15;
 
 type
   TXY = record
@@ -32,7 +36,10 @@ var LotRgn:TRegion;
  Type
    PTD=^TTD;
     TTD=class(TTwgObject)
-//      Owner    :Pointer;
+   protected
+      function GetModified: Boolean; virtual;
+      procedure SetModified(AValue: Boolean); virtual;
+   public
        Constructor Create(O:Pointer);
      // Селектор + габариты
        Function  GetSelector:TSelector;virtual;abstract;
@@ -75,6 +82,9 @@ var LotRgn:TRegion;
        Function GetDrawerObject: TObject; virtual; abstract;
        Procedure SetDrawerObject(Obj: TObject); virtual; abstract;
        Property DrawerObject: TObject read GetDrawerObject write SetDrawerObject;
+       Property Modified: Boolean read GetModified write SetModified;
+       Procedure SkiaDraw(const ACanvas: ISkCanvas); virtual; abstract;
+       Function SkiaVisible(Selector: TSelector): Boolean; virtual; abstract;
     end;
 
 
@@ -115,7 +125,17 @@ begin
 //
 end;
 
-Constructor TTD.Create;
+function TTD.GetModified: Boolean;
+begin
+ Result := True;
+end;
+
+procedure TTD.SetModified(AValue: Boolean);
+begin
+ //
+end;
+
+Constructor TTD.Create(O:Pointer);
  begin
 //   Owner:=O;
  end;

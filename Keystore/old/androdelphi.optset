@@ -1,0 +1,24 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <PF_KeyStoreDebug>Keystore\geomaster-release.keystore</PF_KeyStoreDebug>
+        <PF_KeyStorePassDebug>850847E45F960799CF65E530A4437B88E44308587EE7ECF89F5677378E3C3C87DB1DA3F8E3431C6BC1AE577CFADBC36BBAE93603046D229E167945DFE5FF22D6C924F373D516FACDBFBBAF5207401D4992333E581DE5096EE3EC16E3</PF_KeyStorePassDebug>
+        <PF_AliasKeyDebug>geomaster_alias</PF_AliasKeyDebug>
+        <PF_AliasKeyPassDebug>850847E45F960799CF65E530A4437B88E44308587EE7ECF89F5677378E3C3C87DB1DA3F8E3431C6BC1AE577CFADBC36BBAE93603046D229E167945DFE5FF22D6C924F373D516FACDBFBBAF5207401D4992333E581DE5096EE3EC16E3</PF_AliasKeyPassDebug>
+        <VerInfo_Build>1</VerInfo_Build>
+        <IncludeAndroid_AdaptiveIcon>true</IncludeAndroid_AdaptiveIcon>
+        <IncludeAndroid_VectorizedSplash>true</IncludeAndroid_VectorizedSplash>
+        <Android_BackgroundColor>#FFFFFF</Android_BackgroundColor>
+        <Android_DarkBackgroundColor>#000000</Android_DarkBackgroundColor>
+        <IncludeAndroid_NotificationAccentColor>false</IncludeAndroid_NotificationAccentColor>
+        <Android_NotificationAccentColor>#000000</Android_NotificationAccentColor>
+        <IncludeAndroid_VectorizedNotificationIcon>true</IncludeAndroid_VectorizedNotificationIcon>
+    </PropertyGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>OptionSet</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality/>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+</Project>

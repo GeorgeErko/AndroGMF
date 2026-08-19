@@ -41,6 +41,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inherited btnPDF: TCornerButton
       Position.Y = 4.000000000000000000
     end
+    inherited btnClose: TButton
+      Position.X = 903.000000000000000000
+    end
     object Load: TButton
       Position.X = 274.000000000000000000
       Position.Y = 4.000000000000000000
@@ -74,8 +77,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       OnClick = btnEscClick
     end
     object Button1: TButton
-      Position.X = 376.000000000000000000
-      Position.Y = 4.000000000000000000
+      Position.X = 779.000000000000000000
+      Position.Y = 5.000000000000000000
       Size.Width = 75.000000000000000000
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
@@ -83,6 +86,28 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Text = 'Button1'
       TextSettings.Trimming = None
       OnClick = Button1Click
+    end
+    object btnGPKGB: TButton
+      Position.X = 360.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 77.000000000000000000
+      Size.Height = 21.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 79
+      Text = 'btnGPKGB'
+      TextSettings.Trimming = None
+      OnClick = btnGPKGBClick
+    end
+    object btnDoc: TButton
+      Position.X = 445.000000000000000000
+      Position.Y = 8.000000000000000000
+      Size.Width = 83.000000000000000000
+      Size.Height = 21.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 81
+      Text = 'btnDoc'
+      TextSettings.Trimming = None
+      OnClick = btnDocClick
     end
   end
   inherited PanelPainter: TPanel

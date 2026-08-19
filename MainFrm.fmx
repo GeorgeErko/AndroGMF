@@ -21,8 +21,8 @@ object MainForm: TMainForm
     Size.Height = 111.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 2
-    Viewport.Width = 910.000000000000000000
-    Viewport.Height = 111.000000000000000000
+    Viewport.Width = 902.000000000000000000
+    Viewport.Height = 103.000000000000000000
   end
   object Splitter1: TSplitter
     Align = Bottom

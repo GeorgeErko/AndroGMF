@@ -75,6 +75,8 @@ type
   Procedure SetGabarites(MRect_:TMRect);override;
  //
   Procedure Draw32(Drawer: TogsDrawer;PntZnk:TSortedCollection;FontViewEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);override;
+  Procedure SkiaDraw(const ACanvas: ISkCanvas); override;
+  Procedure DrawLOD2(Drawer: TogsDrawerSkia);
  end;
 
 var AlignStrings:TStrings;
@@ -672,16 +674,16 @@ begin
   TextDirty := True;
   Result:=True;
  end else
- If PropName = 'Аттрибут' then begin
+ If propName = 'Аттрибут' then begin
   if propValue = '' then exit;
   Text.AttrName:=propValue;
   Result:=True;
  end else
- If PropName = 'Растяжение' then begin
+ If propName = 'Растяжение' then begin
   try XKoef:=GStrToFloat(propValue); except exit;end;
   Result:=True;
  end else
- If PropName = 'Выравнивание' then begin
+ If propName = 'Выравнивание' then begin
   If AlignStrings.IndexOf(propValue)<>-1 then Text.Align:=AlignStrings.IndexOf(propValue);
   Result:=True;
  end else begin
@@ -1002,12 +1004,13 @@ VectorText:
    mRect := TMRect.Create;
    try
     GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
-    TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
-    TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
+   // TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
+   // TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
    finally
     mRect.Free;
    end;
   end;
+//  DrawLOD2(Drawer as TogsDrawerSkia);
   Exit;
  end;
 
@@ -1055,11 +1058,32 @@ VectorText:
   mRect := TMRect.Create;
   try
    GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
-   TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
-   TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
+ //  TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
+  // TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
   finally
    mRect.Free;
   end;
+ end;
+end;
+
+procedure TDotText.SkiaDraw(const ACanvas: ISkCanvas);
+var skObj: TogsSkiaObject ;
+begin
+ skObj := DrawerObject as TogsSkiaObject;
+ if skObj = nil then exit;
+ if Selector.XRasst(Text.Height) <= LOD2_TEXT_HEIGHT_THRESHOLD then
+  SkObj.Draw(ACanvas, LOD2_INDEX)
+   else
+    SkObj.Draw(ACanvas, LOD1_INDEX)
+end;
+
+procedure TDotText.DrawLOD2(Drawer: TogsDrawerSkia);
+begin
+ Drawer.BeginPrimitive(Int64(Self), Self, LOD2_INDEX);
+ try
+  TextBitmap.DrawBounds(Drawer, WinColorToAlphaColor(Text.Color), 0.2);
+ finally
+  Drawer.EndPrimitive;
  end;
 end;
 

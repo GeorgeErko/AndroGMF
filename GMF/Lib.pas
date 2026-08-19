@@ -1,12 +1,13 @@
 ﻿Unit lib;
 interface Uses Collect, Twgdraw, newConsts, Maths_Basic,
                Classes,Circle_di, Polygons, FMX.Graphics, FMX.Types, newSelector, DWGText,
-               System.Types, ogcBasic, TwgBitmaps;
+               System.Types, ogcBasic, TwgBitmaps, System.Skia;
 {==============================================================================}
 
 const VerConstOfZnk=1;
       VersionOfZnk:Integer=0;
       koefLine=0.1;
+      LOD_RASTER_THRESHOLD = 0;
 
 type
 // геоточка
@@ -192,7 +193,7 @@ var Ar:Array[0..10000] of TPoint;
 var
  GlobalPoint: TPoint_Sign;
  GSignBmp: TBitmap;
- GSignBmpCanvas: TCanvas;
+ GSignSkCanvas: ISkCanvas;
  GSignSect: TSect;
  GSignScale, GSignDX, GSignDY: Single;
 
@@ -299,7 +300,6 @@ var XX,YY,XX1,YY1:Double;
 begin
 // Canvas.PenWidth:=round(Ko*Mxx*koefLine);
  Pen := Selector.Drawer.SelectPen(TogsPen.Create(Color, Ko*0.1, nil));
- if not BkColor then Selector.Drawer.Canvas.Stroke.Color:= Color;
  XX:=x+(x_b*ko*cos(Ugol)-y_b*ko*sin(Ugol));
  YY:=y+(x_B*ko*sin(Ugol)+y_b*ko*cos(Ugol));
  XX1:=x+(x_e*ko*cos(Ugol)-y_e*ko*sin(Ugol));
@@ -392,6 +392,7 @@ var I:Integer;Col:PCollection;
 begin
  Col:=Arc_Rotate2(X,Y,Angle,x+x_1*kX,y+y_1*kY,x+x_2*kX,y+y_2*kY,
                                          x+xu_1*kX,y+yu_1*kY,x+xu_2*kX,y+yu_2*kY,N);
+ If Col = nil then exit;
  For I:=0 to Col.Count-1 do MRect_.Insert(TDot1(Col[I]).X,TDot1(Col[I]).Y);
  Col.Free;
 end;
@@ -1114,7 +1115,7 @@ end;
            W := Abs(Sect.Right-Sect.Left); H := Abs(Sect.Bottom-Sect.Top);
            // LOD: draw SignBitmap for small signs instead of vector geometry
            if (SignBitmap<>nil) and (Drawer is TogsDrawerSkia) and
-              (XRasst(W) < 40) and (YRasst(H) < 40) and
+              (XRasst(W) < LOD_RASTER_THRESHOLD) and (YRasst(H) < LOD_RASTER_THRESHOLD) and
               (XRasst(W) > 0) and (YRasst(H) > 0) then
            begin
             if TogsDrawerSkia(Drawer).UseWorldCoords then
@@ -1175,7 +1176,7 @@ end;
      X:=Round(X);Y:=Round(Y);
     end;
 If not Vis then Exit;
-Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
+//Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
 //Canvas.PenWidth:=round(Ko*Mxx*koefLine);
 // Mxx:=Mxx;Myy:=Myy;Ko:=Ko;
 for i:=0 to Methodcol.Count-1 do With Selector do begin
@@ -1338,34 +1339,49 @@ end;
 procedure SignBitmapOnPoly(Obj: Integer; Poly: PGeoPoint; penColor, brushColor: Integer; lineWidth: Double; useColor: Boolean; isPolygon: Boolean); stdcall;
 var I: Integer;
     P: PGeoPoint;
-    Points: TPolygon;
+    PathBuilder: ISkPathBuilder;
+    Path: ISkPath;
+    StrokePaint, FillPaint: ISkPaint;
     StrokeColor, FillColor: TAlphaColor;
+    X, Y: Single;
 begin
- if (GSignBmpCanvas = nil) or (Poly = nil) or (Poly.Count < 1) then Exit;
- SetLength(Points, Poly.Count);
+ if (GSignSkCanvas = nil) or (Poly = nil) or (Poly.Count < 1) then Exit;
+ StrokeColor := TAlphaColor($FF000000 or (Cardinal(penColor) and $00FFFFFF));
+ FillColor := TAlphaColor($FF000000 or (Cardinal(brushColor) and $00FFFFFF));
+
+ PathBuilder := TSkPathBuilder.Create;
  P := Poly;
  for I := 0 to Poly.Count - 1 do begin
-  Points[I] := PointF(
-   Single(P.X) * GSignScale + GSignDX,
-   Single(P.Y) * GSignScale + GSignDY
-  );
+  X := Single(P.X) * GSignScale + GSignDX;
+  Y := Single(P.Y) * GSignScale + GSignDY;
+  if I = 0 then
+   PathBuilder.MoveTo(X, Y)
+  else
+   PathBuilder.LineTo(X, Y);
   P := P.Next;
   if P = nil then Break;
  end;
- StrokeColor := TAlphaColor($FF000000 or (Cardinal(penColor) and $00FFFFFF));
- FillColor := TAlphaColor($FF000000 or (Cardinal(brushColor) and $00FFFFFF));
- GSignBmpCanvas.Stroke.Kind := TBrushKind.Solid;
- GSignBmpCanvas.Stroke.Color := StrokeColor;
- if lineWidth > 0 then
-  GSignBmpCanvas.Stroke.Thickness := lineWidth * GSignScale
- else
-  GSignBmpCanvas.Stroke.Thickness := 1;
+ if isPolygon then
+  PathBuilder.Close;
+ Path := PathBuilder.Detach;
+
  if isPolygon and useColor then begin
-  GSignBmpCanvas.Fill.Kind := TBrushKind.Solid;
-  GSignBmpCanvas.Fill.Color := FillColor;
-  GSignBmpCanvas.FillPolygon(Points,1);
+  FillPaint := TSkPaint.Create;
+  FillPaint.AntiAlias := True;
+  FillPaint.Style := TSkPaintStyle.Fill;
+  FillPaint.Color := FillColor;
+  GSignSkCanvas.DrawPath(Path, FillPaint);
  end;
- GSignBmpCanvas.DrawPolygon(Points,1);
+
+ StrokePaint := TSkPaint.Create;
+ StrokePaint.AntiAlias := True;
+ StrokePaint.Style := TSkPaintStyle.Stroke;
+ StrokePaint.Color := StrokeColor;
+ if lineWidth > 0 then
+  StrokePaint.StrokeWidth := lineWidth * GSignScale
+ else
+  StrokePaint.StrokeWidth := 1;
+ GSignSkCanvas.DrawPath(Path, StrokePaint);
 end;
 
 procedure SignBitmapOnText(Obj: Integer; X, Y: Double; FontName: PChar; txtHeight, txtAngle, txtScale: Double;
@@ -1382,6 +1398,11 @@ var I: Integer;
     Sect: TSect;
     W0,H0,Pad,InnerW,InnerH,Scale: Single;
     Geo: TGeometryEvents;
+    D: TBitmapData;
+    DataPtr: Pointer;
+    RowBytes: Integer;
+    ImgInfo: TSkImageInfo;
+    Surface: ISkSurface;
 begin
  for I := 0 to Count - 1 do begin
   PS := TPoint_Sign(At(I));
@@ -1403,20 +1424,34 @@ begin
   if PS.SignBitmap = nil then PS.SignBitmap := TTwgBitmap.Create(PS);
   PS.SignBitmap.Bitmap.SetSize(100,100);
   GSignBmp := PS.SignBitmap.Bitmap;
-  GSignBmpCanvas := GSignBmp.Canvas;
-  GSignBmpCanvas.BeginScene;
+  if GSignBmp.Map(TMapAccess.Write, D) then
   try
-   GSignBmpCanvas.Clear(0);
-   Geo := TGeometryEvents.Create(0, SignBitmapOnPoly, SignBitmapOnText);
-   try
-    PS.DrawTo(Geo);
-   finally
-    Geo.Free;
+   ImgInfo := TSkImageInfo.Create(100, 100, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+   DataPtr := D.Data;
+   RowBytes := D.Pitch;
+   if RowBytes < 0 then
+   begin
+     RowBytes := -RowBytes;
+     DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (GSignBmp.Height - 1));
+   end;
+   Surface := TSkSurface.MakeRasterDirect(ImgInfo, DataPtr, RowBytes);
+   if Surface <> nil then
+   begin
+    GSignSkCanvas := Surface.Canvas;
+    GSignSkCanvas.Clear(0);
+    Geo := TGeometryEvents.Create(0, SignBitmapOnPoly, SignBitmapOnText);
+    try
+     PS.DrawTo(Geo);
+    finally
+     Geo.Free;
+    end;
    end;
   finally
-   GSignBmpCanvas.EndScene;
-   PS.SignBitmap.Bitmap.SaveToFile(MainPath + IntToStr(PS.MyInd)+'.bmp');
-   GSignBmpCanvas := nil; GSignBmp := nil;
+   GSignSkCanvas := nil;
+   Surface := nil;
+   GSignBmp.Unmap(D);
+   //PS.SignBitmap.Bitmap.SaveToFile(MainPath + IntToStr(PS.MyInd)+'.bmp');
+   GSignBmp := nil;
   end;
  end;
 end;

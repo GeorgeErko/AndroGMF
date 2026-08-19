@@ -4,7 +4,7 @@ object localOpenForm: TlocalOpenForm
   BorderStyle = Single
   Caption = 'Form1'
   ClientHeight = 505
-  ClientWidth = 541
+  ClientWidth = 487
   Position = ScreenCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -17,52 +17,79 @@ object localOpenForm: TlocalOpenForm
     ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
     HeaderAppearanceClassName = 'TListHeaderObjects'
     FooterAppearanceClassName = 'TListHeaderObjects'
-    Position.X = 13.000000000000000000
-    Position.Y = 14.000000000000000000
-    Size.Width = 371.000000000000000000
-    Size.Height = 411.000000000000000000
-    Size.PlatformDefault = False
-    TabOrder = 1
-    OnClick = ListView1Click
-  end
-  object btnDelete: TButton
-    Anchors = [akTop, akRight]
-    Position.X = 408.000000000000000000
-    Position.Y = 184.000000000000000000
-    Size.Width = 109.000000000000000000
-    Size.Height = 25.000000000000000000
-    Size.PlatformDefault = False
-    TabOrder = 3
-    Text = 'btnDelete'
-    TextSettings.Trimming = None
-    OnClick = btnDeleteClick
-  end
-  object btnOpen: TButton
-    Anchors = [akTop, akRight]
-    Default = True
-    ModalResult = 1
-    Position.X = 408.000000000000000000
-    Position.Y = 66.000000000000000000
-    Size.Width = 107.000000000000000000
-    Size.Height = 25.000000000000000000
-    Size.PlatformDefault = False
-    TabOrder = 2
-    Text = 'btnOpen'
-    TextSettings.Trimming = None
-    OnClick = btnOpenClick
-  end
-  object btnClose: TButton
-    Anchors = [akTop, akRight]
-    Default = True
-    ModalResult = 1
-    Position.X = 408.000000000000000000
-    Position.Y = 24.000000000000000000
-    Size.Width = 109.000000000000000000
-    Size.Height = 25.000000000000000000
+    ItemSpaces.Top = 10.000000000000000000
+    ItemSpaces.Bottom = 10.000000000000000000
+    Align = Client
+    Size.Width = 367.000000000000000000
+    Size.Height = 462.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Text = 'btnClose'
-    TextSettings.Trimming = None
-    OnClick = btnCloseClick
+    OnClick = ListView1Click
+  end
+  object Panel1: TPanel
+    Align = MostBottom
+    Position.Y = 462.000000000000000000
+    Size.Width = 487.000000000000000000
+    Size.Height = 43.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object lPath: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      Anchors = [akLeft, akRight]
+      TabOrder = 1
+      Position.X = 10.000000000000000000
+      Position.Y = 12.000000000000000000
+      Size.Width = 465.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
+  object Panel2: TPanel
+    Align = Right
+    Position.X = 367.000000000000000000
+    Size.Width = 120.000000000000000000
+    Size.Height = 462.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object btnClose: TButton
+      Anchors = [akTop, akRight]
+      Default = True
+      ModalResult = 1
+      Position.X = 8.000000000000000000
+      Position.Y = 16.000000000000000000
+      Size.Width = 109.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'btnClose'
+      TextSettings.Trimming = None
+      OnClick = btnCloseClick
+    end
+    object btnOpen: TButton
+      Anchors = [akTop, akRight]
+      Default = True
+      ModalResult = 1
+      Position.X = 8.000000000000000000
+      Position.Y = 62.000000000000000000
+      Size.Width = 107.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = 'btnOpen'
+      TextSettings.Trimming = None
+      OnClick = btnOpenClick
+    end
+    object btnDelete: TButton
+      Anchors = [akTop, akRight]
+      Position.X = 8.000000000000000000
+      Position.Y = 108.000000000000000000
+      Size.Width = 109.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = 'btnDelete'
+      TextSettings.Trimming = None
+      OnClick = btnDeleteClick
+    end
   end
 end

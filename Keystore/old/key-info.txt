@@ -1,0 +1,16 @@
+Заполни в RAD Studio
+Project → Options → Deployment → Provisioning:
+
+KeyStore File: C:\D!!!DZ\Delphi-Andro\Keystore\geomaster-release.keystore
+KeyStore Password: GMasterKey2024
+Key Alias: geomaster_alias
+Key Password: GMasterKey2024
+Далее
+Нажми Save, затем OK.
+Сделай Build → Make или Build → Build для конфигурации Release + Android64.
+APK появится примерно тут:
+C:\D\!!!DZ\Delphi-Andro\Android64\Release\<Project>.apk
+Важно
+Пароль GMasterKey2024 — временный, он будет виден в истории консоли и в чате. После успешной сборки рекомендую сохранить файл keystore и пароль в надёжном месте. Если хочешь другой пароль, можно позже пересоздать keystore.
+
+Feedback submitted

@@ -10,6 +10,7 @@ uses
   DlgLocalOpen;
 
 procedure PickGmfFile(const ACallback: TPickGmfFileCallback);
+procedure PickGpkgFile(const ACallback: TPickGmfFileCallback);
 
 implementation
 
@@ -29,6 +30,7 @@ uses
   Androidapi.JNI.GraphicsContentViewText
 {$ENDIF};
 
+{$IFDEF ANDROID}
 type
   TAndroidGmfPicker = class
   private
@@ -49,6 +51,26 @@ type
 
 var
   _AndroidGmfPicker: TAndroidGmfPicker;
+
+type
+  TAndroidGpkgPicker = class
+  private
+    const REQUEST_CODE_PICK_GPKG = 7031;
+  private
+    FSubId: Integer;
+    FDone: Boolean;
+    FCallback: TPickGmfFileCallback;
+    function GetDisplayNameFromUri(const Uri: Jnet_Uri): string;
+    procedure CopyUriToFile(const Uri: Jnet_Uri; const LocalPath: string);
+    procedure Finish(const LocalPath: string);
+    procedure OnMessage(const Sender: TObject; const M: TMessage);
+  public
+    class function Instance: TAndroidGpkgPicker;
+    procedure StartPick(const ACallback: TPickGmfFileCallback);
+  end;
+
+var
+  _AndroidGpkgPicker: TAndroidGpkgPicker;
 
 class function TAndroidGmfPicker.Instance: TAndroidGmfPicker;
 begin
@@ -73,6 +95,136 @@ begin
   Intent.addFlags(TJIntent.JavaClass.FLAG_GRANT_READ_URI_PERMISSION);
   Intent.addFlags(TJIntent.JavaClass.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
   TAndroidHelper.Activity.startActivityForResult(Intent, REQUEST_CODE_PICK_GMF);
+end;
+
+class function TAndroidGpkgPicker.Instance: TAndroidGpkgPicker;
+begin
+  if _AndroidGpkgPicker = nil then _AndroidGpkgPicker := TAndroidGpkgPicker.Create;
+  Result := _AndroidGpkgPicker;
+end;
+
+procedure TAndroidGpkgPicker.StartPick(const ACallback: TPickGmfFileCallback);
+var
+  Intent: JIntent;
+begin
+  FCallback := ACallback;
+  if not Assigned(FCallback) then exit;
+  FDone := False;
+  if FSubId <> 0 then TMessageManager.DefaultManager.Unsubscribe(TMessageResultNotification, FSubId);
+  FSubId := TMessageManager.DefaultManager.SubscribeToMessage(TMessageResultNotification, OnMessage);
+  Intent := TJIntent.Create;
+  Intent.setAction(TJIntent.JavaClass.ACTION_OPEN_DOCUMENT);
+  Intent.addCategory(TJIntent.JavaClass.CATEGORY_OPENABLE);
+  Intent.setType(StringToJString('*/*'));
+  Intent.addFlags(TJIntent.JavaClass.FLAG_GRANT_READ_URI_PERMISSION);
+  Intent.addFlags(TJIntent.JavaClass.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+  TAndroidHelper.Activity.startActivityForResult(Intent, REQUEST_CODE_PICK_GPKG);
+end;
+
+procedure TAndroidGpkgPicker.Finish(const LocalPath: string);
+var
+  CB: TPickGmfFileCallback;
+begin
+  if FDone then exit;
+  FDone := True;
+  if FSubId <> 0 then
+  begin
+    TMessageManager.DefaultManager.Unsubscribe(TMessageResultNotification, FSubId);
+    FSubId := 0;
+  end;
+  CB := FCallback;
+  FCallback := nil;
+  if Assigned(CB) then CB(LocalPath);
+end;
+
+function TAndroidGpkgPicker.GetDisplayNameFromUri(const Uri: Jnet_Uri): string;
+var
+  Cursor: JCursor;
+  NameIndex: Integer;
+begin
+  Result := '';
+  Cursor := nil;
+  try
+    Cursor := TAndroidHelper.ContentResolver.query(Uri, nil, nil, nil, nil);
+    if (Cursor <> nil) and Cursor.moveToFirst then
+    begin
+      NameIndex := Cursor.getColumnIndex(TJOpenableColumns.JavaClass.DISPLAY_NAME);
+      if NameIndex >= 0 then Result := JStringToString(Cursor.getString(NameIndex));
+    end;
+  finally
+    if Cursor <> nil then Cursor.close;
+  end;
+end;
+
+procedure TAndroidGpkgPicker.CopyUriToFile(const Uri: Jnet_Uri; const LocalPath: string);
+var
+  InStream: JInputStream;
+  OutStream: TFileStream;
+  Bytes: TJavaArray<System.Byte>;
+  Buffer: TBytes;
+  ReadCount: Integer;
+begin
+  InStream := TAndroidHelper.ContentResolver.openInputStream(Uri);
+  if InStream = nil then raise Exception.Create('openInputStream=nil');
+  try
+    OutStream := TFileStream.Create(LocalPath, fmCreate);
+    try
+      SetLength(Buffer, 64*1024);
+      Bytes := TJavaArray<System.Byte>.Create(Length(Buffer));
+      try
+        while True do
+        begin
+          ReadCount := InStream.read(Bytes, 0, Bytes.Length);
+          if ReadCount <= 0 then Break;
+          if ReadCount > Length(Buffer) then ReadCount := Length(Buffer);
+          Move(Bytes.Data^, Buffer[0], ReadCount);
+          OutStream.WriteBuffer(Buffer[0], ReadCount);
+        end;
+      finally
+        Bytes.Free;
+      end;
+    finally
+      OutStream.Free;
+    end;
+  finally
+    InStream.close;
+  end;
+end;
+
+procedure TAndroidGpkgPicker.OnMessage(const Sender: TObject; const M: TMessage);
+var
+  Msg: TMessageResultNotification;
+  DataIntent: JIntent;
+  Uri: Jnet_Uri;
+  DisplayName: string;
+  LocalPath: string;
+  PersistFlags: Integer;
+begin
+  if FDone then exit;
+  if not (M is TMessageResultNotification) then exit;
+  Msg := TMessageResultNotification(M);
+  if Msg.RequestCode <> REQUEST_CODE_PICK_GPKG then exit;
+  DataIntent := Msg.Value;
+  if (Msg.ResultCode <> TJActivity.JavaClass.RESULT_OK) or (DataIntent = nil) then begin Finish(''); exit; end;
+  Uri := DataIntent.getData;
+  if Uri = nil then begin Finish(''); exit; end;
+  PersistFlags := DataIntent.getFlags and (TJIntent.JavaClass.FLAG_GRANT_READ_URI_PERMISSION or TJIntent.JavaClass.FLAG_GRANT_WRITE_URI_PERMISSION);
+  if PersistFlags <> 0 then
+  begin
+    try
+      TAndroidHelper.ContentResolver.takePersistableUriPermission(Uri, PersistFlags);
+    except
+    end;
+  end;
+  DisplayName := GetDisplayNameFromUri(Uri);
+  if DisplayName = '' then DisplayName := 'import.gpkg';
+  LocalPath := TPath.Combine(TPath.GetDocumentsPath, DisplayName);
+  try
+    CopyUriToFile(Uri, LocalPath);
+    Finish(LocalPath);
+  except
+    Finish('');
+  end;
 end;
 
 procedure TAndroidGmfPicker.Finish(const LocalPath: string);
@@ -274,6 +426,8 @@ begin
   end;
 end;
 
+{$ENDIF}
+
 procedure PickGmfFile(const ACallback: TPickGmfFileCallback);
 var
   Dlg: TOpenDialog;
@@ -342,6 +496,38 @@ begin
     end;
 
     ACallback('');
+  finally
+    Dlg.Free;
+  end;
+{$ENDIF}
+end;
+
+procedure PickGpkgFile(const ACallback: TPickGmfFileCallback);
+var
+  Dlg: TOpenDialog;
+  SrcPath: string;
+begin
+  if not Assigned(ACallback) then exit;
+
+{$IFDEF ANDROID}
+  TAndroidGpkgPicker.Instance.StartPick(ACallback);
+{$ELSE}
+  Dlg := TOpenDialog.Create(nil);
+  try
+    Dlg.Filter := 'GeoPackage (*.gpkg)|*.gpkg|All files (*.*)|*.*';
+    Dlg.Options := Dlg.Options + [TOpenOption.ofFileMustExist];
+    if not Dlg.Execute then
+    begin
+      ACallback('');
+      exit;
+    end;
+    SrcPath := Dlg.FileName;
+    if SrcPath = '' then
+    begin
+      ACallback('');
+      exit;
+    end;
+    ACallback(SrcPath);
   finally
     Dlg.Free;
   end;

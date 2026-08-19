@@ -384,7 +384,7 @@ begin
 {       Version:=VerConst;}
 {        ShowMessage(MainPath+'\'+StrPas(About.ClassName));}
  WriteIn(['LoadClass1']);
- ClName:=MainPath+Slash+SetSlashCorrect(About.ClassName);
+ ClName:=MainPath  + Slash + SetSlashCorrect(About.ClassName);
  MkLib:=TMosLib.Create(ClName);
  MkLib.Selector := Selector;
  MkLib.LoadZnaks(About.ObjectName);
@@ -651,7 +651,8 @@ Constructor TForm1.Load;
            If not MirrorObject then WriteIn(['Settings=', Stream.Position]);
            If Version>44 then begin
             TaheoFileName:=Stream.ReadString;
-            If not MirrorObject then WriteIn(['TaheoFN=', Stream.Position]);
+            If not MirrorObject then
+             WriteIn(['TaheoFN=', Stream.Position]);
            end else TaheoFileName:='';
          end;
         end else Settings:=TSettings.Create(500,'TForm.Load');
@@ -723,9 +724,10 @@ Constructor TForm1.Load;
    //    WriteS(['Next2LoadLib=',MainPath+Slash+SetSlashCorrect(About.ClassName),FileExists(MainPath+Slash+SetSlashCorrect(AnsiUpperCase(About.ClassName)))]);
    // Writein(['ClassNAme=', MainPath+Slash+(ExtractFileName(About.ClassName))]);
     DelSubStr(About.ClassName, 'VCLASS\');
-   clFile := MainPath+(About.ClassName);
+   clFile := MainPath + Slash + (About.ClassName);
+   WriteIn(['clName=', MainPath + Slash +(About.ClassName)]);
    If not MirrorObject then
-    If FileExists(MainPath+(About.ClassName)) then
+    If FileExists(MainPath+ Slash + (About.ClassName)) then
      begin
 {       Version:=6;}
      ClName:=MainPath+(About.ClassName);

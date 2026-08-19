@@ -8,6 +8,7 @@ interface uses //tmpPainter,
 const
  Const_Block_Footer=4.3;
  Block_Drawing:boolean = False;
+ LOD_RASTER_THRESHOLD = 0;
 
 type
   TXY = record
@@ -248,7 +249,7 @@ begin
  Selector:=Buf.Selector;
  Buf.Read(Check,SizeOf(Check));
  Name:=Buf.ReadString;
-// WriteIn(['LoadBlock=', Name]);
+ WriteIn(['LoadBlock=', Name]);
 // If Name = 'ЛЕГЕНДА' then
 //  Writeln('Name=',Name);
  If Check=0 then begin
@@ -302,7 +303,7 @@ BLOCK_DEBUG:=BD;
  If Name = 'MAF_OB_Skamya_sospin_met' then If Check=0 then begin
 //  WriteIn(['endOfBlock_DEBUG=',Name]);
  end;
-// WriteIn(['LoadBlockEnd=', Name]);
+ WriteIn(['LoadBlockEnd=', Name]);
 end;
 
 procedure TGeoBlock.Store(Buf: TBufStream);
@@ -1093,6 +1094,7 @@ var I, J: Integer; B: Byte;
     TextBitmap: TTwgBitmap;
     oldValue, txtValue: String;
 begin
+// WriteIn(['GGD=1']);
  Result := 0;
  X0:=X+TwgForm.XXMin;Y0:=Y+TwgForm.YYMin;
  Dx:=XB-X0;Dy:=YB-Y0;
@@ -1166,7 +1168,8 @@ begin
   MRect_.Insert(Sect.Right, Sect.Bottom);
  mRectSource.Free;
  mRect.Free;
-end;
+// WriteIn(['GGD=2']);
+ end;
 
 function TGeoBlock.Draw32(Drawer: TogsDrawer; XB, YB, Angle, XKoef,
   YKoef: Double; Extrusion, Inv: boolean; TextBitmaps: TTwgBitmaps): boolean;
@@ -1243,7 +1246,7 @@ begin
  Block_Drawing:=True;
   // LOD: рисуем только BlockBitmap
  if (BlockBitmap<>nil) and (ogsRect<>nil) and
-    (Selector.XRasst(Width) < 40) and (Selector.YRasst(Height) < 40) then
+    (Selector.XRasst(Width) < LOD_RASTER_THRESHOLD) and (Selector.YRasst(Height) < LOD_RASTER_THRESHOLD) then
  begin
   AnchorPix := PointF(XB, YB);
  //

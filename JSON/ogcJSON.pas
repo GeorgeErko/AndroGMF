@@ -1,11 +1,11 @@
-unit ogcJSON;
+п»їunit ogcJSON;
 
 
 interface
 
 uses Classes, SysUtils, ogcBasic, ogcProperties;
 
-// глобальные переменные при чтении jsonStream
+// РіР»РѕР±Р°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ РїСЂРё С‡С‚РµРЅРёРё jsonStream
 const gArrayLvl: Integer = 100;
       gObjectLvl: Integer = 100;
 type
@@ -18,13 +18,13 @@ type
 
   TjsonBasic = class (TogsBasic)
    rootObj: Boolean;
-   jsonType: TjsonObjectType; // тип элемента json: объект, массив, свойство, атомарное значение, конец обмасива, конец объекта
-   jsonIndex: Integer;  // индекс в коллекции элементов json
-   jsonLevel: Integer;  // уровень вложенности
+   jsonType: TjsonObjectType; // С‚РёРї СЌР»РµРјРµРЅС‚Р° json: РѕР±СЉРµРєС‚, РјР°СЃСЃРёРІ, СЃРІРѕР№СЃС‚РІРѕ, Р°С‚РѕРјР°СЂРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ, РєРѕРЅРµС† РѕР±РјР°СЃРёРІР°, РєРѕРЅРµС† РѕР±СЉРµРєС‚Р°
+   jsonIndex: Integer;  // РёРЅРґРµРєСЃ РІ РєРѕР»Р»РµРєС†РёРё СЌР»РµРјРµРЅС‚РѕРІ json
+   jsonLevel: Integer;  // СѓСЂРѕРІРµРЅСЊ РІР»РѕР¶РµРЅРЅРѕСЃС‚Рё
 //   LevelLocked: Boolean;
-   jsonValue: String;   // атомарное значение
-   jsonObject: TjsonBasic; // объект
-   jsonParent: TjsonBasic; // родительский объект: TjsonArray, TjsonObject
+   jsonValue: String;   // Р°С‚РѕРјР°СЂРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ
+   jsonObject: TjsonBasic; // РѕР±СЉРµРєС‚
+   jsonParent: TjsonBasic; // СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ РѕР±СЉРµРєС‚: TjsonArray, TjsonObject
    Destructor Destroy; override;
    Function prevParent: TjsonBasic;
   //
@@ -88,7 +88,7 @@ type
 
 var  Prims: TogsCollection;
 
-implementation uses ClipBrd;
+implementation
 
 { TjsonBasic }
 
@@ -128,7 +128,7 @@ procedure TjsonBasic.TreeView(var Obj: TjsonBasic; Prefix: String; propObject: T
 var tmpObject: TogsPropValue;
     S: AnsiString;
 begin
-// показываем все объекты на уровне
+// РїРѕРєР°Р·С‹РІР°РµРј РІСЃРµ РѕР±СЉРµРєС‚С‹ РЅР° СѓСЂРѕРІРЅРµ
  Obj := Self;
 // WriteIn([Prefix + 'BeginObject=',obj.jsonLevel, obj.jsonIndex, obj.jsonValue, obj.ClassName]);
  While Obj <> nil do begin
@@ -237,7 +237,7 @@ procedure TjsonArray.TreeView(var Obj: TjsonBasic; Prefix: String; propObject: T
 var tmpObject: TogsPropValue;
     S: AnsiString;
 begin
-// показываем все объекты на уровне
+// РїРѕРєР°Р·С‹РІР°РµРј РІСЃРµ РѕР±СЉРµРєС‚С‹ РЅР° СѓСЂРѕРІРЅРµ
 // WriteIn([Prefix + 'BeginArray=',jsonLevel, jsonValue]);
  Obj := Self;
  While True do begin
@@ -313,7 +313,7 @@ begin
  jsonParent:= Parent;
  Prims.Add(Self);
  jsonValue := '';
-// если встретились кавычки -> открываем счетчик
+// РµСЃР»Рё РІСЃС‚СЂРµС‚РёР»РёСЃСЊ РєР°РІС‹С‡РєРё -> РѕС‚РєСЂС‹РІР°РµРј СЃС‡РµС‚С‡РёРє
 // If JSONObject = nil then WriteIn(['endValue', 'Vslue=', jsonValue]) else
 //                          WriteIn(['endValue=', JSONObject.ClassName, 'Vslue=', jsonValue]);
 // ReadIn;
@@ -371,9 +371,9 @@ begin
  Result := jsonObj <> nil;
  If Result then
   Case jsonObj.jsonType of
-   jtObject, jtArray: Parent := jsonObj; // родительский элемент = текущий объект
-   jtEndObject, jtEndArray: Parent := Parent_.jsonParent; // для всех дочерних элементов
-                                                             // родительский элемент объект или массив
+   jtObject, jtArray: Parent := jsonObj; // СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СЌР»РµРјРµРЅС‚ = С‚РµРєСѓС‰РёР№ РѕР±СЉРµРєС‚
+   jtEndObject, jtEndArray: Parent := Parent_.jsonParent; // РґР»СЏ РІСЃРµС… РґРѕС‡РµСЂРЅРёС… СЌР»РµРјРµРЅС‚РѕРІ
+                                                             // СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ СЌР»РµРјРµРЅС‚ РѕР±СЉРµРєС‚ РёР»Рё РјР°СЃСЃРёРІ
   end;
 end;
 begin
@@ -394,7 +394,7 @@ X:
   jtObject,
   jtEndObject,
   jtEndArray     :begin
-                  // считываем объект до закрывающей скобки
+                  // СЃС‡РёС‚С‹РІР°РµРј РѕР±СЉРµРєС‚ РґРѕ Р·Р°РєСЂС‹РІР°СЋС‰РµР№ СЃРєРѕР±РєРё
                    While S <> '}' do begin
                     if Self.Position = Self.Size then Goto Y;
                     Self.Read(S, 1);
@@ -402,11 +402,11 @@ X:
                     If not CreateObjectFrom(Parent, S[1]) then
                     If S = ':' then jsonObj := TjsonPropValue.Create(Parent, Prims) else
                     If S = '"' then begin
-                     // если массив -> создаем TjsonPropValue, объект - > TjsonPropName
+                     // РµСЃР»Рё РјР°СЃСЃРёРІ -> СЃРѕР·РґР°РµРј TjsonPropValue, РѕР±СЉРµРєС‚ - > TjsonPropName
                      Self.Position := Self.Position - 1;
                      If Parent is TjsonObject then jsonObj := TjsonPropName.Create(Parent, Prims) else
                      If Parent is TjsonArray then jsonObj := TjsonPropValue.Create(Parent, Prims) else
-//                      WriteIn([Parent.ClassName]); // ошибка или исключение (для отладки)
+//                      WriteIn([Parent.ClassName]); // РѕС€РёР±РєР° РёР»Рё РёСЃРєР»СЋС‡РµРЅРёРµ (РґР»СЏ РѕС‚Р»Р°РґРєРё)
                     end;
                     If jsonObj <> nil then begin
                      currentObj.jsonObject := jsonObj;
@@ -416,14 +416,14 @@ X:
                    end;
                   end;
   jtArray        :begin
-                  // считываем объект, массив, значение до закрывающей скобки
+                  // СЃС‡РёС‚С‹РІР°РµРј РѕР±СЉРµРєС‚, РјР°СЃСЃРёРІ, Р·РЅР°С‡РµРЅРёРµ РґРѕ Р·Р°РєСЂС‹РІР°СЋС‰РµР№ СЃРєРѕР±РєРё
                    While (S <> ']') do begin
                     if Self.Position = Self.Size then Goto Y;
                     Self.Read(S, 1);
                     prevSym := prevSym + S[1]; //If Length(prevSym) > 2 then Delete(prevSym, 1,1);
                     If not CreateObjectFrom(Parent, S[1]) then
                     If S = ',' then jsonObj := TjsonPropValue.Create(Parent, Prims) else
-                  // для корректного считывания значения инициируем TjsonPropValue.Create
+                  // РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ СЃС‡РёС‚С‹РІР°РЅРёСЏ Р·РЅР°С‡РµРЅРёСЏ РёРЅРёС†РёРёСЂСѓРµРј TjsonPropValue.Create
                     If not (S[1] in [#32, ',', ']', #9, #13, #10]) then begin
                      Self.Position := Self.Position - 1;
                      jsonObj := TjsonPropValue.Create(Parent, Prims);
@@ -436,7 +436,7 @@ X:
                    end;
                   end;
   jtPropName     :begin
-                  // считываем имя свойства до двоеточия
+                  // СЃС‡РёС‚С‹РІР°РµРј РёРјСЏ СЃРІРѕР№СЃС‚РІР° РґРѕ РґРІРѕРµС‚РѕС‡РёСЏ
                    While S <> ':' do begin
                     if Self.Position = Self.Size then Goto Y;
                     Self.Read(S, 1);
@@ -455,24 +455,24 @@ X:
                   end;
   jtPropValue    :begin
                    qMarkCount := 0;
-                  // считываем объект, массив, значение до закятой
-                  // за исключением строкового значения в кавычках
+                  // СЃС‡РёС‚С‹РІР°РµРј РѕР±СЉРµРєС‚, РјР°СЃСЃРёРІ, Р·РЅР°С‡РµРЅРёРµ РґРѕ Р·Р°РєСЏС‚РѕР№
+                  // Р·Р° РёСЃРєР»СЋС‡РµРЅРёРµРј СЃС‚СЂРѕРєРѕРІРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РІ РєР°РІС‹С‡РєР°С…
                    qMark := True;
                    While True (*(S <> ',') and (S <> ']') and (S <> '}') *) do begin
                     if Self.Position = Self.Size then Goto Y;
                     Self.Read(S, 1);
                     prevSym := prevSym + S[1]; //If Length(prevSym) > 2 then Delete(prevSym, 1,1);
-                   // считаем кавычки дл допуска разделителей внутри строки формата "..."
+                   // СЃС‡РёС‚Р°РµРј РєР°РІС‹С‡РєРё РґР» РґРѕРїСѓСЃРєР° СЂР°Р·РґРµР»РёС‚РµР»РµР№ РІРЅСѓС‚СЂРё СЃС‚СЂРѕРєРё С„РѕСЂРјР°С‚Р° "..."
                     If (prevSym[System.Length(prevSym)] = '"') then
                      If (prevSym[System.Length(prevSym)-1] <> '\') then Inc(qMarkCount);
                     qMark := ((qMarkCount = 0)) or (qMarkCount = 2);
                    //
                     If not CreateObjectFrom(Parent, S[1], qMark) then
-                   // если массив -> создаем TjsonPropValue, объект - > TjsonPropName
+                   // РµСЃР»Рё РјР°СЃСЃРёРІ -> СЃРѕР·РґР°РµРј TjsonPropValue, РѕР±СЉРµРєС‚ - > TjsonPropName
                     If (S = ',') and (qMark) then begin
                      If Parent is TjsonArray then jsonObj := TjsonPropValue.Create(Parent, Prims) else
                      If Parent is TjsonObject then jsonObj := TjsonPropName.Create(Parent, Prims) else
-//                     WriteIn([Parent.ClassName]); // ошибка или исключение (для отладки)
+//                     WriteIn([Parent.ClassName]); // РѕС€РёР±РєР° РёР»Рё РёСЃРєР»СЋС‡РµРЅРёРµ (РґР»СЏ РѕС‚Р»Р°РґРєРё)
                     end else
                     If not (S[1] in [#9, #13, #10]) then currentObj.jsonValue := currentObj.jsonValue + S;
                     If jsonObj <> nil then begin
@@ -496,12 +496,12 @@ begin
 // DisableIn;
 // WriteIn(['BeginLoad']);
 // Time := GetTickCount;
-// парсер
+// РїР°СЂСЃРµСЂ
  jsonObject := CreateJSONObject;
 // WriteIn(['EndLoad', Prims.Count,GetTickCount - Time]);
  If jsonObject = nil then exit;
  jsonObject := Prims[0]; jsonObject.rootObj := True;
-// инициализация объекта TogsPropObject
+// РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РѕР±СЉРµРєС‚Р° TogsPropObject
  If P <> nil then propObject := P else
                   propObject := TogsPropObject.Create;
 // outDisabled := True;
@@ -527,7 +527,7 @@ begin
 end;
 
 initialization
-// временно для отладки json - парсера
+// РІСЂРµРјРµРЅРЅРѕ РґР»СЏ РѕС‚Р»Р°РґРєРё json - РїР°СЂСЃРµСЂР°
  Prims := TogsCollection.Create;
 end.
 

@@ -80,7 +80,7 @@ type
 
 implementation uses newBlock, SysUtils, newProcs, userObject, newProperties,
                     Writer,
-                    newSelector, ogcDrawerCanvas, ogcDrawerSkia,
+                    newSelector, ogcDrawerSkia, System.Skia,
                     FMX.Controls, EcLot, WPTwigs, ogcBasic, System.UITypes,
                     System.Types;
 { TBlockList }
@@ -178,9 +178,15 @@ end;
 
 procedure TBlockList.CreateBitmaps;
 var I, J, K:Integer;
-    Lot: TLot; Twig : TTwig; Drawer: TogsDrawerCanvas;
+    Lot: TLot; Twig : TTwig; Drawer: TogsDrawerSkia;
     newSelector: TSelector; oldSelector: Pointer;
     Control: TControl;
+    D: TBitmapData;
+    DataPtr: Pointer;
+    RowBytes: Integer;
+    ImgInfo: TSkImageInfo;
+    Surface: ISkSurface;
+    SkCanvas: ISkCanvas;
 begin
  Control := TControl.Create(nil);
  Control.Width := 100; Control.Height := 100;
@@ -188,65 +194,74 @@ begin
   For K := 0 to Blocks.Count-1 do
    With TGeoBlock(Blocks[K]) do begin
     try
-     Drawer := TogsDrawerCanvas.Create(nil, Control, 1, nil);
-     newSelector := TSelector.Create(Drawer);
-     Drawer.ogsSelector := newSelector;
-     newSelector.GNForm := Control;
-     GlobalRender := True;
-     Drawer.BeginPaint;
-     Drawer.Clear(0);
-     for I := 1 to TwgForm.Twigs.TwigsCount - 1 do begin
-      Twig := TwgForm.Twigs.TAt(I);
-      for J := 0 to Twig.Coord.Count - 1 do
-        newSelector.AddCoord(Twig[J].XDot, Twig[J].YDot);
-     end;
-     newSelector.UpdateRects(True);
-     For I := 0 to  TwgForm.Twigs.IndexCount-1 do begin
-      Lot:=TwgForm.Twigs.LAtIndex(I);If Lot.ClassHandle.Check = 0 then continue;
-      Lot.SetMinMax2(TwgForm.Twigs);
-      oldSelector := Lot.Selector; Lot.Selector := newSelector;
-      GlobalRender := True;
-      try
-       Lot.Draw32(TwgForm.Twigs);
-      finally
-       Lot.Selector := oldSelector;
-       GlobalRender := False;
-      end;
-     end;
-    {
-     // временный тест: рисуем диагональный крест через Canvas/Drawer
-     if (Drawer <> nil) and (Drawer.Canvas <> nil) then
-     begin
-      Drawer.Canvas.Stroke.Kind := TBrushKind.Solid;
-      Drawer.Canvas.Stroke.Thickness := 2;
-
-      Drawer.Canvas.Stroke.Color := TAlphaColorRec.Red;
-      Drawer.Canvas.DrawLine(PointF(0, 0),
-                             PointF(Control.Width, Control.Height), 1);
-
-      Drawer.Canvas.Stroke.Color := TAlphaColorRec.Blue;
-      Drawer.Canvas.DrawLine(PointF(0, Control.Height),
-                             PointF(Control.Width, 0), 1);
-     end;
-    }
-     Drawer.EndPaint;
-    // копируем битмап в блок (уже с нарисованным крестом через Drawer.Canvas)
      if BlockBitmap = nil then
       BlockBitmap := TTwgBitmap.Create;
-   //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
-     BlockBitmap.Bitmap.Assign(Drawer.Bitmap);
-   //  BlockBitmap.AlphaFormat := TAlphaFormat.Premultiplied;
-     FreeAndNil(ogsRect);
-     ogsRect := TogsRect.Create;
-     ogsRect.InsertRect(newSelector.ActiveRect);
-     BlockX := newSelector.XPix(X + TwgForm.XXMin); BlockY := newSelector.YPix(Y + TwgForm.YYMin);
+     BlockBitmap.Bitmap.SetSize(100, 100);
+     if not BlockBitmap.Bitmap.Map(TMapAccess.Write, D) then Continue;
+     try
+      ImgInfo := TSkImageInfo.Create(100, 100, TSkColorType.BGRA8888, TSkAlphaType.Premul);
+      DataPtr := D.Data;
+      RowBytes := D.Pitch;
+      if RowBytes < 0 then
+      begin
+        RowBytes := -RowBytes;
+        DataPtr := Pointer(NativeInt(DataPtr) + NativeInt(RowBytes) * (BlockBitmap.Bitmap.Height - 1));
+      end;
+      Surface := TSkSurface.MakeRasterDirect(ImgInfo, DataPtr, RowBytes);
+      if Surface = nil then Continue;
+      SkCanvas := Surface.Canvas;
+      Drawer := TogsDrawerSkia.Create(nil, nil, nil);
+      try
+       newSelector := TSelector.Create(Drawer);
+       try
+        newSelector.GNForm := Control;
+        Drawer.Width := 100;
+        Drawer.Height := 100;
+        GlobalRender := True;
+        Drawer.BeginFrame(SkCanvas, RectF(0, 0, 100, 100));
+        try
+         Drawer.Clear(0);
+         for I := 1 to TwgForm.Twigs.TwigsCount - 1 do begin
+          Twig := TwgForm.Twigs.TAt(I);
+          for J := 0 to Twig.Coord.Count - 1 do
+            newSelector.AddCoord(Twig[J].XDot, Twig[J].YDot);
+         end;
+         newSelector.UpdateRects(True);
+         For I := 0 to  TwgForm.Twigs.IndexCount-1 do begin
+          Lot:=TwgForm.Twigs.LAtIndex(I);If Lot.ClassHandle.Check = 0 then continue;
+          Lot.SetMinMax2(TwgForm.Twigs);
+          oldSelector := Lot.Selector; Lot.Selector := newSelector;
+          GlobalRender := True;
+          try
+           Lot.Draw32(TwgForm.Twigs);
+          finally
+           Lot.Selector := oldSelector;
+           GlobalRender := False;
+          end;
+         end;
+        finally
+         Drawer.EndFrame;
+        end;
+        FreeAndNil(ogsRect);
+        ogsRect := TogsRect.Create;
+        ogsRect.InsertRect(newSelector.ActiveRect);
+        BlockX := newSelector.XPix(X + TwgForm.XXMin); BlockY := newSelector.YPix(Y + TwgForm.YYMin);
+       finally
+        newSelector.Free;
+       end;
+      finally
+       Drawer.Free;
+      end;
      finally
+      SkCanvas := nil;
+      Surface := nil;
+      BlockBitmap.Bitmap.Unmap(D);
+     end;
+    finally
       // отладочное сохранение при необходимости
     //  ShowMessage(MainPath + Name +'.jpg');
     //  BlockBitmap.SaveToFile(MainPath + Name +'.jpg');
-      newSelector.Free;
-      Drawer.Free;
-     end;
+    end;
    end;
   finally
    Control.Free;

@@ -27,6 +27,7 @@ var Res:TResource;UZnak:TPoint_Sign;P:PCollection;
     propValue:TPropValue;
     BlockSect: TSect;
 begin
+// Writein(['cbp1']);
  Res:=LayerTable.SearchLayer(PP.Code);
  if Res=nil then Res:=LayerTable.NullLayer;
   PP.ClassHandle:=Res;
@@ -73,8 +74,10 @@ begin
      end;
     end;
  end;
+//  Writein(['cbp2']);
  //
   PP.ResetParams(0,nil); // TTextDot.What := 1;
+  //  Writein(['cbp3']);
     If PP.userObj<>nil then begin
       Case PP.userObj.objType of
        TWG_Block:begin
@@ -102,7 +105,9 @@ begin
       end;
    end;
  If PP is TPointMessage then PP.What:=0;
+ //  Writein(['cbp31']);
  PP.SetGabarites(nil);
+  // Writein(['cbp4']);
 end;
 
 Function Build1(View:TSelector;ClassName1:AnsiString;var TWF:TTwigsCollect;var MosLib:TMosLib;MirrorObject:Boolean=False):Boolean;

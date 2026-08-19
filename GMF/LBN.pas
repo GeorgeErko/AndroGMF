@@ -1,4 +1,4 @@
-unit LBN;
+п»їunit LBN;
 
 interface uses Classes, SysUtils, Collect, newProcs, WPTForm2;
 
@@ -72,20 +72,20 @@ implementation uses Writer;
 function oghObjectType(TwgForm: TForm2): String;
 begin
  Result := '';
- If TwgForm.Settings.Properties.PropValue['Тип объекта'] <> nil then begin
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОДХ' then Result := '_odh' else
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ДТ' then Result := '_dt' else
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОО' then Result := '_oo';
+ If TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'] <> nil then begin
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'РћР”РҐ' then Result := '_odh' else
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'Р”Рў' then Result := '_dt' else
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'РћРћ' then Result := '_oo';
  end;
 end;
 
 function oghObjectTypeRus(TwgForm: TForm2): String;
 begin
  Result := '';
- If TwgForm.Settings.Properties.PropValue['Тип объекта'] <> nil then begin
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОДХ' then Result := 'ОДХ' else
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ДТ' then Result := 'ДТ' else
-  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОО' then Result := 'ОО';
+ If TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'] <> nil then begin
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'РћР”РҐ' then Result := 'РћР”РҐ' else
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'Р”Рў' then Result := 'Р”Рў' else
+  If ansiUpperCase(TwgForm.Settings.Properties.PropValue['РўРёРї РѕР±СЉРµРєС‚Р°'].Value) = 'РћРћ' then Result := 'РћРћ';
  end;
 end;
 
@@ -198,14 +198,14 @@ var I,J,Count,SaveL:Integer;
     Res: Pointer;
 begin
  If Error <> '' then exit;
-// If Node.Name = 'Развилка ствола' then
+// If Node.Name = 'Р Р°Р·РІРёР»РєР° СЃС‚РІРѕР»Р°' then
 //  Writeln(1);
  St1:=TStringList.Create;
  St1.Text:=MakeString2(nodeValue,',');
 // Result:=Pointer(Self);
  try
   Count:=0;
- // проверяем, есть-ли среди значений St1, элемент из Node
+ // РїСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ-Р»Рё СЃСЂРµРґРё Р·РЅР°С‡РµРЅРёР№ St1, СЌР»РµРјРµРЅС‚ РёР· Node
   For I:=0 to St1.Count - 1 do If (St1[I]<>'-') and (St1[I]<>byLayer) then begin
    Res:=Node.FindItem(St1[I]);
    Count:=Count+ord(Res<>nil);
@@ -213,15 +213,15 @@ begin
     If (StErr.IndexOf(St1[I])=-1) and (StCorr.IndexOf(St1[I])=-1) then StErr.Add(St1[I]);
    end else begin
     StCorr.Add(St1[I]);
-   // удаляем значение из StErr, как найденное в одной из секций
+   // СѓРґР°Р»СЏРµРј Р·РЅР°С‡РµРЅРёРµ РёР· StErr, РєР°Рє РЅР°Р№РґРµРЅРЅРѕРµ РІ РѕРґРЅРѕР№ РёР· СЃРµРєС†РёР№
     If StErr.IndexOf(St1[I]) <> -1 then StErr.Delete(StErr.IndexOf(St1[I]));
    end;
   end;
- // если нет, то проверяем, может-ли он быть пустым
+ // РµСЃР»Рё РЅРµС‚, С‚Рѕ РїСЂРѕРІРµСЂСЏРµРј, РјРѕР¶РµС‚-Р»Рё РѕРЅ Р±С‹С‚СЊ РїСѓСЃС‚С‹Рј
   If Count = 0 then
    If Node.FindItem('*') = nil then begin
     Result:=nil;
-    Error:='Для секции "'+Node.Name+'" не найдено ни одного значения';
+    Error:='Р”Р»СЏ СЃРµРєС†РёРё "'+Node.Name+'" РЅРµ РЅР°Р№РґРµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ';
     exit;
    end;
   SaveL:=Level;
@@ -237,7 +237,7 @@ begin
     If Result = nil then continue;
    end;
    { else begin
-    Error:='В секции "'+Node.Name+'" не найдено значение "'+St1[I]+'"';
+    Error:='Р’ СЃРµРєС†РёРё "'+Node.Name+'" РЅРµ РЅР°Р№РґРµРЅРѕ Р·РЅР°С‡РµРЅРёРµ "'+St1[I]+'"';
     exit;
    end;}
   end;
@@ -256,7 +256,7 @@ begin
  try
   Node:=FindItem(St[0]);              
   If Node = nil then begin
-   Error:='Для секции "'+Levels[0]+'" не найдено значение:'+ St[0];
+   Error:='Р”Р»СЏ СЃРµРєС†РёРё "'+Levels[0]+'" РЅРµ РЅР°Р№РґРµРЅРѕ Р·РЅР°С‡РµРЅРёРµ:'+ St[0];
    SectionName:=Levels[0];
    exit;
   end;
@@ -266,12 +266,12 @@ begin
   Node:=FindByNode(Node,St[Level]);
   If Node=nil then begin
    If Error = '' then
-    If StErr.Count>0 then Error:='Ошибка (не найдены значения):'+GetErr(StErr.Text);
+    If StErr.Count>0 then Error:='РћС€РёР±РєР° (РЅРµ РЅР°Р№РґРµРЅС‹ Р·РЅР°С‡РµРЅРёСЏ):'+GetErr(StErr.Text);
     Result:=Error='';
     exit;
   end;
  If StErr.Count>0 then begin
-  Error:='Ошибка (не найдены значения):'#13#10+GetErr(StErr.Text);
+  Error:='РћС€РёР±РєР° (РЅРµ РЅР°Р№РґРµРЅС‹ Р·РЅР°С‡РµРЅРёСЏ):'#13#10+GetErr(StErr.Text);
   exit;
  end;
  //
@@ -357,7 +357,7 @@ procedure TListByName.AddField(Section, Value: AnsiString);
 var SN:TSectionName;
 begin
  SN:=FindByName2(Section,0);
- If SN=nil then MessageError('Не найдена секция: '+ Section) else begin
+ If SN=nil then MessageError('РќРµ РЅР°Р№РґРµРЅР° СЃРµРєС†РёСЏ: '+ Section) else begin
   If SN[SN.Count-1]='' then SN.AtInsert(SN.Count-1,TStrClass.Create(Value)) else SN.InsertStr(Value);
  end;
 end;
@@ -382,7 +382,7 @@ begin
   Result:=Sections[I];
   exit;
  end;
-// поиск секций с деревом
+// РїРѕРёСЃРє СЃРµРєС†РёР№ СЃ РґРµСЂРµРІРѕРј
  For I:=0 to Sections.Count-1 do If TSectionName(Sections[I]).Tree<>nil then
   If TSectionName(Sections[I]).Tree.Levels.IndexOf(SectionName)<>-1 then begin
    Result:=Sections[I];
@@ -409,7 +409,7 @@ begin
   exit;
  end;
  end;
-// поиск секций с деревом
+// РїРѕРёСЃРє СЃРµРєС†РёР№ СЃ РґРµСЂРµРІРѕРј
  For I:=0 to Sections.Count-1 do If TSectionName(Sections[I]).Tree<>nil then
   If TSectionName(Sections[I]).Tree.Levels.IndexOf(SectionName)<>-1 then begin
    Result:=Sections[I];
@@ -432,7 +432,7 @@ begin
  If Additional<>nil then Result:=Additional.FindByNameUpper(SectionName);
 end;
 
-function TListByName.FindEngSubString(SectionName, ItemName: AnsiString;var Value: AnsiString): AnsiString;  // ищем по Названию секции SN.IndexName(1) числовое значение Rus атрибута
+function TListByName.FindEngSubString(SectionName, ItemName: AnsiString;var Value: AnsiString): AnsiString;  // РёС‰РµРј РїРѕ РќР°Р·РІР°РЅРёСЋ СЃРµРєС†РёРё SN.IndexName(1) С‡РёСЃР»РѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ Rus Р°С‚СЂРёР±СѓС‚Р°
 var SN:TSectionName;First,Second,Third: AnsiString;
     I,J:Integer;
 begin
@@ -440,10 +440,10 @@ begin
  For I:=0 to Sections.Count-1 do begin
   SN:=Sections[I];
   If (AnsiUpperCase(SN.indexName(1)) = AnsiUpperCase(SectionName)) then begin
-   // нашли секцию по второму имени -> ищем элемент по второму имени
+   // РЅР°С€Р»Рё СЃРµРєС†РёСЋ РїРѕ РІС‚РѕСЂРѕРјСѓ РёРјРµРЅРё -> РёС‰РµРј СЌР»РµРјРµРЅС‚ РїРѕ РІС‚РѕСЂРѕРјСѓ РёРјРµРЅРё
    First:='';Second:='';Third:='';
    For J:=0 to SN.Count-1 do If (Pos('[',SN[J])>1) and (Pos(';',SN[J])>1) then begin
-    // отделем первое имя
+    // РѕС‚РґРµР»РµРј РїРµСЂРІРѕРµ РёРјСЏ
     First:=Trim(Copy(SN[J],1,Pos('[',SN[J])-1));
     Second:=SN[J];
     Second:=DelSubStr2(Second,First);
@@ -457,12 +457,12 @@ begin
      exit;
     end;
    end;// For J
-   exit; // нашли секцию, не нашли значение
+   exit; // РЅР°С€Р»Рё СЃРµРєС†РёСЋ, РЅРµ РЅР°С€Р»Рё Р·РЅР°С‡РµРЅРёРµ
   end;
  end;
 end;
 
-function TListByName.FindRusSubString(SectionName, ItemName: AnsiString): AnsiString; // ищем по Названию секции SN.IndexName(0) числовое значение Eng - атрибута
+function TListByName.FindRusSubString(SectionName, ItemName: AnsiString): AnsiString; // РёС‰РµРј РїРѕ РќР°Р·РІР°РЅРёСЋ СЃРµРєС†РёРё SN.IndexName(0) С‡РёСЃР»РѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ Eng - Р°С‚СЂРёР±СѓС‚Р°
 var SN:TSectionName;First,Second,Third: AnsiString;
     I,J:Integer;
 begin
@@ -473,10 +473,10 @@ begin
  For I:=0 to Sections.Count-1 do begin
   SN:=Sections[I];
   If (AnsiUpperCase(SN.indexName(0)) = AnsiUpperCase(SectionName)) then begin
-   // нашли секцию по второму имени -> ищем элемент о второму имени
+   // РЅР°С€Р»Рё СЃРµРєС†РёСЋ РїРѕ РІС‚РѕСЂРѕРјСѓ РёРјРµРЅРё -> РёС‰РµРј СЌР»РµРјРµРЅС‚ Рѕ РІС‚РѕСЂРѕРјСѓ РёРјРµРЅРё
    First:='';Second:='';Third:='';
    For J:=0 to SN.Count-1 do If (Pos('[',SN[J])>1) and (Pos(';',SN[J])>1) then begin
-    // отделем первое имя
+    // РѕС‚РґРµР»РµРј РїРµСЂРІРѕРµ РёРјСЏ
     First:=Trim(Copy(SN[J],1,Pos('[',SN[J])-1));
     Second:=SN[J];
     Second:=DelSubStr2(Second,First);
@@ -489,7 +489,7 @@ begin
      exit;
     end;
    end;// For J
-  // exit; // нашли секцию, не нашли значение
+  // exit; // РЅР°С€Р»Рё СЃРµРєС†РёСЋ, РЅРµ РЅР°С€Р»Рё Р·РЅР°С‡РµРЅРёРµ
   end;
  end;
  If Additional<>nil then begin
@@ -504,7 +504,7 @@ begin
  For I:=0 to Sections.Count-1 do begin
   SN:=Sections[I];If SN.indexName(0) = SectionName then
  begin
-  // нашли секцию, если не найдем значение - вернем ошибку
+  // РЅР°С€Р»Рё СЃРµРєС†РёСЋ, РµСЃР»Рё РЅРµ РЅР°Р№РґРµРј Р·РЅР°С‡РµРЅРёРµ - РІРµСЂРЅРµРј РѕС€РёР±РєСѓ
    For J:=0 to SN.Count-1 do If Pos('[',SN[J])>1 then begin
     If Pos('[',SN[J])<>0 then S:=Trim(Copy(SN[J],1,Pos('[',SN[J])-1));
     If Pos('[',ItemName)>1 then ItemName:=Trim(Copy(ItemName,1,Pos('[',ItemName)-1));
@@ -625,7 +625,7 @@ SectionName:=nil;
    end;
   end;
  end;
-// открываем вспомогательный, пользовательский файл с +
+// РѕС‚РєСЂС‹РІР°РµРј РІСЃРїРѕРјРѕРіР°С‚РµР»СЊРЅС‹Р№, РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№ С„Р°Р№Р» СЃ +
  If Additional <> nil then begin
   S:=ExtractFileExt(FileName);
   Delete(FileName,Pos(S,FileName),Length(S));

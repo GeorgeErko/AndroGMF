@@ -5,7 +5,7 @@ uses  Classes, Collect, WpTwigs, TwgDraw,
          newConsts, Lines2, EMath, SysUtils, FMX.Graphics,
           newResource, Maths_Basic, Types_Dimano, Circle_di, newProcs, WpArcs,
            newProperties, userObject, objBlockList, newSelector,
-            newPainter, System.Types, ogcBasic, Lines3, GMFLTDrawer;
+            newPainter, System.Types, ogcBasic, Lines3, GMFLTDrawer, System.Skia;
 
 { Графические примитивы [.Twg] }
 var
@@ -170,6 +170,7 @@ Type
      Selector:TSelector;
    //
      FDrawerObject: TObject;
+     FModified: Boolean;
      Constructor   Create(Code:Extended;CH:TResource;LotType:Byte);virtual;
       Constructor   CreateWithParams(PR:TResource;Params:Pointer);virtual;abstract;
       Constructor   CreateAsLot(Lot:TLot;AddAllCollections:Boolean);virtual;
@@ -305,6 +306,10 @@ Type
       procedure Draw32(Twf: TTwigsCollect);
       function GetDrawerObject: TObject; override;
       procedure SetDrawerObject(Obj: TObject); override;
+      function GetModified: Boolean; override;
+      procedure SetModified(AValue: Boolean); override;
+      procedure SkiaDraw(const ACanvas: ISkCanvas); override;
+      function SkiaVisible(Selector: TSelector): Boolean; override;
     end;
 
  TLotClass=class of TLot;
@@ -315,7 +320,7 @@ Type
 
 
 Implementation uses WptForm2, IniFiles, EcDot2, intervals, EcText, Tata3, Polygons,
-                    Maths_Versia,  Writer, tmpPainter, System.UITypes;
+                    Maths_Versia,  Writer, tmpPainter, System.UITypes, ogcDrawerSkia;
 
 
  Function ArcCat(X1,Y1,X2,Y2:real;Var Znak:byte):Real;
@@ -3530,6 +3535,11 @@ var Tw:TTwig;I,J:Integer;AlphaColor:Integer;
 Procedure DrawLine(X,Y,X1,Y1:Double);
 var XX,YY,XX1,YY1:Integer; Pen: TogsPen;
 begin
+ if GlobalRender then With Selector do
+ begin
+   Drawer.DrawLine(X, Y, X1, Y1, True);
+   Exit;
+ end;
  With Selector do
   try
    XX:=XPix(X);YY:=YPix(Y);XX1:=XPix(X1);YY1:=YPix(Y1);
@@ -3539,7 +3549,7 @@ begin
    end else
     If Clip_Interval(GRect.Left,GRect.Bottom,Grect.Right,Grect.Top,X,Y,X1,Y1) then begin
      Drawer.DrawLine(X, Y, X1, Y1, True);
-  //  Bitmap.FrameRectS(XX-2,YY-2,XX-2,YY-2);Bitmap.FrameRectS(XX1-2,YY1-2,XX1-2,YY1-2);
+  //  Bitmap.FrameRectS(XX-2,YY-2,XX-2,XX-2);Bitmap.FrameRectS(XX1-2,YY1-2,XX1-2,XX1-2);
    end;
   except
     raise Exception.Create('Polygon Line Exception 1');
@@ -3630,6 +3640,21 @@ begin
  end;
 end;
 
+function TLot.GetModified: Boolean;
+begin
+  Result := fModified;
+end;
+
+procedure TLot.SetModified(AValue: Boolean);
+begin
+ FModified := AValue;
+  if AValue and (FDrawerObject <> nil) then
+  begin
+   FDrawerObject.Free;
+   FDrawerObject := nil;
+  end;
+end;
+
 function TLot.GetDrawerObject: TObject;
 begin
  Result := FDrawerObject;
@@ -3640,6 +3665,19 @@ begin
  FDrawerObject := Obj;
 end;
 
+function TLot.SkiaVisible(Selector: TSelector): Boolean;
+begin
+ Result := True;
+end;
+
+procedure TLot.SkiaDraw(const ACanvas: ISkCanvas);
+var
+ SkObj: TogsSkiaObject;
+begin
+ SkObj := FDrawerObject as TogsSkiaObject;
+ if SkObj <> nil then
+   SkObj.Draw(ACanvas, LOD1_INDEX);
+end;
 
 
 { TSurface }

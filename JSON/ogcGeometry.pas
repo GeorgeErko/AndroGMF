@@ -1,10 +1,10 @@
-unit ogcGeometry;
+п»їunit ogcGeometry;
 
 // {$mode Delphi}{$H+}
 
 interface
 
-uses Classes, SysUtils, Graphics, ogcBasic, ogcProperties;
+uses Classes, SysUtils, ogcBasic, ogcProperties;
 
 type
 
@@ -12,20 +12,20 @@ type
 
   TogsGeometryCollection = class(TogsSortedCollection)
   private
-  // убираем метод Add из публичных объявлений
-  // чтобы не дать возможность добавлять неконтролируемые данные
-  // к примеру: добавление точки методом AddPoint(X, Y, Z),
-  // приводит к пересчету габаритов примитива, а если использовать
-  // Add(TogsDot.Create(...)) произойдет неконтролируемое добавление точки
+  // СѓР±РёСЂР°РµРј РјРµС‚РѕРґ Add РёР· РїСѓР±Р»РёС‡РЅС‹С… РѕР±СЉСЏРІР»РµРЅРёР№
+  // С‡С‚РѕР±С‹ РЅРµ РґР°С‚СЊ РІРѕР·РјРѕР¶РЅРѕСЃС‚СЊ РґРѕР±Р°РІР»СЏС‚СЊ РЅРµРєРѕРЅС‚СЂРѕР»РёСЂСѓРµРјС‹Рµ РґР°РЅРЅС‹Рµ
+  // Рє РїСЂРёРјРµСЂСѓ: РґРѕР±Р°РІР»РµРЅРёРµ С‚РѕС‡РєРё РјРµС‚РѕРґРѕРј AddPoint(X, Y, Z),
+  // РїСЂРёРІРѕРґРёС‚ Рє РїРµСЂРµСЃС‡РµС‚Сѓ РіР°Р±Р°СЂРёС‚РѕРІ РїСЂРёРјРёС‚РёРІР°, Р° РµСЃР»Рё РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ
+  // Add(TogsDot.Create(...)) РїСЂРѕРёР·РѕР№РґРµС‚ РЅРµРєРѕРЅС‚СЂРѕР»РёСЂСѓРµРјРѕРµ РґРѕР±Р°РІР»РµРЅРёРµ С‚РѕС‡РєРё
    function Add(Item_: Pointer): Integer; override;
   private
    fogsRect: TogsRect;
    fogsSelector: TogsSelector;
-  // корневой объект GeoJSON "properties": {name: <values>...}
-  // в результате вызова конструктора CreateJSON(jsonSpatialArray: TogsPropValue)
-  // исходный массив очищается от массива координат TogsPropArray
-  // в TogsPropArray сохраняется ссылка propValue = TogsGeometry
-  // при экспорте в JSON пространственные данные передаюися из TogsGeometry.ToString
+  // РєРѕСЂРЅРµРІРѕР№ РѕР±СЉРµРєС‚ GeoJSON "properties": {name: <values>...}
+  // РІ СЂРµР·СѓР»СЊС‚Р°С‚Рµ РІС‹Р·РѕРІР° РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂР° CreateJSON(jsonSpatialArray: TogsPropValue)
+  // РёСЃС…РѕРґРЅС‹Р№ РјР°СЃСЃРёРІ РѕС‡РёС‰Р°РµС‚СЃСЏ РѕС‚ РјР°СЃСЃРёРІР° РєРѕРѕСЂРґРёРЅР°С‚ TogsPropArray
+  // РІ TogsPropArray СЃРѕС…СЂР°РЅСЏРµС‚СЃСЏ СЃСЃС‹Р»РєР° propValue = TogsGeometry
+  // РїСЂРё СЌРєСЃРїРѕСЂС‚Рµ РІ JSON РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ РїРµСЂРµРґР°СЋРёСЃСЏ РёР· TogsGeometry.ToString
    fogsProperties: TogsPropValue;
    fSelected: boolean;
    function GetogsRect: TogsRect; override;
@@ -59,7 +59,7 @@ type
    function Visible(Rect: TogsRect): Boolean; override;
   //
    function SortByProc(sortProc: TListSortCompare; Duplicates_: Boolean): Integer;
-  // захват
+  // Р·Р°С…РІР°С‚
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; virtual;
   // bBox
    function Calculate(Action: TCalcActionSet): Integer; override;
@@ -70,7 +70,7 @@ type
    function FindAttribute(AttrNAme_:String; out Prim: Pointer): Boolean; override;
   end;
 
- { TogsPoint - точка с bBox и семантикой }
+ { TogsPoint - С‚РѕС‡РєР° СЃ bBox Рё СЃРµРјР°РЅС‚РёРєРѕР№ }
 
   TogsPoint = class(TogsDot)
   private
@@ -89,30 +89,30 @@ type
    M: Double;
    class function GeometryType: String; override;
    constructor Create(X_, Y_, Z_: Double; ogsSelector_: TogsSelector = nil);
-  // массив geoJSON "geometry" = TogsPropArray
+  // РјР°СЃСЃРёРІ geoJSON "geometry" = TogsPropArray
    constructor CreateJSON(jsonSpatialArray, jsonProperties: TogsPropValue; ogsSelector_: TogsSelector = nil);
    constructor CreateAs(ogsPoint_: TogsPoint);
    destructor Destroy; override;
    constructor Load(Stream: TogsStream); override;
    procedure   Store(Stream: TogsStream); override;
    procedure Clear; override;
-  // видимость
+  // РІРёРґРёРјРѕСЃС‚СЊ
    function Visible(Rect: TogsRect): Boolean; override;
-  // захват
+  // Р·Р°С…РІР°С‚
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; virtual;
    function GetSelected: boolean; override;
    procedure SetSelected(AValue: boolean); override;
   //
    function CreateSysProperties(strTemplate: String): TogsProperties; override;
    property ogsProperties: TogsProperties read GetogsProperties write SetogsProperties;
-  // координаты в JSON
+  // РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ JSON
    function UpdateSpatialProperties(var spatialProps: TogsPropValue; OnlyGeometry: Boolean = False): Integer; virtual;
    function ToString : AnsiString; override;
   // bBox
    function Calculate(Action: TCalcActionSet): Integer; override;
   end;
 
- { TogsMultiPoint - коллекция TogsPoint }
+ { TogsMultiPoint - РєРѕР»Р»РµРєС†РёСЏ TogsPoint }
 
   type
    TogsMultiPoint = class(TogsGeometryCollection)
@@ -134,13 +134,13 @@ type
     procedure DrawPoint(Drawer: TogsDrawer); override;
    //
     property Point[Index: Integer]: TogsPoint read GetPoint;default;
-   // захват
+   // Р·Р°С…РІР°С‚
     function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
-   // координаты в JSON
+   // РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ JSON
     function UpdateSpatialProperties(var spatialProps: TogsPropValue; OnlyGeometry: Boolean = False): Integer; override;
    end;
 
-  { TogsLineString - одномерная коллекция TogsDot }
+  { TogsLineString - РѕРґРЅРѕРјРµСЂРЅР°СЏ РєРѕР»Р»РµРєС†РёСЏ TogsDot }
 
   TogsLineString = class(TogsMultiPoint)
   private
@@ -159,9 +159,9 @@ type
    function IsRing (): Integer; virtual;
   //
    function Calculate(Action: TCalcActionSet): Integer; override;
-  // отрисовка
+  // РѕС‚СЂРёСЃРѕРІРєР°
    procedure Draw(Drawer: TogsDrawer); override;
-  // захват
+  // Р·Р°С…РІР°С‚
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
   //
 //   function UpdateSpatialProperties(out spatialProps: TogsProp): Integer; override;
@@ -178,7 +178,7 @@ type
    function _Length: Double; override;
    function GetSquare: Double; override;
   public
- // необходимо рассмотрения примеров geoJSON
+ // РЅРµРѕР±С…РѕРґРёРјРѕ СЂР°СЃСЃРјРѕС‚СЂРµРЅРёСЏ РїСЂРёРјРµСЂРѕРІ geoJSON
  //  constructor CreateJSON(jsonSpatialArray, jsonProperties: TogsPropValue; ogsSelector_: TogsSelector = nil);
    class function GeometryType: String; override;
    constructor Create(ogsSelector_: TogsSelector);
@@ -187,33 +187,33 @@ type
    function Calculate(Action: TCalcActionSet): Integer; override;
   //
    property Line[Index: Integer]: TogsLineString read GetLine; default;
-  // отрисовка
+  // РѕС‚СЂРёСЃРѕРІРєР°
    procedure Draw(Drawer: TogsDrawer); override;
-  // захват
+  // Р·Р°С…РІР°С‚
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
-   // координаты в JSON
+   // РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ JSON
    function UpdateSpatialProperties(var spatialProps: TogsPropValue; OnlyGeometry: Boolean): Integer; override;
   end;
 
- { TPoly_Single - площадной объект -> наследник TogsLineString }
+ { TPoly_Single - РїР»РѕС‰Р°РґРЅРѕР№ РѕР±СЉРµРєС‚ -> РЅР°СЃР»РµРґРЅРёРє TogsLineString }
 
   TPolyMode = record
-   clockWise : boolean; // ориентация полигона
-   isCorrect : boolean; // корректность: замыкание, отношения полигонов
-   touchPoint: boolean; // касание полигона Parent юолее чем в одной точке
-   interWith : boolean; // взаимное пересечение
+   clockWise : boolean; // РѕСЂРёРµРЅС‚Р°С†РёСЏ РїРѕР»РёРіРѕРЅР°
+   isCorrect : boolean; // РєРѕСЂСЂРµРєС‚РЅРѕСЃС‚СЊ: Р·Р°РјС‹РєР°РЅРёРµ, РѕС‚РЅРѕС€РµРЅРёСЏ РїРѕР»РёРіРѕРЅРѕРІ
+   touchPoint: boolean; // РєР°СЃР°РЅРёРµ РїРѕР»РёРіРѕРЅР° Parent СЋРѕР»РµРµ С‡РµРј РІ РѕРґРЅРѕР№ С‚РѕС‡РєРµ
+   interWith : boolean; // РІР·Р°РёРјРЅРѕРµ РїРµСЂРµСЃРµС‡РµРЅРёРµ
    nullParent: boolean; // Parent = nil
-  // multiPoly : boolean; // составной полигон -> multiPolygon
-   intersect : boolean; // пересекается с ругим полигоном
+  // multiPoly : boolean; // СЃРѕСЃС‚Р°РІРЅРѕР№ РїРѕР»РёРіРѕРЅ -> multiPolygon
+   intersect : boolean; // РїРµСЂРµСЃРµРєР°РµС‚СЃСЏ СЃ СЂСѓРіРёРј РїРѕР»РёРіРѕРЅРѕРј
    extTag2,
-   extFlag   : boolean; // доп тэги, extTag используется в качестве доп. флажка
-                        // при calcRelation
+   extFlag   : boolean; // РґРѕРї С‚СЌРіРё, extTag РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РІ РєР°С‡РµСЃС‚РІРµ РґРѕРї. С„Р»Р°Р¶РєР°
+                        // РїСЂРё calcRelation
    GlobalParent: Pointer;
   end;
 
   TPoly_Single = class(TogsLineString)
   private
-  // родительский полигон
+  // СЂРѕРґРёС‚РµР»СЊСЃРєРёР№ РїРѕР»РёРіРѕРЅ
    fParent: Pointer;
    procedure SetParent(AValue: Pointer);
    function GetSquare: Double; override;
@@ -224,16 +224,16 @@ type
    function Calculate(Action: TCalcActionSet): Integer; override;
   //
    property Parent: Pointer read fParent write SetParent;
-  // захват - точка в полигоне
+  // Р·Р°С…РІР°С‚ - С‚РѕС‡РєР° РІ РїРѕР»РёРіРѕРЅРµ
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
-  // если параметр clockWise = 0 -> при вращении не происходит установкf флага PoluMode.clockWise
+  // РµСЃР»Рё РїР°СЂР°РјРµС‚СЂ clockWise = 0 -> РїСЂРё РІСЂР°С‰РµРЅРёРё РЅРµ РїСЂРѕРёСЃС…РѕРґРёС‚ СѓСЃС‚Р°РЅРѕРІРєf С„Р»Р°РіР° PoluMode.clockWise
    procedure Rotate(clockWise : Integer);
-  // -1 - не входит в полигон Poly, 0 - входит не соприкасается,
-  // 1 входит соприкасается в точке, 2..N - соприкасается в 2-х и более точках
+  // -1 - РЅРµ РІС…РѕРґРёС‚ РІ РїРѕР»РёРіРѕРЅ Poly, 0 - РІС…РѕРґРёС‚ РЅРµ СЃРѕРїСЂРёРєР°СЃР°РµС‚СЃСЏ,
+  // 1 РІС…РѕРґРёС‚ СЃРѕРїСЂРёРєР°СЃР°РµС‚СЃСЏ РІ С‚РѕС‡РєРµ, 2..N - СЃРѕРїСЂРёРєР°СЃР°РµС‚СЃСЏ РІ 2-С… Рё Р±РѕР»РµРµ С‚РѕС‡РєР°С…
    function PolygonIn(Poly: TPoly_Single; var touchCount: Integer): Integer;
   end;
 
- { TogsPolygon - коллекция полигонов -> предков TogsLineString }
+ { TogsPolygon - РєРѕР»Р»РµРєС†РёСЏ РїРѕР»РёРіРѕРЅРѕРІ -> РїСЂРµРґРєРѕРІ TogsLineString }
 
   TogsPolygon = class(TogsGeometryCollection)
   private
@@ -252,16 +252,16 @@ type
    function CalcRelations: Integer;
    function isMultiPolygon: Boolean;
    function Calculate(Action: TCalcActionSet): Integer; override;
-  // отрисовка
+  // РѕС‚СЂРёСЃРѕРІРєР°
    procedure Draw(Drawer: TogsDrawer); override;
    procedure DrawPoint(Drawer: TogsDrawer); override;
-  // захват - точка в Polygon[Index], если полигон - не дырка
+  // Р·Р°С…РІР°С‚ - С‚РѕС‡РєР° РІ Polygon[Index], РµСЃР»Рё РїРѕР»РёРіРѕРЅ - РЅРµ РґС‹СЂРєР°
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
-  // координаты в JSON
+  // РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ JSON
    function UpdateSpatialProperties(var spatialProps: TogsPropValue; OnlyGeometry: Boolean = False): Integer; override;
   end;
 
- { TogsMultiPolygon - коллекция TogsPolygon }
+ { TogsMultiPolygon - РєРѕР»Р»РµРєС†РёСЏ TogsPolygon }
 
   TogsMultiPolygon = class(TogsGeometryCollection)
    fSquare: Double;
@@ -276,22 +276,22 @@ type
    property Polygon[Index: Integer]: TogsPolygon read GetPolygon;
   //
    function Calculate(Action: TCalcActionSet): Integer; override;
-  // отрисовка
+  // РѕС‚СЂРёСЃРѕРІРєР°
    procedure Draw(Drawer: TogsDrawer); override;
    procedure DrawPoint(Drawer: TogsDrawer); override;
-  // захват
+  // Р·Р°С…РІР°С‚
    function SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boolean; override;
-  // координаты в JSON
+  // РєРѕРѕСЂРґРёРЅР°С‚С‹ РІ JSON
    function UpdateSpatialProperties(var spatialProps: TogsPropValue; OnlyGeometry: Boolean = False): Integer; override;
   end;
 
-// проверка типа добавляемых пространственных примитивов
+// РїСЂРѕРІРµСЂРєР° С‚РёРїР° РґРѕР±Р°РІР»СЏРµРјС‹С… РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµРЅРЅС‹С… РїСЂРёРјРёС‚РёРІРѕРІ
  function CheckogsDotType(P: TogsBasic): Boolean;
  function CheckogsPointType(P: TogsBasic): Boolean;
  function CheckogsLineType(P: TogsBasic): Boolean;
  function CheckPoly_SignType(P: TogsBasic): Boolean;
  function CheckogsPolygonType(P: TogsBasic): Boolean;
-// сортировка пространственных данных
+// СЃРѕСЂС‚РёСЂРѕРІРєР° РїСЂРѕСЃС‚СЂР°РЅСЃС‚РІРµРЅРЅС‹С… РґР°РЅРЅС‹С…
  function SortBySquareProc(Item1, Item2: Pointer): Integer;
 
 implementation uses ogcMathUtils;
@@ -323,7 +323,7 @@ end;
 
 function SortBySquareProc(Item1, Item2: Pointer): Integer;
 begin
-// !!! не работает для сортировки с округлением
+// !!! РЅРµ СЂР°Р±РѕС‚Р°РµС‚ РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё СЃ РѕРєСЂСѓРіР»РµРЅРёРµРј
  If TPoly_Single(Item1).Square < TPoly_Single(Item2).Square then Result := 1 else
  If TPoly_Single(Item1).Square = TPoly_Single(Item2).Square then Result := 0 else
  If TPoly_Single(Item1).Square > TPoly_Single(Item2).Square then Result := -1;
@@ -398,7 +398,7 @@ end;
 
 function TogsGeometryCollection.Add(Item_: Pointer): Integer;
 begin
-// raise Exception.Create('Вызов неконтролируемого добавления укзалеля в объект ' + ClassName);
+// raise Exception.Create('Р’С‹Р·РѕРІ РЅРµРєРѕРЅС‚СЂРѕР»РёСЂСѓРµРјРѕРіРѕ РґРѕР±Р°РІР»РµРЅРёСЏ СѓРєР·Р°Р»РµР»СЏ РІ РѕР±СЉРµРєС‚ ' + ClassName);
  Result:=inherited Add(Item_);
 end;
 
@@ -448,11 +448,11 @@ function TogsGeometryCollection.ToString: AnsiString;
 var tmpProps: TogsPropValue;
     spatialProps: TogsPropValue;
 begin
-// создаем объект -> копию ogsProperties
+// СЃРѕР·РґР°РµРј РѕР±СЉРµРєС‚ -> РєРѕРїРёСЋ ogsProperties
  tmpProps := TogsBasicClass(ogsProperties.ClassType).CreateAs(ogsProperties) as TogsPropValue;
-// передаем атрибуты TogsPoint в JSON свойство типа TogsPropObject
+// РїРµСЂРµРґР°РµРј Р°С‚СЂРёР±СѓС‚С‹ TogsPoint РІ JSON СЃРІРѕР№СЃС‚РІРѕ С‚РёРїР° TogsPropObject
   UpdateSpatialProperties(spatialProps);
-// добавляем в ogsProperties
+// РґРѕР±Р°РІР»СЏРµРј РІ ogsProperties
  tmpProps.AddItem(spatialProps);
 //
  Result:= tmpProps.ToString;
@@ -471,14 +471,14 @@ function TogsGeometryCollection.SortByProc(sortProc: TListSortCompare;
 var I: Integer;
     sortedCol: TogsSortedCollection;
 begin
- // сортируем по площади
+ // СЃРѕСЂС‚РёСЂСѓРµРј РїРѕ РїР»РѕС‰Р°РґРё
  Result := 0;
  If Count <= 1 then exit;
  sortedCol := TogsSortedCollection.Create(sortProc, Duplicates_);
  For I := 0 to Count - 1 do sortedCol.Add(List[I]);
- // присваиваем отсортированные двнные
- // (оптимизация: 1.наследование от TogsSortedCollection
- //               2.хэш-тпблица
+ // РїСЂРёСЃРІР°РёРІР°РµРј РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅРЅС‹Рµ РґРІРЅРЅС‹Рµ
+ // (РѕРїС‚РёРјРёР·Р°С†РёСЏ: 1.РЅР°СЃР»РµРґРѕРІР°РЅРёРµ РѕС‚ TogsSortedCollection
+ //               2.С…СЌС€-С‚РїР±Р»РёС†Р°
  For I := 0 to sortedCol.Count - 1 do List[I] := sortedCol.List[I];
  sortedCol.DeleteAll; sortedCol.Free;
  Result := Count;
@@ -546,7 +546,7 @@ begin
  fogsRect := TogsRect.Create;
  fogsRect.Insert(X, Y);
  fogsSelector := ogsSelector_;
-//!!! спорный вопрос при добавлении блоков и атрибутов
+//!!! СЃРїРѕСЂРЅС‹Р№ РІРѕРїСЂРѕСЃ РїСЂРё РґРѕР±Р°РІР»РµРЅРёРё Р±Р»РѕРєРѕРІ Рё Р°С‚СЂРёР±СѓС‚РѕРІ
 // If fOgsSelector <> nil then fogsSelector.AddCoord(X, Y);
 end;
 
@@ -554,8 +554,8 @@ constructor TogsPoint.CreateJSON(jsonSpatialArray, jsonProperties: TogsPropValue
 begin
  fogsRect := TogsRect.Create;
  fogsSelector := ogsSelector_;
-// по умолчанию однмерный массив [13420.363, 1753.199] с 2 значениями
- if jsonSpatialArray.Count < 2 then exit; // добавить обработку ошибки
+// РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ РѕРґРЅРјРµСЂРЅС‹Р№ РјР°СЃСЃРёРІ [13420.363, 1753.199] СЃ 2 Р·РЅР°С‡РµРЅРёСЏРјРё
+ if jsonSpatialArray.Count < 2 then exit; // РґРѕР±Р°РІРёС‚СЊ РѕР±СЂР°Р±РѕС‚РєСѓ РѕС€РёР±РєРё
   X := StrToFloat(jsonSpatialArray.Item[0].ToString);
   Y := -StrToFloat(jsonSpatialArray.Item[1].ToString);
   If jsonSpatialArray.Count > 2 then
@@ -692,11 +692,11 @@ end;
 function TogsPoint.UpdateSpatialProperties(var spatialProps: TogsPropValue;
  OnlyGeometry: Boolean): Integer;
 begin
-// если передаем только геометрию - > используем spatialProps
-// в качестве контейнера от родительского объекта
-// иначе -> создаем новую ветку JSON со всеми характеристиками
+// РµСЃР»Рё РїРµСЂРµРґР°РµРј С‚РѕР»СЊРєРѕ РіРµРѕРјРµС‚СЂРёСЋ - > РёСЃРїРѕР»СЊР·СѓРµРј spatialProps
+// РІ РєР°С‡РµСЃС‚РІРµ РєРѕРЅС‚РµР№РЅРµСЂР° РѕС‚ СЂРѕРґРёС‚РµР»СЊСЃРєРѕРіРѕ РѕР±СЉРµРєС‚Р°
+// РёРЅР°С‡Рµ -> СЃРѕР·РґР°РµРј РЅРѕРІСѓСЋ РІРµС‚РєСѓ JSON СЃРѕ РІСЃРµРјРё С…Р°СЂР°РєС‚РµСЂРёСЃС‚РёРєР°РјРё
  If OnlyGeometry then begin
-  If spatialProps = nil then raise Exception.Create('Вызов UpdateSpatialProperties: spatialProps = nil');
+  If spatialProps = nil then raise Exception.Create('Р’С‹Р·РѕРІ UpdateSpatialProperties: spatialProps = nil');
   With spatialProps.propValue.AddItem(TogsPropArray.Create) do begin
    propValue.AddItem(TogsPropFloat.Create(X));
    propValue.AddItem(TogsPropFloat.Create(Y));
@@ -713,18 +713,18 @@ begin
     end;
   end;
  end;
- Result := 1; // добавлен одие элемент
+ Result := 1; // РґРѕР±Р°РІР»РµРЅ РѕРґРёРµ СЌР»РµРјРµРЅС‚
 end;
 
 function TogsPoint.ToString: AnsiString;
 var tmpProps: TogsPropValue;
     spatialProps: TogsPropValue;
 begin
-// создаем объект -> копию ogsProperties
+// СЃРѕР·РґР°РµРј РѕР±СЉРµРєС‚ -> РєРѕРїРёСЋ ogsProperties
  tmpProps := TogsBasicClass(ogsProperties.ClassType).CreateAs(ogsProperties) as TogsPropValue;
-// передаем атрибуты TogsPoint в JSON свойство типа TogsPropObject
+// РїРµСЂРµРґР°РµРј Р°С‚СЂРёР±СѓС‚С‹ TogsPoint РІ JSON СЃРІРѕР№СЃС‚РІРѕ С‚РёРїР° TogsPropObject
  UpdateSpatialProperties(spatialProps);
-// добавляем в ogsProperties
+// РґРѕР±Р°РІР»СЏРµРј РІ ogsProperties
  tmpProps.AddItem(spatialProps);
 //
  Result:= tmpProps.ToString;
@@ -748,7 +748,7 @@ var I: Integer;
 begin
  Create(ogsSelector_);
 // WriteIn(['ArrayCount=',jsonSpatialArray.Count, jsonSpatialArray.Item[0].Count]);
- if jsonSpatialArray.Count < 2 then exit; // // добавить обработку ошибок и предупреждение в протокол
+ if jsonSpatialArray.Count < 2 then exit; // // РґРѕР±Р°РІРёС‚СЊ РѕР±СЂР°Р±РѕС‚РєСѓ РѕС€РёР±РѕРє Рё РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ РІ РїСЂРѕС‚РѕРєРѕР»
 //
 // WriteIn(['Count=',jsonSpatialArray.Count, jsonSpatialArray.ToString]);
  For I := 0 to jsonSpatialArray.Count - 1 do begin
@@ -756,7 +756,7 @@ begin
 //  WriteIn(['xyCount=', xyArray.Count]);
   If xyArray.Count < 2 then break;
  //
-  X := StrToFloat(xyArray.Item[0].ToString);// добавить обработку ошибок
+  X := StrToFloat(xyArray.Item[0].ToString);// РґРѕР±Р°РІРёС‚СЊ РѕР±СЂР°Р±РѕС‚РєСѓ РѕС€РёР±РѕРє
   Y := -StrToFloat(xyArray.Item[1].ToString);
   If xyArray.Count > 2 then
    Z := StrToFloat(xyArray.Item[2].ToString)
@@ -853,7 +853,7 @@ function TogsMultiPoint.UpdateSpatialProperties(var spatialProps: TogsPropValue;
 var I: Integer;
 begin
  If OnlyGeometry then begin
-  If spatialProps = nil then raise Exception.Create('Вызов UpdateSpatialProperties: spatialProps = nil');
+  If spatialProps = nil then raise Exception.Create('Р’С‹Р·РѕРІ UpdateSpatialProperties: spatialProps = nil');
   With spatialProps.AddItem(TogsPropArray.Create) do begin
 //   WriteIn(['clName=',propValue.ClassName]);
    For I := 0 to Self.Count -1 do
@@ -870,7 +870,7 @@ begin
 //  With spatialProps do begin
    propValue.AddItem(TogsProperty.Create('type', TogsPropString.Create({'"' +} GeometryType {+ '"'})));
     With propValue.AddItem(TogsProperty.Create('coordinates', TogsPropArray.Create)) do begin
-    // добавляем координаты
+    // РґРѕР±Р°РІР»СЏРµРј РєРѕРѕСЂРґРёРЅР°С‚С‹
 //     WriteIn(['clName=',propValue.ClassName]);
      For I := 0 to Self.Count -1 do
       With propValue.AddItem(TogsPropArray.Create) do begin
@@ -883,7 +883,7 @@ begin
     end;
   end;
  end;
- Result := Count; // добавлен одие элемент
+ Result := Count; // РґРѕР±Р°РІР»РµРЅ РѕРґРёРµ СЌР»РµРјРµРЅС‚
 end;
 
 { TogsLineString }
@@ -951,7 +951,7 @@ begin
   fLength := 0;
   For I := 0 to fList.Count - 2 do begin
    P1 := TogsDot(fList[I]); P2 := TogsDot(fList[I+1]);
-  // один из методов вычисления длины - обращение к методу ogsBasic.Meter
+  // РѕРґРёРЅ РёР· РјРµС‚РѕРґРѕРІ РІС‹С‡РёСЃР»РµРЅРёСЏ РґР»РёРЅС‹ - РѕР±СЂР°С‰РµРЅРёРµ Рє РјРµС‚РѕРґСѓ ogsBasic.Meter
    fLength := fLength + P1.Distance(P2);
   end;
   Result := 1;
@@ -976,7 +976,7 @@ var I: Integer;
 begin
  Result:= False;
  If ckLine in Params.CaptureFor then begin
-// проверяем на принадлежность ogsRect
+// РїСЂРѕРІРµСЂСЏРµРј РЅР° РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚СЊ ogsRect
 // If not ((ogsSelector.pixDist(ogsRect.XMin - ogsRect.XMax) = 0) or
 //         (ogsSelector.pixDist(ogsRect.YMin - ogsRect.YMax) = 0)) then
 //   WriteIn(['Pix=',ogsSelector.pixDist(ogsRect.XMin - ogsRect.XMax)
@@ -1069,14 +1069,14 @@ function TogsMultiLineString.UpdateSpatialProperties(var spatialProps: TogsPropV
 var I: integer;
     propItem: TogsPropValue;
 begin
- If OnlyGeometry then begin // добавляем только геометрию
-  If spatialProps = nil then raise Exception.Create('Вызов UpdateSpatialProperties: spatialProps = nil');
+ If OnlyGeometry then begin // РґРѕР±Р°РІР»СЏРµРј С‚РѕР»СЊРєРѕ РіРµРѕРјРµС‚СЂРёСЋ
+  If spatialProps = nil then raise Exception.Create('Р’С‹Р·РѕРІ UpdateSpatialProperties: spatialProps = nil');
   With spatialProps.AddItem(TogsPropArray.Create) do begin
    propItem := propValue;
    For I := 0 to Self.Count - 1 do
     Line[I].UpdateSpatialProperties(propItem, {OnlyGeometry} True);
   end;
- end else begin // добавляем геометрию с заголовком
+ end else begin // РґРѕР±Р°РІР»СЏРµРј РіРµРѕРјРµС‚СЂРёСЋ СЃ Р·Р°РіРѕР»РѕРІРєРѕРј
   spatialProps := TogsProperty.Create('geometry', TogsPropObject.Create);
  //
   With spatialProps do begin
@@ -1128,7 +1128,7 @@ procedure TPoly_Single.Rotate(clockWise: Integer);
 var I: Integer; P: Pointer;
 begin
  If clockWise <> 0 then PolyMode.clockWise := clockWise <> -1;
-// поворот
+// РїРѕРІРѕСЂРѕС‚
  For I:= List.Count-1 downTo 0 do begin List.Add(List[I]); List[I]:=nil; end;
  List.Pack;
 // PolyMode
@@ -1142,15 +1142,15 @@ begin
  Result:= False;
  If ckPolygon in Params.CaptureFor then begin
   If Square = -1 then begin
-   raise Exception.Create('TPoly_Single.Square = -1'); // обработка ошибки, добавление в протокол
+   raise Exception.Create('TPoly_Single.Square = -1'); // РѕР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РєРё, РґРѕР±Р°РІР»РµРЅРёРµ РІ РїСЂРѕС‚РѕРєРѕР»
   // exit;
   end;
- // проверяем на принадлежность ogsRect
+ // РїСЂРѕРІРµСЂСЏРµРј РЅР° РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚СЊ ogsRect
 // WriteIn(['Poly=',ogsRect.XMin, ogsRect.YMin, ogsRect.XMin, ogsRect.YMax]);
  If not ogsRect.PointIn(X_,Y_) then exit;
  //
   Res := point_and_polygon(X_, Y_, Self);
- // точка на линии или в полигоне
+ // С‚РѕС‡РєР° РЅР° Р»РёРЅРёРё РёР»Рё РІ РїРѕР»РёРіРѕРЅРµ
   If Res <> - 1 then begin
    Params.resCapture := 0;
    Params.resCaptureOf := ckSinglePolygon;
@@ -1166,7 +1166,7 @@ var I: Integer;
 begin
  Result := -1; touchCount := 0; fullEntryCount := 0;
  If not ogsRect.VisibleIn(Poly.ogsRect) then exit;
- // при расчете соприкосновения точек не берем последнюю,поэтому Count - 2
+ // РїСЂРё СЂР°СЃС‡РµС‚Рµ СЃРѕРїСЂРёРєРѕСЃРЅРѕРІРµРЅРёСЏ С‚РѕС‡РµРє РЅРµ Р±РµСЂРµРј РїРѕСЃР»РµРґРЅСЋСЋ,РїРѕСЌС‚РѕРјСѓ Count - 2
 // Writeln('PolygonIn=========================');
  For I := 0 to Count - 2 do With TDot(List[I]) do
   If Poly.ogsRect.PointIn(X, Y) then begin
@@ -1181,7 +1181,7 @@ begin
      If Res = 1 then Inc(fullEntryCount) else
   end else exit;
 // WriteIn(['Touch&Entry',touchCount,fullEntryCount]);
-// если полное вхождение Result = 0, если касание Result = кол-во касаний
+// РµСЃР»Рё РїРѕР»РЅРѕРµ РІС…РѕР¶РґРµРЅРёРµ Result = 0, РµСЃР»Рё РєР°СЃР°РЅРёРµ Result = РєРѕР»-РІРѕ РєР°СЃР°РЅРёР№
  If touchCount <> 0 then Result := touchCount else Result := 0;
 // If Result > 0 then
 //  Writeln('touches=',Result);
@@ -1215,7 +1215,7 @@ begin
 // WriteIn(['TextPoly',jsonSpatialArray.ToString]);
 // If jsonSpatialArray.Count < 2  then exit;
 // WriteIn(['Poly================']);
-// считываем последовательно полигоны и дырки в коллекцию TPoly_Single
+// СЃС‡РёС‚С‹РІР°РµРј РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ РїРѕР»РёРіРѕРЅС‹ Рё РґС‹СЂРєРё РІ РєРѕР»Р»РµРєС†РёСЋ TPoly_Single
  For I := 0 to jsonSpatialArray.Count - 1 do begin
   ImportPolygon(jsonSpatialArray.Item[I], I > 0);
  end;
@@ -1262,9 +1262,9 @@ begin
                                    fSquare := fSquare - Poly.Square;
   end
   else begin
-  // не может быть площади = -1 -> обработчик ошибок
+  // РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїР»РѕС‰Р°РґРё = -1 -> РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС€РёР±РѕРє
    Result := 0;
-   raise Exception.Create('TogsPolygon.Square = -1'); // временно -> протокол ошибок
+   raise Exception.Create('TogsPolygon.Square = -1'); // РІСЂРµРјРµРЅРЅРѕ -> РїСЂРѕС‚РѕРєРѕР» РѕС€РёР±РѕРє
   end;
  end;
 // Writeln('EndCalcSquare ==============',fSquare);
@@ -1288,8 +1288,8 @@ begin
    PolyI.PolyMode.touchPoint := touchCount > 1;
    exit;
  end;
-// если полигон PolyI не принадлежит -> ошибка TogsPolygon
-// raise Exception.Create('TogsPolygon incorrect relation'); // обработка ошибки
+// РµСЃР»Рё РїРѕР»РёРіРѕРЅ PolyI РЅРµ РїСЂРёРЅР°РґР»РµР¶РёС‚ -> РѕС€РёР±РєР° TogsPolygon
+// raise Exception.Create('TogsPolygon incorrect relation'); // РѕР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РєРё
 end;
 Function CalcNesting(Poly: TPoly_Single): Integer;
 begin
@@ -1302,9 +1302,9 @@ end;
 begin
  Result := 0;
  If Count = 0 then exit;
- // сортировка
+ // СЃРѕСЂС‚РёСЂРѕРІРєР°
  SortByProc(SortBySquareProc, True);
- // обнуляем Parent всех полигонов
+ // РѕР±РЅСѓР»СЏРµРј Parent РІСЃРµС… РїРѕР»РёРіРѕРЅРѕРІ
 // Writeln('InRelations================', Count);
  For I := 0 to Count - 1 do begin
  // Writeln('Square=',Polygon[I].Square);
@@ -1313,30 +1313,30 @@ begin
  // Polygon[I].PolyMode.multiPoly := False;
  end;
 // Writeln('EndInRelations================');
- // вычисляем отношения между полиглнами в порядке сортировки
- // вычисляем принадлежность
+ // РІС‹С‡РёСЃР»СЏРµРј РѕС‚РЅРѕС€РµРЅРёСЏ РјРµР¶РґСѓ РїРѕР»РёРіР»РЅР°РјРё РІ РїРѕСЂСЏРґРєРµ СЃРѕСЂС‚РёСЂРѕРІРєРё
+ // РІС‹С‡РёСЃР»СЏРµРј РїСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚СЊ
  For I := Count - 1 downto 1 do CalcPolyRelation(Polygon[I], I);
- // поворот полигонов
- // поворачиваем основной полигон по часовой (дырка - PolyMode.ClockWise = false)
+ // РїРѕРІРѕСЂРѕС‚ РїРѕР»РёРіРѕРЅРѕРІ
+ // РїРѕРІРѕСЂР°С‡РёРІР°РµРј РѕСЃРЅРѕРІРЅРѕР№ РїРѕР»РёРіРѕРЅ РїРѕ С‡Р°СЃРѕРІРѕР№ (РґС‹СЂРєР° - PolyMode.ClockWise = false)
  Orientation := orientation_of_polygon(Polygon[0], Polygon[0].fSquare);
  If Orientation = -1 then Polygon[0].Rotate(Orientation);
- // остальные полигоны
+ // РѕСЃС‚Р°Р»СЊРЅС‹Рµ РїРѕР»РёРіРѕРЅС‹
  For I := 0 to Count - 1 do
   If Polygon[I].Parent <> nil then begin
    Poly := Polygon[I];
  //  WriteIn(['hasParent=',I, ' ptCount=',Poly.Count, Poly.fSquare, TPoly_Single(Poly.Parent).fSquare]);
    Orientation := orientation_of_polygon(Poly, Poly.fSquare);
    Nesting := CalcNesting(Poly);              
-  // поворот полигшона если ыложенность
+  // РїРѕРІРѕСЂРѕС‚ РїРѕР»РёРіС€РѕРЅР° РµСЃР»Рё С‹Р»РѕР¶РµРЅРЅРѕСЃС‚СЊ
    Poly.PolyMode.nullParent := False;
    If odd(Nesting) and (Orientation = 1) then Poly.Rotate(Orientation) else
    If not odd(Nesting) and (Orientation = -1) then Poly.Rotate(Orientation);
   end else begin
-  // полигон без Parent = ogsMultiPolygon
-  // !!! raise Exception.Create(Fmt(['Полигон без Parent. Index =',I])); //!!! временно, нужен обработчик ошибок
+  // РїРѕР»РёРіРѕРЅ Р±РµР· Parent = ogsMultiPolygon
+  // !!! raise Exception.Create(Fmt(['РџРѕР»РёРіРѕРЅ Р±РµР· Parent. Index =',I])); //!!! РІСЂРµРјРµРЅРЅРѕ, РЅСѓР¶РµРЅ РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС€РёР±РѕРє
    Poly := Polygon[I];
  //  WriteIn(['noPerent=',I, ' ptCount=',Poly.Count, Poly.Square]);
-  // поворачиваем по часовой стрелке, как основной полигон
+  // РїРѕРІРѕСЂР°С‡РёРІР°РµРј РїРѕ С‡Р°СЃРѕРІРѕР№ СЃС‚СЂРµР»РєРµ, РєР°Рє РѕСЃРЅРѕРІРЅРѕР№ РїРѕР»РёРіРѕРЅ
    Orientation := orientation_of_polygon(Poly, Poly.fSquare);
    If Orientation = -1 then Poly.Rotate(Orientation);
    Poly.PolyMode.nullParent:= True;
@@ -1358,7 +1358,7 @@ function TogsPolygon.Calculate(Action: TCalcActionSet): Integer;
 var I: Integer;
 begin
  Result := 0;
-// порядок  -> [calcRelation, calcSquare]
+// РїРѕСЂСЏРґРѕРє  -> [calcRelation, calcSquare]
  If calcRelation in Action then Result := CalcRelations;
  If calcSquare in Action then Result := CalcSquares;
  If calcSortBy in Action then Result := SortByProc(SortBySquareProc, True);
@@ -1373,7 +1373,7 @@ end;
 
 type
 
- { TTmp_Poly - наследник TPoly_Single для процедуры отсечения }
+ { TTmp_Poly - РЅР°СЃР»РµРґРЅРёРє TPoly_Single РґР»СЏ РїСЂРѕС†РµРґСѓСЂС‹ РѕС‚СЃРµС‡РµРЅРёСЏ }
 
  TTmp_Poly = class(TPoly_Single)
   constructor Create(PolyMode_: TPolyMode; Points: TogsCollection);
@@ -1387,7 +1387,7 @@ var I: Integer;
 begin
  PolyMode := PolyMode_;
  List.Free; List := Points.List;
-// чтобы не уничтожить Points.List <> nil при вызове деструктора Points.Destroy
+// С‡С‚РѕР±С‹ РЅРµ СѓРЅРёС‡С‚РѕР¶РёС‚СЊ Points.List <> nil РїСЂРё РІС‹Р·РѕРІРµ РґРµСЃС‚СЂСѓРєС‚РѕСЂР° Points.Destroy
  Points.List := nil;
 end;
 
@@ -1415,12 +1415,12 @@ begin
 // exit;
  goto 1;
 // WriteIn([I,Polygon[I].PolyMode.clockWise]);
-// собираем только видимые полигоны TogsPolygon
+// СЃРѕР±РёСЂР°РµРј С‚РѕР»СЊРєРѕ РІРёРґРёРјС‹Рµ РїРѕР»РёРіРѕРЅС‹ TogsPolygon
  Polygs := TogsCollection.Create(Count);
  For I := 0 to Count - 1 do begin
   Poly := Polygon[I];
 //  With Poly.ogsRect do WriteIn(['PolySign.Rect=',XMin, YMin, XMAx, YMax]);
-  // если полигон полностью в ogsSelector.ActiveRect - > не выполняем клипирование
+  // РµСЃР»Рё РїРѕР»РёРіРѕРЅ РїРѕР»РЅРѕСЃС‚СЊСЋ РІ ogsSelector.ActiveRect - > РЅРµ РІС‹РїРѕР»РЅСЏРµРј РєР»РёРїРёСЂРѕРІР°РЅРёРµ
   if Poly.ogsRect.VisibleAllIn(Drawer.ogsSelector.ActiveRect) then begin
   // WriteIn(['AllVisible']);
    Points := TogsCollection.Create(Poly.Count);
@@ -1428,11 +1428,11 @@ begin
    Polygs.Add(TTmp_Poly.Create(Poly.PolyMode, Points));
    Points.Free;
   end else
-  // клиппируем
+  // РєР»РёРїРїРёСЂСѓРµРј
   If (I = 0) or Poly.Visible(Drawer.ogsSelector.ActiveRect) then begin
    Points := TogsCollection.Create(Poly.Count);
-  // если отсечение успещно -> создаем полигон с указанием Poly.PolyMode
-  // для учета дырок при рисовании
+  // РµСЃР»Рё РѕС‚СЃРµС‡РµРЅРёРµ СѓСЃРїРµС‰РЅРѕ -> СЃРѕР·РґР°РµРј РїРѕР»РёРіРѕРЅ СЃ СѓРєР°Р·Р°РЅРёРµРј Poly.PolyMode
+  // РґР»СЏ СѓС‡РµС‚Р° РґС‹СЂРѕРє РїСЂРё СЂРёСЃРѕРІР°РЅРёРё
    Clipped := ClipProc;
    If Clipped then begin
     Polygs.Add(TTmp_Poly.Create(Poly.PolyMode, Points));
@@ -1442,7 +1442,7 @@ begin
    If not Clipped and (I = 0) then break;
   end;
  end;
-// вызываем метод для отрисовки Polygs
+// РІС‹Р·С‹РІР°РµРј РјРµС‚РѕРґ РґР»СЏ РѕС‚СЂРёСЃРѕРІРєРё Polygs
 // WriteIn(['PolyC=',Polygs.Count]);
 // If Count = 1 then Drawer.Brush.brColor := clSilver else
 //                   Drawer.Brush.brColor := clMoneyGreen;
@@ -1467,22 +1467,22 @@ function TogsPolygon.SelectByPoint(X_, Y_: Double; var Params: TCaptureRec): boo
 var I:Integer; Params1: TCaptureRec;
 begin
  Result := False;
-// использовалось для отладки поворота полигонов
+// РёСЃРїРѕР»СЊР·РѕРІР°Р»РѕСЃСЊ РґР»СЏ РѕС‚Р»Р°РґРєРё РїРѕРІРѕСЂРѕС‚Р° РїРѕР»РёРіРѕРЅРѕРІ
 //!!! CalcRelations;
  Params1 := CRClearParams;                     
  If ckPolygon in Params.CaptureFor then begin
 //  With ogsRect do WriteIn(['Select.Rect=', XMin, XMax, YMin, YMax]);
   If not ogsRect.PointIn(X_,Y_) then exit;
   For I := Count - 1 downto 0 do
-  // если не дырка -> проверяем на вхождение
+  // РµСЃР»Рё РЅРµ РґС‹СЂРєР° -> РїСЂРѕРІРµСЂСЏРµРј РЅР° РІС…РѕР¶РґРµРЅРёРµ
    If Polygon[I].PolyMode.clockWise then begin
     Result := Polygon[I].SelectByPoint(X_,Y_,Params);
   //  WriteIn(['Poly=',I,'Res=', Result, 'pCount=', Polygon[I].Count, 'Square=',Polygon[I].Square]);
     If Result then exit;
-   end else //!!! проверять дырки  If not Params.ignoreHoles then
+   end else //!!! РїСЂРѕРІРµСЂСЏС‚СЊ РґС‹СЂРєРё  If not Params.ignoreHoles then
   //  WriteIn(['Hole=',I,' Res=',Polygon[I].SelectByPoint(X_,Y_,Params1),'pCount=', Polygon[I].Count, 'Square=',Polygon[I].Square]);
    If Polygon[I].SelectByPoint(X_,Y_,Params1) then begin
-   // если дырка -> установим параметр
+   // РµСЃР»Рё РґС‹СЂРєР° -> СѓСЃС‚Р°РЅРѕРІРёРј РїР°СЂР°РјРµС‚СЂ
     Result := False; exit;
    end;
  end;
@@ -1493,14 +1493,14 @@ function TogsPolygon.UpdateSpatialProperties(var spatialProps: TogsPropValue;
 var I: integer;
     propItem: TogsPropValue;
 begin
- If OnlyGeometry then begin // добавляем только геометрию
-  If spatialProps = nil then raise Exception.Create('Вызов UpdateSpatialProperties: spatialProps = nil');
+ If OnlyGeometry then begin // РґРѕР±Р°РІР»СЏРµРј С‚РѕР»СЊРєРѕ РіРµРѕРјРµС‚СЂРёСЋ
+  If spatialProps = nil then raise Exception.Create('Р’С‹Р·РѕРІ UpdateSpatialProperties: spatialProps = nil');
   With spatialProps.AddItem(TogsPropArray.Create) do begin
    propItem := propValue;
    For I := 0 to Self.Count - 1 do
     Polygon[I].UpdateSpatialProperties(propItem, {OnlyGeometry} True);
   end;
- end else begin // добавляем геометрию с заголовком
+ end else begin // РґРѕР±Р°РІР»СЏРµРј РіРµРѕРјРµС‚СЂРёСЋ СЃ Р·Р°РіРѕР»РѕРІРєРѕРј
   spatialProps.AddItem(TogsProperty.Create('geometry', TogsPropObject.Create));
  //
   With spatialProps do begin
@@ -1531,7 +1531,7 @@ constructor TogsMultiPolygon.CreateJSON(jsonSpatialArray, jsonProperties: TogsPr
 var I, J: Integer; ogsPoly: TogsPolygon;
 begin
  Create(ogsSelector_);
-// считываем последовательно полигоны и дырки в коллекцию TogsPolygon
+// СЃС‡РёС‚С‹РІР°РµРј РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ РїРѕР»РёРіРѕРЅС‹ Рё РґС‹СЂРєРё РІ РєРѕР»Р»РµРєС†РёСЋ TogsPolygon
 // WriteIn(['MultiPolyC=',jsonSpatialArray.Count]);
 // WriteIn([jsonSpatialArray.item[0].ToString]);
 // WriteIn([jsonSpatialArray.item[1].ToString]);
@@ -1564,18 +1564,18 @@ begin
  Poly := TogsPolygon.Create(ogsSelector);
  Poly.AddPolygon(Poly_Single);
  AddPolygon(Poly);
-// добавляем полигон
+// РґРѕР±Р°РІР»СЏРµРј РїРѕР»РёРіРѕРЅ
   For I := Index + 1 to ogsPolygon.Count - 1 do
    If ogsPolygon.Polygon[I].Parent = Poly_Single then
-   // добавляем дырку в полигон
+   // РґРѕР±Р°РІР»СЏРµРј РґС‹СЂРєСѓ РІ РїРѕР»РёРіРѕРЅ
     Poly.AddPolygon(ogsPolygon.Polygon[I]) else begin
-   // добавляем
+   // РґРѕР±Р°РІР»СЏРµРј
      //CreatePolygon();
     end;
- // добавляем полигон
+ // РґРѕР±Р°РІР»СЏРµРј РїРѕР»РёРіРѕРЅ
 end;
 begin
-// вставляем самостоятельные полигоны
+// РІСЃС‚Р°РІР»СЏРµРј СЃР°РјРѕСЃС‚РѕСЏС‚РµР»СЊРЅС‹Рµ РїРѕР»РёРіРѕРЅС‹
  Writeln('AddMulti.Count', ogsPolygon.Count);
  For I := 0 to ogsPolygon.Count - 1 do begin
   Writeln('I=', I, ' ', ogsPolygon.Polygon[I].Parent = nil);
@@ -1583,7 +1583,7 @@ begin
    CreatePolygon(ogsPolygon.Polygon[I], I, add_with_parent);
  end;
  Writeln('AddMulti.end=', Count);
-// очищаем коллекцию полигонов ogsPolygon
+// РѕС‡РёС‰Р°РµРј РєРѕР»Р»РµРєС†РёСЋ РїРѕР»РёРіРѕРЅРѕРІ ogsPolygon
  ogsPolygon.DeleteAll;
 end;
 
@@ -1597,7 +1597,7 @@ begin
    Poly := Polygon[I];
    If Poly.Square <> -1 then fSquare := fSquare + Poly.Square
    else
-    // обработчик ошибок
+    // РѕР±СЂР°Р±РѕС‚С‡РёРє РѕС€РёР±РѕРє
   end;
   Result := 1;
  end;
@@ -1663,14 +1663,14 @@ function TogsMultiPolygon.UpdateSpatialProperties(
 var I: integer;
     propItem: TogsPropValue;
 begin
- If OnlyGeometry then begin // добавляем только геометрию
-  If spatialProps = nil then raise Exception.Create('Вызов UpdateSpatialProperties: spatialProps = nil');
+ If OnlyGeometry then begin // РґРѕР±Р°РІР»СЏРµРј С‚РѕР»СЊРєРѕ РіРµРѕРјРµС‚СЂРёСЋ
+  If spatialProps = nil then raise Exception.Create('Р’С‹Р·РѕРІ UpdateSpatialProperties: spatialProps = nil');
   With spatialProps.AddItem(TogsPropArray.Create) do begin
    propItem := propValue;
    For I := 0 to Self.Count - 1 do
     Polygon[I].UpdateSpatialProperties(propItem, {OnlyGeometry} True);
   end;
- end else begin // добавляем геометрию с заголовком
+ end else begin // РґРѕР±Р°РІР»СЏРµРј РіРµРѕРјРµС‚СЂРёСЋ СЃ Р·Р°РіРѕР»РѕРІРєРѕРј
   spatialProps := TogsProperty.Create('geometry', TogsPropObject.Create);
  //
   With spatialProps do begin

@@ -1,4 +1,4 @@
-unit TwgBitmaps;
+﻿unit TwgBitmaps;
 
 interface uses Collect, FMX.Graphics, newSelector, TwgDraw, ogcBasic,
                System.Math, System.UITypes;
