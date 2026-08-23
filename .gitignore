@@ -51,5 +51,7 @@ Linux64/
 *.tmp
 *.cache
 
+PROJ/
+
 *.rar
 /WIN/WORKPATH/
