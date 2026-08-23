@@ -27,7 +27,6 @@ type
     btnToolMultiAngle: TSpeedButton;
     btnToolText: TSpeedButton;
     Load: TButton;
-    btnEsc: TCornerButton;
     imgEsc: TImageList;
     instPanel: TPanel;
     Splitter2: TSplitter;
@@ -48,6 +47,8 @@ type
     Button1: TButton;
     btnGPKGB: TButton;
     btnDoc: TButton;
+    Panel2: TPanel;
+    btnEsc: TButton;
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -104,7 +105,7 @@ type
 var
   MainFormMouseObj: TMainFormMouseObj;
 
-implementation uses objMouseSelect, objMouseDraw, objEditMap, UpdateMessages,
+implementation uses objMouseSelect, objMouseDraw, objEditMapCaptureDbg, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
                     GPKGReader, DlgLocalOpen;
 
@@ -311,9 +312,10 @@ begin
   MouseObject := nil;
   Op := TSpeedButton(Sender).Tag;
   if Op = em_GetObject then
-   MouseObject := TMouseEditMap.Create(TwgForm, nil)
+   MouseObject := TMouseEditMap2.Create(TwgForm, nil)
   else
    MouseObject := TMousePainter.Create(TwgForm, nil);
+  //
   MouseObject.OnAddPrim := UpdateMessage.AddPrim;
   MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
   MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;

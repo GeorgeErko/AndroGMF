@@ -478,7 +478,7 @@ end;
 
 procedure TInstPointsFrame.InitControls;
 begin
- FScale := GReadFloat(Name+'_Scale', 3);
+ FScale := GReadFloat(Name + '_Scale', 3);
  RowHeight := GReadInteger(Name+'_RowHeight', 48);
 end;
 

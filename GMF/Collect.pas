@@ -28,7 +28,7 @@ interface
    TBufStream = Class;
 
 {M+}
-   TTwgObject=class
+   TTwgObject=class(TInterfacedObject)
      Constructor  Load(Reader:TBufStream);Virtual;Abstract;
      Procedure   Store(Writer:TBufStream);Virtual;Abstract;
      Constructor BINLoad(Reader:TBufStream);Virtual;Abstract;

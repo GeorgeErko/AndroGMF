@@ -8,6 +8,7 @@ const
 // игнорировать рисование оевой/левой/правой линии
 // при рисовании двойной комплексной линии
  gmfIgnoreLineDrawing = $FF;
+ globalScan: boolean = False;
 
 // Рисование сложных типов линий в режиме совместимости с форматом GMF
 // в качестве обертки старого объекта TGeoLine с параметрами TLineStruct
@@ -138,6 +139,8 @@ begin
      end else
      begin // рисуем пунктирную линию с отсечением штрихов
       // просчитываем все начальные и конечные точки пунктирной линии
+      //If globalScan then
+     //  WriteIn([1]);
       Scan:=RealScaleLength(Drawer, PS.Param2, Ko);
       Space:=RealScaleLength(Drawer, PS.Param0 - PS.Param2, Ko);
       K:=0;

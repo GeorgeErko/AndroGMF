@@ -467,8 +467,7 @@ var
            if TF <> nil then
             begin
              RegisterSkiaFontFile(TF.FamilyName, F);
-            end;
-          }
+            end; }
            WriteIn(['===', F]);
         except
         end;
@@ -524,10 +523,11 @@ begin
  // InitSkPainterInput;
   {$IFDEF WIN64}
    GLines := nil;
-   newProcs.MainPath := TPath.GetLibraryPath + 'dicts';
+   newProcs.MainPath := TPath.GetLibraryPath + 'dicts\';
   {$ELSE}
    GLines := Memo1.Lines;
    newProcs.MainPath := TPath.GetDocumentsPath;
+   WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
    WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
   {$ENDIF}
   RegPrimitives;

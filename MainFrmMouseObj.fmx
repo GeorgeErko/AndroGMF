@@ -1,22 +1,22 @@
 inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
-  ClientWidth = 923
+  ClientWidth = 919
   WindowState = wsMaximized
   OnDestroy = FormDestroy
   DesignerMasterStyle = 3
   inherited Memo1: TMemo
     Position.Y = 474.000000000000000000
-    Size.Width = 923.000000000000000000
+    Size.Width = 919.000000000000000000
     Size.Height = 65.000000000000000000
-    Viewport.Width = 923.000000000000000000
+    Viewport.Width = 919.000000000000000000
     Viewport.Height = 65.000000000000000000
   end
   inherited Splitter1: TSplitter
     Position.Y = 466.000000000000000000
-    Size.Width = 923.000000000000000000
+    Size.Width = 919.000000000000000000
   end
   inherited Panel1: TPanel
-    Size.Width = 923.000000000000000000
+    Size.Width = 919.000000000000000000
     inherited btnOpen: TCornerButton
       Position.X = 11.000000000000000000
       Position.Y = 4.000000000000000000
@@ -42,7 +42,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Position.Y = 4.000000000000000000
     end
     inherited btnClose: TButton
-      Position.X = 903.000000000000000000
+      Align = MostRight
+      Position.X = 899.000000000000000000
+      TabOrder = 77
     end
     object Load: TButton
       Position.X = 274.000000000000000000
@@ -55,34 +57,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnClick = LoadClick
     end
-    object btnEsc: TCornerButton
-      Anchors = [akTop, akRight, akBottom]
-      ControlType = Platform
-      StyledSettings = [Family, Style, FontColor]
-      Images = imgEsc
-      ImageIndex = 0
-      Position.X = 862.000000000000000000
-      Position.Y = 4.000000000000000000
-      Sides = [Top, Left, Bottom, Right]
-      Size.Width = 53.000000000000000000
-      Size.Height = 26.000000000000000000
-      Size.PlatformDefault = False
-      StyleLookup = 'cornerbuttonstyle'
-      TabOrder = 40
-      Text = 'Esc'
-      TextSettings.Font.Size = 14.000000000000000000
-      TextSettings.Trimming = None
-      XRadius = 3.000000000000000000
-      YRadius = 3.000000000000000000
-      OnClick = btnEscClick
-    end
     object Button1: TButton
-      Position.X = 779.000000000000000000
-      Position.Y = 5.000000000000000000
+      Position.X = 627.000000000000000000
+      Position.Y = 4.000000000000000000
       Size.Width = 75.000000000000000000
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 57
+      TabOrder = 56
       Text = 'Button1'
       TextSettings.Trimming = None
       OnClick = Button1Click
@@ -93,7 +74,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 77.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 79
+      TabOrder = 78
       Text = 'btnGPKGB'
       TextSettings.Trimming = None
       OnClick = btnGPKGBClick
@@ -104,24 +85,46 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 83.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 81
+      TabOrder = 80
       Text = 'btnDoc'
       TextSettings.Trimming = None
       OnClick = btnDocClick
     end
+    object Panel2: TPanel
+      Align = Right
+      Position.X = 792.000000000000000000
+      Size.Width = 107.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 94
+      object btnEsc: TButton
+        Anchors = [akTop, akRight]
+        Images = imgEsc
+        ImageIndex = 0
+        Position.X = 20.000000000000000000
+        Position.Y = 4.000000000000000000
+        Size.Width = 73.000000000000000000
+        Size.Height = 25.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 93
+        Text = 'Esc'
+        TextSettings.Trimming = None
+        OnClick = btnEscClick
+      end
+    end
   end
   inherited PanelPainter: TPanel
-    Size.Width = 923.000000000000000000
+    Size.Width = 919.000000000000000000
     Size.Height = 362.000000000000000000
     inherited SkPainter: TSkPaintBox
       Margins.Left = -1.000000000000000000
       Padding.Left = -1.000000000000000000
-      Size.Width = 455.000000000000000000
+      Size.Width = 451.000000000000000000
       Size.Height = 362.000000000000000000
     end
     object instPanel: TPanel
       Align = Right
-      Position.X = 655.000000000000000000
+      Position.X = 651.000000000000000000
       Size.Width = 268.000000000000000000
       Size.Height = 362.000000000000000000
       Size.PlatformDefault = False
@@ -138,7 +141,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Right
       Cursor = crHSplit
       MinSize = 20.000000000000000000
-      Position.X = 649.000000000000000000
+      Position.X = 645.000000000000000000
       Size.Width = 6.000000000000000000
       Size.Height = 362.000000000000000000
       Size.PlatformDefault = False
@@ -162,12 +165,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
   end
   inherited StatusBar: TStatusBar
     Position.Y = 443.000000000000000000
-    Size.Width = 923.000000000000000000
+    Size.Width = 919.000000000000000000
   end
   object ToolBarPaint: TToolBar [5]
     Margins.Right = 2.000000000000000000
     Position.Y = 33.000000000000000000
-    Size.Width = 921.000000000000000000
+    Size.Width = 917.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 21
@@ -376,7 +379,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Images = ToolImageList
       ImageIndex = 13
       Margins.Right = 2.000000000000000000
-      Position.X = 867.000000000000000000
+      Position.X = 863.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -395,7 +398,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Images = ToolImageList
       ImageIndex = 12
       Margins.Right = 2.000000000000000000
-      Position.X = 840.000000000000000000
+      Position.X = 836.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -415,7 +418,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Images = ToolImageList
       ImageIndex = 14
       Margins.Right = 2.000000000000000000
-      Position.X = 894.000000000000000000
+      Position.X = 890.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -431,7 +434,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inline LayerFrame1: TLayerFrame
       Align = Right
       Margins.Right = 2.000000000000000000
-      Position.X = 456.000000000000000000
+      Position.X = 452.000000000000000000
       Size.Width = 382.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -489,7 +492,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Images = ToolImageList
       ImageIndex = 17
       Margins.Right = 2.000000000000000000
-      Position.X = 429.000000000000000000
+      Position.X = 425.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False

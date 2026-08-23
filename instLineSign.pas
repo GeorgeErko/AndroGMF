@@ -418,7 +418,7 @@ var
  GL: TGeoLine;
  Drawer: TogsDrawer;
  DrawerSkia: TogsDrawerSkia;
- OldUseWorldCoords: Boolean;
+ OldUseWorldCoords, oldGB: Boolean;
  SampleLine: PCollection;
  SampleRect: TRectF;
  X0, X1, Y0: Single;
@@ -469,6 +469,8 @@ begin
   begin
    DrawerSkia := TogsDrawerSkia(Drawer);
    OldUseWorldCoords := DrawerSkia.UseWorldCoords;
+   oldGb := GlobalRender;
+   GlobalRender := True;
    DrawerSkia.UseWorldCoords := True;
    SampleLine := PCollection.Create(2);
    try
@@ -484,7 +486,9 @@ begin
      DrawerSkia.BeginFrame(Canvas, Dest);
      try
       if GL.LocalScale <= 0 then GL.LocalScale := 1;
+      globalScan := True;
       DrawGeoLine(DrawerSkia, GL, SampleLine, 10 * GL.LocalScale, 1, 0, False, $000000);
+      globalScan := False;
      finally
       DrawerSkia.EndFrame;
      end;
@@ -494,6 +498,7 @@ begin
    finally
     SampleLine.Free;
     DrawerSkia.UseWorldCoords := OldUseWorldCoords;
+    GlobalRender := oldGB;
    end;
   end;
 

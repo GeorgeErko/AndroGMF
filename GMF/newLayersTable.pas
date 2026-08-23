@@ -1,7 +1,7 @@
 ﻿unit newLayersTable;
 
 interface uses Collect, FMX.Graphics, EcDot, newProcs, newResource, lib2, Lib, Lines3,
-               Lines2, newConsts, Writer, newSelector;
+               Lines2, newConsts, Writer, newSelector, System.IniFiles, ogcBasic;
 
 const
  LayerTableGUID = '{08171EB9-30D0-46D3-A342-F8CEE46C8B79}';
@@ -145,7 +145,7 @@ type
 
 var Cells: Array [0..4] of Integer;
 
-implementation uses TwgColle, Classes, System.IniFiles, System.SysUtils;
+implementation uses TwgColle, Classes, System.SysUtils;
 
 { TZnakView }
 
@@ -832,7 +832,7 @@ begin
 end;
 
 procedure TMosLib.CreateIni;
-var Ini:TIniFile;
+var Ini:TMemIniFile;
 Function GetGroupN(NameOf:String;var zName:String):String;
 begin
  Result:='';
@@ -870,13 +870,13 @@ begin
  end;
 end;
 begin
- Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.grp'));
+ Ini:=TMemIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.grp'));
   If PntLib<>nil then CreateLibNames(PntLib,0);
  Ini.Free;
- Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.gr1'));
+ Ini:=TMemIniFile.Create(MainPath+'\'+SetExtFile(PntZnk,'.gr1'));
   If LineLib<>nil then CreateLibNames(LineLib,1);
  Ini.Free;
- Ini:=TIniFile.Create(MainPath+'\'+SetExtFile(SqwZnk,'.gr2'));
+ Ini:=TMemIniFile.Create(MainPath+'\'+SetExtFile(SqwZnk,'.gr2'));
   If SqwLib<>nil then CreateLibNames(SqwLib,2);
  Ini.Free;
 end;
@@ -885,11 +885,18 @@ Procedure TMosLib.CreateGroupView;
 var S: String;
 Function GetLibZnaks(IniName:String;Lib:TSortedCollection;Group:TGroupCollection;Flag:Integer):boolean;
 var I,J,N:Integer;
-    Ini:TIniFile;
+    Ini:TMemIniFile;
     Names,Items,Values:TStrings;
     ZnkView:TZnakView;
 begin
- Ini:=TIniFile.Create(IniName);
+ Result:=False;
+ if not FileExists(IniName) then exit;
+ try
+  Ini:=TMemIniFile.Create(IniName);
+ except on E: Exception do begin
+  WriteIn(['GetLibZnaks TMemIniFile.Create error: ', E.Message, ' IniName=', IniName]);
+  exit;
+ end; end;
  Names:=TStringList.Create;Items:=TStringList.Create;Values:=TStringList.Create;
  Ini.ReadSections(Names);
   For I:=0 to Names.Count-1 do begin
@@ -939,8 +946,12 @@ begin
  LineGroup:=TGroupCollection.Create(1);
  SquareGroup:=TGroupCollection.Create(1);
  GrpName := 'topo500';
- S := MainPath+GrpName+'.grp';
-If FileExists(MainPath+GrpName+'.grp') then begin
+ {$IFDEF MSWINDOWS}
+  S := MainPath + GrpName + '.grp';
+ {$ELSE}
+  S := MainPath + '/' + GrpName + '.grp';
+ {$ENDIF}
+If FileExists(S) then begin
 // MessageInform('Невозможно загрузить файл таблицы групп условных обозначений '+GrpName+'. Загружены значения по умолчанию.');
  GetLibZnaks(SetExtFile(S,'.grp'),PSLib,PointGroup,0);
  GetLibZnaks(SetExtFile(S,'.gr1'),LSLib,LineGroup,1);
