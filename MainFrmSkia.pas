@@ -148,6 +148,7 @@ begin
   SkPainter.OnDblClick := SkPainterDblClick;
   SkPainter.OnDraw := SkPainterDraw;
   SkPainter.Touch.InteractiveGestures := [TInteractiveGesture.Zoom];
+  GlobalUseVulkan := True;
 end;
 
 procedure TMainFormSkia.SetSceneDirty(AValue: Boolean);
@@ -457,18 +458,18 @@ var
     if Dir = '' then
       Exit;
     try
-      Files := TDirectory.GetFiles(Dir, '*.*');
+      Files := TDirectory.GetFiles(Dir, '*.ttf');
       for F in Files do
         try
-         { TFontManager.AddCustomFontFromFile(F);
+         TFontManager.AddCustomFontFromFile(F);
           TSkDefaultProviders.RegisterTypeface(F);
           RegisterSkiaTypefaceFromFile(F);
           TF := TSkTypeface.MakeFromFile(F);
            if TF <> nil then
             begin
              RegisterSkiaFontFile(TF.FamilyName, F);
-            end; }
-           WriteIn(['===', F]);
+            end;
+          // WriteIn(['===', F]);
         except
         end;
     except
@@ -515,15 +516,15 @@ begin
     UpdateMessage:=TUpdateMessage.Create(nil);
   end else
     Selector.Clear;
-
+ //
   FDrawerSkia.DebugDrawTextBounds := False;
-
+ //
   Memo1.Lines.Clear;
   FormCreate(Self);
  // InitSkPainterInput;
   {$IFDEF WIN64}
    GLines := nil;
-   newProcs.MainPath := TPath.GetLibraryPath + 'dicts\';
+   newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
   {$ELSE}
    GLines := Memo1.Lines;
    newProcs.MainPath := TPath.GetDocumentsPath;

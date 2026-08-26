@@ -11,13 +11,11 @@ uses System.UITypes, System.Types, System.Classes, System.SysUtils, System.Skia,
 type
  TMouseEditMap2 = class(TMouseSelector)
  private
-  FObjects: TSelectedObjects;
-  FCapturer: IogsPrimitiveCapturer;
-  FSelection: IogsSelectionAccess;
+  ICapturer: IogsPrimitiveCapturer;
+  ISelection: IogsSelectionAccess;
   FMarker: TogsMarker;
   FMarkerPos: TPointF;
   FMarkerVisible: Boolean;
-  function GetObjects: TSelectedObjects;
  protected
   function emGetObject(var X, Y: Double; var TypeLot: Byte; Shift: TShiftState): TTwgObject;
   function emGetDotMarker(var varX, varY: Double; LastPoint: TDot; StvorLine: TStvorLine;
@@ -31,8 +29,7 @@ type
   procedure MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean); override;
   procedure MouseMove(Form: TForm2; Shift: TShiftState; X, Y: Double; var Hook: boolean); override;
   procedure DrawTemp(const Canvas: ISkCanvas; PaintOnImage: Boolean = False); override;
-
-  property Objects: TSelectedObjects read GetObjects;
+  procedure DrawTempStatic(const Canvas: ISkCanvas; PaintOnImage: Boolean = False); override;
  end;
 
 implementation uses Writer;
@@ -53,15 +50,14 @@ end;
 constructor TMouseEditMap2.Create(ATwigs: Pointer; AFreeProc: TFreeProc);
 begin
  inherited;
- FObjects := nil;
- FCapturer := nil;
- FSelection := nil;
+ ICapturer := nil;
+ ISelection := nil;
  FMarker := TogsMarker.Create;
  FMarkerPos := TPointF.Create(0, 0);
  FMarkerVisible := False;
  if Twigs <> nil then begin
-  Supports(Twigs, IogsPrimitiveCapturer, FCapturer);
-  Supports(Twigs, IogsSelectionAccess, FSelection);
+  Supports(Twigs, IogsPrimitiveCapturer, ICapturer);
+  Supports(Twigs, IogsSelectionAccess, ISelection);
  end;
 end;
 
@@ -69,20 +65,20 @@ destructor TMouseEditMap2.Destroy;
 begin
  if FMarker <> nil then FMarker.Free;
  FMarker := nil;
- if FObjects <> nil then FObjects.Free;
- FObjects := nil;
  inherited;
-end;
-
-function TMouseEditMap2.GetObjects: TSelectedObjects;
-begin
- Result := FObjects;
 end;
 
 procedure TMouseEditMap2.MouseDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
+var Filter: TogsCaptureFilter;
 begin
- Hook := True;
+ Hook := False;
+ if Button = TMouseButton.mbMiddle then exit;
  inherited;
+ Hook := True;
+ if ICapturer = nil then exit;
+ if ICapturer.HitTestPointWorld(X, Y, 1, Filter) > 0 then begin
+  Selector.OnInvalidateOverlayStatic;
+ end;
 end;
 
 procedure TMouseEditMap2.MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
@@ -100,15 +96,15 @@ var T0, Dt: UInt64;
 begin
  Hook := True;
  inherited;
- if FCapturer = nil then exit;
+ if ICapturer = nil then exit;
  Filter := TogsCaptureFilter.AllKinds;
  T0 := TThread.GetTickCount64;
- Cnt := FCapturer.GetHitTestMarker(X, Y, 0, Filter, 1);
+ Cnt := ICapturer.GetHitTestMarker(X, Y, 0, Filter, 1);
  Dt := TThread.GetTickCount64 - T0;
  NewVisible := (Cnt = 1);
  if NewVisible then begin
-  WriteIn(['capture', 'dt_ms', Dt, 'of', ord(Form.LastCaptureRec.resCaptureOf)]);
-  case Form.LastCaptureRec.resCaptureOf of
+ // WriteIn(['capture', 'dt_ms', Dt, 'of', ord(ICapturer.getLastCaptureRec.resCaptureOf)]);
+  case ICapturer.getLastCaptureRec.resCaptureOf of
    ckPoint: NewState := mtPoint;
    ckLine: NewState := mtLine;
    ckPolygon: NewState := mtPolygon;
@@ -128,10 +124,23 @@ begin
 end;
 
 procedure TMouseEditMap2.DrawTemp(const Canvas: ISkCanvas; PaintOnImage: Boolean);
+var ViewScale: Single;
 begin
- inherited;
  if (FMarker <> nil) and FMarkerVisible then
-  FMarker.Draw(Canvas, FMarkerPos);
+ begin
+  if (Selector <> nil) then
+   ViewScale := Single(Selector.GetScale)
+  else
+   ViewScale := 1;
+  FMarker.Draw(Canvas, FMarkerPos, ViewScale);
+ end;
+end;
+
+procedure TMouseEditMap2.DrawTempStatic(const Canvas: ISkCanvas; PaintOnImage: Boolean);
+begin
+ WriteIn(['DTS1=', Now]);
+  ICapturer.PainSelection(Canvas);
+ WriteIn(['DTS2=', Now]);
 end;
 
 end.

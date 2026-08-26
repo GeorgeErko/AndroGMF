@@ -104,7 +104,11 @@ uses
   TwgBitmaps in 'GMF\TwgBitmaps.pas',
   MainFrmOSM in 'MainFrmOSM.pas' {MainFormOSM},
   ProjApi in 'ProjApi.pas',
-  GPKGReader in 'GPKG\GPKGReader.pas';
+  GPKGReader in 'GPKG\GPKGReader.pas',
+  WPTForm12 in 'GMF\WPTForm12.pas',
+  ogcCaptureIntf in 'JSON\ogcCaptureIntf.pas',
+  ogcMarker in 'JSON\ogcMarker.pas',
+  objEditMapCaptureDbg in 'MOUSE\objEditMapCaptureDbg.pas';
 
 {$R *.res}
 

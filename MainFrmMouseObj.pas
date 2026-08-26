@@ -44,11 +44,12 @@ type
     btnProperties: TSpeedButton;
     FloatAnimation6: TFloatAnimation;
     instHost: TLayout;
-    Button1: TButton;
     btnGPKGB: TButton;
     btnDoc: TButton;
     Panel2: TPanel;
     btnEsc: TButton;
+    Panel3: TPanel;
+    cbOSM: TCheckBox;
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -60,6 +61,7 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure btnGPKGBClick(Sender: TObject);
     procedure btnDocClick(Sender: TObject);
+    procedure cbOSMChange(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -529,6 +531,12 @@ begin
   Surface.Flush;
   FOverlayInteractionImage := Surface.MakeImageSnapshot;
   FOverlayInteractionValid := True;
+end;
+
+procedure TMainFormMouseObj.cbOSMChange(Sender: TObject);
+begin
+  inherited;
+//
 end;
 
 procedure TMainFormMouseObj.DrawOverlay(const ACanvas: ISkCanvas; const ADest: TRectF);

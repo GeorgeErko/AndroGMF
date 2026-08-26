@@ -54,13 +54,17 @@ type
    function HitTestPointWorld(X, Y: Double; RadiusWorld: Double; const Filter: TogsCaptureFilter; MaxResults: Integer = 1): Integer;
    function SelectRectWorld(const Rect: TSect; Mode: TogsRectSelectMode; const Filter: TogsCaptureFilter): Integer;
    function GetPrimitiveBoundsWorld(const PrimitiveId: TogsPrimitiveId; out Bounds: TSect): Boolean;
+   function getLastCaptureRec: TCaptureRec;
    procedure PainSelection(const Canvas: ISkCanvas);
+   function ClearSelection: boolean;
   end;
 
   IogsSelectionAccess = interface
    ['{C2B2E6C8-8C3E-4B04-B1B8-5A8A0B769AC4}']
    function selectedCount: Integer;
    function selectedPtr(Index: Integer): Pointer;
+   function indexValid(Index: Integer): Boolean;
+   function get(Index: Integer): Pointer;
   end;
 
 implementation

@@ -2,7 +2,7 @@ inherited MainFormOSM: TMainFormOSM
   Caption = 'MainFormOSM'
   DesignerMasterStyle = 3
   inherited Memo1: TMemo
-    Viewport.Width = 923.000000000000000000
+    Viewport.Width = 919.000000000000000000
     Viewport.Height = 65.000000000000000000
   end
   inherited Panel1: TPanel

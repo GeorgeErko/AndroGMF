@@ -44,7 +44,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inherited btnClose: TButton
       Align = MostRight
       Position.X = 899.000000000000000000
-      TabOrder = 77
+      TabOrder = 76
     end
     object Load: TButton
       Position.X = 274.000000000000000000
@@ -57,24 +57,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnClick = LoadClick
     end
-    object Button1: TButton
-      Position.X = 627.000000000000000000
-      Position.Y = 4.000000000000000000
-      Size.Width = 75.000000000000000000
-      Size.Height = 25.000000000000000000
-      Size.PlatformDefault = False
-      TabOrder = 56
-      Text = 'Button1'
-      TextSettings.Trimming = None
-      OnClick = Button1Click
-    end
     object btnGPKGB: TButton
       Position.X = 360.000000000000000000
       Position.Y = 8.000000000000000000
       Size.Width = 77.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 78
+      TabOrder = 77
       Text = 'btnGPKGB'
       TextSettings.Trimming = None
       OnClick = btnGPKGBClick
@@ -85,23 +74,23 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 83.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 80
+      TabOrder = 79
       Text = 'btnDoc'
       TextSettings.Trimming = None
       OnClick = btnDocClick
     end
     object Panel2: TPanel
       Align = Right
-      Position.X = 792.000000000000000000
-      Size.Width = 107.000000000000000000
+      Position.X = 809.000000000000000000
+      Size.Width = 90.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 94
+      TabOrder = 93
       object btnEsc: TButton
         Anchors = [akTop, akRight]
         Images = imgEsc
         ImageIndex = 0
-        Position.X = 20.000000000000000000
+        Position.X = 9.000000000000000000
         Position.Y = 4.000000000000000000
         Size.Width = 73.000000000000000000
         Size.Height = 25.000000000000000000
@@ -110,6 +99,24 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Text = 'Esc'
         TextSettings.Trimming = None
         OnClick = btnEscClick
+      end
+    end
+    object Panel3: TPanel
+      Align = Right
+      Position.X = 736.000000000000000000
+      Size.Width = 73.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 94
+      object cbOSM: TCheckBox
+        Position.X = 9.000000000000000000
+        Position.Y = 6.000000000000000000
+        Size.Width = 58.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'OSM'
+        OnChange = cbOSMChange
       end
     end
   end

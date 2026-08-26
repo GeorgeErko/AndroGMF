@@ -33,6 +33,7 @@ interface
      Procedure   Store(Writer:TBufStream);Virtual;Abstract;
      Constructor BINLoad(Reader:TBufStream);Virtual;Abstract;
      Procedure   BINStore(Writer:TBufStream);Virtual;Abstract;
+    //
     end;
 {M-}
 

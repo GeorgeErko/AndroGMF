@@ -493,6 +493,10 @@
         </DCCReference>
         <DCCReference Include="ProjApi.pas"/>
         <DCCReference Include="GPKG\GPKGReader.pas"/>
+        <DCCReference Include="GMF\WPTForm12.pas"/>
+        <DCCReference Include="JSON\ogcCaptureIntf.pas"/>
+        <DCCReference Include="JSON\ogcMarker.pas"/>
+        <DCCReference Include="MOUSE\objEditMapCaptureDbg.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

@@ -11,17 +11,17 @@ uses
      InstLayerFrame, MainFrmMouseObj, ProjApi, System.ImageList, System.IOUtils, System.Skia;
 
 type
+ TOsmTile = record
+   Z, X, Y: Integer;
+   Key: string;
+ end;
+
   TMainFormOSM = class(TMainFormMouseObj)
     lMas: TLabel;
     procedure btnDocClick(Sender: TObject);
     procedure btnGPKGBClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
-  private
-   type
-    TOsmTile = record
-      Z, X, Y: Integer;
-      Key: string;
-    end;
+    procedure cbOSMChange(Sender: TObject);
   private
     FOsmZoom: Integer;
     FOsmTiles: TDictionary<string, ISkImage>;
@@ -38,8 +38,12 @@ type
     FOsmReqTimer: TTimer;
     FCachedTiles: Boolean;
     FOsmRedrawPending: Boolean;
+    FOsmDisableLock: Boolean;
+    FOsmFailed: Boolean;
     FOsmLastReqXMin, FOsmLastReqYMin, FOsmLastReqXMax, FOsmLastReqYMax: Double;
     FOsmLastReqValid: Boolean;
+    procedure OsmDisable;
+    procedure OsmDownloadFailed;
     procedure OsmReqTimer(Sender: TObject);
     procedure MaybeScheduleOsmRequest;
     function TryClientToGeo(const X, Y: Single; out GeoX, GeoY: Double): Boolean;
@@ -66,8 +70,8 @@ type
     procedure OpenGmfFileSkia(const LocalPath: string); override;
     procedure PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF); override;
     procedure PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF); override;
-  private
-    { Private declarations }
+    procedure OsmChanged;
+    procedure OsmMapLoaded;
   public
     { Public declarations }
     procedure SetOsmScaleDenom(const ADenom: Double);
@@ -409,6 +413,11 @@ begin
  FOsmHasView := True;
 end;
 
+procedure TMainFormOSM.cbOSMChange(Sender: TObject);
+begin
+ OsmChanged
+end;
+
 procedure TMainFormOSM.DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64);
 begin
  if FOsmClosing then exit;
@@ -421,6 +430,14 @@ begin
       MS: TMemoryStream;
       Img: ISkImage;
       FileName: string;
+  procedure Fail;
+  begin
+   TThread.Queue(nil,
+    procedure
+    begin
+     OsmDownloadFailed;
+    end);
+  end;
   begin
    if FOsmClosing then exit;
    WriteIn(['DownloadTileAsync task start ', Tile.Key]);
@@ -471,23 +488,27 @@ begin
     except on E: Exception do
      begin
       WriteIn(['OSM GET exception ', E.ClassName, ' ', E.Message, ' ', Url]);
+      Fail;
       exit;
      end;
     end;
     if Resp = nil then
     begin
      WriteIn(['OSM HTTP nil resp ', Url]);
+     Fail;
      exit;
     end;
     WriteIn(['OSM HTTP status ', Resp.StatusCode, ' ', Url]);
     if Resp.StatusCode <> 200 then
     begin
      WriteIn(['OSM HTTP non-200 status ', Resp.StatusCode, ' ', Url]);
+     Fail;
      exit;
     end;
     if Resp.ContentStream = nil then
     begin
      WriteIn(['OSM HTTP empty stream ', Url]);
+     Fail;
      exit;
     end;
     MS := TMemoryStream.Create;
@@ -497,12 +518,14 @@ begin
     if MS.Size <= 0 then
     begin
      WriteIn(['OSM empty bytes ', Url]);
+     Fail;
      exit;
     end;
     Img := TSkImage.MakeFromEncodedStream(MS);
     if Img = nil then
     begin
      WriteIn(['OSM decode failed ', Url]);
+     Fail;
      exit;
     end;
     WriteIn(['OSM decoded ', Url]);
@@ -675,11 +698,51 @@ end;
 procedure TMainFormOSM.OpenGmfFileSkia(const LocalPath: string);
 begin
  inherited;
- RequestOsmTilesFromActiveRect;
+ if (cbOSM <> nil) and cbOSM.IsChecked then
+  RequestOsmTilesFromActiveRect;
+end;
+
+procedure TMainFormOSM.OsmDisable;
+begin
+ if FOsmDisableLock then exit;
+ FOsmDisableLock := True;
+ try
+  FOsmFailed := True;
+  ClearOsm;
+  if cbOSM <> nil then
+   cbOSM.IsChecked := False;
+ finally
+  FOsmDisableLock := False;
+ end;
+end;
+
+procedure TMainFormOSM.OsmDownloadFailed;
+begin
+ if (cbOSM = nil) or (not cbOSM.IsChecked) then exit;
+ OsmDisable;
+end;
+
+procedure TMainFormOSM.OsmChanged;
+begin
+ if FOsmDisableLock then exit;
+ if cbOSM = nil then exit;
+ FOsmFailed := False;
+ if cbOSM.IsChecked then
+  RequestOsmTilesFromActiveRect
+ else
+  ClearOsm;
+end;
+
+procedure TMainFormOSM.OsmMapLoaded;
+begin
+ inherited;
+ if (cbOSM <> nil) and cbOSM.IsChecked then
+  RequestOsmTilesFromActiveRect;
 end;
 //
 procedure TMainFormOSM.PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF);
 begin
+ if (cbOSM = nil) or (not cbOSM.IsChecked) or FOsmFailed then exit;
  EnsureOsm;
  if FOsmClosing then exit;
  MaybeScheduleOsmRequest;
@@ -694,6 +757,7 @@ end;
 //
 procedure TMainFormOSM.PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF);
 begin
+ if (cbOSM = nil) or (not cbOSM.IsChecked) or FOsmFailed then exit;
  EnsureOsm;
  if FOsmClosing then exit;
  if Length(FOsmTileList) = 0 then exit;
@@ -706,3 +770,4 @@ begin
 end;
 
 end.
+
