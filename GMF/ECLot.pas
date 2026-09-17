@@ -112,6 +112,7 @@ Type
     procedure SetUID(const Value: AnsiString);
     function GetUID1: AnsiString;
     procedure SetUID1(const Value: AnsiString);
+    function isCaptured: Boolean;
     public
      ParentIndex:Integer; // индекс в коллекции контуров
      TaheoIndex:SmallInt;
@@ -171,6 +172,7 @@ Type
    //
      FDrawerObject: TObject;
      FModified: Boolean;
+     Captured: Boolean;
      Constructor   Create(Code:Extended;CH:TResource;LotType:Byte);virtual;
       Constructor   CreateWithParams(PR:TResource;Params:Pointer);virtual;abstract;
       Constructor   CreateAsLot(Lot:TLot;AddAllCollections:Boolean);virtual;
@@ -310,6 +312,8 @@ Type
       procedure SetModified(AValue: Boolean); override;
       procedure SkiaDraw(const ACanvas: ISkCanvas); override;
       function SkiaVisible(Selector: TSelector): Boolean; override;
+      function GetCaptured: Boolean; override;
+      procedure SetCaptured(AValue: Boolean); override;
     end;
 
  TLotClass=class of TLot;
@@ -1606,7 +1610,12 @@ function TLot.SetOwner(TWF: TTwigsCollect): AnsiString;
    begin
    end;
 
-    procedure TLot.SetChildsIns(Twf: TTwigsCollect);
+procedure TLot.SetCaptured(AValue: Boolean);
+begin
+ Captured := AValue;
+end;
+
+procedure TLot.SetChildsIns(Twf: TTwigsCollect);
    var I:LongInt;L:TLot;
     begin
       For I:=0 to Twf.LotsCount-1 do
@@ -2594,6 +2603,11 @@ begin
    If SetTwig then SetFromTwig(TWF);
    SetMinMax(TWF);SetSqwear(TWF);ReSetPromer(TWF);Exit;
   end;
+end;
+
+function TLot.GetCaptured: Boolean;
+begin
+ Result := Captured;
 end;
 
 function TLot.GetCorrectInfo(TWF: TTwigsCollect; var S1, S2: AnsiString
@@ -3679,6 +3693,10 @@ begin
    SkObj.Draw(ACanvas, LOD1_INDEX);
 end;
 
+function TLot.isCaptured: Boolean;
+begin
+ Result := Captured;
+end;
 
 { TSurface }
 

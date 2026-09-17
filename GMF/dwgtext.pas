@@ -330,7 +330,7 @@ begin
   TxtColor := ColorToAlphaColor(Col);
 
   HPix := Selector.pixDist(H);
-  if HPix <= 40 then
+  if HPix < 0{40} then
   begin
     if (TextBitmap <> nil) then
     begin
@@ -376,7 +376,10 @@ begin
     end;
   end;
 
-VectorText:
+VectorText: begin
+ // exit;
+ // WriteIn(['dwgText=', fv.FontName]);
+  TogsDrawerSkia(Drawer).DebugDrawTextBounds := True;
   TogsDrawerSkia(Drawer).DrawTextAlignedPix(
     Anchor,
     S,
@@ -385,8 +388,9 @@ VectorText:
     Ugol,
     XP, YP,
     1,
-    fv
-  );
+    fv, False, False);
+  TogsDrawerSkia(Drawer).DebugDrawTextBounds := False;
+  end;
   Exit;
  end;
 

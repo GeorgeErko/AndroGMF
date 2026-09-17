@@ -84,31 +84,17 @@ object MainForm: TMainForm
       YRadius = 3.000000000000000000
       OnClick = btnPaintClick
     end
-    object upm: TCornerButton
-      Position.X = 742.000000000000000000
-      Position.Y = 5.000000000000000000
-      Sides = [Top, Left, Bottom, Right]
-      Size.Width = 49.000000000000000000
-      Size.Height = 23.000000000000000000
-      Size.PlatformDefault = False
-      TabOrder = 3
-      Text = 'mem'
-      TextSettings.Trimming = None
-      XRadius = 3.000000000000000000
-      YRadius = 3.000000000000000000
-      OnClick = upmClick
-    end
     object btnPlus: TCornerButton
       Tag = 1
       Images = ImageList1
       ImageIndex = 3
-      Position.X = 306.000000000000000000
+      Position.X = 736.000000000000000000
       Position.Y = 5.000000000000000000
       Sides = [Top, Left, Bottom, Right]
       Size.Width = 25.000000000000000000
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 5
+      TabOrder = 4
       Text = 'btnPlus'
       TextSettings.Trimming = None
       XRadius = 3.000000000000000000
@@ -119,13 +105,13 @@ object MainForm: TMainForm
       Tag = -1
       Images = ImageList1
       ImageIndex = 4
-      Position.X = 332.000000000000000000
+      Position.X = 762.000000000000000000
       Position.Y = 5.000000000000000000
       Sides = [Top, Left, Bottom, Right]
       Size.Width = 25.000000000000000000
       Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 4
+      TabOrder = 3
       Text = 'CornerButton2'
       TextSettings.Trimming = None
       XRadius = 3.000000000000000000

@@ -824,13 +824,13 @@ Constructor TForm1.Load;
      end;
     end;
     If not MirrorObject then  WriteIn(['Load.V34']);
-
+  //
     If Version>47 then begin
      If not MirrorObject then begin
 //      For I:=0 to FontColEx.Count-1 do TFontViewEx(FontColEx[I]).RecreateLoadedFonts;
       For I:=0 to Twigs.AnyCount-1 do begin
        PP:=Twigs.AAt(I,B);
-       PP.ResetParams(param_idResetFontView,FontColEx);
+       // PP.ResetParams(param_idResetFontView,FontColEx);
        PP.ParentIndex:=I;
       end;
      // Twigs.DelAAT(370);

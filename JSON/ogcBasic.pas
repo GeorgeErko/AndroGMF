@@ -75,7 +75,7 @@ type
   TCalcActionSet = set of TCalcAction;
 
  // параметры захвата примитивов TogsGeometry
-  TCaptureKind = (ckPoint, ckLine, ckSinglePolygon, ckPolygon, ckMultiPolygon);
+  TCaptureKind = (ckPoint, ckMidLine, ckLine, ckSinglePolygon, ckPolygon, ckMultiPolygon);
   TSetOfCapture = set of TCaptureKind;
 
   { TCaptureRec }

@@ -1,9 +1,7 @@
 ﻿unit ogcMarker;
 
-interface
-
-uses System.Types, System.UITypes, System.Skia, System.Generics.Collections, System.Math,
-     Classes, EcDot;
+interface uses System.Types, System.UITypes, System.Skia, System.Generics.Collections, System.Math,
+     System.Math.Vectors, FMX.TextLayout, FMX.Graphics, Classes, ogcMathUtils, EcDot, ogcBasic;
 
 type
  TogsMarkerType = (
@@ -43,6 +41,25 @@ type
   rdmFillStroke
  );
 
+ TPolyPolyline = class(TList)
+ private
+  function GetPolylineCount: Integer;
+  function GetPolyline(Index: Integer): TList;
+  function GetPointCount(PolyIndex: Integer): Integer;
+  function GetPoint(PolyIndex, PtIndex: Integer): TDot;
+ public
+  destructor Destroy; override;
+ //
+  function AddPolyline: TList;
+  procedure AddPoint(PolyIndex: Integer; Pt: TDot);
+  procedure ClearAll;
+ //
+  property PolylineCount: Integer read GetPolylineCount;
+  property Polyline[Index: Integer]: TList read GetPolyline;
+  property PointCount[PolyIndex: Integer]: Integer read GetPointCount;
+  property Point[PolyIndex, PtIndex: Integer]: TDot read GetPoint;
+ end;
+
  TStickPt = class
  public
   X: Double;
@@ -58,6 +75,7 @@ type
  //
   FState: TogsMarkerType;
   FSize: Single;
+  FPtSize: Single;
   FWidth: Single;
   FColor: TAlphaColor;
   FLineColor: TAlphaColor;
@@ -84,13 +102,70 @@ type
  end;
 
 procedure ogsDrawPictureEffect(const Canvas: ISkCanvas; const ClipRect: TRectF; const Pic: ISkPicture; const OverlayColor: TAlphaColor; const Mode: TogsPictureEffectMode; const OverlayAlpha: Byte = $60);
-procedure ogsDrawPictureEffect2(const Canvas: ISkCanvas; const Points: TList;
+procedure ogsDrawPictureEffectLot(const Canvas: ISkCanvas; const Points: TPolyPolyline;
   const LineColor: TAlphaColor; const LineWidthPix: Single;
   const RectStrokeColor: TAlphaColor; const RectStrokeWidthPix: Single;
   const RectFillColor: TAlphaColor;
   const ViewScale: Single; const RadiusPix: Single; const RectMode: TogsRectDrawMode);
+//
+procedure ogsGetPoint(const Points: TPolyPolyline; const Selector: TogsSelector; const X, Y: Double; var Params: TCaptureRec);
 
-implementation uses Writer;
+implementation uses Writer, System.Skia.API;
+
+{ TPolyPolyline }
+
+destructor TPolyPolyline.Destroy;
+begin
+ ClearAll;
+ inherited;
+end;
+
+function TPolyPolyline.AddPolyline: TList;
+begin
+ Result := TList.Create;
+ Add(Result);
+end;
+
+procedure TPolyPolyline.AddPoint(PolyIndex: Integer; Pt: TDot);
+begin
+ if Pt = nil then exit;
+ GetPolyline(PolyIndex).Add(Pt);
+end;
+
+procedure TPolyPolyline.ClearAll;
+var I, J: Integer;
+    Poly: TList;
+begin
+ for I := 0 to Count - 1 do begin
+  Poly := TList(Items[I]);
+  if Poly = nil then continue;
+ // не уничтожаем точки из оригинальных примитивов
+ // for J := 0 to Poly.Count - 1 do
+ //  TDot(Poly[J]).Free;
+  Poly.Free;
+ end;
+ Clear;
+end;
+
+function TPolyPolyline.GetPolylineCount: Integer;
+begin
+ Result := Count;
+end;
+
+function TPolyPolyline.GetPolyline(Index: Integer): TList;
+begin
+ Result := TList(Items[Index]);
+end;
+
+function TPolyPolyline.GetPointCount(PolyIndex: Integer): Integer;
+begin
+ Result := GetPolyline(PolyIndex).Count;
+end;
+
+function TPolyPolyline.GetPoint(PolyIndex, PtIndex: Integer): TDot;
+begin
+ Result := TDot(GetPolyline(PolyIndex)[PtIndex]);
+end;
 
 { TStickPt }
 
@@ -111,6 +186,7 @@ begin
  inherited Create;
  FState := mtPolygon;
  FSize := 15;
+ FPtSize := 5;
  FWidth := 2;
  FColor := TAlphaColors.Red;
  FLineColor := TAlphaColors.Red;
@@ -178,14 +254,14 @@ begin
  else
   InvScale := 1 / ViewScale;
  Paint.StrokeWidth := Max(0.5, FWidth) * InvScale;
- S := Max(2, FSize * 0.35) * InvScale;
+ S := Max(FPtSize, FSize * 0.35) * InvScale;
  for I := 0 to FStickPts.Count - 1 do begin
   Pt := FStickPts[I];
   if Pt = nil then continue;
   PTo := TPointF.Create(Single(Pt.X), Single(Pt.Y));
-  Paint.Color := Pt.LineColor;
+  Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Difference);
+  Paint.Color := $FFFFFFFF;
   Canvas.DrawLine(FromP, PTo, Paint);
-  Paint.Color := Pt.Color;
   R := TRectF.Create(PTo.X - S, PTo.Y - S, PTo.X + S, PTo.Y + S);
   Canvas.DrawRect(R, Paint);
  end;
@@ -204,7 +280,8 @@ begin
  Paint := TSkPaint.Create;
  Paint.AntiAlias := True;
  Paint.Style := TSkPaintStyle.Stroke;
- Paint.Color := FColor;
+ Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Luminosity);
+ Paint.Color := $FFFFFFFF;
  if ViewScale <= 0 then
   InvScale := 1
  else
@@ -220,6 +297,7 @@ begin
     Canvas.DrawLine(TPointF.Create(P.X, P.Y - S), TPointF.Create(P.X, P.Y + S), Paint);
    end;
   msDiagCross: begin
+    S := S * 0.70710678;
     Canvas.DrawLine(TPointF.Create(P.X - S, P.Y - S), TPointF.Create(P.X + S, P.Y + S), Paint);
     Canvas.DrawLine(TPointF.Create(P.X - S, P.Y + S), TPointF.Create(P.X + S, P.Y - S), Paint);
    end;
@@ -228,17 +306,17 @@ begin
     Canvas.DrawRect(R, Paint);
    end;
   msTriangle: begin
-    A := TPointF.Create(P.X, P.Y - S);
-    B := TPointF.Create(P.X - S, P.Y + S);
-    C := TPointF.Create(P.X + S, P.Y + S);
+    A := TPointF.Create(P.X, P.Y - S - (S / 3));
+    B := TPointF.Create(P.X - S, P.Y + S - (S / 3));
+    C := TPointF.Create(P.X + S, P.Y + S - (S / 3));
     Canvas.DrawLine(A, B, Paint);
     Canvas.DrawLine(B, C, Paint);
     Canvas.DrawLine(C, A, Paint);
    end;
   msInvTriangle: begin
-    A := TPointF.Create(P.X, P.Y + S);
-    B := TPointF.Create(P.X - S, P.Y - S);
-    C := TPointF.Create(P.X + S, P.Y - S);
+    A := TPointF.Create(P.X, P.Y + S + (S / 3));
+    B := TPointF.Create(P.X - S, P.Y - S + (S / 3));
+    C := TPointF.Create(P.X + S, P.Y - S + (S / 3));
     Canvas.DrawLine(A, B, Paint);
     Canvas.DrawLine(B, C, Paint);
     Canvas.DrawLine(C, A, Paint);
@@ -314,13 +392,14 @@ begin
  end;
 end;
 
-procedure ogsDrawPictureEffect2(const Canvas: ISkCanvas; const Points: TList;
+procedure ogsDrawPictureEffectLot(const Canvas: ISkCanvas; const Points: TPolyPolyline;
   const LineColor: TAlphaColor; const LineWidthPix: Single;
   const RectStrokeColor: TAlphaColor; const RectStrokeWidthPix: Single;
   const RectFillColor: TAlphaColor;
   const ViewScale: Single; const RadiusPix: Single; const RectMode: TogsRectDrawMode);
 var PaintLine, PaintRectStroke, PaintRectFill: ISkPaint;
-    I: Integer;
+    IPoly, I: Integer;
+    Poly: TList;
     P0, P1: TPointF;
     InvScale: Single;
     R: Single;
@@ -328,7 +407,7 @@ var PaintLine, PaintRectStroke, PaintRectFill: ISkPaint;
     LineW, RectStrokeW: Single;
 begin
  if (Canvas = nil) or (Points = nil) then exit;
- if Points.Count < 2 then exit;
+ if Points.PolylineCount < 1 then exit;
 //
  if ViewScale <= 0 then InvScale := 1 else InvScale := 1 / ViewScale;
  R := RadiusPix * InvScale;
@@ -349,24 +428,99 @@ begin
  PaintRectFill.AntiAlias := true;
  PaintRectFill.Color := RectFillColor;
  PaintRectFill.Style := TSkPaintStyle.Fill;
- P0 := TPointF.Create(TDot(Points[0]).XDot, TDot(Points[0]).YDot);
- for I := 1 to Points.Count - 1 do begin
-  P1 := TPointF.Create(Single(TDot(Points[I]).XDot), Single(TDot(Points[I]).YDot));
-  Canvas.DrawLine(P0, P1, PaintLine);
-  P0 := P1;
- end;
- for I := 0 to Points.Count - 1 do begin
-  P0 := TPointF.Create(Single(TDot(Points[I]).XDot), Single(TDot(Points[I]).YDot));
-  RR := TRectF.Create(P0.X - R, P0.Y - R, P0.X + R, P0.Y + R);
-  case RectMode of
-   rdmStroke: Canvas.DrawRect(RR, PaintRectStroke);
-   rdmFill: Canvas.DrawRect(RR, PaintRectFill);
-   rdmFillStroke: begin
-    Canvas.DrawRect(RR, PaintRectFill);
-    Canvas.DrawRect(RR, PaintRectStroke);
+ WriteIn(['polyCount=', Points.PolylineCount]);
+ for IPoly := 0 to Points.PolylineCount - 1 do begin
+  Poly := Points.Polyline[IPoly];
+   WriteIn(['pointsCount=', Poly.Count]);
+  if (Poly = nil) or (Poly.Count < 1) then continue;
+  P0 := TPointF.Create(TDot(Poly[0]).XDot, TDot(Poly[0]).YDot);
+  WriteIn(['0=', P0.X, P0.Y]);
+  for I := 1 to Poly.Count - 1 do begin
+   P1 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   Canvas.DrawLine(P0, P1, PaintLine);
+   WriteIn(['1=', P1.X, P1.Y]);
+   P0 := P1;
+  end;
+  P0 := TPointF.Create(TDot(Poly[0]).XDot, TDot(Poly[0]).YDot);
+  for I := 1 to Poly.Count - 1 do begin
+   P1 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   Canvas.DrawCircle((P0.X + P1.X) / 2, (P0.Y + P1.Y) / 2, R, PaintRectFill);
+   P0 := P1;
+  end;
+  for I := 0 to Poly.Count - 1 do begin
+   P0 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   RR := TRectF.Create(P0.X - R, P0.Y - R, P0.X + R, P0.Y + R);
+   case RectMode of
+    rdmStroke: Canvas.DrawRect(RR, PaintRectStroke);
+    rdmFill: Canvas.DrawRect(RR, PaintRectFill);
+    rdmFillStroke: begin
+     Canvas.DrawRect(RR, PaintRectFill);
+     Canvas.DrawRect(RR, PaintRectStroke);
+    end;
    end;
   end;
  end;
 end;
+
+procedure ogsGetPoint(const Points: TPolyPolyline; const Selector: TogsSelector; const X, Y: Double; var Params: TCaptureRec);
+var IPoly, I: Integer;
+    Poly: TList;
+    P0, P1: TDot;
+    MidX, MidY: Double;
+    Dist: Integer;
+    PX, PY: Double;
+begin
+  if (Points = nil) or (Selector = nil) then exit;
+  if Points.PolylineCount < 1 then exit;
+  Params.resCapture := MaxInt;
+  Params.resObject := nil;
+  if ckPoint in Params.CaptureFor then begin
+   for IPoly := 0 to Points.PolylineCount - 1 do begin
+    Poly := Points.Polyline[IPoly];
+    if Poly = nil then continue;
+    for I := 0 to Poly.Count - 1 do begin
+     P0 := TDot(Poly[I]);
+     Dist := Selector.pixDist(Distance(X, Y, P0.XDot, P0.YDot));
+     if Dist <= Params.CaptureParam then
+      if (Dist < Params.resCapture) and (Dist <= Params.CaptureParam) then begin
+       Params.resCapture := Dist;
+       Params.resObject := P0;
+       Params.resCaptureOf := ckPoint;
+       Params.XCapture := P0.XDot; Params.YCapture := P0.YDot;
+      end;
+    end;
+   end;
+  end;
+  if ckLine in Params.CaptureFor then begin
+   for IPoly := 0 to Points.PolylineCount - 1 do begin
+    Poly := Points.Polyline[IPoly];
+    if Poly = nil then continue;
+    for I := 0 to Poly.Count - 2 do begin
+     P0 := TDot(Poly[I]);
+     P1 := TDot(Poly[I + 1]);
+     MidX := (P0.XDot + P1.XDot) / 2;
+     MidY := (P0.YDot + P1.YDot) / 2;
+    // середина линии
+     Dist := Selector.pixDist(Distance(X, Y, MidX, MidY));
+     if (Dist < Params.resCapture) and (Dist <= Params.CaptureParam) then begin
+      Params.resCapture := Dist;
+      Params.resObject := P0;
+      Params.resCaptureOf := ckMidLine;
+      Params.XCapture := MidX; Params.YCapture := MidY;
+     end;
+    // сама линия
+     Dist := Selector.pixDist(Dist_Point_Edge(X, Y, P0.XDot, P0.YDot, P1.XDot, P1.YDot, PX, PY));
+     if Dist <= Params.CaptureParam then
+      if (Dist < Params.resCapture) and (Dist <= Params.CaptureParam) then begin
+       Params.resCapture := Dist;
+       Params.resObject := P0;
+       Params.resCaptureOf := ckLine;
+       Params.XCapture := PX; Params.YCapture := PY;
+      end;
+    end;
+   end;
+  end;
+end;
+
 
 end.

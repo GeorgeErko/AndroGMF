@@ -83,6 +83,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
     function GetGUIDStr: AnsiString;
     procedure SetGUIDStr(const Value: AnsiString);
     procedure DrawSkiaLODS(const ACanvas: ISkCanvas);
+    function GetCaptured: Boolean; override;
+    procedure SetCaptured(AValue: Boolean); override;
   public
      ParentIndex:Integer;// индекс в коллекции точек
      TaheoIndex:SmallInt;
@@ -133,6 +135,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
     //
      FModified: Boolean;
      FDrawerObject: TObject;
+     Captured: Boolean;
        Function  GetSelector:TSelector;override;
        Procedure SetSelector(S:TSelector);override;
        Constructor Create(X,Y:Extended;W:SmallInt);
@@ -214,11 +217,17 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
  //
      procedure Draw32(Drawer: TogsDrawer; PntZnk:TSortedCollection;FontColEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);virtual;
      procedure SkiaDraw(const ACanvas: ISkCanvas); override;
+     procedure DrawSelected(Drawer: TogsDrawer); override;
      function GetDrawerObject: TObject; override;
      procedure SetDrawerObject(Obj: TObject); override;
      function GetModified: Boolean; override;
      procedure SetModified(AValue: Boolean); override;
      function SkiaVisible(Selector: TSelector): Boolean; override;
+ //
+     procedure DrawTwgBitmapBounds(const Drawer: TogsDrawer); override;
+     function PoinInTwgBitmaps(X, Y: Double): boolean; override;
+   //
+     property isCaptured: Boolean read GetCaptured write SetCaptured;
   end;
 
   TPointMessage = class(TPointDot)
@@ -595,7 +604,6 @@ destructor TPointDot.Destroy;
   If Trees<>nil then Trees.Free;
  end;
 
-
 function TPointDot.GetDist(x, y: single): single;
 begin
   GetDist:=sqrt(sqr(XDot-x)+sqr(YDot-y));
@@ -680,6 +688,7 @@ begin
  if Drawer = nil then
   Exit;
  GetGabaritesForDraw(nil, Drawer);
+exit;
  if BlockTextBitmaps<>nil then begin
   BlockTextBitmaps.DrawSect(Drawer, $FFFF0000, $FF000000, 0.03);
   BlockTextBitmaps.DrawBounds(Drawer, $FFFF0000, $FF000000, 0.03);
@@ -1916,6 +1925,20 @@ begin
  Result := True;
 end;
 
+procedure TPointDot.DrawSelected(Drawer: TogsDrawer);
+begin
+ TogsDrawerSkia(Drawer).BeginPrimitive(Int64(Self), Self, LOD2_INDEX);
+ try
+ // TextBitmap.DrawBounds(Drawer, WinColorToAlphaColor(Text.Color), 0.2);
+  Inv := True;
+ // Draw32(Drawer, Selector.GPointCol, Selector.GFontColEx, True); ]
+
+ finally
+  Inv := False;
+  TogsDrawerSkia(Drawer).EndPrimitive;
+ end;
+end;
+
 procedure TPointDot.DrawSkiaLODS(const ACanvas: ISkCanvas);
 var SkObj: TogsSkiaObject;
 begin
@@ -1924,6 +1947,29 @@ begin
  SkObj.Draw(ACanvas, LOD1_INDEX);
 end;
 
+procedure TPointDot.DrawTwgBitmapBounds(const Drawer: TogsDrawer);
+begin
+ if BlockTextBitmaps <> nil then
+  BlockTextBitmaps.DrawBounds(Drawer, 0, 0, 0)
+end;
+
+function TPointDot.PoinInTwgBitmaps(X, Y: Double): boolean;
+begin
+ Result := False;
+  if BlockTextBitmaps <> nil then begin
+   Result := BlockTextBitmaps.PointIn(X,Y);
+  end;
+end;
+
+function TPointDot.GetCaptured: Boolean;
+begin
+ Result := Captured;
+end;
+
+procedure TPointDot.SetCaptured(AValue: Boolean);
+begin
+ Captured := True;
+end;
 
 { TPointMessage }
 

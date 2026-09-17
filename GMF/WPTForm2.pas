@@ -1,11 +1,40 @@
 ﻿unit WPTForm2;
 
-interface uses Collect, EcDot, WPTForm12, WPTwigs, Classes, SysUtils, newProcs,
-              System.Types, System.Skia,
-              ogcBasic, ogcCaptureIntf, ogcDrawerSkia;
+interface
+
+uses Collect, EcDot, WPTForm12, WPTwigs, Classes, SysUtils, newProcs, System.Types,
+     System.Skia, System.UITypes, ogcBasic, ogcCaptureIntf, ogcDrawerSkia,
+     TwgDraw, ogcMarker;
 
 type
+ TCapturePt = class
+ private
+  FBaseDot: TDot;
+  FMoveDot: TDot;
+  FDashColor: TAlphaColor;
+  FCaptureRec: TCaptureRec;
+ public
+  constructor Create(const ABaseDot, AMoveDot: TDot; const ADashColor: TAlphaColor; ACaptureRec: TCaptureRec);
+  procedure Draw(const Canvas: ISkCanvas; const ViewScale: Single);
+  property BaseDot: TDot read FBaseDot write FBaseDot;
+  property MoveDot: TDot read FMoveDot write FMoveDot;
+ end;
+
+ TCapturePoints = class
+ private
+  FItems: PCollection;
+ public
+  constructor Create;
+  destructor Destroy; override;
+  function Add(const ABaseDot, AMoveDot: TDot; const ADashColor: TAlphaColor; ACaptureRec: TCaptureRec): TCapturePt;
+  procedure Clear;
+  procedure Draw(const Canvas: ISkCanvas; const ViewScale: Single);
+  property Items: PCollection read FItems;
+ end;
+
  TForm2 = class(TFormTaheo, IInterface, IogsPrimitiveCapturer, IogsSelectionAccess)
+ private
+  function FillPtList(Obj: TTD; var R: TRectF): TPolyPolyline;
  protected
   APoint: TPointDot;
   ParentMap:Pointer;
@@ -16,14 +45,13 @@ type
   function _AddRef: Integer; stdcall;
   function _Release: Integer; stdcall;
  public
- //
+ // old TForm2
   Function  CreateAs(F:TForm2):TForm2;
   Function  CreateObjectView(QueryOnCreate:Boolean):Boolean;override;
   Function  CreateView:Pointer;override;
   Procedure SaveObjView(View:Pointer);override;
- //
   Procedure ClearObject;
- //
+ // new
   function GetHitTestMarker(X, Y: Double; RadiusWorld: Double; const Filter: TogsCaptureFilter; MaxResults: Integer): Integer;
   function HitTestPointWorld(X, Y: Double; RadiusWorld: Double; const Filter: TogsCaptureFilter; MaxResults: Integer = 1): Integer;
   function SelectRectWorld(const Rect: TSect; Mode: TogsRectSelectMode; const Filter: TogsCaptureFilter): Integer;
@@ -38,8 +66,83 @@ type
   function get(Index: Integer): Pointer;
  end;
 
-implementation uses SelectedObjects, ecLot, Writer, ogcMarker, TwgDraw, FramePropEditor,
-                    System.UITypes;
+implementation
+
+uses SelectedObjects, ecLot, ecDot2, Writer, FramePropEditor;
+
+{ TCapturePt }
+
+constructor TCapturePt.Create(const ABaseDot, AMoveDot: TDot; const ADashColor: TAlphaColor; ACaptureRec: TCaptureRec);
+begin
+ inherited Create;
+ FBaseDot := ABaseDot;
+ FMoveDot := AMoveDot;
+ FDashColor := ADashColor;
+ FCaptureRec := ACaptureRec;
+end;
+
+procedure TCapturePt.Draw(const Canvas: ISkCanvas; const ViewScale: Single);
+var Paint: ISkPaint;
+    InvScale, DashLen: Single;
+    P0, P1: TPointF;
+begin
+ if (Canvas = nil) or (FBaseDot = nil) or (FMoveDot = nil) then
+  exit;
+ if ViewScale <= 0 then
+  InvScale := 1
+ else
+  InvScale := 1 / ViewScale;
+ DashLen := 4 * InvScale;
+ P0 := TPointF.Create(Single(FBaseDot.XDot), Single(FBaseDot.YDot));
+ P1 := TPointF.Create(Single(FMoveDot.XDot), Single(FMoveDot.YDot));
+ Paint := TSkPaint.Create;
+ Paint.AntiAlias := True;
+ Paint.Style := TSkPaintStyle.Stroke;
+ Paint.StrokeWidth := 1 * InvScale;
+ Paint.Color := FDashColor;
+ Paint.PathEffect := TSkPathEffect.MakeDash(TArray<Single>.Create(DashLen, DashLen), 0);
+ Canvas.DrawLine(P0, P1, Paint);
+end;
+
+{ TCapturePoints }
+
+constructor TCapturePoints.Create;
+begin
+ inherited Create;
+ FItems := PCollection.Create(8);
+end;
+
+destructor TCapturePoints.Destroy;
+begin
+ if FItems <> nil then begin
+  FItems.FreeAll;
+  FItems.Free;
+ end;
+ inherited;
+end;
+
+function TCapturePoints.Add(const ABaseDot, AMoveDot: TDot; const ADashColor: TAlphaColor; ACaptureRec: TCaptureRec): TCapturePt;
+begin
+ Result := TCapturePt.Create(ABaseDot, AMoveDot, ADashColor, ACaptureRec);
+ if FItems <> nil then
+  FItems.Insert(Result);
+end;
+
+procedure TCapturePoints.Clear;
+begin
+ if FItems <> nil then
+  FItems.FreeAll;
+end;
+
+procedure TCapturePoints.Draw(const Canvas: ISkCanvas; const ViewScale: Single);
+var I: Integer;
+begin
+ if (Canvas = nil) or (FItems = nil) then
+  exit;
+ for I := 0 to FItems.Count - 1 do
+  if FItems[I] <> nil then
+   TCapturePt(FItems[I]).Draw(Canvas, ViewScale);
+end;
 
 { TForm2 }
 
@@ -163,13 +266,46 @@ begin
  Twigs.Bitmaps.Bitmaps.FreeAll;
 end;
 
+//==============================================================================
+//
+//==============================================================================
+
+function TForm2.FillPtList(Obj: TTD; var R: TRectF): TPolyPolyline;
+var I, J: Integer;
+    PP: TPolyPolyLine;
+    Lot: TLot; Twig: TTwig;
+    List: Tlist;
+begin
+ Result := TPolyPolyline.Create;
+ if Obj is TLot then begin
+ // передаем точки сегментов контура
+  R.Left := TLot(Obj).XMin; R.Top := TLot(Obj).YMin; R.Right := TLot(Obj).XMax; R.Bottom := TLot(Obj).YMax;
+  Lot := TLot(Obj);
+  for I := 0 to Lot.Coord.Count - 1 do begin
+   List := Result.AddPolyline;
+   Twig := Lot.GetTwig(Twigs, I);
+   For J := 0 to Twig.Coord.Count - 1 do  List.Add(Twig.Coord[J]);
+  end;
+ end else begin
+  R.Left := TDot(Obj).XDot; R.Top := TDot(Obj).YDot; R.Right := TDot(Obj).XDot; R.Bottom := TDot(Obj).YDot;
+ // полилиния будет состоять из одной точки
+  List := Result.AddPolyline;
+  List.Add(TDot(Obj));
+ end;
+end;
+
 function TForm2.GetHitTestMarker(X, Y: Double; RadiusWorld: Double; const Filter: TogsCaptureFilter; MaxResults: Integer): Integer;
 var XClick, YClick: Double;
-    I: Integer;
+    I: Integer; B:Byte;
     CaptureDrawer: TogsCaptureDrawerSkia;
     Params: TCaptureRec;
     Lot: TLot;
     Sect: TogsRect;
+    PD: TPointDot;
+    DT: TDotText;
+    Sel: TSelectedObjects;
+    ptList: TPolyPolyline;
+    R: TRectF;
 begin
  Result := 0;
  LastCaptureRec := CRClearParams([]);
@@ -178,17 +314,55 @@ begin
  CaptureDrawer := nil;
  try
   CaptureDrawer := TogsCaptureDrawerSkia.CreateCapture(Selector);
-  Params := CRClearParams([ckLine, ckPolygon]);
+  Params := CRClearParams([ckPoint, ckLine, ckPolygon, ckMidLine]);
   if Selector <> nil then
    Params.CaptureParam := Selector.GlobalSettings.Settings.gsPointSize * 2;
   CaptureDrawer.BeginCapture(XClick, YClick, Params);
   CaptureDrawer.UseWorldCoords := True;
+ // поиск по SelectedObjects
+  Sel := TSelectedObjects(FObjects);
+  if Sel <> nil  then begin
+   for I := 0 to Sel.Count - 1  do begin
+    ptList := FillPtList(Sel[I], R);
+    if ptList = nil then continue;
+    ogsGetPoint(ptList, Selector, X, Y, Params);
+    if Params.resObject <> nil then begin
+     Params.resObject := Sel[I];
+     LastCaptureRec := Params;
+     Result := 1;
+     ptList.Free;
+     exit;
+    end else
+     ptList.Free; //
+   end;
+  end;
+ // проход по TPointDot
+  for I := Twigs.AnyCount - 1 downto 0 do begin
+   PD := Twigs.AAt(I, B);
+   if (PD.Closed) {or (PD.isCaptured)}  then continue;
+   if not PD.PoinInTwgBitmaps(X, Y) then continue;
+  //
+   CaptureDrawer.BeginPrimitive(Int64(NativeInt(PD)), PD);
+   try
+    PD.DrawTwgBitmapBounds(CaptureDrawer);
+   finally
+    CaptureDrawer.EndPrimitive;
+   end;
+  // PD.PointInCapture(X, Y, Params);
+   if Params.resObject <> nil then begin
+    LastCaptureRec := Params;
+    Result := 1;
+    break;
+   end;  //
+  end;
+  if Result > 0 then exit;
+ //
   for I := Twigs.IndexCount - 1 downto 0 do begin
    Lot := Twigs.LAtIndex(I);
   //
-   if (Lot = nil) or (Lot.Closed = 0) or (Lot.TypeLot = 254) then continue;
+   if (Lot = nil) or (Lot.Closed = 0) or (Lot.TypeLot = 254) {or (Lot.isCaptured)} then continue;
    if not Lot.IsVisible(Selector.GPRect) then continue;
-   if (X > Lot.XMax) or (X < Lot.XMin) or (Y > Lot.YMax) or (Y < Lot.YMin) then continue;
+   //if (X >= Lot.XMax) or (X <= Lot.XMin) or (Y >= Lot.YMax) or (Y <= Lot.YMin) then continue;
   //
    Lot.Selector := Selector;
    CaptureDrawer.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
@@ -197,14 +371,22 @@ begin
    finally
     CaptureDrawer.EndPrimitive;
    end;
+   {
+   ptList := FillPtList(Lot, R);
+   if ptList = nil then continue;
+    ogsGetPoint(ptList.List, Selector, X, Y, Params);
+   ptList.Free;
+   }
+  //
    if Params.resObject <> nil then begin
+    Params.resObject := Lot;
     LastCaptureRec := Params;
     Result := 1;
     Sect := TogsRect.Create;
     Sect.Insert(Lot.XMin, Lot.YMin); Sect.Insert(Lot.XMax, Lot.YMax);
     Sect.Insert(Lot.XMin, Lot.YMax); Sect.Insert(Lot.XMax, Lot.YMin);
     With Lot do
-     WriteIn(['Lot =', XMin, YMin, XMax, YMax , 'Sect =', Sect.XMin, Sect.YMin, Sect.XMax, Sect.YMax]);
+    // WriteIn(['Lot =', XMin, YMin, XMax, YMax , 'Sect =', Sect.XMin, Sect.YMin, Sect.XMax, Sect.YMax]);
      Sect.Free;
     break;
    end;
@@ -222,6 +404,9 @@ var Params: TCaptureRec; Index: Integer;
 begin
  LastCaptureRec.resObject := nil;
  GetHitTestMarker(X, Y, RadiusWorld, Filter, MaxResults);
+ if LastCaptureRec.resObject <> nil then
+  Writein([TTD(LastCaptureRec.resObject).ClassName]) else
+   Writein([nil]);
  if LastCaptureRec.resObject <> nil then begin
   if FObjects = nil then FObjects := TSelectedObjects.Create(Self, PropEditorForm.Update);
   Index := TSelectedObjects(FObjects).IndexOf(LastCaptureRec.resObject);
@@ -253,6 +438,7 @@ var Sel: TSelectedObjects;
     SkObj: TogsSkiaObject;
     Pic: ISkPicture;
     R: TRectF;
+    ptList:TPolyPolyline;
 begin
  if (Canvas = nil) or (FObjects = nil) then exit;
 // R := Canvas.GetLocalClipBounds;
@@ -265,15 +451,17 @@ begin
     if SkObj = nil then continue;
     Pic := SkObj.Pictures[LOD1_INDEX];
     if Pic = nil then continue;
-    if Obj is TLot then begin R.Left := TLot(P).XMin; R.Top := TLot(P).YMin; R.Right := TLot(P).XMax; R.Bottom := TLot(P).YMax; end;
-   // OgsDrawPictureEffect(Canvas, R, Pic, $FFFFCC00, pemTintSrcATop, 110);
-    TLot(Obj).insClipDotsParall(Twigs);
-     OgsDrawPictureEffect2(Canvas, TLot(Obj).Points.List,
-      TAlphaColorRec.Maroon, 2,
-      TAlphaColorRec.Blue, 1.5,
-      TAlphaColorRec.Aqua,
-      Selector.GetScale, 3, rdmFillStroke);
-     TLot(Obj).Points.Free;
+    ptList := FillPtList(Obj, R);
+    if ptList = nil then continue;
+    //OgsDrawPictureEffect(Canvas, R, Pic, $FFFFCC00, pemTintSrcATop, 110);
+    //continue;
+    OgsDrawPictureEffectLot(Canvas, ptList,
+           TAlphaColorRec.Maroon, 2,
+           TAlphaColorRec.Blue, 1.5,
+           TAlphaColorRec.Aqua,
+           Selector.GetScale, 4, rdmFillStroke);
+    //
+    ptList.Free;
    end;
   end;
 end;

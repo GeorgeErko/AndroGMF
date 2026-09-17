@@ -19,7 +19,6 @@ type
     PanelPainter: TPanel;
     Painter: TPaintBox;
     btnPaint: TCornerButton;
-    upm: TCornerButton;
     StatusBar: TStatusBar;
     btnPlus: TCornerButton;
     ptnMinus: TCornerButton;

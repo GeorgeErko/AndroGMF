@@ -6,6 +6,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.DialogService,
+  FMX.Ani,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
   ogcBasic, ogcDrawerSkia, newSelector;
@@ -26,6 +27,9 @@ type
     FDrawerSkia: TogsDrawerSkia;
     FBuildingScene: Boolean;
     FRebuildQueued: Boolean;
+    FIndicatorDepth: Integer;
+    FIndicatorOverlay: TRectangle;
+    FIndicator: TAniIndicator;
     FOverlayStaticImage: ISkImage;
     FOverlayLiveImage: ISkImage;
     FOverlayStaticDirty: Boolean;
@@ -67,6 +71,7 @@ type
     procedure DoInvalidateOverlayLive;
     procedure DoInvalidateOverlayStatic;
     procedure ClearOverlayAllCaches;
+    procedure EnsureIndicator;
   protected
     procedure Loaded; override;
     procedure SetSelectorParams; virtual;
@@ -98,6 +103,8 @@ type
     destructor Destroy; override;
     procedure OpenGmfFile(const LocalPath: string); override;
     function ExportSceneToPdf(const AFileName: string = ''): string;
+    procedure StartIndicator;
+    procedure StopIndicator;
    //
     procedure InvalidateCachedPictureOnly;
     property SceneDirty: Boolean read FSceneDirty write SetSceneDirty;
@@ -149,6 +156,61 @@ begin
   SkPainter.OnDraw := SkPainterDraw;
   SkPainter.Touch.InteractiveGestures := [TInteractiveGesture.Zoom];
   GlobalUseVulkan := True;
+end;
+
+procedure TMainFormSkia.EnsureIndicator;
+begin
+  if FIndicatorOverlay <> nil then
+    exit;
+  FIndicatorOverlay := TRectangle.Create(Self);
+  FIndicatorOverlay.Parent := Self;
+  FIndicatorOverlay.Align := TAlignLayout.Contents;
+  FIndicatorOverlay.Fill.Color := $40000000;
+  FIndicatorOverlay.Stroke.Kind := TBrushKind.None;
+  FIndicatorOverlay.HitTest := True;
+  FIndicatorOverlay.Visible := False;
+
+  FIndicator := TAniIndicator.Create(Self);
+  FIndicator.Parent := FIndicatorOverlay;
+  FIndicator.Align := TAlignLayout.Center;
+  FIndicator.Enabled := False;
+  FIndicator.Visible := False;
+end;
+
+procedure TMainFormSkia.StartIndicator;
+begin
+  inc(FIndicatorDepth);
+  if FIndicatorDepth <> 1 then
+    exit;
+  EnsureIndicator;
+  if FIndicatorOverlay <> nil then
+  begin
+    FIndicatorOverlay.Visible := True;
+    FIndicatorOverlay.BringToFront;
+  end;
+  if FIndicator <> nil then
+  begin
+    FIndicator.Enabled := True;
+    FIndicator.Visible := True;
+    FIndicator.BringToFront;
+  end;
+  Application.ProcessMessages;
+end;
+
+procedure TMainFormSkia.StopIndicator;
+begin
+  if FIndicatorDepth <= 0 then
+    exit;
+  dec(FIndicatorDepth);
+  if FIndicatorDepth <> 0 then
+    exit;
+  if FIndicator <> nil then
+  begin
+    FIndicator.Enabled := False;
+    FIndicator.Visible := False;
+  end;
+  if FIndicatorOverlay <> nil then
+    FIndicatorOverlay.Visible := False;
 end;
 
 procedure TMainFormSkia.SetSceneDirty(AValue: Boolean);
@@ -467,6 +529,7 @@ var
           TF := TSkTypeface.MakeFromFile(F);
            if TF <> nil then
             begin
+            // WriteIn(['RegisterFont=',TF.FamilyName]);
              RegisterSkiaFontFile(TF.FamilyName, F);
             end;
           // WriteIn(['===', F]);
@@ -492,10 +555,12 @@ var
     Twig: TTwig;
     PP: TPointDot;
     B: Byte;
+    Lot: TLot;
   begin
     for I := 1 to TwgForm.Twigs.TwigsCount - 1 do
     begin
       Twig := TwgForm.Twigs.TAt(I);
+      Twig.SetMinMax;
       for J := 0 to Twig.Coord.Count - 1 do
         Selector.AddCoord(Twig[J].XDot, Twig[J].YDot);
     end;
@@ -504,96 +569,101 @@ var
       PP := TwgForm.Twigs.AAt(I, B);
       Selector.AddCoord(PP.XDot, PP.YDot);
     end;
+    for I := 1 to TwgForm.Twigs.LotsCount - 1 do begin
+     Lot := TwgForm.Twigs.LAt(I);
+     Lot.SetMinMax(TwgForm.Twigs);
+    end;
   end;
 begin
-  if FDrawerSkia = nil then
-  begin
-    FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
-    Selector := TSelector.Create(FDrawerSkia);
-    FDrawerSkia.ogsSelector := Selector;
-    FDrawerSkia.Name := 'DrawerSkia';
-    Selector.Name := 'Selector';
-    UpdateMessage:=TUpdateMessage.Create(nil);
-  end else
-    Selector.Clear;
- //
-  FDrawerSkia.DebugDrawTextBounds := False;
- //
-  Memo1.Lines.Clear;
-  FormCreate(Self);
- // InitSkPainterInput;
-  {$IFDEF WIN64}
-   GLines := nil;
-   newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
-  {$ELSE}
-   GLines := Memo1.Lines;
-   newProcs.MainPath := TPath.GetDocumentsPath;
-   WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
-   WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
-  {$ENDIF}
-  RegPrimitives;
-  objectRepaintAccess := False;
-  Path := LocalPath;
-  if LocalPath = '' then
-  begin
-    Exit;
-  end;
-
-  RegisterFontsNearGmf(MainPath);
-
-  Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
-  Selector.GNForm := TControl(skPainter);
-  ApplicationMainForm := Self;
-  Stream.Selector := Selector;
+  if LocalPath = '' then Exit;
+ // StartIndicator;
   try
-    FreeAndNil(TwgForm);
+    if FDrawerSkia = nil then
+    begin
+      FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
+      Selector := TSelector.Create(FDrawerSkia);
+      FDrawerSkia.ogsSelector := Selector;
+      FDrawerSkia.Name := 'DrawerSkia';
+      Selector.Name := 'Selector';
+      UpdateMessage:=TUpdateMessage.Create(nil);
+    end else
+      Selector.Clear;
    //
-    TwgForm := TForm2(Stream.Get);
+    FDrawerSkia.DebugDrawTextBounds := False;
+   //
+    Memo1.Lines.Clear;
+    FormCreate(Self);
+   // InitSkPainterInput;
+    {$IFDEF WIN64}
+     GLines := nil;
+     newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
+    {$ELSE}
+     GLines := Memo1.Lines;
+     newProcs.MainPath := TPath.GetDocumentsPath;
+     WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
+     WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
+    {$ENDIF}
+    RegPrimitives;
+    objectRepaintAccess := False;
+    Path := LocalPath;
 
-    Selector.GLineCol := TwgForm.MkLib.LSLib;
-    Selector.GSqwearCol := TwgForm.MkLib.SSLib;
-    Selector.GPointCol := TwgForm.MkLib.PSLib;
-    Selector.GFontCollect := TwgForm.Twigs.FontS;
-    Selector.GFontSet := TwgForm.Twigs.FontSet;
-    Selector.GGraphSet := TwgForm.fGraphSet;
-    SetSelectorParams;
-    if TwgForm.FontColEx <> nil then
-    begin
-      for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+    RegisterFontsNearGmf(MainPath);
+
+    Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
+    Selector.GNForm := TControl(skPainter);
+    ApplicationMainForm := Self;
+    Stream.Selector := Selector;
+    try
+      FreeAndNil(TwgForm);
+     //
+      TwgForm := TForm2(Stream.Get);
+
+      Selector.GLineCol := TwgForm.MkLib.LSLib;
+      Selector.GSqwearCol := TwgForm.MkLib.SSLib;
+      Selector.GPointCol := TwgForm.MkLib.PSLib;
+      Selector.GFontCollect := TwgForm.Twigs.FontS;
+      Selector.GFontSet := TwgForm.Twigs.FontSet;
+      Selector.GGraphSet := TwgForm.fGraphSet;
+      SetSelectorParams;
+      if TwgForm.FontColEx <> nil then
       begin
-        PP := TwgForm.Twigs.AAt(I, B);
-        PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
+        for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+        begin
+          PP := TwgForm.Twigs.AAt(I, B);
+          PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
+        end;
       end;
-    end;
-    localSetGabarites;
+      localSetGabarites;
+      if SkPainter <> nil then
+        LastCanvasScale := SkPainter.AbsoluteScale.X
+      else
+        LastCanvasScale := 1;
+      if LastCanvasScale <= 0 then
+        LastCanvasScale := 1;
+      if FDrawerSkia <> nil then
+      begin
+        FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
+        FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
+      end;
 
-    if SkPainter <> nil then
-      LastCanvasScale := SkPainter.AbsoluteScale.X
-    else
-      LastCanvasScale := 1;
-    if LastCanvasScale <= 0 then
-      LastCanvasScale := 1;
-    if FDrawerSkia <> nil then
-    begin
-      FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
-      FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
+      Selector.UpdateRects(True);
+      objectRepaintAccess := True;
+      TwgForm.Twigs.BlockList.CreateBitmaps;
+      PLib(TwgForm.MkLib.PSLib).CreateBitmaps;
+    finally
+      Stream.Free;
     end;
 
-    Selector.UpdateRects(True);
-    objectRepaintAccess := True;
-    TwgForm.Twigs.BlockList.CreateBitmaps;
-    PLib(TwgForm.MkLib.PSLib).CreateBitmaps;
+    InitSkPainterInput;
+    SkPainterResize(SkPainter);
+    GlobalRender := False;
+  //  if SkPainter <> nil then
+   //   SkPainter.Redraw;
+    SkPainterDblClick(nil);
+    btnPaintClick(nil);
   finally
-    Stream.Free;
+   // StopIndicator;
   end;
-
-  InitSkPainterInput;
-  SkPainterResize(SkPainter);
-  GlobalRender := False;
-//  if SkPainter <> nil then
- //   SkPainter.Redraw;
-  SkPainterDblClick(nil);
-  btnPaintClick(nil);
 end;
 
 procedure TMainFormSkia.btnOpenClickSkia(Sender: TObject);
@@ -762,7 +832,9 @@ var
   Total: Single;
   Prog: Single;
   SkObj: TObject;
+  StartTick, ElapsedMs: UInt64;
 begin
+// WriteIn(['StartDraw32']);
   Error := 1;
   if FDrawerSkia = nil then
     Exit;
@@ -770,111 +842,120 @@ begin
     Exit;
   if not objectRepaintAccess then
     Exit;
-
-  Total := 0;
-  if TwgForm <> nil then
-    Total := TwgForm.Twigs.LotsCount + TwgForm.Twigs.AnyCount;
-  if Total < 1 then
-    Total := 1;
-  Prog := 0;
-  GlobalRender := True;
- //
-  with Selector, GGraphset do
-    try
-     for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
-      begin
-       Tw := TwgForm.Twigs.TAt(I);
-       Tw.isVis := False;
-      end;
-      Error := 6;
-      Error := 7;
-      TWC := 0;
-      begin
-        if FillLot = 1 then
+  StartTick := TThread.GetTickCount64;
+  try
+    Total := 0;
+    if TwgForm <> nil then
+      Total := TwgForm.Twigs.LotsCount + TwgForm.Twigs.AnyCount;
+    if Total < 1 then
+      Total := 1;
+    Prog := 0;
+    GlobalRender := True;
+   //
+    with Selector, GGraphset do
+      try
+       for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
         begin
-          for I := 0 to TwgForm.Twigs.LotsCount - 1 do
+         Tw := TwgForm.Twigs.TAt(I);
+         Tw.isVis := False;
+        end;
+        Error := 6;
+        Error := 7;
+        TWC := 0;
+        begin
+          if FillLot = 1 then
           begin
-            Lot := TwgForm.Twigs.LAt(I);
-            try
-              if (Lot.TypeLot <> 254) {and (Lot.Closed = 1)} then
-              begin
-                SkObj := Lot.DrawerObject;
-                if (not Lot.Modified) and (SkObj is TogsSkiaObject) and
-                   (TogsSkiaObject(SkObj).Picture <> nil) then
+            for I := 0 to TwgForm.Twigs.LotsCount - 1 do
+            begin
+              Lot := TwgForm.Twigs.LAt(I);
+              try
+                if (Lot.TypeLot <> 254) {and (Lot.Closed = 1)} then
                 begin
-                  Lot.SkiaDraw(FDrawerSkia.SkCanvas);
-                end
-                else
-                begin
-                  FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
-                  try
-                  // GGraphSet.ViewZnaks := 0;
-                  //Writein(['l.draw32=', 1, i]);
-                    Lot.Draw32(TwgForm.Twigs);
-                  //Writein(['l.draw32=', 2]);
-                  finally
-                    FDrawerSkia.EndPrimitive;
+                  SkObj := Lot.DrawerObject;
+                  if (not Lot.Modified) and (SkObj is TogsSkiaObject) and
+                     (TogsSkiaObject(SkObj).Picture <> nil) then
+                  begin
+                    Lot.SkiaDraw(FDrawerSkia.SkCanvas);
+                  end
+                  else
+                  begin
+                    FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
+                    try
+                    // GGraphSet.ViewZnaks := 0;
+                    //Writein(['l.draw32=', 1, i]);
+
+                      Lot.Draw32(TwgForm.Twigs);
+                    //Writein(['l.draw32=', 2]);
+                    finally
+                      FDrawerSkia.EndPrimitive;
+                    end;
+                    Lot.SkiaDraw(FDrawerSkia.SkCanvas);
                   end;
-                  Lot.SkiaDraw(FDrawerSkia.SkCanvas);
                 end;
+              except
+                Exit;
+              end;
+
+              Prog := Prog + 1;
+            end;
+          end;
+        end;
+        ElapsedMs := TThread.GetTickCount64 - StartTick;
+        StartTick :=TThread.GetTickCount64;
+      //  WriteIn(['RenderSceneToBackbufferSkia ms=', (ElapsedMs mod (1000 * 60)) div 1000 ]);
+        for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+        begin
+          PP := TwgForm.Twigs.AAt(I, B);
+          if (B = TWG_Point) then
+          begin
+            PPoint := PP;
+           // if PPoint.Closed then
+           //   Continue;
+           // if PPoint.userObj <> nil then exit;
+            try
+              SkObj := PPoint.DrawerObject;
+              if (not PPoint.Modified) and (SkObj is TogsSkiaObject) then
+              begin
+               //If PPoint.BlockTextBitmaps <> nil then
+               // if Self.Selector.SectVisible(PPoint.BlockTextBitmaps.Sect) then
+                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas)
+                 // else
+                 //  WriteIn(['nv', i]);
+              end
+              else
+              If not ({(PPoint is TDotText) or (PPoint.userObj <> nil)}False) then  begin
+                FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
+                try
+                //WriteIn(['p1=',I]);
+                 PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx);
+                // WriteIn(['p2=',I]);
+                finally
+                  FDrawerSkia.EndPrimitive;
+                end;
+                PPoint.DrawSelected(FDrawerSkia);
+                PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
               end;
             except
-              Exit;
             end;
-
-            Prog := Prog + 1;
           end;
+          Prog := Prog + 1;
         end;
-      end;
-      for I := 0 to TwgForm.Twigs.AnyCount - 1 do
-      begin
-        PP := TwgForm.Twigs.AAt(I, B);
-        if (B = TWG_Point) then
+        Error := 16;
+      finally
+       GlobalRender := False;
+        for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
         begin
-          PPoint := PP;
-         // if PPoint.Closed then
-         //   Continue;
-         // if PPoint.userObj <> nil then exit;
-          try
-            SkObj := PPoint.DrawerObject;
-            if (not PPoint.Modified) and (SkObj is TogsSkiaObject) then
-            begin
-             //If PPoint.BlockTextBitmaps <> nil then
-             // if Self.Selector.SectVisible(PPoint.BlockTextBitmaps.Sect) then
-               PPoint.SkiaDraw(FDrawerSkia.SkCanvas)
-               // else
-               //  WriteIn(['nv', i]);
-            end
-            else
-            begin
-              FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
-              try
-              //WriteIn(['p1=',I]);
-               PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx);
-              // WriteIn(['p2=',I]);
-              finally
-                FDrawerSkia.EndPrimitive;
-              end;
-              PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
-            end;
-          except
-          end;
+          Tw := TwgForm.Twigs.TAt(I);
+          Tw.isDraw := False;
         end;
-
-        Prog := Prog + 1;
       end;
-      Error := 16;
-    finally
-     GlobalRender := False;
-      for I := 0 to TwgForm.Twigs.TwigsCount - 1 do
-      begin
-        Tw := TwgForm.Twigs.TAt(I);
-        Tw.isDraw := False;
-      end;
-    end;
-  BaseDx := Selector.GetDx;
-  BaseDy := Selector.GetDy;
-  BaseScale := Selector.GetScale;
+    BaseDx := Selector.GetDx;
+    BaseDy := Selector.GetDy;
+    BaseScale := Selector.GetScale;
+  finally
+    ElapsedMs := TThread.GetTickCount64 - StartTick;
+   // WriteIn(['RenderSceneToBackbufferSkia ms=', (ElapsedMs mod (1000 * 60)) div 1000 ]);
+  end;
 end;
 
 procedure TMainFormSkia.ResetInteractionState;
@@ -1423,7 +1504,12 @@ begin
       if FOverlayStaticImage <> nil then
         ACanvas.DrawImageRect(FOverlayStaticImage, ADest, OverlayPaint);
       if FOverlayLiveImage <> nil then
+      begin
+        OverlayPaint := TSkPaint.Create;
+        OverlayPaint.AntiAlias := True;
+        OverlayPaint.Blender := TSkBlender.MakeMode(TSkBlendMode.Difference);
         ACanvas.DrawImageRect(FOverlayLiveImage, ADest, OverlayPaint);
+      end;
     end;
   finally
     Dt := TThread.GetTickCount64 - T0;

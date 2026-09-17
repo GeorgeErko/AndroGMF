@@ -27,6 +27,7 @@ type
   Property Height: Integer read GetHeight;
   Property Sect: TSect read fSect write fSect;
   Property Bounds: PCollection read fBounds;
+  Function PointIn(X, Y: Double): boolean;
  end;
 
  TTwgBitmaps = class(PCollection)
@@ -44,9 +45,10 @@ type
    Procedure DrawBounds(Drawer: TogsDrawer; Color, BitmapColor: TColor; Width: Single);
    Property Sect: TSect read fSect;
    Property Bitmaps[Index: Integer]: TTwgBitmap read GetBitmap;default;
+   Function PointIn(X, Y: Double): boolean;
  end;
 
-implementation
+implementation uses Writer;
 
 { TTwgBitmap }
 
@@ -179,6 +181,12 @@ begin
  inherited;
 end;
 
+function TTwgBitmap.PointIn(X, Y: Double): boolean;
+begin
+ Writein(['TTwgBitmap.PointIn=', Sect.XMin, Sect.XMax, Sect.YMin, Sect.YMax]);
+ Result := (X >= Sect.XMin) and (X <= Sect.XMax) and (Y >= Sect.YMin) and (Y <= Sect.YMax);
+end;
+
 { TTwgBitmaps }
 
 constructor TTwgBitmaps.Create(ALimit: Integer; ADelta: Integer);
@@ -202,6 +210,11 @@ end;
 function TTwgBitmaps.InsertItem(Item: Pointer): Pointer;
 begin
  Result := inherited InsertItem(Item);
+end;
+
+function TTwgBitmaps.PointIn(X, Y: Double): boolean;
+begin
+ Result := (X >= Sect.XMin) and (X <= Sect.XMax) and (Y <= Sect.YMin) and (Y >= Sect.YMax);;
 end;
 
 procedure TTwgBitmaps.FreeItem(Item: Pointer);

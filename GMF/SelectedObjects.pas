@@ -46,8 +46,10 @@ implementation uses EcLot, WpTwigs, RPrims, TwgColle, objBlockList,
 
 procedure TSelectedObjects.AtDelete(Index: Integer);
 begin
- If (Objects[Index]<>nil) and (TObject(Objects[Index]) is TTD) then
+ If (Objects[Index]<>nil) and (TObject(Objects[Index]) is TTD) then begin
   TTD(Objects[Index]).SetActive(0);
+  TTD(Objects[Index]).isCaptured := False;
+ end;
  Objects.AtDelete(Index);
  Coords.AtDelete(Index);
  If not Locked then If Assigned(OnUpdate) then OnUpdate(Self);
@@ -71,8 +73,10 @@ var I:Integer;
 begin
  try
   For I:=0 to Objects.Count-1 do
-   If (Objects[I]<>nil) and (TObject(Objects[I]) is TTD) then
+   If (Objects[I]<>nil) and (TObject(Objects[I]) is TTD) then begin
     TTD(Objects[I]).SetActive(0);
+    TTD(Objects[I]).isCaptured := False;
+   end;
  except
   Writeln('ERROR 70');
  end;
@@ -89,8 +93,10 @@ var I:Integer;
 begin
  If Objects<>nil then
   For I:=0 to Objects.Count-1 do
-   If (Objects[I]<>nil) and (TObject(Objects[I]) is TTD) then
+   If (Objects[I]<>nil) and (TObject(Objects[I]) is TTD) then begin
     TTD(Objects[I]).SetActive(0);
+    TTD(Objects[I]).isCaptured := False;
+   end;
  Objects.Free;
  Coords.Free;
 end;
@@ -108,6 +114,7 @@ end;
 procedure TSelectedObjects.Insert(Obj: Pointer);
 begin
  Objects.Insert(Obj);
+ TTD(Obj).isCaptured := True;
  If (Obj<>nil) and (TObject(Obj) is TTD) then
   TTD(Obj).SetActive(1);
  Coords.Insert(TDot.Create(ZNull,0,0));

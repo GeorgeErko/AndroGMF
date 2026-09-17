@@ -106,7 +106,7 @@ type
       const Color: TAlphaColor; const FontSizePix: Single;
       const AngleRad: Single; const XP, YP: Double;
       const XKoef: Double = 1; const FontView: TFontViewEx = nil;
-      const AAntiAlias: Boolean = True); virtual;
+      const AAntiAlias: Boolean = True; const OnlyStroke: Boolean = False); virtual;
 
     procedure DrawBitmapAlignedPix(const AnchorPix: TPointF;
       const Bitmap: TBitmap; const Dst: TRectF; const AngleRad: Single);
@@ -151,13 +151,59 @@ type
     procedure DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
       const Color: TAlphaColor; const FontSizePix: Single;
       const AngleRad: Single; const XP, YP: Double;
-      const XKoef: Double = 1; const FontView: TFontViewEx = nil; const AAntiAlias: Boolean = True); override;
+      const XKoef: Double = 1; const FontView: TFontViewEx = nil; const AAntiAlias: Boolean = True; const OnlyStroke: Boolean = False); override;
 
     procedure DrawBitmapAlignedPix(const AnchorPix: TPointF;
       const Bitmap: TBitmap; const Dst: TRectF; const AngleRad: Single); override;
   end;
 
-implementation uses Writer, newProcs;
+implementation uses FMX.TextLayout, Writer, newProcs;
+
+function PathDataToSkPath(const PathData: TPathData): ISkPath;
+var Builder: ISkPathBuilder;
+    I: Integer;
+    PtsLen: Integer;
+begin
+ Result := nil;
+ if PathData = nil then exit;
+ Builder := TSkPathBuilder.Create;
+ PtsLen := PathData.Count;
+ I := 0;
+ while I < PtsLen do begin
+  case PathData.Points[I].Kind of
+   TPathPointKind.MoveTo:
+   begin
+    Builder.MoveTo(PathData.Points[I].Point.X, PathData.Points[I].Point.Y);
+    Inc(I);
+   end;
+   TPathPointKind.LineTo:
+   begin
+    Builder.LineTo(PathData.Points[I].Point.X, PathData.Points[I].Point.Y);
+    Inc(I);
+   end;
+   TPathPointKind.CurveTo:
+   begin
+    if I + 2 < PtsLen then
+    begin
+     Builder.CubicTo(PathData.Points[I].Point.X, PathData.Points[I].Point.Y,
+      PathData.Points[I + 1].Point.X, PathData.Points[I + 1].Point.Y,
+      PathData.Points[I + 2].Point.X, PathData.Points[I + 2].Point.Y);
+     Inc(I, 3);
+    end
+    else
+     break;
+   end;
+   TPathPointKind.Close:
+   begin
+    Builder.Close;
+    Inc(I);
+   end;
+  else
+   Inc(I);
+  end;
+ end;
+ Result := Builder.Detach;
+end;
 
 procedure RegisterSkiaFontFile(const FamilyName, FileName: string);
 begin
@@ -781,31 +827,27 @@ end;
 
 procedure TogsDrawerSkia.DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
   const Color: TAlphaColor; const FontSizePix: Single; const AngleRad: Single;
-  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean);
+  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean; const OnlyStroke: Boolean);
 var
   Paint: ISkPaint;
   DebugPaint: ISkPaint;
   Typeface: ISkTypeface;
   Font: ISkFont;
-  ProbeFont: ISkFont;
-  FontStyle: TSkFontStyle;
+  Metrics: TSkFontMetrics;
+  Bounds: TRectF;
+  Oversample: Single;
+  EffectiveFontSize: Single;
   Weight: TSkFontWeight;
   Slant: TSkFontSlant;
-  Metrics: TSkFontMetrics;
-  ProbeMetrics: TSkFontMetrics;
-  Bounds: TRectF;
   DrawX, DrawY: Single;
-  LocalFontName: string;
-  EffectiveFontSize: Single;
-  Oversample: Single;
-  ProbeSize: Single;
+  R: TRectF;
   AscentRatio: Single;
-  AscentAbs: Single;
+  ProbeSize: Single;
+  ProbeMetrics: TSkFontMetrics;
+  ScaleCorr: Single;
   TightAscentAbs: Single;
   AscentAlign: Single;
-  ScaleCorr: Single;
-  R: TRectF;
-  RBox: TRectF;
+  LocalFontName: string;
   AnchorC: TPointF;
   C, S: Single;
   SX: Single;
@@ -813,9 +855,17 @@ var
   OldColor: TAlphaColor;
   OldWidth: Single;
   X0, Y0, X1, Y1: Double;
+  FontFmx: TFont;
+  Layout: TTextLayout;
+  PathData: TPathData;
+  TextPath: ISkPath;
+  PathBounds: TRectF;
+  ShiftX, ShiftY: Single;
+  FontStyle: TSkFontStyle;
+  ProbeFont: ISkFont;
 begin
   if (FSkCanvas = nil) or (Text = '') then
-    Exit;
+    exit;
 
   Paint := TSkPaint.Create;
   Paint.AntiAlias := AAntiAlias;
@@ -892,7 +942,60 @@ begin
       FSkCanvas.Scale(1 / Oversample, 1 / Oversample);
     if Abs(XKoef - 1) > 1e-6 then
       FSkCanvas.Scale(Single(XKoef), 1);
-    FSkCanvas.DrawSimpleText(Text, DrawX, DrawY, Font, Paint);
+    if OnlyStroke then
+    begin
+      FontFmx := TFont.Create;
+      try
+       WriteIn(['StrokeText=',LocalFontName,  FontView.FontName]);
+        FontFmx.Family := LocalFontName;
+        FontFmx.Size := EffectiveFontSize;
+        FontFmx.Style := [];
+        if Weight = TSkFontWeight.Bold then
+          FontFmx.Style := FontFmx.Style + [TFontStyle.fsBold];
+        if Slant = TSkFontSlant.Italic then
+          FontFmx.Style := FontFmx.Style + [TFontStyle.fsItalic];
+        Layout := TTextLayoutManager.DefaultTextLayout.Create;
+        try
+          Layout.BeginUpdate;
+          try
+            Layout.Font := FontFmx;
+            Layout.Text := Text;
+          finally
+            Layout.EndUpdate;
+          end;
+          PathData := TPathData.Create;
+          try
+            Layout.ConvertToPath(PathData);
+            TextPath := PathDataToSkPath(PathData);
+          finally
+            PathData.Free;
+          end;
+        finally
+          Layout.Free;
+        end;
+      finally
+        FontFmx.Free;
+      end;
+      if TextPath <> nil then
+      begin
+        Paint.Style := TSkPaintStyle.Stroke;
+        Paint.StrokeWidth := 0;
+        FSkCanvas.Save;
+        try
+          PathBounds := TextPath.Bounds;
+          ShiftX := (DrawX + Bounds.Left) - PathBounds.Left;
+          ShiftY := (DrawY + Bounds.Top) - PathBounds.Top;
+          FSkCanvas.Translate(ShiftX, ShiftY);
+          FSkCanvas.DrawPath(TextPath, Paint);
+        finally
+          FSkCanvas.Restore;
+        end;
+      end;
+    end
+    else begin
+     WriteIn(['FillText=',LocalFontName,  FontView.FontName]);
+      FSkCanvas.DrawSimpleText(Text, DrawX, DrawY, Font, Paint);
+    end;
   //
     if DebugDrawTextBounds then
     begin
@@ -1322,7 +1425,7 @@ end;
 
 procedure TogsCaptureDrawerSkia.DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;
   const Color: TAlphaColor; const FontSizePix: Single; const AngleRad: Single;
-  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean);
+  const XP, YP: Double; const XKoef: Double; const FontView: TFontViewEx; const AAntiAlias: Boolean; const OnlyStroke: Boolean);
 var
   Paint: ISkPaint;
   Typeface: ISkTypeface;

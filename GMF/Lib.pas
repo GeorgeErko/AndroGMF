@@ -1081,6 +1081,7 @@ var
   WW,HH,OffX,OffY:Single;
  procedure DrawText(DT: TDWG_Text);
  begin
+ ///!!! exit;
   If (ShowAttr)and(ShowAttr2) then
                        begin
                         If Ko2<0 then
@@ -1115,7 +1116,7 @@ end;
            W := Abs(Sect.Right-Sect.Left); H := Abs(Sect.Bottom-Sect.Top);
            // LOD: draw SignBitmap for small signs instead of vector geometry
            if (SignBitmap<>nil) and (Drawer is TogsDrawerSkia) and
-              (XRasst(W) < LOD_RASTER_THRESHOLD) and (YRasst(H) < LOD_RASTER_THRESHOLD) and
+              (XRasst(W) < 0{LOD_RASTER_THRESHOLD}) and (YRasst(H) < 0{LOD_RASTER_THRESHOLD}) and
               (XRasst(W) > 0) and (YRasst(H) > 0) then
            begin
             if TogsDrawerSkia(Drawer).UseWorldCoords then
@@ -1404,6 +1405,7 @@ var I: Integer;
     ImgInfo: TSkImageInfo;
     Surface: ISkSurface;
 begin
+exit;
  for I := 0 to Count - 1 do begin
   PS := TPoint_Sign(At(I));
   if PS = nil then Continue;

@@ -1223,7 +1223,7 @@ begin
       end;
      end;
     end;
-    if not ((TextBitmaps<>nil) and (PD is TDotText)) then
+   // if not ((TextBitmaps<>nil) and (PD is TDotText)) then
      PD.Draw32(Drawer,TwgForm.MkLib.PSLib,TwgForm.FontColEx);
     If oldValue<>#0 then begin
      TDotText(PD).Text.Text:=oldValue;

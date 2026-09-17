@@ -37,8 +37,10 @@ var LotRgn:TRegion;
    PTD=^TTD;
     TTD=class(TTwgObject)
    protected
-      function GetModified: Boolean; virtual;
-      procedure SetModified(AValue: Boolean); virtual;
+    function GetModified: Boolean; virtual;
+    procedure SetModified(AValue: Boolean); virtual;
+    function GetCaptured: Boolean; virtual;
+    procedure SetCaptured(AValue: Boolean); virtual;
    public
        Constructor Create(O:Pointer);
      // Селектор + габариты
@@ -84,7 +86,12 @@ var LotRgn:TRegion;
        Property DrawerObject: TObject read GetDrawerObject write SetDrawerObject;
        Property Modified: Boolean read GetModified write SetModified;
        Procedure SkiaDraw(const ACanvas: ISkCanvas); virtual; abstract;
+       Procedure DrawSelected(Drawer: TogsDrawer); virtual; abstract;
        Function SkiaVisible(Selector: TSelector): Boolean; virtual; abstract;
+       Procedure DrawTwgBitmapBounds(const Drawer: TogsDrawer); virtual; abstract;
+       Function PoinInTwgBitmaps(X, Y: Double): boolean; virtual; abstract;
+     //
+       Property isCaptured: Boolean read GetCaptured write SetCaptured;
     end;
 
 
@@ -135,6 +142,11 @@ begin
  //
 end;
 
+function TTD.GetCaptured: Boolean;
+begin
+ Result := False;
+end;
+
 Constructor TTD.Create(O:Pointer);
  begin
 //   Owner:=O;
@@ -181,6 +193,11 @@ begin
 //
 end;
 
+
+procedure TTD.SetCaptured(AValue: Boolean);
+begin
+//
+end;
 
 initialization
 // Polygon32:=TPolygon32.Create;Polygon32.Antialiased:=False;

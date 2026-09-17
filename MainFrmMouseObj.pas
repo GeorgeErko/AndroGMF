@@ -44,12 +44,17 @@ type
     btnProperties: TSpeedButton;
     FloatAnimation6: TFloatAnimation;
     instHost: TLayout;
-    btnGPKGB: TButton;
     btnDoc: TButton;
     Panel2: TPanel;
     btnEsc: TButton;
     Panel3: TPanel;
     cbOSM: TCheckBox;
+    btnGPKGB: TButton;
+    pnlView: TPanel;
+    btnPlus1: TCornerButton;
+    btnMinus1: TCornerButton;
+    btnFrag: TCornerButton;
+    btnPan: TCornerButton;
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -62,6 +67,7 @@ type
     procedure btnGPKGBClick(Sender: TObject);
     procedure btnDocClick(Sender: TObject);
     procedure cbOSMChange(Sender: TObject);
+    procedure btnPanClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -109,7 +115,7 @@ var
 
 implementation uses objMouseSelect, objMouseDraw, objEditMapCaptureDbg, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen;
+                    GPKGReader, DlgLocalOpen, objMouseView;
 
 {$R *.fmx}
 
@@ -232,7 +238,7 @@ begin
 {$IFDEF Android}
   OpenGmfFile(TPath.GetDocumentsPath+'/18.gmf')
 {$ELSE}
-  OpenGmfFile('C:\!!!ГЗ\Борт\19.gmf')
+  OpenGmfFile('C:\!!!ГЗ\Борт\29.gmf')
  //  OpenGmfFile('C:\!!!ГЗ\Борт\29488_ul._Generala_Belova,_vl._19,_korp._3Kam.gmf');
 {$ENDIF}
 end;
@@ -298,7 +304,6 @@ begin
  ListByDicts:=TListByName.Create;
  ListByDicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', oghObjectType(TwgForm));
 end;
-
 procedure TMainFormMouseObj.ToolButtonClick(Sender: TObject);
 var Op: Integer;
 begin
@@ -316,8 +321,11 @@ begin
   if Op = em_GetObject then
    MouseObject := TMouseEditMap2.Create(TwgForm, nil)
   else
+  if (Sender = btnPan) or (Sender = btnFrag) then
+   MouseObject := TMouseView.Create(TwgForm, nil)
+  else
    MouseObject := TMousePainter.Create(TwgForm, nil);
-  //
+ //
   MouseObject.OnAddPrim := UpdateMessage.AddPrim;
   MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
   MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
@@ -429,6 +437,13 @@ begin
   InvalidateOverlayAll;
  if SkPainter <> nil then
     SkPainter.Redraw;
+end;
+
+procedure TMainFormMouseObj.btnPanClick(Sender: TObject);
+begin
+  inherited;
+ //
+
 end;
 
 procedure TMainFormMouseObj.btnPropertiesClick(Sender: TObject);

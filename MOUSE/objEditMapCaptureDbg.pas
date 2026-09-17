@@ -63,6 +63,8 @@ end;
 
 destructor TMouseEditMap2.Destroy;
 begin
+ if ICapturer <> nil then ICapturer.ClearSelection;
+//
  if FMarker <> nil then FMarker.Free;
  FMarker := nil;
  inherited;
@@ -93,7 +95,10 @@ var T0, Dt: UInt64;
     Filter: TogsCaptureFilter;
     NewVisible: Boolean;
     NewState: TogsMarkerType;
+    CRec: TCaptureRec;
 begin
+ Hook := False;
+ if ssMiddle in Shift then exit;
  Hook := True;
  inherited;
  if ICapturer = nil then exit;
@@ -103,11 +108,12 @@ begin
  Dt := TThread.GetTickCount64 - T0;
  NewVisible := (Cnt = 1);
  if NewVisible then begin
- // WriteIn(['capture', 'dt_ms', Dt, 'of', ord(ICapturer.getLastCaptureRec.resCaptureOf)]);
+  WriteIn(['capture', 'dt_ms', Dt, 'of', ord(ICapturer.getLastCaptureRec.resCaptureOf)]);
   case ICapturer.getLastCaptureRec.resCaptureOf of
    ckPoint: NewState := mtPoint;
    ckLine: NewState := mtLine;
    ckPolygon: NewState := mtPolygon;
+   ckMidLine: NewState := mtCenterLine;
   else
    NewState := mtPoint;
   end;
@@ -119,8 +125,9 @@ begin
   if Assigned(Selector.OnInvalidateOverlayLive) then
    Selector.OnInvalidateOverlayLive;
  end;
- if FMarkerVisible then
-  FMarkerPos := TPointF.Create(X, Y);
+ if FMarkerVisible then begin
+  FMarkerPos := TPointF.Create(ICapturer.getLastCaptureRec.XCapture, ICapturer.getLastCaptureRec.YCapture);
+ end;
 end;
 
 procedure TMouseEditMap2.DrawTemp(const Canvas: ISkCanvas; PaintOnImage: Boolean);

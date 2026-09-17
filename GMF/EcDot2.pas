@@ -76,7 +76,9 @@ type
  //
   Procedure Draw32(Drawer: TogsDrawer;PntZnk:TSortedCollection;FontViewEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);override;
   Procedure SkiaDraw(const ACanvas: ISkCanvas); override;
-  Procedure DrawLOD2(Drawer: TogsDrawerSkia);
+  Procedure DrawSelected(Drawer: TogsDrawer); override;
+  Procedure DrawTwgBitmapBounds(const Drawer: TogsDrawer); override;
+  Function PoinInTwgBitmaps(X, Y: Double): boolean; override;
  end;
 
 var AlignStrings:TStrings;
@@ -891,7 +893,8 @@ begin
     TogsDrawerSkia(Drawer).SkCanvas.Rotate(Angle * 180 / Pi);
    if (Abs(kX - 1) > 1e-6) or (Abs(kY - 1) > 1e-6) then
     TogsDrawerSkia(Drawer).SkCanvas.Scale(kX, kY);
-   TogsDrawerSkia(Drawer).DrawTextAlignedPix(PointF(Single(XDot - X), Single(YDot - Y)), S, $FFFF0000, Text.Height, Ugol, XP, YP, XKoef, Text.FontView);
+  //!!!
+    TogsDrawerSkia(Drawer).DrawTextAlignedPix(PointF(Single(XDot - X), Single(YDot - Y)), S, $FFFF0000, Text.Height, Ugol, XP, YP, XKoef, Text.FontView);
   finally
    TogsDrawerSkia(Drawer).SkCanvas.Restore;
   end;
@@ -987,7 +990,7 @@ VectorText:
   Text.GetXPYP(XP, YP);
   AnchorPix := PointF(Single(XDot), Single(YDot));
   TxtColor := WinColorToAlphaColor(Text.Color);
-
+ // WriteIn(['DotText=', Text.FontView.FontName]);
   TogsDrawerSkia(Drawer).DrawTextAlignedPix(
     AnchorPix,
     string(Text.Text),
@@ -996,18 +999,17 @@ VectorText:
     Ugol,
     XP, YP,
     XKoef,
-    Text.FontView
-  );
+    Text.FontView, True, True);
 
   if TextBitmap<>nil then
   begin
-   mRect := TMRect.Create;
+   // mRect := TMRect.Create;
    try
-    GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
+    //GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
    // TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
    // TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
    finally
-    mRect.Free;
+   // mRect.Free;
    end;
   end;
 //  DrawLOD2(Drawer as TogsDrawerSkia);
@@ -1051,7 +1053,6 @@ VectorText:
  finally
   Drawer.Canvas.RestoreState(St);
  end;
-
  // Draw bounds for TDotText
  if (Drawer is TogsDrawerSkia) and (TextBitmap<>nil) then
  begin
@@ -1071,20 +1072,38 @@ var skObj: TogsSkiaObject ;
 begin
  skObj := DrawerObject as TogsSkiaObject;
  if skObj = nil then exit;
- if Selector.XRasst(Text.Height) <= LOD2_TEXT_HEIGHT_THRESHOLD then
+// if Selector.XRasst(Text.Height) <= LOD2_TEXT_HEIGHT_THRESHOLD then
+ if Inv then
   SkObj.Draw(ACanvas, LOD2_INDEX)
    else
     SkObj.Draw(ACanvas, LOD1_INDEX)
 end;
 
-procedure TDotText.DrawLOD2(Drawer: TogsDrawerSkia);
+procedure TDotText.DrawSelected(Drawer: TogsDrawer);
 begin
- Drawer.BeginPrimitive(Int64(Self), Self, LOD2_INDEX);
+ TogsDrawerSkia(Drawer).BeginPrimitive(Int64(Self), Self, LOD2_INDEX);
  try
-  TextBitmap.DrawBounds(Drawer, WinColorToAlphaColor(Text.Color), 0.2);
+ // TextBitmap.DrawBounds(Drawer, WinColorToAlphaColor(Text.Color), 0.2);
+  Inv := True;
+  Draw32(Drawer,Selector.GPointCol, FontColEx);
  finally
-  Drawer.EndPrimitive;
+  Inv := False;
+  TogsDrawerSkia(Drawer).EndPrimitive;
  end;
+end;
+
+procedure TDotText.DrawTwgBitmapBounds(const Drawer: TogsDrawer);
+begin
+ if TextBitmap <> nil then
+  TextBitmap.DrawBounds(Drawer, 0, 0)
+end;
+
+function TDotText.PoinInTwgBitmaps(X, Y: Double): boolean;
+begin
+ Result := False;
+ if TextBitmap <> nil then
+  with TextBitmap do
+   Result := (X >= Sect.Left) and (X <= Sect.Right) and (Y <= Sect.Top) and (Y >= Sect.Bottom);
 end;
 
 initialization
