@@ -2355,7 +2355,7 @@ procedure TLot.ResetPromer(TWF: TTwigsCollect);
  begin
  // With Selector do If (GlobalSettings.Settings.gsColorZnaksCheck) and (TypeLot<>2) then Result:=GlobalSettings.Settings.gsColorZnaks else begin
    If Properties = nil then Result:=ClassHandle.GetColor else
-   Result:=Properties.GetIntValueDef('Цвет заливки',ClassHandle.GetColor);
+   Result:=ColorRefToAlpha(Properties.GetIntValueDef('Цвет заливки',ClassHandle.GetColor));
 { старая процедура
    S:=GetProperty('Цвет заливки');
    If S=byLayer then Result:=RGB(ClassHandle.RGB.Argb[1],ClassHandle.RGB.Argb[2],ClassHandle.RGB.Argb[3]) else
@@ -2371,8 +2371,8 @@ var S:AnsiString;Color:Integer;
 begin
 // With Selector do If (GlobalSettings.Settings.gsColorZnaksCheck) then Result:=GlobalSettings.Settings.gsColorZnaks else begin
   //S:=propIndex(lpColor);
-  If Properties = nil then Result:=ClassHandle.LineColor else
-  Result:=Properties.GetIntValueDef('Цвет',ClassHandle.LineColor);
+  If Properties = nil then Result:=ColorRefToAlpha(ClassHandle.LineColor) else
+  Result:=ColorRefToAlpha(Properties.GetIntValueDef('Цвет',ClassHandle.LineColor));
  { старая процедура
   If S=byLayer then Result:=ClassHandle.LineColor else
   try
@@ -2387,7 +2387,7 @@ var S:AnsiString;Res:Integer;
 begin
 //   If TypeLot =2 then S:=propIndex(lpFillColor) else S:=byLayer;
   If Properties = nil then Result:=ClassHandle.RGB else begin
-   Res:=Properties.GetIntValueDef('Цвет заливки',ClassHandle.GetColor);
+   Res:=ColorRefToAlpha(Properties.GetIntValueDef('Цвет заливки',ClassHandle.GetColor));
    Result.ARGB[1]:=GetR(Res);Result.ARGB[2]:=GetG(Res);Result.ARGB[3]:=GetB(Res);
   end;
  {
@@ -3656,7 +3656,7 @@ end;
 
 function TLot.GetModified: Boolean;
 begin
-  Result := fModified;
+ Result := fModified;
 end;
 
 procedure TLot.SetModified(AValue: Boolean);

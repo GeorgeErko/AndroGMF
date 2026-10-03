@@ -8,7 +8,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   instPointSign, System.ImageList, FMX.ImgList, FMX.Layouts, FMX.ListBox,
   FMX.Controls.Presentation, FMX.TabControl,
-  newLayersTable, WPTForm2, FMX.Skia, System.Skia;
+  newLayersTable, WPTForm2, FMX.Skia, System.Skia, newResource;
 
 type
   TInstBlocksFrame = class(TInstPointsFrame)
@@ -19,12 +19,19 @@ type
    procedure TileDraw(Sender: TObject; const Canvas: ISkCanvas; const Dest: TRectF; const Opacity: Single); override;
   public
    function Group: TGroupCollection; override;
+   function UserPropName: String; override;
+   function SelectedBlock: TObject;
+  protected
+   function ObjectsLayer(ZV: TZnakView): TResource; override;
+   function AcceptObject(Obj: TObject): Boolean; override;
+   procedure ApplyZnak(Obj: TObject; ZV: TZnakView); override;
+   function ZnakDiffers(Obj: TObject; ZV: TZnakView): Boolean; override;
   end;
 
 var
   InstBlocksFrame: TInstBlocksFrame;
 
-implementation uses newBlock, newResource, newSelector, Lib, ogcDrawerSkia, Writer;
+implementation uses newBlock, newSelector, Lib, ogcDrawerSkia, Writer, EcDot, EcDot2;
 
 {$R *.fmx}
 
@@ -228,6 +235,46 @@ begin
 end;
 
 { TInstPointsFrame1 }
+
+// блок передается в редактор свойств через ActivePropRow (TileClick)
+function TInstBlocksFrame.UserPropName: String;
+begin
+ Result := '';
+end;
+
+// выбранный блок (TGeoBlock) для установки кнопками панели; nil - не выбран
+function TInstBlocksFrame.SelectedBlock: TObject;
+begin
+ Result := nil;
+ if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC.TabIndex < 0) then exit;
+ Result := Group.Group[TC.TabIndex].Item[CB.ItemIndex].Znak;
+end;
+
+// слой для точек, получивших блок: слой блока (AutoLayer), как при установке
+// блока; без AutoLayer слой не меняется
+function TInstBlocksFrame.ObjectsLayer(ZV: TZnakView): TResource;
+begin
+ Result := nil;
+ if (TwgForm = nil) or not (TObject(ZV.Znak) is TGeoBlock) or (TGeoBlock(ZV.Znak).AutoLayer = 0) then exit;
+ Result := TwgForm.LayerTable.SearchLayer(TGeoBlock(ZV.Znak).AutoLayer);
+end;
+
+// у точки другой блок - блок будет применен
+function TInstBlocksFrame.ZnakDiffers(Obj: TObject; ZV: TZnakView): Boolean;
+begin
+ Result := TPointDot(Obj).userObj <> TObject(ZV.Znak);
+end;
+
+function TInstBlocksFrame.AcceptObject(Obj: TObject): Boolean;
+begin
+ Result := (Obj is TPointDot) and not (Obj is TDotText) and (TPointDot(Obj).userObj <> nil);
+end;
+
+// блок - общий объект списка блоков карты (как TMouseHotSpot.SetBlock)
+procedure TInstBlocksFrame.ApplyZnak(Obj: TObject; ZV: TZnakView);
+begin
+ if TObject(ZV.Znak) is TGeoBlock then TPointDot(Obj).userObj := TGeoBlock(ZV.Znak);
+end;
 
 function TInstBlocksFrame.Group: TGroupCollection;
 begin

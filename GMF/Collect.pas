@@ -412,12 +412,25 @@ begin
    end;
 end;
 
+// строки в потоке - байты cp1251 (формат файлов Geomaster); перекодировка
+// явная, а не по системной кодовой странице (на Android она не 1251)
+var GEnc1251: TEncoding;
+function Enc1251: TEncoding;
+begin
+ if GEnc1251 = nil then GEnc1251 := TEncoding.GetEncoding(1251);
+ Result := GEnc1251;
+end;
+
+// в поток пишутся байты cp1251 (раньше писались L байт памяти UTF-16 -
+// при копировании объектов через Store/Load русские символы портились)
 Procedure TBufStream.WriteString(P : String);
  var L:Integer;
+     A: TBytes;
 begin
- L:=Length(P);P:=Utf8ToCP1251(P);
+ A := Enc1251.GetBytes(P);
+ L := Length(A);
  FStream.Write(L,SizeOf(L));
- FStream.Write(P[1],L);
+ If L > 0 then FStream.Write(A[0],L);
 end;
 
 Function TBufStream.StrRead: PAnsiChar;
@@ -441,19 +454,16 @@ end;
 
 Function TBufStream.ReadString: String;
  var L : Integer;
-     C: Array[0..255] of Ansichar;
-     S: AnsiString;
+     A: TBytes;
 begin
   FStream.ReadBuffer(L, SizeOf(L));
   If L = 0 then
     Result:=''
   else
   begin
-    SetLength(S, L);
-    FStream.ReadBuffer(S[1], L);
-  //  S := C;
-    Result := S;
-    Result:=Result;
+    SetLength(A, L);
+    FStream.ReadBuffer(A[0], L);
+    Result := Enc1251.GetString(A);
   end;
 end;
 
@@ -1048,5 +1058,6 @@ initialization
 finalization
   if Assigned(StreamRecords) then
     FreeMem(StreamRecords);
+  FreeAndNil(GEnc1251);
 end.
 

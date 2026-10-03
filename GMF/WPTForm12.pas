@@ -120,9 +120,97 @@ begin
  //
 end;
 
-procedure TForm11.Pack(OnModifiedPrim: procModifiedPrim);
+procedure TForm11.Pack;
+var I,J,NJ:LongInt;Tw:TTwig;Lot:TLot;Num1:TLong;Flag:Boolean;
+  DelTwig,SborTwig,CheckLot,CheckPoint:Integer;
+  IndexTwig:Integer;DeletedTwigs:PCollection;
+function Lot254:boolean;
+var I:Integer;Tw:TTwig;
 begin
- //
+ Result:=False;
+ For I:=0 to Lot.Coord.Count-1 do begin
+ Tw:=Lot.GetTwig(Twigs,I);
+ If Tw.Closed<>254 then Exit;
+end;
+Result:=True;Lot.TypeLot:=254;
+end;
+begin
+{}
+ For I:=Twigs.LotsCount-1 downTo 0 do
+  begin
+   Lot:=Twigs.LAt(I);
+   if Lot.TypeLot=254 then
+    begin
+      If not Assigned(OnModifiedPrim) then Twigs.AtDelete(Twg_Lot,I);
+      If Assigned(OnModifiedPrim) then If OnModifiedPrim(Lot) then Twigs.AtDelete(Twg_Lot,I);
+    end else begin
+     If Lot254 then begin
+      If not Assigned(OnModifiedPrim) then Twigs.AtDelete(Twg_Lot,I);
+      If Assigned(OnModifiedPrim) then If OnModifiedPrim(Lot) then Twigs.AtDelete(Twg_Lot,I);
+     end;
+   end;
+  end;
+{   For I:=0 to Twigs.LotsCount-1 do begin
+Lot:=Twigs.LAt(I);
+For J:=0 to Lot.Coord.Count-1 do begin
+ Tw:=Lot.GetTwig(Twigs,J);
+ Num1:=TLong(Lot.Coord[J]);
+ IndexTwig:=Num1.Num;
+ Lot.Coord[I]:=TLong.Create(Integer(Tw)*IndexTwig div abs(IndexTwig));
+end;
+end;
+}
+For I:=Twigs.TwigsCount-1 downTo 1 do TTwig(Twigs.TAt(I)).ParentIndex:=-100;
+DeletedTwigs:=PCollection.Create(1);
+ For I:=Twigs.TwigsCount-1 downto 1 do
+  begin
+   Tw:=Twigs.TAt(I);
+   If Tw.Rang=0 then
+    Tw.Closed:=254;
+   If Tw.Closed=254 then
+    begin
+   // Writeln('Delete = ',I);
+    // DeletedTwigs.Insert(Twigs.TwigsLarge[I]);
+    // Twigs.TwigsLarge.AtDelete(I);
+    // DelTwigFromLot(I,OnModifiedPrim);
+    // Inc(NJ);
+    end;
+  end;
+J:=1;
+For I:=1 to Twigs.TwigsCount-1 do begin
+Tw:=Twigs.TAt(I);
+If Tw.Closed <> 254 then begin Tw.ParentIndex:=J;Inc(J);end;
+end;
+For I:=0 to Twigs.LotsCount-1 do begin
+Lot:=Twigs.LAt(I);
+For J:=Lot.Coord.Count-1 downTo 0 do begin
+ Tw:=Lot.GetTwig(Twigs,J);
+ IndexTwig:=TLong(Lot.Coord[J]).Num;
+ If Tw.ParentIndex = -100 then
+   Lot.Coord.AtFree(J) else
+   TLong(Lot.Coord[J]).Num:=Tw.ParentIndex*(IndexTwig div Abs(IndexTwig));
+  end;
+end;
+For I:=Twigs.TwigsCount-1 downto 1 do If TTwig(Twigs.TAt(I)).Closed=254 then
+ Twigs.AtDelete(TWG_Twig,I);
+ For I:=Twigs.LotsCount-1 downTo 0 do
+  begin
+   Lot:=Twigs.LAt(I);
+    If Lot.Coord.Count=0 then begin
+     Lot.TypeLot:=254;
+     Twigs.AtDelete(TWG_Lot,I);
+    end else
+    For J:=0 to Lot.Coord.Count-1 do
+     begin
+      Num1:=Lot.Coord[J];
+       If Abs(Num1.Num)>=Twigs.TwigsCount then
+        begin
+         Lot.TypeLot:=254;
+         Twigs.AtDelete(TWG_Lot,I);
+        end;
+     end;
+ end;
+ DeletedTwigs.Free;
 end;
 
 procedure TForm11.ProcessLayerTable;

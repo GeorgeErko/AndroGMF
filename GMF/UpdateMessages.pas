@@ -23,6 +23,7 @@ type
     fOnAddPrim: procAddPrim;
     fOnModifiedPrim: procAddPrim;
     fOnDeletePrim: procAddPrim;
+    fOnSetLayer: procSetLayer;
   public
    Constructor Create(UpdateObject:TObject);virtual;
   // реализация события об изменении объекта
@@ -36,6 +37,8 @@ type
    property onAddPrim:procAddPrim read fOnAddPrim write fOnAddPrim;
    property onModifiedPrim:procAddPrim read fOnModifiedPrim write fOnModifiedPrim;
    property onDeletePrim:procAddPrim read fOnDeletePrim write fOnDeletePrim;
+  // установка активного слоя в интерфейсе (в старой программе - FlyLayer.SetActiveLayer)
+   property onSetLayer:procSetLayer read fOnSetLayer write fOnSetLayer;
  end;
 
  Function SearchLot(GUID_:AnsiString;TwgForm:TObject;var Index_:Integer):boolean;
@@ -91,10 +94,9 @@ end;
 
 procedure TUpdateMessage.SetActiveLayer(Layer: TResource; Symbol: Integer);
 begin
-// abstract
-// ShowMessage('SetLayer');
-// FlySloy.SetActiveLayer(Layer,Symbol);
-// If Symbol<>-1 then If FlyLayer<>nil then FlyLayer.SetActiveLayer(Layer,Symbol);
+// как в старой программе: If Symbol<>-1 then FlyLayer.SetActiveLayer(Layer,Symbol);
+// панель слоев подключается формой через onSetLayer (TLayerFrame.ActivateLayer)
+ If Symbol<>-1 then If Assigned(fOnSetLayer) then fOnSetLayer(Layer,Symbol);
 end;
 
 Function SearchLot(GUID_:AnsiString;TwgForm:TObject;var Index_:Integer):boolean;

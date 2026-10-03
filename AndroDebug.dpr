@@ -4,6 +4,8 @@ uses
   System.SysUtils,
   System.StartUpCopy,
   FMX.Forms,
+  FMX.Types,
+  FMX.Skia,
   FireDAC.FMXUI.Wait,
   circle_di in 'GMF\circle_di.pas',
   Collect in 'GMF\Collect.pas',
@@ -109,6 +111,10 @@ uses
 {$R *.res}
 
 begin
+// Skia-канвас для всей формы с GPU-бэкендом (на Windows - Vulkan); ставится до Application.Initialize
+ GlobalUseSkia := True;
+ GlobalUseSkiaRasterWhenAvailable := False;
+ GlobalUseVulkan := True;
 {$IFDEF WIN64}
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}

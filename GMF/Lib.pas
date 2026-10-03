@@ -397,10 +397,6 @@ begin
  Col.Free;
 end;
 
-type
- TDot = class fX, fY: Double;
- end;
-
 procedure TDWG_Arc.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
   Ugol: Double; R, G, B: Byte; bkColor: Boolean);
 var Col: TogsCollection; I, N: Integer;
@@ -459,9 +455,9 @@ begin
  Col := Arc_Rotate2(0, 0, 0, x_1, y_1, x_2, y_2,  xu_2, yu_2, xu_1, yu_1, N);
  If N > 1 then begin
   New(P); rootP := P;
-  For N := 0 to Col.Count - 1 do With TDot(Col.List[N]) do
-   If N = 0 then P.Create(fX, fY, 0) else begin
-                 P.AddPoint(fX, fY, 0);
+  For N := 0 to Col.Count - 1 do With TDot1(Col.List[N]) do
+   If N = 0 then P.Create(X, Y, 0) else begin
+                 P.AddPoint(X, Y, 0);
                  P := P.Next;
                 end;
   rootP.Count := Col.Count;
@@ -565,9 +561,9 @@ begin
   Col.Insert(TDot1.Create(ox, oy));
   Col.AtInsert(0, TDot1.Create(ox, oy));
   New(P); rootP := P;
-  For N := 0 to Col.Count - 1 do With TDot(Col.List[N]) do
-   If N = 0 then P.Create(fX, fY, 0) else begin
-                 P.AddPoint(fX, fY, 0);
+  For N := 0 to Col.Count - 1 do With TDot1(Col.List[N]) do
+   If N = 0 then P.Create(X, Y, 0) else begin
+                 P.AddPoint(X, Y, 0);
                  P := P.Next;
                 end;
   rootP.Count := Col.Count;
@@ -714,14 +710,14 @@ begin
   X1 := TDot1(Col[0]).X; Y1 := TDot1(Col[0]).Y;
   X2 := TDot1(Col[Col.Count - 1]).X; Y2 := TDot1(Col[Col.Count - 1]).Y;
   New(P); rootP := P;
-   For N := 0 to Col.Count - 1 do With TDot(Col.List[N]) do
-    If N = 0 then P.Create(fX, fY, 0) else begin
-                  P.AddPoint(fX, fY, 0);
+   For N := 0 to Col.Count - 1 do With TDot1(Col.List[N]) do
+    If N = 0 then P.Create(X, Y, 0) else begin
+                  P.AddPoint(X, Y, 0);
                   P := P.Next;
                  end;
   rootP.Count := Col.Count;
   Geometry.OnPoly(Geometry.Obj, rootP, Color, fillColor, lineW, useFill,
-                   Sqrt(Sqr(rootP.X - P.X)) + Sqr(rootP.Y - P.Y) <= 0.1);
+                   Sqrt(Sqr(rootP.X - P.X) + Sqr(rootP.Y - P.Y)) <= 0.1);
   rootP.FreeAll;
   Dispose(rootP);
  //
@@ -1223,9 +1219,9 @@ procedure TPoint_Sign.DrawTextTo(txt: TDWG_Text; Geometry: TGeometryEvents);
 begin
 // (X, Y: Double; FontName: String; txtHeight, txtAngle: Double;
 //                        txtColor: TColor; Align: byte; Bl, It, Un: Boolean; Text: String)
- Geometry.OnText(Geometry.Obj, txt.FX, txt.FY, PChar(txt.fFntName), txt.fHeight, txt.fAng, txt.fScale/1000,
+ Geometry.OnText(Geometry.Obj, txt.FX, txt.FY, PChar(string(txt.fFntName)), txt.fHeight, txt.fAng, txt.fScale/1000,
                  txt.fColor, txt.TextAlign,
-                 boolean(txt.fBl), boolean(txt.fIt), boolean(txt.fUn), PChar(txt.fText), PChar(txt.fName));
+                 boolean(txt.fBl), boolean(txt.fIt), boolean(txt.fUn), PChar(string(txt.fText)), PChar(string(txt.fName)));
 end;
 
 procedure TPoint_Sign.SetGabarites(MRect_: TMRect);

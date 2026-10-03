@@ -47,6 +47,12 @@ type
     property BoundsWorld: TRectF read FBoundsWorld write FBoundsWorld;
     property Check: Byte read FCheck write FCheck;
     property Layer: TResource read FLayer write FLayer;
+  public
+   // контур для выделения (мировые координаты), строится один раз - objOutline.ogsEnsureOutline
+   OutlinePath: ISkPath;
+   OutlineVertices: TArray<TPointF>;
+   OutlineMidPoints: TArray<TPointF>;
+   OutlineValid: Boolean;
   end;
 
   TogsDrawerSkia = class(TogsDrawer)
@@ -299,6 +305,8 @@ begin
     if FCheck = 0 then
       Exit;
   end;
+// объект вне видимой области (BoundsWorld - в координатах канвы)
+ if (not FBoundsWorld.IsEmpty) and ACanvas.QuickReject(FBoundsWorld) then exit;
 //  WriteIn(['TogsSkiaObject.Draw', 'LOD=', ALODIndex, 'DrawPicture']);
   ACanvas.DrawPicture(Pic);
 end;
@@ -946,7 +954,7 @@ begin
     begin
       FontFmx := TFont.Create;
       try
-       WriteIn(['StrokeText=',LocalFontName,  FontView.FontName]);
+      // WriteIn(['StrokeText=',LocalFontName,  FontView.FontName]);
         FontFmx.Family := LocalFontName;
         FontFmx.Size := EffectiveFontSize;
         FontFmx.Style := [];
@@ -993,7 +1001,7 @@ begin
       end;
     end
     else begin
-     WriteIn(['FillText=',LocalFontName,  FontView.FontName]);
+    // WriteIn(['FillText=',LocalFontName,  FontView.FontName]);
       FSkCanvas.DrawSimpleText(Text, DrawX, DrawY, Font, Paint);
     end;
   //

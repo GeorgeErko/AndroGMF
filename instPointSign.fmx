@@ -6,7 +6,7 @@ object InstPointsFrame: TInstPointsFrame
   object TC: TTabControl
     Align = Client
     Size.Width = 384.000000000000000000
-    Size.Height = 401.000000000000000000
+    Size.Height = 385.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     TabPosition = PlatformDefault
@@ -14,7 +14,7 @@ object InstPointsFrame: TInstPointsFrame
   object Panel1: TPanel
     Align = Top
     Size.Width = 384.000000000000000000
-    Size.Height = 25.000000000000000000
+    Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
     object btnTabs: TButton
@@ -24,9 +24,9 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 362.000000000000000000
       Size.Width = 22.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 17.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 5
+      TabOrder = 4
       Text = '<'
       TextSettings.Trimming = None
       OnClick = btnTabsClick
@@ -39,7 +39,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 281.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 17.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 3
       TextSettings.Trimming = None
@@ -53,7 +53,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 254.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 17.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
       TextSettings.Trimming = None
@@ -67,7 +67,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 308.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 17.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       TextSettings.Trimming = None
@@ -81,22 +81,99 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 335.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 17.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
       TextSettings.Trimming = None
       OnClick = btnMinusClick
     end
-    object btnSet: TButton
+    object Label1: TLabel
       Align = Left
+      Margins.Left = 10.000000000000000000
+      Position.X = 10.000000000000000000
+      Text = #1058#1086#1095#1077#1095#1085#1099#1077
+      TabOrder = 5
+    end
+  end
+  object pnlTools: TLayout
+    Align = Top
+    Position.Y = 17.000000000000000000
+    Size.Width = 384.000000000000000000
+    Size.Height = 24.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object sbSetPoint: TSpeedButton
+      Tag = 1
+      Align = Left
+      Hint = 
+        #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1090#1086#1095#1077#1095#1085#1086#1075#1086' '#1091#1089#1083#1086#1074#1085#1086#1075#1086' '#1079#1085#1072#1082#1072' ('#1087#1088#1080' '#1091#1076#1077#1088#1078#1072#1085#1080#1080' '#1083#1077#1074#1086#1081' '#1082#1085#1086#1087#1082#1080' ' +
+        #1084#1099#1096#1080' - '#1087#1086#1074#1086#1088#1086#1090' '#1079#1085#1072#1082#1072')'
       Images = ImageList1
-      ImageIndex = 5
-      Size.Width = 25.000000000000000000
-      Size.Height = 25.000000000000000000
+      ImageIndex = 6
+      Size.Width = 24.000000000000000000
+      Size.Height = 24.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 4
+      ParentShowHint = False
+      ShowHint = True
+      Text = 'additembutton'
       TextSettings.Trimming = None
-      OnClick = btnTabsClick
+      OnClick = sbSetPointClick
+    end
+    object sbRotatePoint: TSpeedButton
+      Tag = 2
+      Align = Left
+      Hint = #1055#1086#1074#1086#1088#1086#1090' '#1079#1085#1072#1082#1072' '#1087#1086' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1085#1072#1087#1088#1072#1074#1083#1077#1085#1080#1102
+      Images = ImageList1
+      ImageIndex = 7
+      Position.X = 24.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbSetPointClick
+    end
+    object sbSetAttrib: TSpeedButton
+      Tag = 3
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1091#1089#1083#1086#1074#1085#1086#1075#1086' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1103' '#1087#1072#1088#1072#1083#1083#1077#1083#1100#1085#1086' '#1091#1082#1072#1079#1072#1085#1085#1086#1081' '#1083#1080#1085#1080#1080
+      Images = ImageList2
+      ImageIndex = 0
+      Position.X = 48.000000000000000000
+      Size.Width = 57.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      StyleLookup = 'addtoolbutton'
+      TextSettings.Trimming = None
+      OnClick = sbSetPointClick
+    end
+    object sbSetPerLine: TSpeedButton
+      Tag = 5
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1079#1085#1072#1082#1086#1074' '#1087#1086' '#1089#1090#1074#1086#1088#1091
+      Images = ImageList1
+      ImageIndex = 9
+      Position.X = 105.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbSetPointClick
+    end
+    object cbActivate: TCheckBox
+      Align = Left
+      Margins.Left = 6.000000000000000000
+      Position.X = 135.000000000000000000
+      Size.Width = 210.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #1072#1082#1090#1080#1074#1080#1088#1086#1074#1072#1090#1100' '#1089#1083#1086#1081' '#1087#1088#1080' '#1074#1099#1073#1086#1088#1077
     end
   end
   object LB: TListBox
@@ -105,7 +182,7 @@ object InstPointsFrame: TInstPointsFrame
     Size.Width = 384.000000000000000000
     Size.Height = 178.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 3
+    TabOrder = 2
     Visible = False
     DisableFocusEffect = True
     DefaultItemStyles.ItemStyle = ''
@@ -250,6 +327,117 @@ object InstPointsFrame: TInstPointsFrame
             FileName = 'C:\!GEOMASTER\Office\btnsAndro\3Set_znak.bmp'
           end>
         Name = '3Set_znak'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007649444154388DCD535B0A00
+              21081C973DB8376FBF0AB17414FA582102751E91029742004055C74CA8AA3050
+              D86F0B9DB0B897F45A81D46954CC1C1E31A764E5991BEEE9A82679EA669893F5
+              858EBC03EA84110D7753450F96002CA65E226A1BB8364700D215897E6DC3B115
+              29CFCD229AECDDEDFF6F7CA2382A8FCE7D3EEB0000000049454E44AE426082}
+          end>
+        Name = 'tpSetPoint'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000008B49444154388DA5535B0EC0
+              200813B2837B73F623B3A2A0B2262626D087A85492A8B50AEC897F085196BB4C
+              84C97610588308228A17394D3C4F48A0E6090EDCF4B02DB859A22BA6999C4DDF
+              876763648F455E8D35CD2255243281A935506F3C7968F6F87DD8125FB792FD44
+              268D3EB668C0517D10F1C8675FE1E6CF1C894829E2DC642E890AA2701A37022F
+              321D44750707C1D80000000049454E44AE426082}
+          end>
+        Name = 'tpRotatePoint'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 51
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 51
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000033000000120806000000F651E6
+              B90000000473424954080808087C08648800000149494441544889ED56516E05
+              2108C477328E36BD1937A31F4F2CB26896DA269BB4B379D9C8CA3820E223FAC7
+              B3A13FF43BD621222A22C63538018C75DCF765304FC0144C0F60BCFDBCCCF9E5
+              079DE456F4BF0100242293CD7488880250001AE7445CB635DA5CA0442E83C17E
+              0CBF0BAEB4A2B62DB2899124DBEA6A20C327299D8B165F7259D5AC387635B913
+              5CDA9124EBB7E7579095D2F8B6B25361677C661DE75653F5DC3627AC25C2CCD6
+              44449979D844849899ECEDB8BE80CE87B73F11113337A277D601345252FAA848
+              1EDCAD2BBFF8DFCE806538662DCDA2F687E692B1CE34CDA93E710D67BB1D8C13
+              35B5CC2CC0C46F7BF8A720E99AB8552223CA072D0A3A6DD1B1CD87C0348E775C
+              A532CB4AA65F66C7F7CDE2D68FBB791E4CF8DF34F97EB78D6EF85797E772AD57
+              66DC2C669D4B5D06AD33D5942FF8230058174DC78F4176D8CD16C77F0E9FDAF1
+              A340F7C4569A0000000049454E44AE426082}
+          end>
+        Name = 'tpSetAttrib'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 51
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 51
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000033000000120806000000F651E6
+              B90000000473424954080808087C08648800000149494441544889ED56516E05
+              2108C477328E36BD1937A31F4F2CB26896DA269BB4B379D9C8CA3820E223FAC7
+              B3A13FF43BD621222A22C63538018C75DCF765304FC0144C0F60BCFDBCCCF9E5
+              079DE456F4BF0100242293CD7488880250001AE7445CB635DA5CA0442E83C17E
+              0CBF0BAEB4A2B62DB2899124DBEA6A20C327299D8B165F7259D5AC387635B913
+              5CDA9124EBB7E7579095D2F8B6B25361677C661DE75653F5DC3627AC25C2CCD6
+              44449979D844849899ECEDB8BE80CE87B73F11113337A277D601345252FAA848
+              1EDCAD2BBFF8DFCE806538662DCDA2F687E692B1CE34CDA93E710D67BB1D8C13
+              35B5CC2CC0C46F7BF8A720E99AB8552223CA072D0A3A6DD1B1CD87C0348E775C
+              A532CB4AA65F66C7F7CDE2D68FBB791E4CF8DF34F97EB78D6EF85797E772AD57
+              66DC2C669D4B5D06AD33D5942FF8230058174DC78F4176D8CD16C77F0E9FDAF1
+              A340F7C4569A0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znPointSet2.png'
+          end>
+        Name = 'znPointSet2'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006149444154388DCD91C10EC0
+              200843CBBEBC7FCE4E2624EAACA0C97AEA419EA5003F92E74709072B800619F8
+              A746ADEAC86AB77F3701629D0740D283B774D924BF434C5275ABB544315926CD
+              62582856838CFC164400ED75B12856D1F461E92A19BD25053A6B709EEFED0000
+              000049454E44AE426082}
+          end>
+        Name = 'tpSetPerLine'
       end>
     Destination = <
       item
@@ -299,8 +487,90 @@ object InstPointsFrame: TInstPointsFrame
             SourceRect.Right = 18.000000000000000000
             SourceRect.Bottom = 18.000000000000000000
           end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'tpSetPoint'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'tpRotatePoint'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'tpSetAttrib'
+            SourceRect.Right = 51.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'tpSetPerLine'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'znPointSet2'
+            SourceRect.Right = 51.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
       end>
     Left = 346
     Top = 43
+  end
+  object ImageList2: TImageList
+    Source = <
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 51
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 51
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000033000000120806000000F651E6
+              B90000000473424954080808087C08648800000193494441544889DD57519283
+              30087DECC59A9B09378393BDFDB0C926185BADDDD99D3EC771A008843C881592
+              C487E0EBAF137827BE004044DE725F8588202210114DAE30B316A7FEBEC19D66
+              FC0F004077A7BB9324557578F676330C348B88E7ABFF45A82ADC7DD0D53C2202
+              660633DBD834F42B45B7E2AC73F741572BD8EBDF817E1754759ADB1E7669969D
+              641B00ED3E8AFE9D4C9D1C97E440B95AB45A487242BFBD447302CF021F41AEFA
+              19FB23181633A34CADC4D59DE92BDB577737B103361942922202929BF15A7524
+              111128A5349DBBA394D29E9C9CBD62AB3F2E6C8D7CBBDD00ACA37659160804B0
+              793F3F029735DEF07EADC251D40AE7AACDAA88FB458E9471F726E3C52BC700C1
+              D35F00EE0E9228A500F81999A594CD38AF512AEAD877772CCB32D8108487434D
+              07190278F846CE3108BE7E68E6E6BC3AA2F3981F76EFCE845E9EE1259ACD28A3
+              AAA71B7686D9A98F34CADFB2987EEE67C767C7E833FF7D4EFDE1F928D6A99EA9
+              934B4460B68E105585994155CFB8DAF59F51FB714F1E70B99C1790E98A8E4E59
+              3E02213FE7CFD937EEAA6F68325E886F0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znPointSet2.png'
+          end>
+        Name = 'znPointSet2'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'znPointSet2'
+            SourceRect.Right = 51.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end>
+    Left = 324
+    Top = 121
   end
 end

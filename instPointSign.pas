@@ -9,9 +9,12 @@ uses
   FMX.TabControl, FMX.Controls.Presentation,
   WPTForm2, newLayersTable, System.ImageList, FMX.ImgList, FMX.Layouts,
   FMX.ListBox, FMX.ScrollBox, FMX.Skia,
-  Lib, System.Skia, instLayerFrame;
+  Lib, System.Skia, instLayerFrame, newResource;
 
 type
+ // запуск операции установки знаков (Opr - код операции objTopo32, Tag кнопки)
+  TInstToolEvent = procedure(Sender: TObject; Opr: Integer) of object;
+
   TInstPointsFrame = class(TFrame)
     TC: TTabControl;
     Panel1: TPanel;
@@ -25,8 +28,16 @@ type
     btnMinus: TButton;
     btnScaleM: TButton;
     btnScaleP: TButton;
-    btnSet: TButton;
+    pnlTools: TLayout;
+    sbSetPoint: TSpeedButton;
+    sbRotatePoint: TSpeedButton;
+    sbSetAttrib: TSpeedButton;
+    sbSetPerLine: TSpeedButton;
+    cbActivate: TCheckBox;
+    Label1: TLabel;
+    ImageList2: TImageList;
     procedure Button2Click(Sender: TObject);
+    procedure sbSetPointClick(Sender: TObject);
     procedure btnTabsClick(Sender: TObject);
     procedure LBChange(Sender: TObject);
     procedure btnMinusClick(Sender: TObject);
@@ -45,6 +56,7 @@ type
    FDragScaleKey: AnsiString;
    FDragScaleTileControl: TControl;
    FDirtyScales: TStringList;
+   FTabChanging: Boolean; // смена вкладки: знак выбирается без изменения выделенных объектов
    procedure MarkDirtyScale(const AKey: AnsiString; const AObj: TObject);
    procedure DragScaleUpdateFromControlCoords(const AControl: TControl; const AX, AY: Single);
    procedure DragScaleCommit;
@@ -70,14 +82,28 @@ type
     function GetZnakName (TabName_:String;Index:Integer):String;virtual;
     function GetZnakLayer(TabName_:String;Index:Integer):String;virtual;
     function GetZnakPoint(TabName_:String;Index:Integer):TPoint_Sign;virtual;
+    procedure DoZnakSelected;
+    procedure SelectZnak(Idx: Integer);
+    function LayerToObjects: Boolean;
+    function ObjectsLayer(ZV: TZnakView): TResource; virtual;
+    function AcceptObject(Obj: TObject): Boolean; virtual;
+    procedure ApplyZnak(Obj: TObject; ZV: TZnakView); virtual;
+    function ZnakDiffers(Obj: TObject; ZV: TZnakView): Boolean; virtual;
   public
+  // кнопки установки знаков (бывшие sbSetPoint.. старого instPointSign):
+  // обработчик мыши (objTopo32) создает форма
+   OnTool: TInstToolEvent;
+  // выбран другой знак - форма передает его в обработчик мыши
+   OnZnakSelected: TNotifyEvent;
    constructor Create(AOwner: TComponent); override;
    destructor Destroy; override;
    function Group: TGroupCollection; virtual;
+   function SelectedZnakNum: Integer; virtual;
    property TwgForm: TForm2 read FTwgForm write SetTwgForm;
    property Scale: Single read FScale write FScale;
    procedure ClearTilesAndResources; virtual;
    procedure RebuildTiles; virtual;
+   function UserPropName: String; virtual;
   end;
 
 procedure TileOnPoly(Obj: Integer; Poly: PGeoPoint; penColor, brushColor: Integer; lineWidth: Double; useColor: Boolean; isPolygon: Boolean); stdcall;
@@ -93,7 +119,7 @@ var
  GTileFillPaint: ISkPaint;
 
 implementation uses newProcs, newSelector, ogcDrawerSkia, FMX.Platform, Writer,
-                    FramePropEditor;
+                    FramePropEditor, EcDot, EcDot2, TwgDraw, System.Generics.Collections;
 
 {$R *.fmx}
 
@@ -106,6 +132,40 @@ begin
  Paint.StrokeWidth := W;
  A := TAlphaColor($FF000000 or (Cardinal(C) and $00FFFFFF));
  Paint.Color := A;
+end;
+
+// гарнитура для надписей плиток: загрузка шрифта из файла дорогая, а плитки
+// перерисовываются часто - гарнитуры кэшируются по имени и начертанию
+// (в т.ч. ненайденные - nil)
+var GTileTypefaces: TDictionary<string, ISkTypeface>;
+function TileTypeface(const AName: string; Bl, It: Boolean; const AStyle: TSkFontStyle): ISkTypeface;
+var Key, FontFile: string;
+begin
+ Result := nil;
+ if AName = '' then exit;
+ Key := AName + '|' + IntToStr(Ord(Bl)) + IntToStr(Ord(It));
+ if GTileTypefaces = nil then GTileTypefaces := TDictionary<string, ISkTypeface>.Create;
+ if GTileTypefaces.TryGetValue(Key, Result) then exit;
+ FontFile := GetRegisteredSkiaFontFile(AName);
+ if FontFile <> '' then
+  try
+   Result := TSkTypeface.MakeFromFile(FontFile);
+  except
+   Result := nil;
+  end;
+ if Result = nil then
+  try
+   Result := TSkTypeface.MakeFromName(AName, TSkFontStyle.Normal);
+  except
+   Result := nil;
+  end;
+ if Result = nil then
+  try
+   Result := TSkTypeface.MakeFromName(AName, AStyle);
+  except
+   Result := nil;
+  end;
+ GTileTypefaces.Add(Key, Result);
 end;
 
 function TileTP(X, Y: Double): TPointF;
@@ -254,34 +314,12 @@ begin
  if CutPos > 0 then
   LocalFontName := Trim(Copy(LocalFontName, 1, CutPos - 1));
 
- FontFile := '';
- if LocalFontName <> '' then
-  FontFile := GetRegisteredSkiaFontFile(LocalFontName);
- if FontFile <> '' then
-  try
-   Typeface := TSkTypeface.MakeFromFile(FontFile);
-  except
-   Typeface := nil;
-  end;
- if (Typeface = nil) and (LocalFontName <> '') then
-  try
-   Typeface := TSkTypeface.MakeFromName(LocalFontName, TSkFontStyle.Normal);
-  except
-   Typeface := nil;
-  end;
-
  Weight := TSkFontWeight.Normal;
  if Bl then Weight := TSkFontWeight.Bold;
  Slant := TSkFontSlant.Upright;
  if It then Slant := TSkFontSlant.Italic;
  FontStyle := TSkFontStyle.Create(Weight, TSkFontWidth.Normal, Slant);
-
- if (Typeface = nil) and (LocalFontName <> '') then
-  try
-   Typeface := TSkTypeface.MakeFromName(LocalFontName, FontStyle);
-  except
-   Typeface := nil;
-  end;
+ Typeface := TileTypeface(LocalFontName, Bl, It, FontStyle);
 
  HFullPix := Single(txtHeight) * GTileScale;
  if HFullPix <= 0 then Exit;
@@ -338,6 +376,7 @@ begin
   TControl(AOwner).Width := GReadFloat(Name + '_W',TControl(AOwner).Width);
   Writein(['Load=', Name, Width, TControl(AOwner).Name]);
  end;
+ if cbActivate <> nil then cbActivate.IsChecked := GReadInteger(Name + '_cbActivate', 1) = 1;
 end;
 
 destructor TInstPointsFrame.Destroy;
@@ -346,6 +385,7 @@ if Name = 'InstPointsFrame' then begin
  GWriteFloat(Name + '_W', TControl(Owner).Width);
     Writein(['Save=', Name, Width]);
 end;
+ if cbActivate <> nil then GWriteInteger(Name + '_cbActivate', Ord(cbActivate.IsChecked));
  try
   SaveAllLocalScalesToRegistry;
  finally
@@ -590,7 +630,12 @@ begin
  finally
   CB.Items.EndUpdate;
  end;
- if CB.Items.Count > 0 then CB.ItemIndex := 0;
+ FTabChanging := True;
+ try
+  if CB.Items.Count > 0 then CB.ItemIndex := 0;
+ finally
+  FTabChanging := False;
+ end;
  RebuildTiles;
 {$IFDEF ANDROID}
  For I := 0 to TC.TabCount - 1 do
@@ -642,6 +687,9 @@ begin
    T.Position.Y := Row * RowHeight;
    T.HitTest := True;
    T.Tag := Idx;
+// плитка рисуется из кэша: на GPU-канве форма перерисовывается целиком при
+// каждой перерисовке карты (кэш Raster там не работает); InvalidateTiles -> Redraw
+   T.DrawCacheKind := TSkDrawCacheKind.Always;
    T.OnDraw := TileDraw;
    T.OnClick := TileClick;
    T.OnMouseDown := TileMouseDown;
@@ -659,8 +707,8 @@ begin
  if not (Sender is TControl) then exit;
  Idx := TControl(Sender).Tag;
  if (CB <> nil) and (Idx >= 0) and (Idx < CB.Items.Count) then begin
-  LayerFrame.SetActiveLayerByName(Group.Group[TC.TabIndex].Item[Idx].znakLayer);
-  CB.ItemIndex := Idx;
+ // при смене знака слой и обработчик мыши обновляет CBChange
+  if CB.ItemIndex <> Idx then CB.ItemIndex := Idx else SelectZnak(Idx);
  // передаем знак в TPropEditorFrame (PropEditorForm)
   if PropEditorForm.ActivePropRow <> nil then
    if (PropEditorForm.ActivePropRow.TypeName = 'PointType') or
@@ -679,8 +727,87 @@ procedure TInstPointsFrame.CBChange(Sender: TObject);
 begin
  if CB.ItemIndex = -1 then Exit;
  EnsureSelectedTileVisible;
- LayerFrame.SetActiveLayerByName(Group.Group[TC.TabIndex].Item[CB.ItemIndex].znakLayer);
+ SelectZnak(CB.ItemIndex);
  InvalidateTiles;
+end;
+
+// выбор знака (TinstPoints.CBPointZnakClick старой программы): слой знака
+// становится активным; выделенные объекты TEditMap.Objects, подходящие фрейму
+// (AcceptObject), у которых знак другой (ZnakDiffers), получают знак и слой
+// знака (ObjectsLayer). Объекты с этим знаком не меняются совсем, в т.ч. слой.
+// При смене вкладки (первый знак) выделенные объекты не меняются
+procedure TInstPointsFrame.SelectZnak(Idx: Integer);
+var ZV: TZnakView;
+begin
+ if (Group = nil) or (TC.TabIndex < 0) or (Idx < 0) then exit;
+ ZV := Group.Group[TC.TabIndex].Item[Idx];
+ if ZV = nil then exit;
+ if LayerFrame <> nil then LayerFrame.SetActiveLayerByName(ZV.znakLayer);
+ if not FTabChanging and (PropEditorForm <> nil) then
+ // ничего не выделено - знак становится свойством по умолчанию новых примитивов
+  if not PropEditorForm.HasSelection then begin
+   if UserPropName <> '' then PropEditorForm.SetDefaultProperty(UserPropName, IntToStr(ZV.znakNum));
+  end else
+  try
+   PropEditorForm.ApplyToObjects('SetZnak...' + UserPropName, ObjectsLayer(ZV),
+    function(Obj: TObject): Boolean begin Result := AcceptObject(Obj) and ZnakDiffers(Obj, ZV); end,
+    procedure(Obj: TObject) begin ApplyZnak(Obj, ZV); end);
+  except
+   exit;
+  end;
+ DoZnakSelected;
+end;
+
+// слой для объектов, получивших знак: слой знака; nil (слой знака не задан
+// или не найден) - слой объектов не меняется
+function TInstPointsFrame.ObjectsLayer(ZV: TZnakView): TResource;
+begin
+ Result := nil;
+ if (TwgForm <> nil) and (ZV.znakLayer <> '') then Result := TwgForm.LayerTable.LayerName[AnsiString(ZV.znakLayer)];
+end;
+
+// у объекта другой знак (свойство UserPropName) - знак будет применен
+function TInstPointsFrame.ZnakDiffers(Obj: TObject; ZV: TZnakView): Boolean;
+begin
+ Result := string(TTD(Obj).GetProperty(AnsiString(UserPropName))) <> IntToStr(ZV.znakNum);
+end;
+
+// знак меняется у точек без блока (TDotText - надписи)
+function TInstPointsFrame.AcceptObject(Obj: TObject): Boolean;
+begin
+ Result := (Obj is TPointDot) and not (Obj is TDotText) and (TPointDot(Obj).userObj = nil);
+end;
+
+procedure TInstPointsFrame.ApplyZnak(Obj: TObject; ZV: TZnakView);
+begin
+ TTD(Obj).SetProperty(AnsiString(UserPropName), AnsiString(IntToStr(ZV.znakNum)));
+end;
+
+// номер выбранного знака; -1 - знак не выбран (знак по слою)
+function TInstPointsFrame.SelectedZnakNum: Integer;
+begin
+ Result := -1;
+ if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC.TabIndex < 0) then exit;
+ Result := Group.Group[TC.TabIndex].Item[CB.ItemIndex].znakNum;
+end;
+
+// флажок cbActivate («активировать слой при выборе»): выделенные объекты при
+// смене знака переносятся в слой знака
+function TInstPointsFrame.LayerToObjects: Boolean;
+begin
+ Result := (pnlTools <> nil) and pnlTools.Visible and (cbActivate <> nil) and cbActivate.Enabled and cbActivate.IsChecked;
+end;
+
+procedure TInstPointsFrame.DoZnakSelected;
+begin
+ if Assigned(OnZnakSelected) then OnZnakSelected(Self);
+end;
+
+// кнопки установки знаков: Tag - код операции objTopo32 (mp_SetP = 1,
+// mp_RotateP = 2, mp_SetPAttr = 3, mp_SetPPerLine = 5)
+procedure TInstPointsFrame.sbSetPointClick(Sender: TObject);
+begin
+ if Assigned(OnTool) then OnTool(Self, TComponent(Sender).Tag);
 end;
 
 procedure TInstPointsFrame.EnsureSelectedTileVisible;
@@ -788,6 +915,11 @@ begin
  if Button <> TMouseButton.mbLeft then Exit;
  if not FDragScaleActive then Exit;
  DragScaleCommit;
+end;
+
+function TInstPointsFrame.UserPropName: String;
+begin
+ Result := 'Знак';
 end;
 
 procedure TInstPointsFrame.SBMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
@@ -946,4 +1078,7 @@ begin
  end;
 end;
 
+initialization
+finalization
+ FreeAndNil(GTileTypefaces);
 end.

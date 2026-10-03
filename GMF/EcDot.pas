@@ -77,6 +77,14 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
 
   { TPointDot }
 
+// параметры, от которых зависят габариты точки
+  TGabaritesKey = record
+   X, Y: Double;
+   Ugol, XKoef, YKoef, Koef, Stretch: Single;
+   What: SmallInt;
+   UserObj, Props: Pointer;
+  end;
+
   TPointDot=class(TDot)
   private
     fSelector:TSelector;
@@ -136,6 +144,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
      FModified: Boolean;
      FDrawerObject: TObject;
      Captured: Boolean;
+     FGabValid: Boolean; // габариты (Sect, BlockTextBitmaps) рассчитаны для FGabKey
+     FGabKey: TGabaritesKey;
        Function  GetSelector:TSelector;override;
        Procedure SetSelector(S:TSelector);override;
        Constructor Create(X,Y:Extended;W:SmallInt);
@@ -226,6 +236,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
  //
      procedure DrawTwgBitmapBounds(const Drawer: TogsDrawer); override;
      function PoinInTwgBitmaps(X, Y: Double): boolean; override;
+     function GetGabaritesKey: TGabaritesKey;
+     procedure InvalidateGabarites;
    //
      property isCaptured: Boolean read GetCaptured write SetCaptured;
   end;
@@ -251,6 +263,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
 
 type
   TPointClass = class of TPointDot;
+
+ function SameGabaritesKey(const A, B: TGabaritesKey): Boolean;
 
 var FTest:TextFile;
 {-----------------------------------------------------------------------}
@@ -609,6 +623,11 @@ begin
   GetDist:=sqrt(sqr(XDot-x)+sqr(YDot-y));
 end;
 
+function SameGabaritesKey(const A, B: TGabaritesKey): Boolean;
+begin
+ Result := (A.X = B.X) and (A.Y = B.Y) and (A.Ugol = B.Ugol) and (A.XKoef = B.XKoef) and (A.YKoef = B.YKoef) and (A.Koef = B.Koef) and (A.Stretch = B.Stretch) and (A.What = B.What) and (A.UserObj = B.UserObj) and (A.Props = B.Props);
+end;
+
 procedure TPointDot.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection;
   FontColEx: TFontManagerEx; AlwaysShowAttr: Boolean);
 Label 1;
@@ -684,10 +703,16 @@ begin
  end;
 end;
 procedure DrawGabariteSect;
+var Key: TGabaritesKey;
 begin
  if Drawer = nil then
   Exit;
+// габариты пересчитываем только при изменении положения, угла, масштаба или знака
+ Key := GetGabaritesKey;
+ if FGabValid and SameGabaritesKey(Key, FGabKey) then exit;
  GetGabaritesForDraw(nil, Drawer);
+ FGabKey := Key;
+ FGabValid := True;
 exit;
  if BlockTextBitmaps<>nil then begin
   BlockTextBitmaps.DrawSect(Drawer, $FFFF0000, $FF000000, 0.03);
@@ -1776,6 +1801,7 @@ function TPointDot.ResetParams(ParamID: Integer;Params: Pointer):boolean;
 var I2: Integer; PD2: TPointDot; B2: Byte;
 begin
  Result:=False;
+ FGabValid := False;
  case ParamID of
   1:If userObj<>nil then begin
      If userObj.objType = TWG_Block then
@@ -1903,6 +1929,8 @@ end;
 procedure TPointDot.SetModified(AValue: Boolean);
 begin
  FModified := AValue;
+// изменен объект - габариты пересчитываются (знак, блок или надписи могли смениться)
+ if AValue then FGabValid := False;
   if AValue and (FDrawerObject <> nil) then
   begin
    FDrawerObject.Free;
@@ -1945,6 +1973,25 @@ begin
  if FDrawerObject = nil then exit;
  SkObj := FDrawerObject as TogsSkiaObject;
  SkObj.Draw(ACanvas, LOD1_INDEX);
+end;
+
+function TPointDot.GetGabaritesKey: TGabaritesKey;
+begin
+ Result.X := XDot;
+ Result.Y := YDot;
+ Result.Ugol := Ugol;
+ Result.XKoef := XKoef;
+ Result.YKoef := YKoef;
+ Result.Koef := Koef;
+ Result.Stretch := blockStretch;
+ Result.What := What;
+ Result.UserObj := userObj;
+ Result.Props := Properties;
+end;
+
+procedure TPointDot.InvalidateGabarites;
+begin
+ FGabValid := False;
 end;
 
 procedure TPointDot.DrawTwgBitmapBounds(const Drawer: TogsDrawer);

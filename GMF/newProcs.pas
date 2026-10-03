@@ -52,6 +52,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  Function  GReadVCLProp(Name:AnsiString;obj:TComponent):boolean;
 // Цвет
  Function RGBToCol(R,G,B:Byte):TColorRef;
+ Function ColorRefToAlpha(C:Integer):Integer; // цвет из файла (COLORREF $00BBGGRR) в TAlphaColor
  Function GetR(Color:TColor):Byte;
  Function GetG(Color:TColor):Byte;
  Function GetB(Color:TColor):Byte;
@@ -450,6 +451,16 @@ end;
 function RGBToCol(R, G, B: Byte): TColorRef;
 begin
  Result := MakeColor(R, G, B);
+end;
+
+// цвета линий слоя (TResource.LineColor) и свойств 'Цвет'/'Цвет заливки' в
+// файлах старой программы - Windows COLORREF ($00BBGGRR, без альфы); Skia
+// ждет TAlphaColor ($AARRGGBB). Цвет с альфой (TAlphaColor, например из
+// редактора цвета) возвращается без изменений
+function ColorRefToAlpha(C: Integer): Integer;
+begin
+ if (Cardinal(C) shr 24) <> 0 then exit(C);
+ Result := Integer($FF000000 or ((Cardinal(C) and $FF) shl 16) or (Cardinal(C) and $FF00) or ((Cardinal(C) shr 16) and $FF));
 end;
 
 function GetR(Color: TColor): Byte;

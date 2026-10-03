@@ -338,6 +338,12 @@ begin
     r := 1;
  //
   penColor := TAlphaColor(Color);
+// маркер рисуется на live-слое, который смешивается со сценой в режиме
+// Difference: на светлом фоне цвет инвертируется (красный становился голубым).
+// Рисуем инвертированным цветом, чтобы на фоне окна маркер был своего цвета
+// (как notColor в GDI-версии Draw)
+  if TSelector(Selector).GlobalSettings.Settings.gsWindowColor <> TAlphaColors.Black then
+    penColor := $FF000000 or (not penColor and $00FFFFFF);
  //
   Sel := TSelector(Selector);
   if mWidth > 0 then

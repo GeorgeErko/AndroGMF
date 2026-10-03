@@ -4,10 +4,10 @@ interface
 
 uses Collect, EcDot, WPTForm12, WPTwigs, Classes, SysUtils, newProcs, System.Types,
      System.Skia, System.UITypes, ogcBasic, ogcCaptureIntf, ogcDrawerSkia,
-     TwgDraw, ogcMarker;
+     TwgDraw, ogcMarker, ogcPolyPolyline;
 
 type
- TCapturePt = class
+ TCapturePt = class(TTwgObject)
  private
   FBaseDot: TDot;
   FMoveDot: TDot;
@@ -57,6 +57,7 @@ type
   function SelectRectWorld(const Rect: TSect; Mode: TogsRectSelectMode; const Filter: TogsCaptureFilter): Integer;
   function GetPrimitiveBoundsWorld(const PrimitiveId: TogsPrimitiveId; out Bounds: TSect): Boolean;
   function getLastCaptureRec: TCaptureRec;
+  function HitTestPointTimer(const CRec: TCaptureRec; EpsWorld: Double; Dest: TPolyPolyline): Integer;
   procedure PainSelection(const Canvas: ISkCanvas);
   function ClearSelection: boolean;
  //
@@ -68,7 +69,7 @@ type
 
 implementation
 
-uses SelectedObjects, ecLot, ecDot2, Writer, FramePropEditor;
+uses SelectedObjects, ecLot, ecDot2, Writer, FramePropEditor, objOutline;
 
 { TCapturePt }
 
@@ -274,7 +275,8 @@ function TForm2.FillPtList(Obj: TTD; var R: TRectF): TPolyPolyline;
 var I, J: Integer;
     PP: TPolyPolyLine;
     Lot: TLot; Twig: TTwig;
-    List: Tlist;
+    D: TDot;
+    Angle: Double;
 begin
  Result := TPolyPolyline.Create;
  if Obj is TLot then begin
@@ -282,15 +284,19 @@ begin
   R.Left := TLot(Obj).XMin; R.Top := TLot(Obj).YMin; R.Right := TLot(Obj).XMax; R.Bottom := TLot(Obj).YMax;
   Lot := TLot(Obj);
   for I := 0 to Lot.Coord.Count - 1 do begin
-   List := Result.AddPolyline;
+   Result.AddPolyline;
    Twig := Lot.GetTwig(Twigs, I);
-   For J := 0 to Twig.Coord.Count - 1 do  List.Add(Twig.Coord[J]);
+   For J := 0 to Twig.Coord.Count - 1 do begin
+    D := TDot(Twig.Coord[J]);
+    Result.AddPoint(I, D.XDot, D.YDot, D);
+   end;
   end;
  end else begin
   R.Left := TDot(Obj).XDot; R.Top := TDot(Obj).YDot; R.Right := TDot(Obj).XDot; R.Bottom := TDot(Obj).YDot;
  // полилиния будет состоять из одной точки
-  List := Result.AddPolyline;
-  List.Add(TDot(Obj));
+  if Obj is TPointDot then Angle := TPointDot(Obj).Ugol else Angle := 0;
+  Result.AddPolyline;
+  Result.AddPoint(0, TDot(Obj).XDot, TDot(Obj).YDot, Obj, Angle);
  end;
 end;
 
@@ -419,6 +425,43 @@ begin
  end;
 end;
 
+function TForm2.HitTestPointTimer(const CRec: TCaptureRec; EpsWorld: Double; Dest: TPolyPolyline): Integer;
+var Sel: TSelectedObjects;
+    Obj: TObject;
+    I: Integer;
+    R: TRectF;
+procedure AddFrom(AObj: TTD);
+var ptList: TPolyPolyline;
+begin
+ ptList := FillPtList(AObj, R);
+ if ptList = nil then exit;
+ try
+  ptList.ExtractAtPoint(CRec.XCapture, CRec.YCapture, EpsWorld, Dest);
+ finally
+  ptList.Free;
+ end;
+end;
+begin
+ Result := 0;
+ if Dest = nil then exit;
+ Dest.ClearAll;
+ Obj := TObject(CRec.resObject);
+// отдельно стоящая точка
+ if Obj is TPointDot then begin
+  Dest.AddPolyline;
+  Dest.AddPoint(0, TPointDot(Obj).XDot, TPointDot(Obj).YDot, Obj, TPointDot(Obj).Ugol);
+  Result := Dest.PolylineCount;
+  exit;
+ end;
+// полилинии выделенных объектов и объекта захвата
+ Sel := TSelectedObjects(FObjects);
+ if Sel <> nil then
+  for I := 0 to Sel.Count - 1 do
+   if TObject(Sel[I]) is TTD then AddFrom(TTD(Sel[I]));
+ if (Obj is TTD) and ((Sel = nil) or (Sel.IndexOf(Obj) < 0)) then AddFrom(TTD(Obj));
+ Result := Dest.PolylineCount;
+end;
+
 function TForm2.GetPrimitiveBoundsWorld(const PrimitiveId: TogsPrimitiveId; out Bounds: TSect): Boolean;
 begin
  Bounds := Default(TSect);
@@ -436,9 +479,6 @@ var Sel: TSelectedObjects;
     P: Pointer;
     Obj: TTD;
     SkObj: TogsSkiaObject;
-    Pic: ISkPicture;
-    R: TRectF;
-    ptList:TPolyPolyline;
 begin
  if (Canvas = nil) or (FObjects = nil) then exit;
 // R := Canvas.GetLocalClipBounds;
@@ -449,19 +489,20 @@ begin
     Obj := TTD(P);
     SkObj := Obj.DrawerObject as TogsSkiaObject;
     if SkObj = nil then continue;
-    Pic := SkObj.Pictures[LOD1_INDEX];
-    if Pic = nil then continue;
-    ptList := FillPtList(Obj, R);
-    if ptList = nil then continue;
-    //OgsDrawPictureEffect(Canvas, R, Pic, $FFFFCC00, pemTintSrcATop, 110);
+   // тонировка картинки объекта в слое размером с его габариты (BoundsWorld)
+    OgsDrawPictureEffect(Canvas, SkObj.BoundsWorld, SkObj.Pictures[LOD1_INDEX], $FFFFCC00, pemTintSrcATop, 190);
     //continue;
-    OgsDrawPictureEffectLot(Canvas, ptList,
-           TAlphaColorRec.Maroon, 2,
-           TAlphaColorRec.Blue, 1.5,
-           TAlphaColorRec.Aqua,
-           Selector.GetScale, 4, rdmFillStroke);
-    //
-    ptList.Free;
+   // контур строится один раз и хранится в SkObj, FillPtList больше не нужен
+    ogsEnsureOutline(Obj, Twigs);
+    ogsDrawOutline(Canvas, SkObj, TAlphaColorRec.Blue, 2, TAlphaColorRec.Blue, 1.5, TAlphaColorRec.Aqua, Selector.GetScale, 4);
+   // контур красным 2 px, вершины белые с красной обводкой
+  //  ogsDrawOutline(Canvas, SkObj, TAlphaColorRec.Red, 2, TAlphaColorRec.Red, 1.5, TAlphaColorRec.White, Selector.GetScale, 4);
+   // точечные объекты: границы повернутых габаритов (текст, знак, блок с подписями)
+ {   if Obj is DotText then begin
+     if TDotText(Obj).TextBitmap <> nil then TDotText(Obj).TextBitmap.DrawBounds(Canvas, TAlphaColorRec.Blue, 1.5);
+    end else if (Obj is TPointDot) and (TPointDot(Obj).BlockTextBitmaps <> nil) then
+     TPointDot(Obj).BlockTextBitmaps.DrawBounds(Canvas, TAlphaColorRec.Blue, TAlphaColorRec.Maroon, 1.5);
+   }
    end;
   end;
 end;

@@ -34,6 +34,7 @@ type
     FOverlayLiveImage: ISkImage;
     FOverlayStaticDirty: Boolean;
     FOverlayLiveDirty: Boolean;
+    FLivePainter: TSkPaintBox; // live-слой поверх SkPainter: маркер, рамка, резиновые линии
     FLastDestW: Single;
     FLastDestH: Single;
     FLastAbsScale: Single;
@@ -53,6 +54,7 @@ type
     procedure SkPainterResize(Sender: TObject);
   //
     procedure RenderSceneToBackbufferSkia;
+    procedure SetPrimitiveBounds(Obj: TObject);
   //
     procedure btnOpenClickSkia(Sender: TObject);
     procedure btnLocalOpenClickSkia(Sender: TObject);
@@ -60,6 +62,7 @@ type
     procedure btnPlusClickSkia(Sender: TObject);
   //
     procedure SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
+    procedure LivePainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
   //
     procedure ResetInteractionState;
    //
@@ -78,6 +81,7 @@ type
     procedure InvalidateOverlayStatic;
     procedure InvalidateOverlayLive;
     procedure InvalidateOverlayAll;
+    procedure RepaintLive;
   // события мыши
     procedure SkPainterMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single); virtual;
     procedure SkPainterMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single); virtual;
@@ -99,6 +103,8 @@ type
     MousePos: TPointF;
     procedure UpdateStatusGeo(const X, Y: Single; Hint: String);
     procedure OpenGmfFileSkia(const LocalPath: string); virtual;
+   // карта перемещается мышью (нажата кнопка над картой, перемещение начато)
+    property IsPanning: Boolean read PanActive;
   public
     destructor Destroy; override;
     procedure OpenGmfFile(const LocalPath: string); override;
@@ -115,7 +121,7 @@ var
 
 implementation
 
-uses Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager,
+uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager,
      EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
      WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw
 {$IFDEF ANDROID}
@@ -150,12 +156,31 @@ begin
   SkPainter.OnMouseMove := SkPainterMouseMove;
   SkPainter.OnMouseUp := SkPainterMouseUp;
   SkPainter.OnMouseLeave := SkPainterMouseLeave;
+{$IFDEF MSWINDOWS}
+// над картой - системный курсор-крестик (на Android курсора нет)
+  SkPainter.Cursor := crCross;
+{$ENDIF}
   SkPainter.OnMouseWheel := SkPainterMouseWheel;
   SkPainter.OnGesture := SkPainterGesture;
   SkPainter.OnDblClick := SkPainterDblClick;
   SkPainter.OnDraw := SkPainterDraw;
   SkPainter.Touch.InteractiveGestures := [TInteractiveGesture.Zoom];
-  GlobalUseVulkan := True;
+// флаги GPU выставляются в .dpr до Application.Initialize
+// сцена рендерится в буфер контрола; OnDraw вызывается только по Redraw.
+// Never и Raster на GPU-канве (TGrCanvas) рисуют прямо в канву формы без кэша,
+// а Skia-канва формы не поддерживает SupportClipRects: любая инвалидация
+// любого контрола перерисовывает всю форму вместе со сценой. Кэш дает только Always
+ SkPainter.DrawCacheKind := TSkDrawCacheKind.Always;
+// live-слой: отдельный контрол поверх сцены, рисует прямо в канву формы (Never)
+// на каждой перерисовке; сцена при этом выводится из буфера SkPainter
+ if FLivePainter = nil then begin
+  FLivePainter := TSkPaintBox.Create(Self);
+  FLivePainter.Parent := SkPainter;
+  FLivePainter.Align := TAlignLayout.Client;
+  FLivePainter.HitTest := False;
+  FLivePainter.DrawCacheKind := TSkDrawCacheKind.Never;
+  FLivePainter.OnDraw := LivePainterDraw;
+ end;
 end;
 
 procedure TMainFormSkia.EnsureIndicator;
@@ -228,8 +253,8 @@ begin
     for I := 0 to TwgForm.Twigs.AnyCount - 1 do
     begin
       PD := TwgForm.Twigs.AAt(I, B);
-      if B = TWG_Point then
-        PD.Modified := True;
+    //  if B = TWG_Point then
+      PD.Modified := True;
     end;
   end;
 end;
@@ -582,6 +607,8 @@ begin
     begin
       FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
       Selector := TSelector.Create(FDrawerSkia);
+     // текущий селектор для модулей, перенесенных из Geomaster (Selector32)
+      SetGSelector(Selector);
       FDrawerSkia.ogsSelector := Selector;
       FDrawerSkia.Name := 'DrawerSkia';
       Selector.Name := 'Selector';
@@ -731,60 +758,12 @@ begin
   WheelZoomTimer(nil);
 end;
 
+// объект добавлен, изменен или удален: картинка объекта (DrawerObject)
+// сбрасывается и перезаписывается при следующей отрисовке сцены
 procedure TMainFormSkia.UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
-var
- DrawIndex, I: Integer;
- B: Byte;
- PP: Pointer;
- Lot: TLot;
- PPoint: TPointDot;
- SceneRect: TRectF;
- DummyRecorder: ISkPictureRecorder;
- DummyCanvas: ISkCanvas;
- PrevWorld: Boolean;
- SkObj: TObject;
 begin
- if (FDrawerSkia = nil) or (Selector = nil) or (TwgForm = nil) or (Obj = nil) then Exit;
-
- case UpdateSceneMode of
-  usmDelete:
-   if Obj is TTD then
-   begin
-    SkObj := TTD(Obj).DrawerObject;
-    if (SkObj is TogsSkiaObject) then
-      SkObj.Free;
-    TTD(Obj).DrawerObject := nil;
-    ResetInteractionState;
-    BaseScale := 0;
-    if SkPainter <> nil then SkPainter.Redraw;
-   end;
-
-  usmModify:
-   begin
-    UpdateScene(usmDelete, Obj);
-    UpdateScene(usmAdd, Obj);
-   end;
-
-  usmAdd:
-   begin
-    if (Obj is TTD) and (TTD(Obj).DrawerObject <> nil) then Exit;
-
-    if (Selector.GlobalRect <> nil) and Selector.GlobalRect.isRect then
-     SceneRect := TRectF.Create(Single(Selector.GlobalRect.XMin - 1000), Single(Selector.GlobalRect.YMin - 1000),
-       Single(Selector.GlobalRect.XMax + 1000), Single(Selector.GlobalRect.YMax + 1000))
-    else if (Selector.ActiveRect <> nil) and Selector.ActiveRect.isRect then
-     SceneRect := TRectF.Create(Single(Selector.ActiveRect.XMin - 1000), Single(Selector.ActiveRect.YMin - 1000),
-       Single(Selector.ActiveRect.XMax + 1000), Single(Selector.ActiveRect.YMax + 1000))
-    else
-     SceneRect := TRectF.Create(-10000000, -10000000, 10000000, 10000000);
-
-    ResetInteractionState;
-    BaseScale := 0;
-    if Obj is TTD then
-      TTD(Obj).Modified := True;
-    if SkPainter <> nil then SkPainter.Redraw;
-   end;
- end;
+ if Obj is TTD then TTD(Obj).Modified := True;
+ if SkPainter <> nil then SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.UpdateStatusGeo(const X, Y: Single; Hint: String);
@@ -834,7 +813,6 @@ var
   SkObj: TObject;
   StartTick, ElapsedMs: UInt64;
 begin
-// WriteIn(['StartDraw32']);
   Error := 1;
   if FDrawerSkia = nil then
     Exit;
@@ -843,6 +821,7 @@ begin
   if not objectRepaintAccess then
     Exit;
   StartTick := TThread.GetTickCount64;
+  WriteIn(['StartDraw32===========',StartTick ]);
   try
     Total := 0;
     if TwgForm <> nil then
@@ -883,26 +862,26 @@ begin
                     try
                     // GGraphSet.ViewZnaks := 0;
                     //Writein(['l.draw32=', 1, i]);
-
                       Lot.Draw32(TwgForm.Twigs);
                     //Writein(['l.draw32=', 2]);
                     finally
                       FDrawerSkia.EndPrimitive;
                     end;
+                    Lot.SetMinMax(TwgForm.Twigs);
+                    SetPrimitiveBounds(Lot);
                     Lot.SkiaDraw(FDrawerSkia.SkCanvas);
                   end;
                 end;
               except
                 Exit;
               end;
-
               Prog := Prog + 1;
             end;
           end;
         end;
         ElapsedMs := TThread.GetTickCount64 - StartTick;
         StartTick :=TThread.GetTickCount64;
-      //  WriteIn(['RenderSceneToBackbufferSkia ms=', (ElapsedMs mod (1000 * 60)) div 1000 ]);
+        WriteIn(['RenderSceneToBackbufferSkia lots s=', ElapsedMs / 1000]);
         for I := 0 to TwgForm.Twigs.AnyCount - 1 do
         begin
           PP := TwgForm.Twigs.AAt(I, B);
@@ -923,16 +902,18 @@ begin
                  //  WriteIn(['nv', i]);
               end
               else
-              If not ({(PPoint is TDotText) or (PPoint.userObj <> nil)}False) then  begin
+              If not False {PPoint.isCaptured} {((PPoint is TDotText) or (PPoint.userObj <> nil))} then  begin
                 FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
                 try
-                //WriteIn(['p1=',I]);
+                // WriteIn(['p1---',I]);
                  PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx);
                 // WriteIn(['p2=',I]);
                 finally
                   FDrawerSkia.EndPrimitive;
                 end;
-                PPoint.DrawSelected(FDrawerSkia);
+              // LOD2 пока не используется, а TDotText.DrawSelected повторно выполняет Draw32
+              //  PPoint.DrawSelected(FDrawerSkia);
+                SetPrimitiveBounds(PPoint);
                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
               end;
             except
@@ -954,8 +935,76 @@ begin
     BaseScale := Selector.GetScale;
   finally
     ElapsedMs := TThread.GetTickCount64 - StartTick;
-   // WriteIn(['RenderSceneToBackbufferSkia ms=', (ElapsedMs mod (1000 * 60)) div 1000 ]);
+   WriteIn(['RenderScene points s=', ElapsedMs / 1000]);
   end;
+end;
+
+procedure TMainFormSkia.SetPrimitiveBounds(Obj: TObject);
+const MARGIN_PIX = 64;       // запас контура на толщину линий и знаки, пикселы
+      MARGIN_POINT_MIN = 0.05; // наименьший запас точечного объекта, мировые единицы
+var SkObj: TObject;
+    XMin, YMin, XMax, YMax, Margin, Size: Double;
+    HasBounds: Boolean;
+    Lot: TLot;
+    Twig: TTwig;
+    PD: TPointDot;
+    I, J: Integer;
+procedure AddPoint(X, Y: Double);
+begin
+ if not HasBounds then begin
+  XMin := X; XMax := X; YMin := Y; YMax := Y;
+  HasBounds := True;
+  exit;
+ end;
+ if X < XMin then XMin := X;
+ if X > XMax then XMax := X;
+ if Y < YMin then YMin := Y;
+ if Y > YMax then YMax := Y;
+end;
+procedure AddSect(const S: TSect);
+begin
+ if (S.XMin = S.XMax) and (S.YMin = S.YMax) then exit;
+ AddPoint(S.XMin, S.YMin);
+ AddPoint(S.XMax, S.YMax);
+end;
+begin
+ if (Obj = nil) or (Selector = nil) or (Selector.GetScale <= 0) or (TwgForm = nil) then exit;
+ SkObj := TTD(Obj).DrawerObject;
+ if not (SkObj is TogsSkiaObject) then exit;
+ HasBounds := False;
+ if Obj is TLot then begin
+  Lot := TLot(Obj);
+ // габариты участка; если не рассчитаны (SetMinMax не вызывался) - по вершинам ветвей
+  if (Lot.XMin <= Lot.XMax) and (Lot.YMin <= Lot.YMax) then begin
+   AddPoint(Lot.XMin, Lot.YMin);
+   AddPoint(Lot.XMax, Lot.YMax);
+  end else
+   for I := 0 to Lot.Coord.Count - 1 do begin
+    Twig := Lot.GetTwig(TwgForm.Twigs, I);
+    if Twig = nil then continue;
+    for J := 0 to Twig.Coord.Count - 1 do AddPoint(Twig[J].XDot, Twig[J].YDot);
+   end;
+ end else if Obj is TPointDot then begin
+  PD := TPointDot(Obj);
+  AddSect(PD.Sect);
+  if PD.BlockTextBitmaps <> nil then AddSect(PD.BlockTextBitmaps.Sect);
+  if (PD is TDotText) and (TDotText(PD).TextBitmap <> nil) then AddSect(TDotText(PD).TextBitmap.Sect);
+ // габариты неизвестны - объект не отсекаем (остаются границы всего мира)
+  if not HasBounds then exit;
+  AddPoint(PD.XDot, PD.YDot);
+ end;
+ if not HasBounds then exit;
+ Size := XMax - XMin;
+ if YMax - YMin > Size then Size := YMax - YMin;
+// у точечного объекта габариты уже включают знак и надписи - запас только от
+// размера объекта; запас в пикселах считался бы по масштабу записи картинки
+// (обычно мелкому) и раздувал границы при приближении
+ if Obj is TPointDot then begin
+  Margin := 0.1 * Size;
+  if Margin < MARGIN_POINT_MIN then Margin := MARGIN_POINT_MIN;
+ end else
+  Margin := MARGIN_PIX / Selector.GetScale + 0.1 * Size;
+ TogsSkiaObject(SkObj).BoundsWorld := TRectF.Create(XMin - Margin, YMin - Margin, XMax + Margin, YMax + Margin);
 end;
 
 procedure TMainFormSkia.ResetInteractionState;
@@ -992,15 +1041,60 @@ end;
 procedure TMainFormSkia.DoInvalidateOverlayLive;
 begin
   InvalidateOverlayLive;
-  if SkPainter <> nil then
-    SkPainter.Redraw;
+ RepaintLive;
+//  if SkPainter <> nil then
+//    SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.RepaintLive;
+begin
+ if FLivePainter <> nil then FLivePainter.Repaint;
+end;
+
+procedure TMainFormSkia.LivePainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
+var ViewScale, Tx, Ty: Single;
+    LayerPaint: ISkPaint;
+begin
+ if (ACanvas = nil) or (Selector = nil) or (Selector.GlobalRect = nil) then exit;
+ if InteractionBitmapActive then exit;
+ ViewScale := Single(Selector.GetScale);
+ if ViewScale <= 0 then exit;
+// та же матрица вида, что у сцены в SkPainterDraw
+ Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
+ Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
+ ACanvas.Save;
+ try
+ // канва - это канва всей формы: ограничиваем границами контрола
+  ACanvas.ClipRect(ADest);
+ // статический оверлей (выделение): готовое изображение, пересобирается только после сброса
+  EnsureOverlayImages;
+  if FOverlayStaticImage <> nil then begin
+   LayerPaint := TSkPaint.Create;
+   LayerPaint.AntiAlias := True;
+   ACanvas.DrawImageRect(FOverlayStaticImage, ADest, LayerPaint);
+  end;
+ // слой смешивается со сценой в режиме Difference, как раньше изображение live-слоя
+  LayerPaint := TSkPaint.Create;
+  LayerPaint.Blender := TSkBlender.MakeMode(TSkBlendMode.Difference);
+  ACanvas.SaveLayer(ADest, LayerPaint);
+  try
+   ACanvas.Translate(Tx, Ty);
+   ACanvas.Scale(ViewScale, ViewScale);
+   PaintOverlayLive(ACanvas, ADest);
+  finally
+   ACanvas.Restore;
+  end;
+ finally
+  ACanvas.Restore;
+ end;
 end;
 
 procedure TMainFormSkia.DoInvalidateOverlayStatic;
 begin
   InvalidateOverlayStatic;
-  if SkPainter <> nil then
-    SkPainter.Redraw;
+ RepaintLive;
+//  if SkPainter <> nil then
+//    SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.PaintOverlayStatic(const ACanvas: ISkCanvas; const Rect: TRectF);
@@ -1095,11 +1189,8 @@ begin
     FOverlayStaticDirty := False;
   end;
 
-  if FOverlayLiveDirty then
-  begin
-    FOverlayLiveImage := BuildOverlayImage(False);
-    FOverlayLiveDirty := False;
-  end;
+// live-слой рисует FLivePainter (LivePainterDraw), здесь он не строится
+  FOverlayLiveDirty := False;
 end;
 
 procedure TMainFormSkia.SetSelectorParams;
@@ -1418,16 +1509,21 @@ var
   DstRect: TRectF;
   T0, Dt: UInt64;
   RAct: TogsRect;
-  OverlayPaint: ISkPaint;
   WorldRect: TRectF;
   PrevWorld: Boolean;
 const
   DebugDirectSkia = false;
+var Clipped: Boolean;
 begin
   T0 := TThread.GetTickCount64;
+  Clipped := False;
   try
 //  WriteIn(['SkPainterDraw enter', ' Dirty=', SceneDirty, ' PicNil=', FCachedPicture = nil, ' Cnt=', Iff(FDrawerSkia <> nil, FDrawerSkia.SkiaList.Count, -1), ' Dest=', ADest.Width, 'x', ADest.Height]);
     if FDrawerSkia = nil then Exit;
+// при прямой отрисовке канва - это канва всей формы: ограничиваем ее границами контрола
+  ACanvas.Save;
+  Clipped := True;
+  ACanvas.ClipRect(ADest);
     if SkPainter <> nil then
       LastCanvasScale := SkPainter.AbsoluteScale.X
     else
@@ -1456,8 +1552,7 @@ begin
       end;
     if ACanvas <> nil then ACanvas.Clear(TAlphaColors.White);
 
-    EnsureOverlayImages;
-
+  // оверлеи (статический и live) рисует FLivePainter - LivePainterDraw
     if not InteractionBitmapActive then PaintBefore(ACanvas, ADest);
 
     if (Selector <> nil) then
@@ -1477,7 +1572,7 @@ begin
             Single(Selector.GlobalRect.YMin),
             Single(Selector.GlobalRect.XMax),
             Single(Selector.GlobalRect.YMax));
-          WorldRect.Inflate(1000, 1000);
+         // WorldRect.Inflate(1000, 1000);
 
           PrevWorld := FDrawerSkia.UseWorldCoords;
           FDrawerSkia.UseWorldCoords := True;
@@ -1497,21 +1592,8 @@ begin
       end;
     end;
 
-    if (ACanvas <> nil) then
-    begin
-      OverlayPaint := TSkPaint.Create;
-      OverlayPaint.AntiAlias := True;
-      if FOverlayStaticImage <> nil then
-        ACanvas.DrawImageRect(FOverlayStaticImage, ADest, OverlayPaint);
-      if FOverlayLiveImage <> nil then
-      begin
-        OverlayPaint := TSkPaint.Create;
-        OverlayPaint.AntiAlias := True;
-        OverlayPaint.Blender := TSkBlender.MakeMode(TSkBlendMode.Difference);
-        ACanvas.DrawImageRect(FOverlayLiveImage, ADest, OverlayPaint);
-      end;
-    end;
   finally
+  if Clipped then ACanvas.Restore;
     Dt := TThread.GetTickCount64 - T0;
   end;
 end;

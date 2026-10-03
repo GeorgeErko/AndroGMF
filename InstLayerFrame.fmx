@@ -55,7 +55,6 @@ object LayerFrame: TLayerFrame
         Size.PlatformDefault = False
         TabOrder = 0
         OnMouseUp = TreeLayersMouseUp
-        OnChange = TreeLayersChange
         Viewport.Width = 100.000000000000000000
         Viewport.Height = 100.000000000000000000
       end

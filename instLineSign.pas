@@ -13,6 +13,10 @@ uses
 
 type
   TInstLinesFrame = class(TInstPointsFrame)
+   // кнопки старого instLineSign: Tag - код операции objTopology32
+   // (topo_RotateTwig = 603, topo_MoveOnTwig = 604), обработчик - sbSetPointClick
+    sbLineRotate: TSpeedButton;
+    sbLineMove: TSpeedButton;
     procedure btnMinusClick(Sender: TObject);
   private
    FVSB: TVertScrollBox;
@@ -41,12 +45,14 @@ type
    procedure TileDraw(Sender: TObject; const Canvas: ISkCanvas; const Dest: TRectF; const Opacity: Single); override;
    procedure LoadAllLocalScalesFromRegistry; override;
    procedure SaveAllLocalScalesToRegistry; override;
+   function UserPropName: String; override;
+   function AcceptObject(Obj: TObject): Boolean; override;
   end;
 
 var
   InstLinesFrame: TInstLinesFrame;
 
-implementation uses ogcBasic, types_dimano, newProcs;
+implementation uses ogcBasic, types_dimano, newProcs, EcLot;
 
 {$R *.fmx}
 
@@ -189,6 +195,18 @@ begin
   GWriteFloat(K, GL.LocalScale);
  end;
  FDirtyScales.Clear;
+end;
+
+// выбранный знак - свойство 'Тип линии' (TinstLines.CBPointZnakClick)
+function TInstLinesFrame.UserPropName: String;
+begin
+ Result := 'Тип линии';
+end;
+
+// тип линии меняется у линейных контуров
+function TInstLinesFrame.AcceptObject(Obj: TObject): Boolean;
+begin
+ Result := (Obj is TLot) and (TLot(Obj).TypeLot = 1);
 end;
 
 function TInstLinesFrame.Group: TGroupCollection;
@@ -397,6 +415,7 @@ begin
    T.Position.Y := Idx * RowHeight;
    T.HitTest := True;
    T.Tag := Idx;
+   T.DrawCacheKind := TSkDrawCacheKind.Always;
    T.OnDraw := TileDraw;
    T.OnClick := TileClick;
    T.OnMouseDown := TileMouseDown;

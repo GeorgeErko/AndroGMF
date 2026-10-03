@@ -1,7 +1,8 @@
 ﻿unit ogcMarker;
 
 interface uses System.Types, System.UITypes, System.Skia, System.Generics.Collections, System.Math,
-     System.Math.Vectors, FMX.TextLayout, FMX.Graphics, Classes, ogcMathUtils, EcDot, ogcBasic;
+     System.Math.Vectors, FMX.TextLayout, FMX.Graphics, Classes, ogcMathUtils, ogcPolyPolyline,
+     ogcBasic;
 
 type
  TogsMarkerType = (
@@ -32,7 +33,9 @@ type
   pemNone,
   pemTintSrcATop,
   pemTintScreen,
-  pemTintModulate
+  pemTintModulate,
+  pemHalo, // цветная обводка вокруг линий и знаков (морфологическое расширение)
+  pemGlow // мягкое свечение вокруг объекта (размытие)
  );
 
  TogsRectDrawMode = (
@@ -40,25 +43,6 @@ type
   rdmFill,
   rdmFillStroke
  );
-
- TPolyPolyline = class(TList)
- private
-  function GetPolylineCount: Integer;
-  function GetPolyline(Index: Integer): TList;
-  function GetPointCount(PolyIndex: Integer): Integer;
-  function GetPoint(PolyIndex, PtIndex: Integer): TDot;
- public
-  destructor Destroy; override;
- //
-  function AddPolyline: TList;
-  procedure AddPoint(PolyIndex: Integer; Pt: TDot);
-  procedure ClearAll;
- //
-  property PolylineCount: Integer read GetPolylineCount;
-  property Polyline[Index: Integer]: TList read GetPolyline;
-  property PointCount[PolyIndex: Integer]: Integer read GetPointCount;
-  property Point[PolyIndex, PtIndex: Integer]: TDot read GetPoint;
- end;
 
  TStickPt = class
  public
@@ -101,7 +85,7 @@ type
   property LineColor: TAlphaColor read FLineColor write FLineColor;
  end;
 
-procedure ogsDrawPictureEffect(const Canvas: ISkCanvas; const ClipRect: TRectF; const Pic: ISkPicture; const OverlayColor: TAlphaColor; const Mode: TogsPictureEffectMode; const OverlayAlpha: Byte = $60);
+procedure ogsDrawPictureEffect(const Canvas: ISkCanvas; const ClipRect: TRectF; const Pic: ISkPicture; const OverlayColor: TAlphaColor; const Mode: TogsPictureEffectMode; const OverlayAlpha: Byte = $60; const RadiusPix: Single = 3);
 procedure ogsDrawPictureEffectLot(const Canvas: ISkCanvas; const Points: TPolyPolyline;
   const LineColor: TAlphaColor; const LineWidthPix: Single;
   const RectStrokeColor: TAlphaColor; const RectStrokeWidthPix: Single;
@@ -111,61 +95,6 @@ procedure ogsDrawPictureEffectLot(const Canvas: ISkCanvas; const Points: TPolyPo
 procedure ogsGetPoint(const Points: TPolyPolyline; const Selector: TogsSelector; const X, Y: Double; var Params: TCaptureRec);
 
 implementation uses Writer, System.Skia.API;
-
-{ TPolyPolyline }
-
-destructor TPolyPolyline.Destroy;
-begin
- ClearAll;
- inherited;
-end;
-
-function TPolyPolyline.AddPolyline: TList;
-begin
- Result := TList.Create;
- Add(Result);
-end;
-
-procedure TPolyPolyline.AddPoint(PolyIndex: Integer; Pt: TDot);
-begin
- if Pt = nil then exit;
- GetPolyline(PolyIndex).Add(Pt);
-end;
-
-procedure TPolyPolyline.ClearAll;
-var I, J: Integer;
-    Poly: TList;
-begin
- for I := 0 to Count - 1 do begin
-  Poly := TList(Items[I]);
-  if Poly = nil then continue;
- // не уничтожаем точки из оригинальных примитивов
- // for J := 0 to Poly.Count - 1 do
- //  TDot(Poly[J]).Free;
-  Poly.Free;
- end;
- Clear;
-end;
-
-function TPolyPolyline.GetPolylineCount: Integer;
-begin
- Result := Count;
-end;
-
-function TPolyPolyline.GetPolyline(Index: Integer): TList;
-begin
- Result := TList(Items[Index]);
-end;
-
-function TPolyPolyline.GetPointCount(PolyIndex: Integer): Integer;
-begin
- Result := GetPolyline(PolyIndex).Count;
-end;
-
-function TPolyPolyline.GetPoint(PolyIndex, PtIndex: Integer): TDot;
-begin
- Result := TDot(GetPolyline(PolyIndex)[PtIndex]);
-end;
 
 { TStickPt }
 
@@ -354,39 +283,78 @@ begin
  Result := R.Color;
 end;
 
-procedure ogsDrawPictureEffect(const Canvas: ISkCanvas; const ClipRect: TRectF; const Pic: ISkPicture; const OverlayColor: TAlphaColor; const Mode: TogsPictureEffectMode; const OverlayAlpha: Byte);
-var Paint: ISkPaint;
+procedure ogsDrawPictureEffect(const Canvas: ISkCanvas; const ClipRect: TRectF; const Pic: ISkPicture; const OverlayColor: TAlphaColor; const Mode: TogsPictureEffectMode; const OverlayAlpha: Byte; const RadiusPix: Single);
+var Paint, MaskPaint, FilterPaint: ISkPaint;
     R: TRectF;
-    Recorder: ISkPictureRecorder;
-    OffCanvas: ISkCanvas;
-    OffPic: ISkPicture;
+    M: TMatrix;
+    CanvasScale, RWorld: Single;
 begin
  if (Canvas = nil) or (Pic = nil) then exit;
  R := ClipRect;
  if (R.Width <= 0) or (R.Height <= 0) then R := Canvas.GetLocalClipBounds;
- Recorder := TSkPictureRecorder.Create;
- OffCanvas := Recorder.BeginRecording(R);
- OffCanvas.ClipRect(R);
- OffCanvas.DrawPicture(Pic);
- if Mode <> pemNone then begin
-  Paint := TSkPaint.Create;
-  Paint.AntiAlias := true;
-  Paint.Color := _ogsApplyAlpha(OverlayColor, OverlayAlpha);
-  case Mode of
-   pemTintSrcATop: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.SrcATop);
-   pemTintScreen: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Screen);
-   pemTintModulate: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Modulate);
-  else
-   Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.SrcATop);
-  end;
-  OffCanvas.DrawRect(R, Paint);
+// радиус фильтров задается в пикселах; параметры фильтров - в локальных координатах канвы
+ RWorld := 0;
+ if Mode in [pemHalo, pemGlow] then begin
+  M := Canvas.GetLocalToDeviceAs3x3;
+  CanvasScale := Sqrt(Sqr(M.m11) + Sqr(M.m12));
+  if CanvasScale <= 0 then CanvasScale := 1;
+  RWorld := Max(0.5, RadiusPix) / CanvasScale;
+ // обводка и свечение выходят за габариты объекта
+  if Mode = pemHalo then R.Inflate(RWorld, RWorld) else R.Inflate(3 * RWorld, 3 * RWorld);
  end;
- OffPic := Recorder.FinishRecording;
- if OffPic = nil then exit;
  Canvas.Save;
  try
   Canvas.ClipRect(R);
-  Canvas.DrawPicture(OffPic);
+ // объект рисуется в отдельный прозрачный слой размером R: эффект смешивается
+ // только с пикселями объекта и не затрагивает примитивы под ним
+  Canvas.SaveLayer(R, nil);
+  try
+   case Mode of
+    pemHalo, pemGlow: begin
+     FilterPaint := TSkPaint.Create;
+     if Mode = pemHalo then
+      FilterPaint.ImageFilter := TSkImageFilter.MakeColorFilter(TSkColorFilter.MakeBlend(_ogsApplyAlpha(OverlayColor, OverlayAlpha), TSkBlendMode.SrcIn), TSkImageFilter.MakeDilate(RWorld, RWorld))
+     else
+      FilterPaint.ImageFilter := TSkImageFilter.MakeDropShadowOnly(0, 0, RWorld, RWorld, _ogsApplyAlpha(OverlayColor, OverlayAlpha));
+    // эффект под объектом, сам объект поверх
+     Canvas.SaveLayer(R, FilterPaint);
+     try
+      Canvas.DrawPicture(Pic);
+     finally
+      Canvas.Restore;
+     end;
+     Canvas.DrawPicture(Pic);
+    end;
+   else
+    Canvas.DrawPicture(Pic);
+    if Mode <> pemNone then begin
+     Paint := TSkPaint.Create;
+     Paint.AntiAlias := true;
+     Paint.Color := _ogsApplyAlpha(OverlayColor, OverlayAlpha);
+     case Mode of
+      pemTintSrcATop: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.SrcATop);
+      pemTintScreen: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Screen);
+      pemTintModulate: Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Modulate);
+     else
+      Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.SrcATop);
+     end;
+     Canvas.DrawRect(R, Paint);
+    // Screen закрашивает и прозрачные пиксели слоя - оставляем только пиксели объекта
+     if Mode = pemTintScreen then begin
+      MaskPaint := TSkPaint.Create;
+      MaskPaint.Blender := TSkBlender.MakeMode(TSkBlendMode.DestIn);
+      Canvas.SaveLayer(R, MaskPaint);
+      try
+       Canvas.DrawPicture(Pic);
+      finally
+       Canvas.Restore;
+      end;
+     end;
+    end;
+   end;
+  finally
+   Canvas.Restore;
+  end;
  finally
   Canvas.Restore;
  end;
@@ -433,22 +401,22 @@ begin
   Poly := Points.Polyline[IPoly];
    WriteIn(['pointsCount=', Poly.Count]);
   if (Poly = nil) or (Poly.Count < 1) then continue;
-  P0 := TPointF.Create(TDot(Poly[0]).XDot, TDot(Poly[0]).YDot);
+  P0 := TPointF.Create(TPolyDot(Poly[0]).XDot, TPolyDot(Poly[0]).YDot);
   WriteIn(['0=', P0.X, P0.Y]);
   for I := 1 to Poly.Count - 1 do begin
-   P1 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   P1 := TPointF.Create(Single(TPolyDot(Poly[I]).XDot), Single(TPolyDot(Poly[I]).YDot));
    Canvas.DrawLine(P0, P1, PaintLine);
    WriteIn(['1=', P1.X, P1.Y]);
    P0 := P1;
   end;
-  P0 := TPointF.Create(TDot(Poly[0]).XDot, TDot(Poly[0]).YDot);
+  P0 := TPointF.Create(TPolyDot(Poly[0]).XDot, TPolyDot(Poly[0]).YDot);
   for I := 1 to Poly.Count - 1 do begin
-   P1 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   P1 := TPointF.Create(Single(TPolyDot(Poly[I]).XDot), Single(TPolyDot(Poly[I]).YDot));
    Canvas.DrawCircle((P0.X + P1.X) / 2, (P0.Y + P1.Y) / 2, R, PaintRectFill);
    P0 := P1;
   end;
   for I := 0 to Poly.Count - 1 do begin
-   P0 := TPointF.Create(Single(TDot(Poly[I]).XDot), Single(TDot(Poly[I]).YDot));
+   P0 := TPointF.Create(Single(TPolyDot(Poly[I]).XDot), Single(TPolyDot(Poly[I]).YDot));
    RR := TRectF.Create(P0.X - R, P0.Y - R, P0.X + R, P0.Y + R);
    case RectMode of
     rdmStroke: Canvas.DrawRect(RR, PaintRectStroke);
@@ -465,7 +433,7 @@ end;
 procedure ogsGetPoint(const Points: TPolyPolyline; const Selector: TogsSelector; const X, Y: Double; var Params: TCaptureRec);
 var IPoly, I: Integer;
     Poly: TList;
-    P0, P1: TDot;
+    P0, P1: TPolyDot;
     MidX, MidY: Double;
     Dist: Integer;
     PX, PY: Double;
@@ -479,7 +447,7 @@ begin
     Poly := Points.Polyline[IPoly];
     if Poly = nil then continue;
     for I := 0 to Poly.Count - 1 do begin
-     P0 := TDot(Poly[I]);
+     P0 := TPolyDot(Poly[I]);
      Dist := Selector.pixDist(Distance(X, Y, P0.XDot, P0.YDot));
      if Dist <= Params.CaptureParam then
       if (Dist < Params.resCapture) and (Dist <= Params.CaptureParam) then begin
@@ -496,8 +464,8 @@ begin
     Poly := Points.Polyline[IPoly];
     if Poly = nil then continue;
     for I := 0 to Poly.Count - 2 do begin
-     P0 := TDot(Poly[I]);
-     P1 := TDot(Poly[I + 1]);
+     P0 := TPolyDot(Poly[I]);
+     P1 := TPolyDot(Poly[I + 1]);
      MidX := (P0.XDot + P1.XDot) / 2;
      MidY := (P0.YDot + P1.YDot) / 2;
     // середина линии

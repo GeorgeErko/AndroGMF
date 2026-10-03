@@ -1,0 +1,144 @@
+object ObjectsFrame: TObjectsFrame
+  Size.Width = 210.000000000000000000
+  Size.Height = 286.000000000000000000
+  Size.PlatformDefault = False
+  object PMEditMap: TPopup
+    Placement = Mouse
+    Size.Width = 210.000000000000000000
+    Size.Height = 286.000000000000000000
+    Size.PlatformDefault = False
+    OnPopup = PMEditMapPopup
+    object lbEditMap: TListBox
+      Align = Client
+      Size.Width = 210.000000000000000000
+      Size.Height = 286.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      DisableFocusEffect = True
+      OnItemClick = lbEditMapItemClick
+      object lbiSelectNone: TListBoxItem
+        Tag = 5301
+        Position.Y = 0.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = #1054#1090#1084#1077#1085#1080#1090#1100' '#1074#1099#1073#1086#1088
+      end
+      object lbiSelectInvert: TListBoxItem
+        Tag = 5302
+        Position.Y = 24.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = #1048#1085#1074#1077#1088#1090#1080#1088#1086#1074#1072#1090#1100' '#1074#1099#1073#1086#1088
+      end
+      object lbSep1: TListBoxSeparatorItem
+        Selectable = False
+        Position.Y = 48.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 6.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+      end
+      object lbiDelete: TListBoxItem
+        Tag = 5303
+        Position.Y = 54.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        Text = #1059#1076#1072#1083#1080#1090#1100
+      end
+      object lbSep2: TListBoxSeparatorItem
+        Selectable = False
+        Position.Y = 78.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 6.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+      end
+      object lbiCopy: TListBoxItem
+        Tag = 530
+        Position.Y = 84.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 5
+        Text = #1050#1086#1087#1080#1088#1086#1074#1072#1090#1100
+      end
+      object lbSep3: TListBoxSeparatorItem
+        Selectable = False
+        Position.Y = 108.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 6.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 6
+      end
+      object lbiMove: TListBoxItem
+        Tag = 5001
+        Position.Y = 114.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 7
+        Text = #1055#1077#1088#1077#1084#1077#1089#1090#1080#1090#1100
+      end
+      object lbiRotate: TListBoxItem
+        Tag = 5002
+        Position.Y = 138.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 8
+        Text = #1055#1086#1074#1077#1088#1085#1091#1090#1100
+      end
+      object lbiRotate90: TListBoxItem
+        Tag = 5092
+        Position.Y = 162.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 9
+        Text = #1055#1086#1074#1077#1088#1085#1091#1090#1100' '#1085#1072' 90'#176
+      end
+      object lbiRotate180: TListBoxItem
+        Tag = 5182
+        Position.Y = 186.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 10
+        Text = #1055#1086#1074#1077#1088#1085#1091#1090#1100' '#1085#1072' 180'#176
+      end
+      object lbiRotate270: TListBoxItem
+        Tag = 5272
+        Position.Y = 210.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 11
+        Text = #1055#1086#1074#1077#1088#1085#1091#1090#1100' '#1085#1072' 270'#176
+      end
+      object lbiMirror: TListBoxItem
+        Tag = 5004
+        Position.Y = 234.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 12
+        Text = #1054#1090#1088#1072#1079#1080#1090#1100
+      end
+      object lbiScale: TListBoxItem
+        Tag = 5005
+        Position.Y = 258.000000000000000000
+        Size.Width = 206.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 13
+        Text = #1052#1072#1089#1096#1090#1072#1073#1080#1088#1086#1074#1072#1090#1100
+      end
+    end
+  end
+end

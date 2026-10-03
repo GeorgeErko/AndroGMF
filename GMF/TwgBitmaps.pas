@@ -1,7 +1,7 @@
 ﻿unit TwgBitmaps;
 
 interface uses Collect, FMX.Graphics, newSelector, TwgDraw, ogcBasic,
-               System.Math, System.UITypes;
+               System.Math, System.UITypes, System.Types, System.Skia;
 
 type
  TTwgBitmap = class(TTwgObject)
@@ -20,14 +20,19 @@ type
   Procedure BINStore(Stream: TBufStream);override;
   Procedure SetBounds(X0, Y0, X1, Y1, X2, Y2, X3, Y3: Double);
   Procedure SetTransformedBounds(const SourceSect: TSect; X0, Y0, XB, YB, kX, kY, Angle: Double);
-  Procedure DrawSect(Drawer: TogsDrawer; Color: TColor; Width: Single);
-  Procedure DrawBounds(Drawer: TogsDrawer; Color: TColor; Width: Single);
+  Procedure DrawSect(Drawer: TogsDrawer; Color: TColor; Width: Single); overload;
+  Procedure DrawBounds(Drawer: TogsDrawer; Color: TColor; Width: Single); overload;
+ // рисование на ISkCanvas в мировых координатах канвы; толщина - в пикселах экрана
+  Procedure DrawSect(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single); overload;
+  Procedure DrawBounds(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single); overload;
   Destructor Destroy;override;
   Property Width: Integer read GetWidth;
   Property Height: Integer read GetHeight;
   Property Sect: TSect read fSect write fSect;
   Property Bounds: PCollection read fBounds;
   Function PointIn(X, Y: Double): boolean;
+ // точка внутри повернутого габарита Bounds (контур надписи); без Bounds - по Sect
+  Function PointInB(X, Y: Double): boolean;
  end;
 
  TTwgBitmaps = class(PCollection)
@@ -41,14 +46,46 @@ type
    Function InsertItem(Item: Pointer): Pointer;override;
    Procedure FreeItem(Item: Pointer);override;
    Procedure CalcSect;
-   Procedure DrawSect(Drawer: TogsDrawer; Color, BitmapColor: TColor; Width: Single);
-   Procedure DrawBounds(Drawer: TogsDrawer; Color, BitmapColor: TColor; Width: Single);
+   Procedure DrawSect(Drawer: TogsDrawer; Color, BitmapColor: TColor; Width: Single); overload;
+   Procedure DrawBounds(Drawer: TogsDrawer; Color, BitmapColor: TColor; Width: Single); overload;
+  // рисование на ISkCanvas: Color - элементы, BitmapColor - собственный Bitmap и общий Sect
+   Procedure DrawSect(const Canvas: ISkCanvas; Color, BitmapColor: TAlphaColor; WidthPix: Single); overload;
+   Procedure DrawBounds(const Canvas: ISkCanvas; Color, BitmapColor: TAlphaColor; WidthPix: Single); overload;
    Property Sect: TSect read fSect;
    Property Bitmaps[Index: Integer]: TTwgBitmap read GetBitmap;default;
    Function PointIn(X, Y: Double): boolean;
+  // точка внутри контура Bounds одного из элементов или собственного Bitmap
+   Function PointInB(X, Y: Double): boolean;
  end;
 
-implementation uses Writer;
+implementation uses Writer, System.Math.Vectors, ogcMathUtils;
+
+// перо для рисования габаритов: толщина в пикселах экрана пересчитывается
+// в локальные координаты канвы по ее текущей матрице
+function SectStrokePaint(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single): ISkPaint;
+var M: TMatrix;
+    Scale: Single;
+begin
+ M := Canvas.GetLocalToDeviceAs3x3;
+ Scale := Sqrt(Sqr(M.m11) + Sqr(M.m12));
+ if Scale <= 0 then Scale := 1;
+ Result := TSkPaint.Create;
+ Result.AntiAlias := True;
+ Result.Style := TSkPaintStyle.Stroke;
+ Result.Color := Color;
+ Result.StrokeWidth := WidthPix / Scale;
+end;
+
+function SectIsEmpty(const Sect_: TSect): Boolean;
+begin
+ Result := (Sect_.Left = Sect_.Right) and (Sect_.Top = Sect_.Bottom);
+end;
+
+procedure DrawSectRect(const Canvas: ISkCanvas; const Sect_: TSect; const Paint: ISkPaint);
+begin
+ if SectIsEmpty(Sect_) then exit;
+ Canvas.DrawRect(TRectF.Create(Min(Sect_.Left, Sect_.Right), Min(Sect_.Top, Sect_.Bottom), Max(Sect_.Left, Sect_.Right), Max(Sect_.Top, Sect_.Bottom)), Paint);
+end;
 
 { TTwgBitmap }
 
@@ -174,6 +211,29 @@ begin
  end;
 end;
 
+procedure TTwgBitmap.DrawSect(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single);
+begin
+ if Canvas = nil then exit;
+ DrawSectRect(Canvas, fSect, SectStrokePaint(Canvas, Color, WidthPix));
+end;
+
+procedure TTwgBitmap.DrawBounds(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single);
+var Builder: ISkPathBuilder;
+    I: Integer;
+    D: TogsDot;
+begin
+ if Canvas = nil then exit;
+ if (fBounds = nil) or (fBounds.Count < 4) then exit;
+// повернутый габарит: замкнутый четырехугольник по точкам Bounds
+ Builder := TSkPathBuilder.Create;
+ for I := 0 to 3 do begin
+  D := TogsDot(fBounds[I]);
+  if I = 0 then Builder.MoveTo(D.X, D.Y) else Builder.LineTo(D.X, D.Y);
+ end;
+ Builder.Close;
+ Canvas.DrawPath(Builder.Detach, SectStrokePaint(Canvas, Color, WidthPix));
+end;
+
 destructor TTwgBitmap.Destroy;
 begin
  if Bitmap <> nil then Bitmap.Free;
@@ -185,6 +245,24 @@ function TTwgBitmap.PointIn(X, Y: Double): boolean;
 begin
  Writein(['TTwgBitmap.PointIn=', Sect.XMin, Sect.XMax, Sect.YMin, Sect.YMax]);
  Result := (X >= Sect.XMin) and (X <= Sect.XMax) and (Y >= Sect.YMin) and (Y <= Sect.YMax);
+end;
+
+function TTwgBitmap.PointInB(X, Y: Double): boolean;
+var I: Integer;
+    PX, PY: array of Double;
+begin
+ if (fBounds = nil) or (fBounds.Count < 3) then begin
+  Result := not SectIsEmpty(fSect) and (X >= Min(fSect.Left, fSect.Right)) and (X <= Max(fSect.Left, fSect.Right)) and
+            (Y >= Min(fSect.Top, fSect.Bottom)) and (Y <= Max(fSect.Top, fSect.Bottom));
+  exit;
+ end;
+ SetLength(PX, fBounds.Count);
+ SetLength(PY, fBounds.Count);
+ for I := 0 to fBounds.Count - 1 do begin
+  PX[I] := TogsDot(fBounds[I]).X;
+  PY[I] := TogsDot(fBounds[I]).Y;
+ end;
+ Result := point_in_polygon_xy(X, Y, PX, PY);
 end;
 
 { TTwgBitmaps }
@@ -215,6 +293,20 @@ end;
 function TTwgBitmaps.PointIn(X, Y: Double): boolean;
 begin
  Result := (X >= Sect.XMin) and (X <= Sect.XMax) and (Y <= Sect.YMin) and (Y >= Sect.YMax);;
+end;
+
+function TTwgBitmaps.PointInB(X, Y: Double): boolean;
+var I: Integer;
+    TwgBitmap: TTwgBitmap;
+begin
+ Result := True;
+ for I := 0 to Count - 1 do begin
+  if Items[I] = Pointer(Self) then continue;
+  TwgBitmap := TTwgBitmap(Items[I]);
+  if (TwgBitmap <> nil) and TwgBitmap.PointInB(X, Y) then exit;
+ end;
+ if (Bitmap <> nil) and Bitmap.PointInB(X, Y) then exit;
+ Result := False;
 end;
 
 procedure TTwgBitmaps.FreeItem(Item: Pointer);
@@ -298,6 +390,34 @@ begin
  end;
  if Bitmap<>nil then Bitmap.DrawBounds(Drawer, BitmapColor, Width);
  DrawSect_(fSect);
+end;
+
+procedure TTwgBitmaps.DrawSect(const Canvas: ISkCanvas; Color, BitmapColor: TAlphaColor; WidthPix: Single);
+var I: Integer;
+    TwgBitmap: TTwgBitmap;
+begin
+ if Canvas = nil then exit;
+ for I := 0 to Count - 1 do begin
+  if Items[I] = Pointer(Self) then continue;
+  TwgBitmap := TTwgBitmap(Items[I]);
+  if TwgBitmap <> nil then TwgBitmap.DrawSect(Canvas, Color, WidthPix);
+ end;
+ if Bitmap <> nil then Bitmap.DrawSect(Canvas, BitmapColor, WidthPix);
+ DrawSectRect(Canvas, fSect, SectStrokePaint(Canvas, BitmapColor, WidthPix));
+end;
+
+procedure TTwgBitmaps.DrawBounds(const Canvas: ISkCanvas; Color, BitmapColor: TAlphaColor; WidthPix: Single);
+var I: Integer;
+    TwgBitmap: TTwgBitmap;
+begin
+ if Canvas = nil then exit;
+ for I := 0 to Count - 1 do begin
+  if Items[I] = Pointer(Self) then continue;
+  TwgBitmap := TTwgBitmap(Items[I]);
+  if TwgBitmap <> nil then TwgBitmap.DrawBounds(Canvas, Color, WidthPix);
+ end;
+ if Bitmap <> nil then Bitmap.DrawBounds(Canvas, BitmapColor, WidthPix);
+ DrawSectRect(Canvas, fSect, SectStrokePaint(Canvas, BitmapColor, WidthPix));
 end;
 
 end.

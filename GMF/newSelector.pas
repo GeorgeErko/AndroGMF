@@ -489,7 +489,7 @@ procedure TSelector.UpdateImage(UpdateSceneMode:TUpdateSceneMode = usmNone; Obj:
 begin
  If OverlayDrawOnlyDepth > 0 then
   Exit;
- Writein(['ui=1']);
+// Writein(['ui=1']);
  If UpdateSceneMode = usmNone then
   Drawer.RedrawAll
  else
@@ -503,7 +503,7 @@ begin
    if ovrPainter <> nil then
     ovrPainter.Redraw;
  end;
- Writein(['ui=2']);
+// Writein(['ui=2']);
 end;
 
 procedure TSelector.UpdateOverlay;

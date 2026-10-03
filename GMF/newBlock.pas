@@ -3,7 +3,8 @@
 interface uses //tmpPainter,
                Collect, Classes, SysUtils, EcDot, WpTwigs, WPTForm2, newLayersTable,
                FMX.Graphics, UserObject, newConsts, newResource,
-               TwgDraw, newProperties, newSelector, Lib, ogcBasic, TwgBitmaps;
+               TwgDraw, newProperties, newSelector, Lib, ogcBasic, TwgBitmaps,
+     System.Skia;
 
 const
  Const_Block_Footer=4.3;
@@ -28,6 +29,7 @@ type
    Check:Byte; // 0 - блок; 1 - точка
    Name:AnsiString;
    TwgForm:TForm2;
+   LocalOutline: ISkPath; // контур блока для выделения в локальных координатах; nil - перестроить
    X,Y,OldDx,OldDy,OldAngle:Double; // координаты точки привязки относительно минимальных
    OldXKoef,OldYKoef:Double;
    Properties:TProperties;

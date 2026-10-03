@@ -42,6 +42,12 @@ type
    FAligningCols: Boolean;
   //
    Objects: TSelectedObjects;
+  // свойства по умолчанию для новых примитивов (UpdatePropObject старой
+  // программы): показываются и редактируются, когда ничего не выделено
+   FDefaults: TUpdatePropObject;
+   FResetBtn: TButton;
+   procedure ShowDefaults;
+   procedure ResetBtnClick(Sender: TObject);
    procedure EnsureGrid;
    procedure ClearRows;
    class function BuildDisplayName(const RawName: string; out IsSystem, IsSystemDisabled, IsUserProp: Boolean): string; static;
@@ -82,13 +88,22 @@ type
    procedure SetEnumProperties(Selector_: TSelector; Objects: PCollection); overload;
   //
    procedure SetProperty(propName:String;propValue:String;Layer:Pointer = nil);
+   procedure DetachObjects(AObjects: TObject);
+  // свойства по умолчанию: новая карта (сброс на 'по слою'), сброс, установка,
+  // применение к новому примитиву (вызывают обработчики рисования)
+   function HasSelection: Boolean;
+   procedure SetDefaultsForm(Form: TForm2);
+   procedure ResetDefaults;
+   procedure SetDefaultProperty(const propName, propValue: String);
+   procedure ApplyDefaults(Obj: TTD);
+   procedure ApplyToObjects(const UndoName: String; Layer: Pointer; Accept: TFunc<TObject, Boolean>; Apply: TProc<TObject>);
    function TwgForm: TForm2;
   end;
 
 var PropEditorForm: TPropEditorFrame;
 
 implementation uses TwgColle, newForm0, newResource, Writer, LBN, MainFrm,
-                    UndoColNew, userObject, GBFWUndo, DlgPropFontEditor;
+                    UndoColNew, userObject, GBFWUndo, DlgPropFontEditor, UpdateMessages;
 
 {$R *.fmx}
 
@@ -128,6 +143,7 @@ begin
  GWriteFloat(Name + '_Col2', FColValue.Width);
  GWriteFloat(Name + '_W', Width);
 //
+ FreeAndNil(FDefaults);
  FRows.Free;
  inherited Destroy;
 end;
@@ -365,6 +381,8 @@ end;
 
 procedure TPropEditorFrame.ClearRows;
 begin
+// строки освобождаются - ссылка на активную строку недействительна
+ ActivePropRow := nil;
  FRows.Clear;
  If FGrid <> nil then
   FGrid.RowCount := 0;
@@ -587,29 +605,122 @@ begin
   end;
 end;
 
+// выделение изменилось: свойства выделенных объектов; ничего не выделено (или
+// выделения нет - активен не TEditMap) - свойства по умолчанию
 procedure TPropEditorFrame.Update(Sender: TObject);
-var Def: TUpdatePropObject;
 begin
  Objects := TSelectedObjects(Sender);
- If Objects = nil then begin
-  ClearRows;
+ If not HasSelection then begin
+  ShowDefaults;
   Exit;
  end;
- //
- If Objects.Count = 0 then begin
+ If FResetBtn <> nil then FResetBtn.Visible := False;
+ SetEnumProperties(Objects.TwgForm.Selector, Objects.GeoObjects);
+end;
+
+function TPropEditorFrame.HasSelection: Boolean;
+begin
+ Result := (Objects <> nil) and (Objects.Count > 0);
+end;
+
+// новая карта: свойства по умолчанию создаются заново (все - 'по слою'),
+// номера знаков и типов линий другой карты могут не совпадать
+procedure TPropEditorFrame.SetDefaultsForm(Form: TForm2);
+begin
+ FreeAndNil(FDefaults);
+ Objects := nil;
+ if Form = nil then begin
   ClearRows;
   exit;
-  Writein(['upd1']);
-  Def := TUpdatePropObject.Create(Objects.TwgForm);
-  try
-     Writein(['upd11']);
-   SetEnumProperties(Objects.TwgForm.Selector, Def);
-  Writein(['upd2']);
-  finally
-   Def.Free;
+ end;
+ FSelector := Form.Selector;
+ FDefaults := TUpdatePropObject.Create(Form);
+ FDefaults.Selector := FSelector;
+ ShowDefaults;
+end;
+
+// строки свойств по умолчанию и кнопка сброса
+procedure TPropEditorFrame.ShowDefaults;
+begin
+ if FDefaults = nil then begin
+  ClearRows;
+  exit;
+ end;
+ if FResetBtn = nil then begin
+  FResetBtn := TButton.Create(Self);
+  FResetBtn.Stored := False;
+  FResetBtn.Parent := Self;
+  FResetBtn.Align := TAlignLayout.Top;
+  FResetBtn.Height := 24;
+  FResetBtn.Text := 'Сбросить все на «по слою»';
+  FResetBtn.Hint := 'Свойства новых объектов по умолчанию - по слою';
+  FResetBtn.OnClick := ResetBtnClick;
+ end;
+ FResetBtn.Visible := True;
+ SetEnumProperties(FSelector, FDefaults);
+end;
+
+procedure TPropEditorFrame.ResetBtnClick(Sender: TObject);
+begin
+ ResetDefaults;
+end;
+
+procedure TPropEditorFrame.ResetDefaults;
+begin
+ if FDefaults = nil then exit;
+ FDefaults.ClearProperties;
+ if not HasSelection then ShowDefaults;
+end;
+
+// свойство по умолчанию (из редактора без выделения или из панели знаков);
+// пустое значение - 'по слою'
+procedure TPropEditorFrame.SetDefaultProperty(const propName, propValue: String);
+var I: Integer;
+    V: String;
+begin
+ if FDefaults = nil then exit;
+ V := propValue;
+ if V = '' then V := byLayer;
+ FDefaults.SetProperty(AnsiString(propName), AnsiString(V));
+ if HasSelection then exit;
+ for I := 0 to FRows.Count - 1 do
+  if (FRows[I] <> nil) and (FRows[I].RawName = propName) then FRows[I].Value := V;
+ if FGrid <> nil then FGrid.Repaint;
+end;
+
+// новый примитив получает свойства по умолчанию, заданные не 'по слою', - только
+// те, что есть у самого объекта (TPropEditorForm.SetEnumProperties старой программы)
+procedure TPropEditorFrame.ApplyDefaults(Obj: TTD);
+var I, J: Integer;
+    ObjNames, ObjValues, ObjTypes, DefNames, DefValues, DefTypes: TStrings;
+    V: String;
+begin
+ if (FDefaults = nil) or (Obj = nil) then exit;
+ ObjNames := TStringList.Create;
+ ObjValues := TStringList.Create;
+ ObjTypes := TStringList.Create;
+ DefNames := TStringList.Create;
+ DefValues := TStringList.Create;
+ DefTypes := TStringList.Create;
+ GlobalPropertyUnLocked := True;
+ try
+  Obj.GetObjectProps(ObjNames, ObjValues, ObjTypes);
+  FDefaults.GetObjectProps(DefNames, DefValues, DefTypes);
+  for I := 0 to DefNames.Count - 1 do begin
+   if I >= DefValues.Count then break;
+   V := DefValues[I];
+   if (V = '') or (V = byLayer) or (V = 'None') then continue;
+   J := ObjNames.IndexOf(DefNames[I]);
+   if J <> -1 then Obj.SetProperty(AnsiString(DefNames[I]), AnsiString(V));
   end;
- end else begin
-  SetEnumProperties(Objects.TwgForm.Selector, Objects.GeoObjects);
+ finally
+  GlobalPropertyUnLocked := False;
+  ObjNames.Free;
+  ObjValues.Free;
+  ObjTypes.Free;
+  DefNames.Free;
+  DefValues.Free;
+  DefTypes.Free;
  end;
 end;
 
@@ -678,6 +789,7 @@ end;
 
 procedure TPropEditorFrame.GridCellClick(const Column: TColumn; const Row: Integer);
 var RowObj: TPropRow; CellR: TRectF;
+    NewValue: string;
     P, PAbs: TPointF;
     IconSize: Single;
     RBtn: TRectF;
@@ -752,7 +864,13 @@ begin
   end;
   FSuppressEdit := True;
   FGrid.Options := FGrid.Options - [TGridOption.Editing];
-  RunPropertyEditorDialog(RowObj);
+ // значение из диалога (цвет, шрифт и др.) - выделенным объектам; '' - отмена.
+ // Знаки (PointType, LineType, Block) выбираются в панелях знаков
+  NewValue := RunPropertyEditorDialog(RowObj);
+  if (NewValue <> '') and (RowObj.RawName <> '') then begin
+   RowObj.Value := NewValue;
+   SetProperty(RowObj.RawName, NewValue);
+  end;
   Exit;
  end;
 //
@@ -825,60 +943,140 @@ begin
  end;
 end;
 
+// установка свойства выделенных объектов (TPropEditorForm.SetProperty старой
+// программы): системные свойства ('#...') не меняются, кроме перечисленных;
+// пустое значение - 'по слою'. Знак, который UpdateMessage.ModifiedPrim не
+// разрешает, объекту не ставится. Изменение с отменой, измененные объекты
+// перестраиваются в сцене, значение строки редактора обновляется
 Procedure TPropEditorFrame.SetProperty(propName:String;propValue:String;Layer:Pointer = nil);
 var I,propSettingCount:Integer;Undo:TUndo;oldPropValue:String;oldLayer:TResource;
-    badCol:PCollection;
+    badCol,Changed:PCollection;
+    Obj:TTD;
 begin
+// ничего не выделено - свойство по умолчанию для новых примитивов
+ If not HasSelection then begin
+  SetDefaultProperty(propName, propValue);
+  exit;
+ end;
+ If TwgForm = nil then exit;
+ If (Pos('#',PropName)<>0)and(Pos('##',PropName) = 0)and(Pos('#Текстура',PropName)=0)and(PropName<>'#Штриховка')and(Pos('#Прозрачность',PropName)=0)and(Pos('#Изображение',PropName)=0) then exit;
+ If propValue = '' then propValue:=byLayer;
+ Undo:=TwgForm.Undo;
+ badCol:=PCollection.Create(1);
+ Changed:=PCollection.Create(1);
  GlobalPropertyUnLocked:=True;
  try
-  If (Pos('#',PropName)<>0)and(Pos('##',PropName) = 0)and(Pos('#Текстура',PropName)=0)and(PropName<>'#Штриховка')and(Pos('#Прозрачность',PropName)=0)and(Pos('#Изображение',PropName)=0) then exit;
-  Undo:=TwgForm.Undo;
-  If propValue = '' then propValue:=byLayer;
-  badCol:=PCollection.Create(1);
-  If propName = 'Знак' then begin
-  If Objects<>nil then
-   For I:=0 to Objects.Count-1 do If TTD(Objects[I]).GetProperty(propName)<>propValue then begin
-    oldPropValue:=TTD(Objects[I]).GetProperty(propName);
-    oldLayer:=TTD(Objects[I]).GetLayer;
-    TTD(Objects[I]).SetProperty(propName,propValue);
-    If Layer<>nil then TTD(Objects[I]).SetLayer(Layer);
-   // !!! If not updateMessage.ModifiedPrim(Objects[I]) then badCol.Insert(Objects[I]);
-    TTD(Objects[I]).SetProperty(propName,OldpropValue);
-    TTD(Objects[I]).SetLayer(oldLayer);
-   end;
-  end;
-  Undo.StartTransAction;
-  Undo.AddUndoItem(TPrimUndo.Create(TwgForm,LU_ModifiedPrim,'SetProperty...'+PropName+'='+PropValue));
-  try
-   propSettingCount:=0;
- //  Writeln(propName,' = ',propValue);
-   If Objects<>nil then
-    For I:=0 to Objects.Count-1 do If badCol.IndexOf(Objects[I])=-1 then begin
-      TPrimUndo(Undo.Last).AddModifiedPrim(Objects[I]);
-     If TTD(Objects[I]).SetProperty(propName,propValue) then begin
-      Inc(propSettingCount);
-      If Layer<>nil then TTD(Objects[I]).SetLayer(Layer);
-     end;
+ // знак: проверка нового знака сообщением ModifiedPrim (объект временно получает
+ // знак и слой, затем они возвращаются)
+  If (propName = 'Знак') and (UpdateMessage <> nil) then
+   For I:=0 to Objects.Count-1 do begin
+    Obj:=TTD(Objects[I]);
+    If Obj.GetProperty(propName)<>propValue then begin
+     oldPropValue:=Obj.GetProperty(propName);
+     oldLayer:=Obj.GetLayer;
+     Obj.SetProperty(propName,propValue);
+     If Layer<>nil then Obj.SetLayer(Layer);
+     If not UpdateMessage.ModifiedPrim(Obj) then badCol.Insert(Obj);
+     Obj.SetProperty(propName,oldPropValue);
+     If oldLayer<>nil then Obj.SetLayer(oldLayer);
     end;
- //  Writeln(propSettingCount);
-  badCol.DeleteAll;badCol.Free;
+   end;
+  Undo.StartTransAction;
+  try
+   Undo.AddUndoItem(TPrimUndo.Create(TwgForm,LU_ModifiedPrim,'SetProperty...'+PropName+'='+PropValue));
+   propSettingCount:=0;
+   For I:=0 to Objects.Count-1 do If badCol.IndexOf(Objects[I])=-1 then begin
+    TPrimUndo(Undo.Last).AddModifiedPrim(Objects[I]);
+    If TTD(Objects[I]).SetProperty(propName,propValue) then begin
+     Inc(propSettingCount);
+     If Layer<>nil then TTD(Objects[I]).SetLayer(Layer);
+     Changed.Insert(Objects[I]);
+    end;
+   end;
    If propSettingCount=0 then begin
     Undo.RollBack;
- //!!!   UpdatePropObject.SetProperty(propName,propValue);
     exit;
    end;
-   TForm2(TwgForm).ClassBuildII;
-   TForm2(TwgForm).Modified:=True;
-   FSelector.UpdateImage;
+   TwgForm.ClassBuildII;
+   TwgForm.Modified:=True;
    Undo.Commit;
-  except Undo.RollBack;end;
+  except
+   on E: Exception do begin
+    WriteIn(['SetProperty ', propName, ' exception ', E.Message]);
+    Undo.RollBack;
+    exit;
+   end;
+  end;
+ // измененные объекты - в сцену
+  For I:=0 to Changed.Count-1 do FSelector.UpdateImage(usmModify,Changed[I]);
+ // значение в строке редактора ('по слою' вместо пустого)
+  For I:=0 to FRows.Count-1 do
+   If (FRows[I]<>nil) and (FRows[I].RawName = propName) then FRows[I].Value:=propValue;
+  If FGrid<>nil then FGrid.Repaint;
  finally
   GlobalPropertyUnlocked:=False;
+  badCol.DeleteAll;badCol.Free;
+  Changed.DeleteAll;Changed.Free;
+ end;
+end;
+
+// коллекция выделенных объектов освобождается (TEditMap.Destroy) - редактор
+// больше на нее не ссылается
+procedure TPropEditorFrame.DetachObjects(AObjects: TObject);
+begin
+ if (AObjects <> nil) and (TObject(Objects) = AObjects) then Update(nil);
+end;
+
+// знак из панели знаков (inst...Sign) - выделенным объектам: Accept отбирает
+// объекты, Apply меняет знак, Layer <> nil - объекты переносятся в этот слой.
+// Изменение с отменой, объекты перестраиваются в сцене, строки редактора
+// заполняются заново
+procedure TPropEditorFrame.ApplyToObjects(const UndoName: String; Layer: Pointer; Accept: TFunc<TObject, Boolean>; Apply: TProc<TObject>);
+var I: Integer;
+    Col: PCollection;
+    Undo: TUndo;
+begin
+ if (Objects = nil) or (Objects.Count = 0) or (TwgForm = nil) then exit;
+ Col := PCollection.Create(1);
+ try
+  for I := 0 to Objects.Count - 1 do
+   if Accept(TObject(Objects[I])) then Col.Insert(Objects[I]);
+  if Col.Count = 0 then exit;
+  Undo := TwgForm.Undo;
+  GlobalPropertyUnLocked := True;
+  try
+   Undo.StartTransAction;
+   try
+    Undo.AddUndoItem(TPrimUndo.Create(TwgForm, LU_ModifiedPrim, UndoName));
+    for I := 0 to Col.Count - 1 do begin
+     TPrimUndo(Undo.Last).AddModifiedPrim(Col[I]);
+     Apply(TObject(Col[I]));
+     if Layer <> nil then TTD(Col[I]).SetLayer(Layer);
+    end;
+    TwgForm.ClassBuildII;
+    TwgForm.Modified := True;
+    Undo.Commit;
+   except
+    on E: Exception do begin
+     WriteIn([UndoName, ' exception ', E.Message]);
+     Undo.RollBack;
+     exit;
+    end;
+   end;
+  finally
+   GlobalPropertyUnLocked := False;
+  end;
+  for I := 0 to Col.Count - 1 do FSelector.UpdateImage(usmModify, Col[I]);
+  Update(Objects);
+ finally
+  Col.DeleteAll;
+  Col.Free;
  end;
 end;
 
 function TPropEditorFrame.RunPropertyEditorDialog(Row: TPropRow): string;
 begin
+  Result := '';
   if Row = nil then exit;
  //
   if SameText(Row.TypeName, 'Color') then begin
@@ -966,7 +1164,7 @@ end;
 
 function TUpdatePropObject.SetProperty(propName: AnsiString; propValue: AnsiString; Obj:TTD = nil): boolean;
 begin
- inherited SetProperty(propName,propValue);
+ Result := inherited SetProperty(propName,propValue);
 end;
 
 end.

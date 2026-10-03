@@ -7,7 +7,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   MainFrmSkia, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
-  FMX.Memo, objMouse, System.IOUtils, WPTForm2, instPointSign, FMX.Ani,
+  FMX.Memo, {$IFDEF MOUSE32}objMouse32{$ELSE}objMouse{$ENDIF}, System.IOUtils, WPTForm2, instPointSign, FMX.Ani,
   InstLineSign, InstBlockSign, InstLayerFrame, FramePropEditor, DlgRootPropEditor;
 
 type
@@ -102,9 +102,21 @@ type
    procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); override;
    procedure UpdateEscButton(Index: Integer);
    procedure ActivateToolsEvent(Sender: TObject);
+  // кнопки установки знаков панели точечных знаков (objTopo32)
+   procedure InstPointsTool(Sender: TObject; Opr: Integer);
+   procedure InstPointsZnakSelected(Sender: TObject);
+  // кнопки панели линейных знаков (objTopology32)
+   procedure InstLinesTool(Sender: TObject; Opr: Integer);
+  // кнопки панели блоков (objHotSpot32)
+   procedure InstBlocksTool(Sender: TObject; Opr: Integer);
+   procedure InstBlocksZnakSelected(Sender: TObject);
+  // выбран слой в списке слоев - выделенные объекты переносятся в него
+   procedure LayerSelected(Sender: TObject);
   //
    procedure OpenGmfFileSkia(const LocalPath: string); override;
   public
+   procedure KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
+   procedure KeyUp(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
    procedure RequestOverlayRedraw;
    property OverlayPainter: TSkPaintBox read FOverlayPainter;
    property MouseObject: TKeyMouseHook read FMouseObject write SetMouseObject;
@@ -113,9 +125,12 @@ type
 var
   MainFormMouseObj: TMainFormMouseObj;
 
-implementation uses objMouseSelect, objMouseDraw, objEditMapCaptureDbg, UpdateMessages,
+// MOUSE32 (параметры проекта): обработчики мыши, перенесенные из Geomaster (Geomaster\*32)
+implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, newBlock,
+                    {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, objMouseView,{$ENDIF}
+                    UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen, objMouseView;
+                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource;
 
 {$R *.fmx}
 
@@ -168,6 +183,7 @@ begin
  instPanel.Width:= GReadFloat(Name + '_instPanelW', instPanel.Width);
 //
  LayerFrame := FindComponent('LayerFrame1') as TLayerFrame;
+ if LayerFrame <> nil then LayerFrame.OnLayerSelected := LayerSelected;
 //
  InstPoints := TInstPointsFrame.Create(instHost);
  InstLines := TInstLinesFrame.Create(nil);
@@ -190,10 +206,24 @@ begin
 //
  FPropEditor := TPropEditorFrame.Create(instProperties);
  FPropEditor.Parent := instProperties;
+{$IFDEF MOUSE32}
+// меню выделенных объектов (FlyObjects.PMEditMap) - TEditMap берет его при
+// создании; сам фрейм невидим, на экран выходит только его TPopup
+ ObjectsFrame := TObjectsFrame.Create(Self);
+ ObjectsFrame.Parent := Self;
+ ObjectsFrame.HitTest := False;
+ ObjectsFrame.SetBounds(0, 0, 0, 0);
+{$ENDIF}
  FPropEditor.Align := TAlignLayout.Client;
  FPropEditor.Visible := True;
  FPropEditor.OnActivateSignInstrument := ActivateToolsEvent;
  PropEditorForm := FPropEditor;
+// кнопки установки знаков в панели точечных знаков
+ InstPoints.OnTool := InstPointsTool;
+ InstPoints.OnZnakSelected := InstPointsZnakSelected;
+ InstLines.OnTool := InstLinesTool;
+ InstBlocks.OnTool := InstBlocksTool;
+ InstBlocks.OnZnakSelected := InstBlocksZnakSelected;
 //
  instPanel.OnResize := instPanelResize;
 end;
@@ -285,6 +315,7 @@ begin
  InstLines.Parent := InstHost;
  InstLines.Align := TAlignLayout.Client;
  InstLines.Visible := ilVisible;
+ InstLines.OnTool := InstLinesTool;
 //
  LF := FindComponent('LayerFrame1') as TLayerFrame;
  if LF <> nil then
@@ -296,6 +327,8 @@ begin
  InstPoints.TwgForm := Value;
  InstLines.TwgForm  := Value;
  InstBlocks.TwgForm := Value;
+// свойства по умолчанию новых примитивов - заново для новой карты ('по слою')
+ if FPropEditor <> nil then FPropEditor.SetDefaultsForm(Value);
   WriteIn(['================2']);
  FreeAndNil(ListByName);
  ListByName:=TListByName.Create;
@@ -319,15 +352,28 @@ begin
   MouseObject := nil;
   Op := TSpeedButton(Sender).Tag;
   if Op = em_GetObject then
-   MouseObject := TMouseEditMap2.Create(TwgForm, nil)
+{$IFDEF MOUSE32}
+  // выделение и редактирование (перенос objEditMap)
+   MouseObject := TEditMap.Create(TwgForm, nil)
+{$ELSE}
+  // MouseObject := TMouseEditMap2.Create(TwgForm, nil)
+   MouseObject := TMouseSelector.Create(TwgForm, nil)
+{$ENDIF}
   else
   if (Sender = btnPan) or (Sender = btnFrag) then
+{$IFDEF MOUSE32}
+  // TMouseView еще не перенесен: пан - средней кнопкой
+   exit
+{$ELSE}
    MouseObject := TMouseView.Create(TwgForm, nil)
+{$ENDIF}
   else
    MouseObject := TMousePainter.Create(TwgForm, nil);
  //
   MouseObject.OnAddPrim := UpdateMessage.AddPrim;
   MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ // выбранный объект делает свой слой активным в панели слоев
+  if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
   MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
   MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
   UpdateEscButton(1);
@@ -335,8 +381,7 @@ begin
 end;
 
 procedure TMainFormMouseObj.ToolInstClick(Sender: TObject);
-var
- TagV: Integer;
+var TagV: Integer;
 procedure UpdateSkPainter;
 begin
  If (btnInstPoint.IsPressed) or (btnInstLine.IsPressed) or (btnInstBlock.IsPressed) then
@@ -352,6 +397,7 @@ begin
    InstPanel.Visible := False;
    Splitter2.Visible := False;
    skPainter.Align := TAlignLayout.Client;
+  // btnEscClick(btnEsc);
   end;
 end;
 begin
@@ -360,6 +406,7 @@ begin
  If Sender <> btnInstPoint then btnInstPoint.IsPressed := False;
  If Sender <> btnInstLine then btnInstLine.IsPressed := False;
  If Sender <> btnInstBlock then btnInstBlock.IsPressed := False;
+// if TwgForm = nil then exit;
 //
  if InstPoints <> nil then
  begin
@@ -655,6 +702,169 @@ begin
      Selector.UpdateOverlay;
      UpdateEscButton(0);
     end;
+// операция, запущенная не кнопкой панели инструментов (установка знаков)
+ if MouseObject <> nil then begin
+  MouseObject := nil;
+  Selector.UpdateOverlay;
+  UpdateEscButton(0);
+ end;
+end;
+
+// кнопка установки знаков (Opr - код операции objTopo32): обработчик мыши
+// TMouseTopo, как TinstPoints.sbSetPointClick старой программы
+procedure TMainFormMouseObj.InstPointsTool(Sender: TObject; Opr: Integer);
+{$IFDEF MOUSE32}
+var I: Integer;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then exit;
+// кнопки инструментов рисования отжимаются
+ for I := 0 to ComponentCount - 1 do
+  if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
+ TopoZnakNum := InstPoints.SelectedZnakNum;
+ Selector.LOperation := Opr;
+ MouseObject := nil;
+ MouseObject := TMouseTopo.Create(TwgForm, nil);
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ UpdateEscButton(1);
+{$ENDIF}
+end;
+
+// кнопка панели линейных знаков (Opr - код операции objTopology32): обработчик
+// мыши TMouseTopology, как TinstLines.sbLineRotateClick старой программы
+procedure TMainFormMouseObj.InstLinesTool(Sender: TObject; Opr: Integer);
+{$IFDEF MOUSE32}
+var I: Integer;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then exit;
+// кнопки инструментов рисования отжимаются
+ for I := 0 to ComponentCount - 1 do
+  if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
+ Selector.LOperation := Opr;
+ MouseObject := nil;
+ MouseObject := TMouseTopology.Create(TwgForm, nil);
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ UpdateEscButton(1);
+{$ENDIF}
+end;
+
+// кнопка панели блоков (Opr - код операции objHotSpot32): обработчик мыши
+// TMouseHotSpot с выбранным блоком, как TinstBlocks.sbSetPointClick старой программы
+procedure TMainFormMouseObj.InstBlocksTool(Sender: TObject; Opr: Integer);
+{$IFDEF MOUSE32}
+var I: Integer;
+    B: TObject;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then exit;
+ B := InstBlocks.SelectedBlock;
+ if not (B is TGeoBlock) then exit;
+// кнопки инструментов рисования отжимаются
+ for I := 0 to ComponentCount - 1 do
+  if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
+ Selector.LOperation := Opr;
+ MouseObject := nil;
+ MouseObject := TMouseHotSpot.Create(TwgForm, nil);
+ TMouseHotSpot(MouseObject).Block := TGeoBlock(B);
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ UpdateEscButton(1);
+{$ENDIF}
+end;
+
+// выбран другой блок: он становится устанавливаемым блоком
+// (TinstBlocks.CBPointZnakClick старой программы)
+procedure TMainFormMouseObj.InstBlocksZnakSelected(Sender: TObject);
+{$IFDEF MOUSE32}
+var B: TObject;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if not (MouseObject is TMouseHotSpot) then exit;
+ B := InstBlocks.SelectedBlock;
+ if not (B is TGeoBlock) then exit;
+ TMouseHotSpot(MouseObject).Block := TGeoBlock(B);
+ MouseObject.Return(InstBlocks);
+{$ENDIF}
+end;
+
+// слой, выбранный в списке слоев, - выделенным объектам (контурам и точечным),
+// которые еще не в нем; изменение с отменой (PropEditorForm.ApplyToObjects)
+procedure TMainFormMouseObj.LayerSelected(Sender: TObject);
+var L: TResource;
+begin
+ if (LayerFrame = nil) or (PropEditorForm = nil) then exit;
+ L := LayerFrame.ActiveLayer;
+ if L = nil then exit;
+ PropEditorForm.ApplyToObjects('SetLayer...', L,
+  function(Obj: TObject): Boolean
+  begin
+   Result := ((Obj is TLot) or (Obj is TPointDot)) and (TTD(Obj).GetLayer <> L);
+  end,
+  procedure(Obj: TObject)
+  begin
+  end);
+end;
+
+// выбран другой знак: он становится знаком новых точек (в старой программе -
+// пользовательское свойство 'Знак' и MouseObject.Return)
+procedure TMainFormMouseObj.InstPointsZnakSelected(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ TopoZnakNum := InstPoints.SelectedZnakNum;
+ if MouseObject is TMouseTopo then MouseObject.Return(InstPoints);
+{$ENDIF}
+end;
+
+// клавиши - в обработчик мыши (выбор операции, Esc, Shift/Ctrl), кроме ввода
+// в поля редактирования; только для перенесенных обработчиков (MOUSE32)
+procedure TMainFormMouseObj.KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState);
+{$IFDEF MOUSE32}
+var Hook: Boolean;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (MouseObject <> nil) and (Key <> 0) and not ((Focused <> nil) and ((Focused.GetObject is TCustomEdit) or (Focused.GetObject is TCustomMemo))) then begin
+  Hook := False;
+  MouseObject.KeyDown(TwgForm, Key, Shift, Hook);
+  if Hook then begin
+   Key := 0;
+   KeyChar := #0;
+   exit;
+  end;
+ end;
+{$ENDIF}
+ inherited;
+end;
+
+procedure TMainFormMouseObj.KeyUp(var Key: Word; var KeyChar: WideChar; Shift: TShiftState);
+{$IFDEF MOUSE32}
+var Hook: Boolean;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+// отпускание Shift/Ctrl передается всегда, иначе ShiftPress/ControlPress залипают
+ if (MouseObject <> nil) and (Key <> 0) then begin
+  Hook := False;
+  MouseObject.KeyUp(TwgForm, Key, Shift, Hook);
+ end;
+{$ENDIF}
+ inherited;
 end;
 
 procedure TMainFormMouseObj.btnGPKGBClick(Sender: TObject);
@@ -751,11 +961,16 @@ var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
 begin
  Hook := False;
+// средняя кнопка (перемещение карты) - всегда форме, в обработчик мыши не попадает
+ If Button = TMouseButton.mbMiddle then begin
+  inherited;
+  exit;
+ end;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseDown(TwgForm, Button, Shift, XGeo, YGeo, Hook);
-  if (Button = TMouseButton.mbMiddle) or (not Hook) then
+  if not Hook then
     inherited;
  end else
   inherited;
@@ -768,14 +983,23 @@ var Hook: Boolean;
 begin
  Hook := False;
  MousePos := PointF(X, Y);
+// карта перемещается (нажато колесо или начато формой) - движение только форме:
+// обработчики мыши перехватывают каждое движение (Hook) и обрывали перемещение
+ If IsPanning or (ssMiddle in Shift) then begin
+  inherited;
+  UpdateStatusGeo(X, Y, '');
+  exit;
+ end;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseMove(TwgForm, Shift, XGeo, YGeo, Hook);
   UpdateStatusGeo(X, Y, MouseObject.Hint);
   InvalidateOverlayLive;
-  if SkPainter <> nil then
-    SkPainter.Redraw;
+ // live-слой (резиновые линии, рамка) перерисовывается без перерендера сцены
+  RepaintLive;
+ // if SkPainter <> nil then
+ //   SkPainter.Redraw;
   if not Hook then
     inherited;
  end
@@ -791,11 +1015,19 @@ var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
 begin
  Hook := False;
+// средняя кнопка (конец перемещения карты) - всегда форме
+ If Button = TMouseButton.mbMiddle then begin
+  inherited;
+  RequestOverlayRedraw;
+  exit;
+ end;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseUp(TwgForm, Button, Shift, XGeo, YGeo, Hook);
-  if (Button = TMouseButton.mbMiddle) or (not Hook) then
+ // перемещение, начатое формой, заканчивает форма (иначе PanActive остался бы
+ // включенным и обработчик мыши перестал бы получать движения)
+  if not Hook or IsPanning then
   begin
     inherited;
     RequestOverlayRedraw;
@@ -804,6 +1036,7 @@ begin
   inherited;
 end;
 
+// колесо (масштабирование) - всегда форме, обработчикам мыши не передается
 procedure TMainFormMouseObj.SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
 var T0, Dt: UInt64;
 begin

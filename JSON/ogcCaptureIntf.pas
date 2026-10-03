@@ -1,6 +1,6 @@
 ﻿unit ogcCaptureIntf;
 
-interface uses ogcBasic, System.Skia;
+interface uses ogcBasic, System.Skia, ogcPolyPolyline;
 
 type
   TogsPrimitiveKind = (
@@ -55,6 +55,9 @@ type
    function SelectRectWorld(const Rect: TSect; Mode: TogsRectSelectMode; const Filter: TogsCaptureFilter): Integer;
    function GetPrimitiveBoundsWorld(const PrimitiveId: TogsPrimitiveId; out Bounds: TSect): Boolean;
    function getLastCaptureRec: TCaptureRec;
+  // заполняет Dest полилиниями, проходящими через точку захвата CRec (XCapture, YCapture);
+  // для отдельно стоящей точки - одна полилиния из одной точки
+   function HitTestPointTimer(const CRec: TCaptureRec; EpsWorld: Double; Dest: TPolyPolyline): Integer;
    procedure PainSelection(const Canvas: ISkCanvas);
    function ClearSelection: boolean;
   end;

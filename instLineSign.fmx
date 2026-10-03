@@ -1,4 +1,58 @@
 inherited InstLinesFrame: TInstLinesFrame
+  inherited Panel1: TPanel
+    inherited Label1: TLabel
+      Text = #1051#1080#1085#1077#1081#1085#1099#1077
+      TabOrder = 6
+    end
+  end
+  inherited pnlTools: TLayout
+    inherited sbSetPoint: TSpeedButton
+      Visible = False
+    end
+    inherited sbRotatePoint: TSpeedButton
+      Visible = False
+    end
+    inherited sbSetAttrib: TSpeedButton
+      Visible = False
+    end
+    inherited sbSetPerLine: TSpeedButton
+      Visible = False
+    end
+    inherited cbActivate: TCheckBox
+      Position.X = 54.000000000000000000
+    end
+    object sbLineRotate: TSpeedButton
+      Tag = 603
+      Align = Left
+      Hint = 
+        #1055#1077#1088#1077#1074#1086#1088#1086#1090' '#1083#1080#1085#1080#1080' '#1089' '#1091#1089#1083#1086#1074#1085#1099#1084' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1077#1084' ('#1097#1077#1083#1095#1086#1082' - '#1074#1099#1073#1086#1088' '#1083#1080#1085#1080#1080', '#1087 +
+        #1088#1072#1074#1072#1103' '#1082#1085#1086#1087#1082#1072' - '#1087#1077#1088#1077#1074#1086#1088#1086#1090')'
+      Images = ImageList2
+      ImageIndex = 3
+      Size.Width = 24.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbSetPointClick
+    end
+    object sbLineMove: TSpeedButton
+      Tag = 604
+      Align = Left
+      Hint = #1055#1077#1088#1077#1084#1077#1097#1077#1085#1080#1077' '#1083#1080#1085#1077#1081#1085#1086#1075#1086' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1103' '#1074#1076#1086#1083#1100' '#1083#1080#1085#1080#1080
+      Images = ImageList2
+      ImageIndex = 1
+      Position.X = 24.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbSetPointClick
+    end
+  end
   inherited LB: TListBox
     Viewport.Width = 380.000000000000000000
     Viewport.Height = 174.000000000000000000
@@ -8,5 +62,126 @@ inherited InstLinesFrame: TInstLinesFrame
       Viewport.Width = 50.000000000000000000
       Viewport.Height = 50.000000000000000000
     end
+  end
+  inherited ImageList2: TImageList
+    Source = <
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 51
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 51
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000033000000120806000000F651E6
+              B90000000473424954080808087C08648800000193494441544889DD57519283
+              30087DECC59A9B09378393BDFDB0C926185BADDDD99D3EC771A008843C881592
+              C487E0EBAF137827BE004044DE725F8588202210114DAE30B316A7FEBEC19D66
+              FC0F004077A7BB9324557578F676330C348B88E7ABFF45A82ADC7DD0D53C2202
+              660633DBD834F42B45B7E2AC73F741572BD8EBDF817E1754759ADB1E7669969D
+              641B00ED3E8AFE9D4C9D1C97E440B95AB45A487242BFBD447302CF021F41AEFA
+              19FB23181633A34CADC4D59DE92BDB577737B103361942922202929BF15A7524
+              111128A5349DBBA394D29E9C9CBD62AB3F2E6C8D7CBBDD00ACA37659160804B0
+              793F3F029735DEF07EADC251D40AE7AACDAA88FB458E9471F726E3C52BC700C1
+              D35F00EE0E9228A500F81999A594CD38AF512AEAD877772CCB32D8108487434D
+              07190278F846CE3108BE7E68E6E6BC3AA2F3981F76EFCE845E9EE1259ACD28A3
+              AAA71B7686D9A98F34CADFB2987EEE67C767C7E833FF7D4EFDE1F928D6A99EA9
+              934B4460B68E105585994155CFB8DAF59F51FB714F1E70B99C1790E98A8E4E59
+              3E02213FE7CFD937EEAA6F68325E886F0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znPointSet2.png'
+          end>
+        Name = 'znPointSet2'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000009349444154388DAD93510E80
+              200C435BE2BDD593D72FCC580603B48989F0F17CDD2225093FA40000C9CFA003
+              00248124BCDC6D3E7026E285E46BD433CB20005024A13E11EC941AB36E64528F
+              EE5A9274057736B45BB3738A6636ACE6EC9AF76866DD9A43DFA4A6AD5B627C6B
+              39B3801414C1A27ACDB0B38C163065D433DB02657FC052350BAD86CB463EBEE6
+              36C8C3B6AA457900644ACF98EF4F25580000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znLine2.png'
+          end>
+        Name = 'znLine'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000008A49444154388DAD91DB0E80
+              200C435BE27FAB5F5E9F66E6608068131EB8E4A4675092F0430A0090FC0724E9
+              338C001E6AABA6F433B2562BB0120FBCE649DECBF659B6D6A1249C2476D7AC07
+              A91A99924138D1A4DBC883494ECDAC9A51061B46498E70D5792A497A7CFF283D
+              CDA15A689F6A4E8348DE9016EC959A875AC3D78D62A2E63228C296D45AB900EE
+              208A5F943C5CBB0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znLine1.png'
+          end>
+        Name = 'znLine1'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000009349444154388DAD93510E80
+              200C435BE2BDD593D72FCC580603B48989F0F17CDD2225093FA40000C9CFA003
+              00248124BCDC6D3E7026E285E46BD433CB20005024A13E11EC941AB36E64528F
+              EE5A9274057736B45BB3738A6636ACE6EC9AF76866DD9A43DFA4A6AD5B627C6B
+              39B3801414C1A27ACDB0B38C163065D433DB02657FC052350BAD86CB463EBEE6
+              36C8C3B6AA457900644ACF98EF4F25580000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\znLine2.png'
+          end>
+        Name = 'znLine2'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'znPointSet2'
+            SourceRect.Right = 51.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'znLine'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'znLine2'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'znLine1'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end>
   end
 end

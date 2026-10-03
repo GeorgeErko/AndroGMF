@@ -885,7 +885,8 @@ begin
  InsertTextDot(P1);
  InsertTextDot(P2);
  InsertTextDot(P3);
-  if (Drawer is TogsDrawerSkia) and (TogsDrawerSkia(Drawer).SkCanvas<>nil) then begin
+// отладочная отрисовка текста габаритов (красным) - только при DebugDrawTextBounds
+ if (Drawer is TogsDrawerSkia) and TogsDrawerSkia(Drawer).DebugDrawTextBounds and (TogsDrawerSkia(Drawer).SkCanvas <> nil) then begin
   TogsDrawerSkia(Drawer).SkCanvas.Save;
   try
    TogsDrawerSkia(Drawer).SkCanvas.Translate(X + DebugDx, Y + DebugDy);
@@ -947,6 +948,8 @@ var
  XP, YP: Double;
  TxtColor: TAlphaColor;
  mRect: TMRect;
+ GabKey: TGabaritesKey;
+ NeedGab: Boolean;
 begin
  if Drawer = nil then Exit;
  if Selector = nil then Exit;
@@ -967,6 +970,8 @@ begin
  if (Drawer is TogsDrawerSkia) then
  begin
   if Selector.GetScale = 0 then Exit;
+ // текст изменился - габариты (TextBitmap.Bounds) нужно пересчитать
+  NeedGab := TextDirty or (TextBitmap = nil);
   if (TextBitmap = nil) or TextDirty or (TextBitmap.Bitmap.Width <= 0) or (TextBitmap.Bitmap.Height <= 0) then
    if FontViewEx <> nil then
     ResetParams(1, FontViewEx)
@@ -1003,14 +1008,21 @@ VectorText:
 
   if TextBitmap<>nil then
   begin
-   // mRect := TMRect.Create;
-   try
-    //GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
+  // повернутые габариты текста (TextBitmap.SetBounds) - только при изменении текста,
+  // положения, угла или масштаба; отладочная отрисовка - только при DebugDrawTextBounds
+   GabKey := GetGabaritesKey;
+   if NeedGab or not FGabValid or not SameGabaritesKey(GabKey, FGabKey) then begin
+    mRect := TMRect.Create;
+    try
+     GetGabaritesDebug(mRect, XDot, YDot, 1, 1, 0, Drawer, 0, 0, TextBitmap);
+    finally
+     mRect.Free;
+    end;
+    FGabKey := GabKey;
+    FGabValid := True;
+   end;
    // TextBitmap.DrawSect(Drawer, $FF00FF00, 0.03);
    // TextBitmap.DrawBounds(Drawer, $FF00FF00, 0.03);
-   finally
-   // mRect.Free;
-   end;
   end;
 //  DrawLOD2(Drawer as TogsDrawerSkia);
   Exit;

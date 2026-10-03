@@ -75,6 +75,9 @@ function orientation_of_polygon( polygon : TogsCollection; var square : double )
 function point_on_polygon_border( x, y : double; xx : TogsCollection ) : boolean;
 { Функция определяет лежит ли точка на границе многоугольника. }
 function point_and_polygon( x, y : double; p : TogsCollection ) : integer;
+{ точка (x,y) внутри многоугольника с вершинами (px[i],py[i]) или на его
+  границе (ближе eps); правило четности пересечений луча, контур замыкается }
+function point_in_polygon_xy( x, y : double; const px, py : array of double ) : boolean;
 { Функция вычисляет отношение точки и многоугольника:
   -1 точка вне многоугольника,
    0 точка на границе,
@@ -414,6 +417,25 @@ begin
    begin
     Writeln('pizdets!!!!!!!!!: Point and Polygon !!!!!!!!!!!!!!');
    end;
+end;
+
+function point_in_polygon_xy(x, y: double; const px, py: array of double): boolean;
+var
+ i, j, n: Integer;
+begin
+ Result := False;
+ n := Length(px);
+ if (n < 3) or (Length(py) <> n) then exit;
+ j := n - 1;
+ for i := 0 to n - 1 do
+ begin
+  if Dist_Point_Edge(x, y, px[j], py[j], px[i], py[i]) <= eps then
+   exit(True);
+  if ((py[i] > y) <> (py[j] > y)) and
+     (x < (px[j] - px[i]) * (y - py[i]) / (py[j] - py[i]) + px[i]) then
+   Result := not Result;
+  j := i;
+ end;
 end;
 
 procedure new_vertex_to_polygon( x_1, y_1, x_2, y_2 : double;

@@ -3,7 +3,7 @@
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.Objects, FMX.TreeView,
@@ -27,7 +27,6 @@ type
     ImageList1: TImageList;
     procedure btnDropClick(Sender: TObject);
     procedure chkLayerChange(Sender: TObject);
-    procedure TreeLayersChange(Sender: TObject);
     procedure TreeLayersMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure btnAllOnClick(Sender: TObject);
     procedure btnAllOffClick(Sender: TObject);
@@ -42,6 +41,10 @@ type
     FPopupResizing: Boolean;
     FPopupResizeStartAbs: TPointF;
     FPopupResizeStartSize: TPointF;
+   // popup открыт и еще не вернулся во фрейм (OnClosePopup не пришел)
+    FPopupShown: Boolean;
+    FPopupClosedTick: UInt64;
+    procedure PopupLayersClosePopup(Sender: TObject);
 
     function ChkLayerCtrl: TCheckBox;
     function RectColorCtrl: TRectangle;
@@ -82,6 +85,13 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     procedure RefreshUI;
+    procedure ActivateLayer(Layer: TResource; Symbol: Integer);
+  public
+   // слой выбран в списке слоев (щелчком по слою или кнопкой OK, в т.ч. группа):
+   // форма переносит в него выделенные объекты; при активации программно не вызывается
+    OnLayerSelected: TNotifyEvent;
+    procedure SelectLayer(Layer: TResource);
+    function IsGroupLayer(Layer: TResource): Boolean;
     property LayerTable: TLayerTable read FLayerTable write SetLayerTable;
     procedure SetActiveLayerByName(LayerName: String);
     property ActiveLayer: TResource read GetActiveLayer write SetActiveLayer;
@@ -199,6 +209,14 @@ begin
  EnsureHeaderControls;
  EnsurePopupResizeGrip;
  LoadPopupSize;
+ if PopupLayers <> nil then PopupLayers.OnClosePopup := PopupLayersClosePopup;
+end;
+
+// popup закрыт полностью: содержимое вернулось во фрейм
+procedure TLayerFrame.PopupLayersClosePopup(Sender: TObject);
+begin
+ FPopupShown := False;
+ FPopupClosedTick := TThread.GetTickCount64;
 end;
 
 destructor TLayerFrame.Destroy;
@@ -209,7 +227,9 @@ end;
 
 procedure TLayerFrame.SetLayerTable(const Value: TLayerTable);
 begin
- if FLayerTable = Value then Exit;
+// дерево перестраивается всегда: при открытии карты старая форма освобождается,
+// и новая таблица слоев может оказаться по тому же адресу - тогда пункты
+// дерева ссылались бы на слои освобожденной таблицы
  FLayerTable := Value;
  RebuildTree;
  SyncHeader;
@@ -228,6 +248,26 @@ begin
  if FLayerTable.ActiveLayer = Value then Exit;
  FLayerTable.ActiveLayer := Value;
  SyncHeader;
+end;
+
+// активный слой по сообщению UpdateMessage.SetActiveLayer (например, выбран
+// объект в TEditMap); бывший TFlyLayer.SetActiveLayer старой программы
+procedure TLayerFrame.ActivateLayer(Layer: TResource; Symbol: Integer);
+var Item: TTreeViewItem;
+begin
+ if (FLayerTable = nil) or (Layer = nil) then Exit;
+// TLayerTable.SetActiveLayer вызывает исключение для слоя не из таблицы
+ if FLayerTable.LinearLayers.IndexOf(Layer) = -1 then Exit;
+ SetActiveLayer(Layer);
+// открытый список слоев - выделить слой и в нем
+ if (PopupLayers <> nil) and PopupLayers.IsOpen and FLayerToItem.TryGetValue(Layer, Item) then begin
+  FUpdating := True;
+  try
+   TreeLayers.Selected := Item;
+  finally
+   FUpdating := False;
+  end;
+ end;
 end;
 
 procedure TLayerFrame.SetActiveLayerByName(LayerName: String);
@@ -268,7 +308,7 @@ begin
  Result := $FF202020;
  if Layer = nil then Exit;
  try
-  Result := TAlphaColor($FF000000 or Cardinal(Layer.LineColor));
+  Result := TAlphaColor(ColorRefToAlpha(Layer.LineColor));
  except
  end;
 end;
@@ -559,13 +599,24 @@ end;
 procedure TLayerFrame.btnDropClick(Sender: TObject);
 begin
  if PopupLayers = nil then Exit;
- if PopupLayers.IsOpen then
-  PopupLayers.IsOpen := False
- else
+// TPopup сначала сбрасывает IsOpen (BeforeClose), а возвращает содержимое во
+// фрейм позже (ClosePopup, после анимации). Пока закрытие не завершено,
+// дерево не перестраивается и popup повторно не открывается
+ if FPopupShown then
  begin
-  RebuildTree;
-  AlignPopupToDropButton;
+  PopupLayers.IsOpen := False;
+  Exit;
+ end;
+// щелчок по кнопке при открытом списке сам закрыл его (потеря фокуса) - не открываем снова
+ if TThread.GetTickCount64 - FPopupClosedTick < 300 then Exit;
+ RebuildTree;
+ AlignPopupToDropButton;
+ FPopupShown := True;
+ try
   PopupLayers.IsOpen := True;
+ except
+  FPopupShown := False;
+  raise;
  end;
 end;
 
@@ -589,17 +640,32 @@ begin
  NotifyLayerVisibilityChanged;
 end;
 
-procedure TLayerFrame.TreeLayersChange(Sender: TObject);
-var
- L: TResource;
+// группа слоев: в списке у ее пункта есть вложенные слои
+function TLayerFrame.IsGroupLayer(Layer: TResource): Boolean;
+var Item: TTreeViewItem;
 begin
- if FUpdating then Exit;
- if TreeLayers.Selected = nil then Exit;
- L := TResource(TreeLayers.Selected.TagObject);
- if L <> nil then
-  SetActiveLayer(L);
+ Result := (Layer <> nil) and FLayerToItem.TryGetValue(Layer, Item) and (Item.Count > 0);
 end;
 
+// слой выбран: становится активным, выделенные объекты переносятся в него
+// (форма - OnLayerSelected), список закрывается. Вызывается щелчком по слою
+// (не группе) и кнопкой OK (и для группы). Слой не из текущей таблицы (дерево
+// устарело) - дерево перестраивается
+procedure TLayerFrame.SelectLayer(Layer: TResource);
+begin
+ if (FLayerTable = nil) or (Layer = nil) then Exit;
+ if FLayerTable.LinearLayers.IndexOf(Layer) = -1 then begin
+  RebuildTree;
+  Exit;
+ end;
+ SetActiveLayer(Layer);
+ if Assigned(OnLayerSelected) then OnLayerSelected(Self);
+ if (PopupLayers <> nil) and FPopupShown then
+  TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
+end;
+
+// смена выделения в дереве (в т.ч. клавишами) слой не выбирает - выбор
+// щелчком (TreeLayersMouseUp) или кнопкой OK
 procedure TLayerFrame.TreeLayersMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 var
  Item: TTreeViewItem;
@@ -610,28 +676,19 @@ begin
  if FUpdating then Exit;
  Item := TreeLayers.ItemByPoint(X, Y) as TTreeViewItem;
  if Item = nil then Exit;
-
- TreeLayers.Selected := Item;
  L := TResource(Item.TagObject);
- if L <> nil then
-  SetActiveLayer(L);
-
  if L = nil then Exit;
- // Expand/collapse by clicking on item text area (not on checkbox)
+// флажок видимости - X=2..22 (EnsureItemForLayer): щелчок по нему слой не выбирает
  PAbs := TreeLayers.LocalToAbsolute(TPointF.Create(X, Y));
  PItem := Item.AbsoluteToLocal(PAbs);
-
- // Checkbox is at X=2..22 (see EnsureItemForLayer). If click is outside, toggle expand.
- if (PItem.X < 2) or (PItem.X > 22) then
- begin
-  if Item.Count > 0 then
-  begin
-   if Item.IsExpanded then
-    Item.Collapse
-   else
-    Item.Expand;
-  end;
+ if (PItem.X >= 2) and (PItem.X <= 22) then Exit;
+ TreeLayers.Selected := Item;
+// группа слоев - только раскрыть/свернуть (выбрать группу - кнопкой OK)
+ if IsGroupLayer(L) then begin
+  if Item.IsExpanded then Item.Collapse else Item.Expand;
+  Exit;
  end;
+ SelectLayer(L);
 end;
 
 procedure TLayerFrame.btnAllOnClick(Sender: TObject);
@@ -649,14 +706,21 @@ begin
  ApplyInvert;
 end;
 
+// кнопки лежат внутри popup: закрытие (перенос содержимого обратно во фрейм)
+// выполняется после выхода из обработчика кнопки
 procedure TLayerFrame.btnOkClick(Sender: TObject);
+var L: TResource;
 begin
- PopupLayers.IsOpen := False;
+// выбранный в списке слой или группа слоев - активный и выделенным объектам
+ L := nil;
+ if TreeLayers.Selected <> nil then L := TResource(TreeLayers.Selected.TagObject);
+ if L <> nil then SelectLayer(L);
+ TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
 end;
 
 procedure TLayerFrame.btnCancelClick(Sender: TObject);
 begin
- PopupLayers.IsOpen := False;
+ TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
 end;
 
 function TLayerFrame.FindItemVisCheck(const Item: TTreeViewItem): TCheckBox;
@@ -764,3 +828,4 @@ begin
 end;
 
 end.
+

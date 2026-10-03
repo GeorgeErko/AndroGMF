@@ -43,9 +43,9 @@ begin
     propValue:=PP.GetPropValue('Цвет');
     If propValue <> nil then begin
      If propValue.isInteger then begin
-      PP.R:=GetR(propValue.intValue);
-      PP.G:=GetG(propValue.intValue);
-      PP.B:=GetB(propValue.intValue);
+      PP.R:=GetR(ColorRefToAlpha(propValue.intValue));
+      PP.G:=GetG(ColorRefToAlpha(propValue.intValue));
+      PP.B:=GetB(ColorRefToAlpha(propValue.intValue));
      end else begin
       PP.R:=Res.Rgb.Argb[1];
       PP.G:=Res.Rgb.Argb[2];
@@ -155,7 +155,7 @@ begin
              CTW.ClassHandle:=Res;
              CTW.MakeUsel:=CTW.ClassHandle.MakeUsel;
              CTW.UZnak:=CTW.ClassHandle.ZnkInd.LInd;
-             CTW.StColor:=CTW.ClassHandle.LineColor;
+             CTW.StColor:=ColorRefToAlpha(CTW.ClassHandle.LineColor);
              Twig.Rang :=Round(Frac(Res.Rang)*100);
            end else MessageInform('CTW.Resource=nil');
          end;
