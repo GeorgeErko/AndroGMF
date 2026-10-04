@@ -11,8 +11,6 @@ uses System.SysUtils, System.Types, System.UITypes, System.Classes, System.Varia
 
 type
   TMainForm = class(TForm)
-    Memo1: TMemo;
-    Splitter1: TSplitter;
     Panel1: TPanel;
     btnOpen: TCornerButton;
     ImageList1: TImageList;
@@ -277,9 +275,9 @@ begin
   Selector.Drawer.Name := 'Drawer';
  end else
   Selector.Clear;
- Memo1.Lines.Clear;
+// Memo1.Lines.Clear;
  InitPainterInput;
- GLines := Memo1.Lines;
+// GLines := Memo1.Lines;
  newProcs.MainPath := TPath.GetDocumentsPath;
  WriteIn(['Test1',  TPath.GetDocumentsPath]);
  RegPrimitives;
@@ -456,7 +454,7 @@ end;
 
 procedure TMainForm.upmClick(Sender: TObject);
 begin
- Memo1.ScrollTo(0, Memo1.Lines.Count);
+// Memo1.ScrollTo(0, Memo1.Lines.Count);
 end;
 
 procedure TMainForm.PainterDblClick(Sender: TObject);

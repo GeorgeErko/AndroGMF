@@ -84,6 +84,9 @@ type
     function GetZnakPoint(TabName_:String;Index:Integer):TPoint_Sign;virtual;
     procedure DoZnakSelected;
     procedure SelectZnak(Idx: Integer);
+   // группа текущей вкладки - по имени вкладки (вкладки создаются скрытыми,
+   // номер вкладки не всегда совпадает с номером группы)
+    function CurGroup: TGroupZnk;
     function LayerToObjects: Boolean;
     function ObjectsLayer(ZV: TZnakView): TResource; virtual;
     function AcceptObject(Obj: TObject): Boolean; virtual;
@@ -99,6 +102,9 @@ type
    destructor Destroy; override;
    function Group: TGroupCollection; virtual;
    function SelectedZnakNum: Integer; virtual;
+  // выбрать вкладку TabName и в ней знак с номером ZnakNum (как щелчком по
+  // плитке); False - вкладки или знака нет
+   function SelectZnakByNum(const TabName: String; ZnakNum: Integer): Boolean;
    property TwgForm: TForm2 read FTwgForm write SetTwgForm;
    property Scale: Single read FScale write FScale;
    procedure ClearTilesAndResources; virtual;
@@ -713,11 +719,11 @@ begin
   if PropEditorForm.ActivePropRow <> nil then
    if (PropEditorForm.ActivePropRow.TypeName = 'PointType') or
        (PropEditorForm.ActivePropRow.TypeName = 'PointType') then begin
-    PropEditorForm.ActivePropRow.Value := IntToStr(Group.Group[TC.TabIndex].Item[Idx].znakNum);
+    PropEditorForm.ActivePropRow.Value := IntToStr(CurGroup.Item[Idx].znakNum);
    // update
    end else
    if (PropEditorForm.ActivePropRow.TypeName = 'Block') then begin
-    PropEditorForm.ActivePropRow.Value := Group.Group[TC.TabIndex].Item[Idx].znakName;
+    PropEditorForm.ActivePropRow.Value := CurGroup.Item[Idx].znakName;
    end;
   InvalidateTiles;
  end;
@@ -736,11 +742,21 @@ end;
 // (AcceptObject), у которых знак другой (ZnakDiffers), получают знак и слой
 // знака (ObjectsLayer). Объекты с этим знаком не меняются совсем, в т.ч. слой.
 // При смене вкладки (первый знак) выделенные объекты не меняются
+function TInstPointsFrame.CurGroup: TGroupZnk;
+begin
+ Result := nil;
+ if Group = nil then exit;
+ if FTabName <> '' then Result := Group.GroupByName[FTabName];
+ if (Result = nil) and (TC <> nil) and (TC.TabIndex >= 0) and (TC.TabIndex < Group.Count) then Result := Group.Group[TC.TabIndex];
+end;
+
 procedure TInstPointsFrame.SelectZnak(Idx: Integer);
 var ZV: TZnakView;
+    G: TGroupZnk;
 begin
- if (Group = nil) or (TC.TabIndex < 0) or (Idx < 0) then exit;
- ZV := Group.Group[TC.TabIndex].Item[Idx];
+ G := CurGroup;
+ if (G = nil) or (Idx < 0) or (Idx >= G.Items.Count) then exit;
+ ZV := G.Item[Idx];
  if ZV = nil then exit;
  if LayerFrame <> nil then LayerFrame.SetActiveLayerByName(ZV.znakLayer);
  if not FTabChanging and (PropEditorForm <> nil) then
@@ -783,12 +799,32 @@ begin
  TTD(Obj).SetProperty(AnsiString(UserPropName), AnsiString(IntToStr(ZV.znakNum)));
 end;
 
+function TInstPointsFrame.SelectZnakByNum(const TabName: String; ZnakNum: Integer): Boolean;
+var I, T: Integer;
+    G: TGroupZnk;
+begin
+ Result := False;
+ if (Group = nil) or (TC = nil) or (CB = nil) then exit;
+ T := -1;
+ for I := 0 to TC.TabCount - 1 do
+  if TC.Tabs[I].Text = TabName then begin T := I; break; end;
+ if T = -1 then exit;
+ if TC.TabIndex <> T then TC.TabIndex := T;
+ G := Group.Group[T];
+ for I := 0 to G.Items.Count - 1 do
+  if G.Item[I].znakNum = ZnakNum then begin
+   if CB.ItemIndex <> I then CB.ItemIndex := I else SelectZnak(I);
+   InvalidateTiles;
+   exit(True);
+  end;
+end;
+
 // номер выбранного знака; -1 - знак не выбран (знак по слою)
 function TInstPointsFrame.SelectedZnakNum: Integer;
 begin
  Result := -1;
  if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC.TabIndex < 0) then exit;
- Result := Group.Group[TC.TabIndex].Item[CB.ItemIndex].znakNum;
+ Result := CurGroup.Item[CB.ItemIndex].znakNum;
 end;
 
 // флажок cbActivate («активировать слой при выборе»): выделенные объекты при

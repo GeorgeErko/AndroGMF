@@ -1,0 +1,29 @@
+inherited MainFormDendro: TMainFormDendro
+  Caption = #1054#1047#1053'-'#1040#1085#1076#1088#1086#1080#1076
+  DesignerMasterStyle = 3
+  inherited ToolBarPaint: TToolBar
+    inherited LayerFrame1: TLayerFrame
+      inherited PopupLayers: TPopup
+        inherited PopupLay: TLayout
+          inherited TreeLayers: TTreeView
+            Viewport.Width = 100.000000000000000000
+            Viewport.Height = 100.000000000000000000
+          end
+        end
+      end
+    end
+  end
+  inherited ToolBarOZN: TToolBar
+    inherited SpeedButton6: TSpeedButton
+      Visible = False
+    end
+    inherited sbCancel: TSpeedButton
+      Position.X = 694.000000000000000000
+      Visible = False
+    end
+  end
+  inherited ToolImageList: TImageList
+    Left = 422
+    Top = 162
+  end
+end

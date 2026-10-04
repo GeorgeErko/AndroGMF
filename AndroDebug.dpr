@@ -99,12 +99,17 @@ uses
   DlgPropColorEditor in 'COMPS\DlgPropColorEditor.pas',
   DlgPropFontEditor in 'COMPS\DlgPropFontEditor.pas',
   DlgRootPropEditor in 'COMPS\DlgRootPropEditor.pas' {RootPropEditorForm},
+  VarSetForm in 'COMPS\VarSetForm.pas' {VarSetDlg},
+  VarSetForm1 in 'COMPS\VarSetForm1.pas' {VarSetDlg1},
+  VarSetForm2 in 'COMPS\VarSetForm2.pas' {VarSetDlg2},
+  VarSetForm3 in 'COMPS\VarSetForm3.pas' {VarSetDlg3},
   DropDownButton in 'COMPS\DropDownButton.pas',
   LBN in 'GMF\LBN.pas',
   tstForm in 'COMPS\tstForm.pas' {tsts2DF},
   tst2 in 'COMPS\tst2.pas' {tst2Frame: TFrame},
   TwgBitmaps in 'GMF\TwgBitmaps.pas',
   MainFrmOSM in 'MainFrmOSM.pas' {MainFormOSM},
+  MainFrmDendro in 'MainFrmDendro.pas' {MainFormDendro},
   ProjApi in 'ProjApi.pas',
   GPKGReader in 'GPKG\GPKGReader.pas';
 
@@ -119,7 +124,7 @@ begin
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}
   Application.Initialize;
-   Application.CreateForm(TMainFormOSM, MainFormOSM);
+   Application.CreateForm(TMainFormDendro, MainFormDendro);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;
 end.

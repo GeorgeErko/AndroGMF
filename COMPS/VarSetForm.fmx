@@ -1,0 +1,297 @@
+object VarSetDlg: TVarSetDlg
+  Left = 0
+  Top = 0
+  BorderStyle = Single
+  Caption = '-'
+  ClientHeight = 357
+  ClientWidth = 581
+  Position = MainFormCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnCloseQuery = FormCloseQuery
+  DesignerMasterStyle = 0
+  object Panel1: TPanel
+    Position.X = 8.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 453.000000000000000000
+    Size.Height = 309.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object Grid: TStringGrid
+      Align = Client
+      CanFocus = True
+      ClipChildren = True
+      Size.Width = 453.000000000000000000
+      Size.Height = 309.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      RowCount = 0
+      Options = [Editing, ColumnResize, ColLines, RowLines, Tabs, Header, HeaderClick]
+      OnSelectCell = GridSelectCell
+      OnDrawColumnCell = GridDrawColumnCell
+      OnCellClick = GridCellClick
+      OnCellDblClick = GridCellDblClick
+      OnEditingDone = GridEditingDone
+      Viewport.Width = 453.000000000000000000
+      Viewport.Height = 309.000000000000000000
+      object colName: TStringColumn
+        Header = 'Name'
+        HeaderSettings.TextSettings.WordWrap = False
+        ReadOnly = True
+        Size.Width = 139.000000000000000000
+      end
+      object colValue: TStringColumn
+        Header = 'Value'
+        HeaderSettings.TextSettings.WordWrap = False
+        Size.Width = 285.000000000000000000
+      end
+    end
+    object ListCombo: TComboBox
+      Position.X = 139.000000000000000000
+      Size.Width = 285.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Visible = False
+      OnChange = ListComboChange
+      OnClosePopup = ListComboClosePopup
+    end
+  end
+  object Button1: TButton
+    ModalResult = 1
+    Position.X = 487.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 75.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    Text = #1054#1050
+    TextSettings.Trimming = None
+  end
+  object Button2: TButton
+    ModalResult = 2
+    Position.X = 487.000000000000000000
+    Position.Y = 40.000000000000000000
+    Size.Width = 75.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    Text = #1054#1090#1084#1077#1085#1072
+    TextSettings.Trimming = None
+  end
+  object CInc: TCheckBox
+    Position.X = 470.000000000000000000
+    Position.Y = 128.000000000000000000
+    Size.Width = 101.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    Text = #1072#1074#1090#1086#1085#1091#1084#1077#1088#1072#1094#1080#1103
+  end
+  object SpeedButton2: TSpeedButton
+    Hint = #1053#1086#1084#1077#1088' - 1'
+    Position.X = 469.000000000000000000
+    Position.Y = 151.000000000000000000
+    Size.Width = 52.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    ParentShowHint = False
+    ShowHint = True
+    Text = #8722'1'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton2Click
+  end
+  object SpeedButton1: TSpeedButton
+    Hint = #1053#1086#1084#1077#1088' + 1'
+    Position.X = 520.000000000000000000
+    Position.Y = 151.000000000000000000
+    Size.Width = 52.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    ParentShowHint = False
+    ShowHint = True
+    Text = '+1'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton1Click
+  end
+  object SpeedButton3: TSpeedButton
+    Tag = 1
+    Position.X = 470.000000000000000000
+    Position.Y = 175.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '1'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton5: TSpeedButton
+    Tag = 2
+    Position.X = 504.000000000000000000
+    Position.Y = 175.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '2'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton7: TSpeedButton
+    Tag = 3
+    Position.X = 538.000000000000000000
+    Position.Y = 175.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '3'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton4: TSpeedButton
+    Tag = 4
+    Position.X = 470.000000000000000000
+    Position.Y = 209.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '4'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton6: TSpeedButton
+    Tag = 5
+    Position.X = 504.000000000000000000
+    Position.Y = 209.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '5'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton8: TSpeedButton
+    Tag = 6
+    Position.X = 538.000000000000000000
+    Position.Y = 209.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '6'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton9: TSpeedButton
+    Tag = 7
+    Position.X = 470.000000000000000000
+    Position.Y = 243.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '7'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton10: TSpeedButton
+    Tag = 8
+    Position.X = 504.000000000000000000
+    Position.Y = 243.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '8'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton11: TSpeedButton
+    Tag = 9
+    Position.X = 538.000000000000000000
+    Position.Y = 243.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '9'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton14: TSpeedButton
+    Tag = -2
+    Position.X = 470.000000000000000000
+    Position.Y = 277.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '-'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton12: TSpeedButton
+    Position.X = 504.000000000000000000
+    Position.Y = 277.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    Text = '0'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object SpeedButton13: TSpeedButton
+    Tag = -1
+    Hint = #1054#1095#1080#1089#1090#1080#1090#1100' '#1085#1086#1084#1077#1088
+    Position.X = 538.000000000000000000
+    Position.Y = 277.000000000000000000
+    Size.Width = 34.000000000000000000
+    Size.Height = 34.000000000000000000
+    Size.PlatformDefault = False
+    ParentShowHint = False
+    ShowHint = True
+    Text = 'C'
+    TextSettings.Trimming = None
+    OnClick = SpeedButton3Click
+  end
+  object CBCoord: TCheckBox
+    Position.X = 12.000000000000000000
+    Position.Y = 327.000000000000000000
+    Size.Width = 141.000000000000000000
+    Size.Height = 23.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    Text = #1055#1083#1072#1085#1086#1074#1099#1077' '#1082#1086#1086#1088#1076#1080#1085#1072#1090#1099
+    OnChange = CBCoordChange
+  end
+  object CBZ: TCheckBox
+    Position.X = 154.000000000000000000
+    Position.Y = 327.000000000000000000
+    Size.Width = 80.000000000000000000
+    Size.Height = 23.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Text = #1042#1099#1089#1086#1090#1072
+    OnChange = CBZChange
+  end
+  object sbPlo: TSpeedButton
+    Position.X = 296.000000000000000000
+    Position.Y = 326.000000000000000000
+    Size.Width = 141.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    Text = #1042#1099#1095#1080#1089#1083#1077#1085#1080#1077' '#1087#1083#1086#1097#1072#1076#1080'...'
+    TextSettings.Trimming = None
+    Visible = False
+  end
+  object Button4: TButton
+    Hint = #1054#1095#1080#1089#1090#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1103', '#1082#1088#1086#1084#1077' '#1085#1086#1084#1077#1088#1072
+    Position.X = 472.000000000000000000
+    Position.Y = 323.000000000000000000
+    Size.Width = 97.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 7
+    Text = #1054#1095#1080#1089#1090#1080#1090#1100
+    TextSettings.Trimming = None
+    ParentShowHint = False
+    ShowHint = True
+    OnClick = Button4Click
+  end
+end

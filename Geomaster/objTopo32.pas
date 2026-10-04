@@ -14,9 +14,12 @@
 // слою); точка создается в активном слое. Обработчики только меняют
 // состояние, временный знак рисуется в DrawTemp тем же Draw32, что и сцена,
 // белым силуэтом на live-слое (аналог XOR-отрисовки старой программы).
+// Знак с надписями: перед добавлением точки - диалог ввода значений атрибутов
+// (SetTextManager: TTextManager.SetTexts, при VarSetForm1 > 0 - SetTexts2).
+// Диалог не блокирует обработчик (на Android синхронного ShowModal нет): точка
+// добавляется в карту в обработчикLе результата, по «Отмене» - не добавляется.
 // Не перенесено: откосы (mp_CreateOrtho), площадные знаки (mp_MoveSQWZnak,
-// mp_DelSQWZnak), mp_Point2Point*, дендро-режим (LockedDendro, VarSetForm1),
-// диалог ввода атрибутов (TTextManager.SetTexts в новом TextManager нет).
+// mp_DelSQWZnak), mp_Point2Point*, LockedDendro.
 
 interface
 
@@ -40,8 +43,21 @@ var
   TopoZnakNum: Integer = -1;
 
 type
+// признак жизни обработчика для отложенного результата диалога атрибутов
+ IAliveFlag = interface
+  ['{6B1C2E4A-9F3D-4A7B-8C21-5D0E7F3A9B14}']
+  function Alive: Boolean;
+  procedure Kill;
+ end;
+
  TMouseTopo = class(TMousePainter)
+  private
+   FAlive: IAliveFlag;
+   FTextsDialog: Boolean;  // открыт диалог атрибутов - мышь не обрабатывается
   public
+   VarSetForm1: Byte;      // >0 - диалог атрибутов TTextManager.SetTexts2 (форма по режиму)
+   DendroAttr, DendroValue: String; // атрибут, задаваемый до диалога (дендро)
+   DendroUpdate: Boolean;  // значения атрибутов не берутся из последних введенных
    Point: TPointDot;
    PointCreating: Boolean; // Point создан здесь (не объект карты)
    PointVisible: Boolean;  // положение Point задано движением мыши
@@ -68,7 +84,7 @@ type
    Procedure CreatePoint;
    Procedure FreePoint;
    Procedure DrawPoint(const Canvas: ISkCanvas);
-   Function SetTextManager: Boolean;
+   Procedure SetTextManager(const Attr, Value: String; UpdateResults: Boolean; const OnDone: TProc<Boolean>);
    Function InsertPoint(PD: TPointDot): Boolean;
    Procedure AddPointToMap;
    Procedure TimerTick(Sender: TObject);
@@ -79,13 +95,40 @@ type
 implementation
 
 uses Math, FMX.DialogService, GBFWUndo, UndoColNew, newSelector, newClassBuilder,
-     maths_basic, Lib, TextManager, ogcDrawerSkia, Writer, Selector32, FramePropEditor;
+     maths_basic, Lib, TextManager, ogcDrawerSkia, Writer, Selector32, FramePropEditor, VarSetForm;
+
+type
+ TAliveFlag = class(TInterfacedObject, IAliveFlag)
+  private
+   FAlive: Boolean;
+  public
+   constructor Create;
+   function Alive: Boolean;
+   procedure Kill;
+ end;
+
+constructor TAliveFlag.Create;
+begin
+ inherited Create;
+ FAlive := True;
+end;
+
+function TAliveFlag.Alive: Boolean;
+begin
+ Result := FAlive;
+end;
+
+procedure TAliveFlag.Kill;
+begin
+ FAlive := False;
+end;
 
 { TMouseTopo }
 
 constructor TMouseTopo.Create(ATwigs: Pointer; AFreeProc: TFreeProc);
 begin
  inherited;
+ FAlive := TAliveFlag.Create;
  case LOperation of
   mp_SetP: begin
     CreatePoint;
@@ -100,6 +143,8 @@ end;
 
 destructor TMouseTopo.Destroy;
 begin
+// результат открытого диалога атрибутов придет уже без обработчика
+ if FAlive <> nil then FAlive.Kill;
 // поворот знака не закончен - вернуть угол и отменить запись в Undo (форма
 // меняет Selector.LOperation до освобождения обработчика, поэтому - по флагу)
  if Rotating and (Point <> nil) then begin
@@ -215,30 +260,68 @@ begin
  end;
 end;
 
-// знак с надписями: менеджер текстов по знаку. Диалог ввода значений
-// атрибутов (TTextManager.SetTexts) в новом TextManager отсутствует
-function TMouseTopo.SetTextManager: Boolean;
+// знак с надписями (TMouseTopo.SetTextManager старой программы): менеджер
+// текстов по знаку, атрибут Attr = Value, диалог ввода значений атрибутов.
+// OnDone(True) - точку можно добавлять (без надписей - сразу, без диалога);
+// OnDone(False) - «Отмена». Точка ставится в начало последнего примитива
+// (LastPrim), если он есть (дендро: знак на нарисованной линии)
+procedure TMouseTopo.SetTextManager(const Attr, Value: String; UpdateResults: Boolean; const OnDone: TProc<Boolean>);
 var I: Integer;
     UZnak: TPoint_Sign;
     P: PCollection;
+    A: IAliveFlag;
+    Done: TTextsDone;
 begin
- Result := True;
  BuildPoint1(Selector, Twigs.LayerTable, Twigs.Twigs, Point);
- if Point.What = -1 then exit;
- I := SearchThis(Twigs.MkLib.PSLib, Abs(Point.What));
- if I = -1 then exit;
- UZnak := Twigs.MkLib.PSLib[I];
- if not UZnak.UseFont then exit;
- if Point.TextManager <> nil then exit;
- P := PCollection.Create(1);
- try
-  P.Insert(UZnak);
-  Point.TextManager := TTextManager.Create;
-  Point.TextManager.SetZnaks(P);
- finally
-  P.DeleteAll;
-  P.Free;
+ I := -1;
+ if Point.What <> -1 then I := SearchThis(Twigs.MkLib.PSLib, Abs(Point.What));
+ if (I = -1) or not TPoint_Sign(Twigs.MkLib.PSLib[I]).UseFont then begin
+  OnDone(True);
+  exit;
  end;
+ UZnak := Twigs.MkLib.PSLib[I];
+ if Point.TextManager = nil then begin
+  P := PCollection.Create(1);
+  try
+   P.Insert(UZnak);
+   Point.TextManager := TTextManager.Create;
+   Point.TextManager.SetZnaks(P);
+  finally
+   P.DeleteAll;
+   P.Free;
+  end;
+ end;
+ if Attr <> '' then Point.TextManager.SetAttrValue(AnsiString(Attr), AnsiString(Value));
+ Point.TextManager.UpdateResults := UpdateResults;
+ A := FAlive;
+ Done :=
+  procedure(OK: Boolean)
+  var D: TDot;
+  begin
+  // обработчик мог быть освобожден, пока открыт диалог
+   if not A.Alive then exit;
+   FTextsDialog := False;
+   LMouseDown := False;
+   if Point.TextManager <> nil then Point.TextManager.UpdateResults := False;
+   if not OK then begin
+    if not UpdateResults then FreeAndNil(Point.TextManager);
+   end else
+   if LastPrim <> nil then
+    try
+     D := TTwig(LastPrim).Coord[0];
+     Point.XDot := D.XDot;
+     Point.YDot := D.YDot;
+    except
+    end;
+   OnDone(OK);
+  end;
+ FTextsDialog := True;
+// длина последнего нарисованного примитива (дендро: протяженность изгороди)
+ if LastPrim <> nil then GLastPrimLength := TTwig(LastPrim).GetLength else GLastPrimLength := -1;
+ if VarSetForm1 > 0 then
+  Point.TextManager.SetTexts2(Twigs, Point, False, VarSetForm1, Done)
+ else
+  Point.TextManager.SetTexts(nil, Point.XDot, Point.YDot, Point.Z, True, Twigs, Done);
 end;
 
 // добавление точки в карту с отменой и в сцену
@@ -272,6 +355,7 @@ end;
 procedure TMouseTopo.MouseDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  Hook := True;
+ if FTextsDialog then exit; // открыт диалог атрибутов
  inherited;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
  if not LMouseDown then exit;
@@ -311,10 +395,13 @@ begin
     UpdateImage;
    end;
   mp_SetPAttr:
-   if SetTextManager then begin
-    AddPointToMap;
-    UpdateImage;
-   end;
+   SetTextManager('', '', False,
+    procedure(OK: Boolean)
+    begin
+     if not OK then exit;
+     AddPointToMap;
+     UpdateImage;
+    end);
  // створ: первая точка, затем вторая и число частей
   mp_SetPPerLine: begin
     if Marker.Visible then begin
@@ -335,6 +422,7 @@ end;
 procedure TMouseTopo.MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  Hook := True;
+ if FTextsDialog then exit; // открыт диалог атрибутов
  inherited;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
  case LOperation of
@@ -342,12 +430,14 @@ begin
    if not PolySec500 then begin
     TimerTopo.Enabled := False;
     if Button <> TMouseButton.mbLeft then exit;
-    if SetTextManager then begin
-     LMouseDown := False;
-     AddPointToMap;
-     UpdateImage;
-    end else
-     LMouseDown := False;
+    LMouseDown := False;
+    SetTextManager(DendroAttr, DendroValue, DendroUpdate,
+     procedure(OK: Boolean)
+     begin
+      if not OK then exit;
+      AddPointToMap;
+      UpdateImage;
+     end);
    end else
   // кнопка удерживалась дольше 0,5 с - поворот знака движением мыши
     LOperation := mp_SetPAngle;
@@ -359,6 +449,7 @@ var Tw: TTwig;
     D1, D2: TDot;
     Seg: Integer;
 begin
+ if FTextsDialog then begin Hook := True; exit; end; // открыт диалог атрибутов
  inherited;
  Hook := True;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
@@ -417,6 +508,7 @@ end;
 procedure TMouseTopo.MouseRightDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  Hook := True;
+ if FTextsDialog then exit; // открыт диалог атрибутов
  inherited;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
  case LOperation of

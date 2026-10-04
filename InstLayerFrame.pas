@@ -101,6 +101,8 @@ var LayerFrame: TLayerFrame;
 
 implementation
 
+uses Writer;
+
 {$R *.fmx}
 
 procedure TLayerFrame.EnsurePopupResizeGrip;
@@ -270,10 +272,24 @@ begin
  end;
 end;
 
+// слой по имени (имя слоя знака из описания групп): без учета регистра и
+// пробелов по краям (в описаниях групп бывают хвостовые пробелы)
 procedure TLayerFrame.SetActiveLayerByName(LayerName: String);
+var I: Integer;
+    L: TResource;
+    N: String;
 begin
- if FLayerTable.LayerName[LayerName] <> nil then
-  SetActiveLayer(FLayerTable.LayerName[LayerName]);
+ if FLayerTable = nil then Exit;
+ N := AnsiUpperCase(Trim(LayerName));
+ if N = '' then Exit;
+ for I := 0 to FLayerTable.LinearLayers.Count - 1 do begin
+  L := FLayerTable.LinearLayer[I];
+  if (L <> nil) and (AnsiUpperCase(Trim(String(L.RecString))) = N) then begin
+   SetActiveLayer(L);
+   Exit;
+  end;
+ end;
+ WriteIn(['SetActiveLayerByName: не найден слой "', LayerName, '"']);
 end;
 
 procedure TLayerFrame.RefreshUI;

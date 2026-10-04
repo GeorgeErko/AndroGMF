@@ -247,7 +247,8 @@ function TInstBlocksFrame.SelectedBlock: TObject;
 begin
  Result := nil;
  if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC.TabIndex < 0) then exit;
- Result := Group.Group[TC.TabIndex].Item[CB.ItemIndex].Znak;
+ if CurGroup = nil then exit;
+ Result := CurGroup.Item[CB.ItemIndex].Znak;
 end;
 
 // слой для точек, получивших блок: слой блока (AutoLayer), как при установке

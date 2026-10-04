@@ -2,14 +2,6 @@ inherited MainFormSkia: TMainFormSkia
   Caption = 'MainFor'
   ClientWidth = 875
   DesignerMasterStyle = 3
-  inherited Memo1: TMemo
-    Size.Width = 875.000000000000000000
-    Viewport.Width = 875.000000000000000000
-    Viewport.Height = 111.000000000000000000
-  end
-  inherited Splitter1: TSplitter
-    Size.Width = 875.000000000000000000
-  end
   inherited Panel1: TPanel
     Size.Width = 875.000000000000000000
     inherited btnOpen: TCornerButton
@@ -23,11 +15,11 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 116
+      TabOrder = 118
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 115
+      TabOrder = 117
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -66,7 +58,7 @@ inherited MainFormSkia: TMainFormSkia
       Align = Client
       HitTest = True
       Size.Width = 875.000000000000000000
-      Size.Height = 364.000000000000000000
+      Size.Height = 483.000000000000000000
       Size.PlatformDefault = False
       object Popup1: TPopup
         Padding.Left = 2.000000000000000000

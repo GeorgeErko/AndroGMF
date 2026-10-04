@@ -88,10 +88,14 @@ var FontCol: TFontManager;
 implementation uses Writer, FMX.Dialogs, ogcDrawerSkia, System.UITypes, newProcs, System.Skia;
 //uses ptmainform;
 
+// цвет текста: Windows COLORREF ($00BBGGRR - цвет надписи из файла) в
+// TAlphaColor ($AARRGGBB). Цвет с альфой - уже TAlphaColor (RGBToCol/MakeColor
+// для цвета по классу) - возвращается без перестановки красного и синего
 function ColorToAlphaColor(const C: Integer): TAlphaColor;
 var
   R, G, B: Integer;
 begin
+  if (Cardinal(C) shr 24) <> 0 then exit(TAlphaColor(C));
   R := (C and $FF);
   G := (C shr 8) and $FF;
   B := (C shr 16) and $FF;

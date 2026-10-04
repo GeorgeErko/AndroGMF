@@ -37,6 +37,9 @@ type
   end;
 
 type
+ // результат диалога ввода атрибутов: OK - значения записаны
+  TTextsDone = reference to procedure(OK: Boolean);
+
   TTextManager = class(TTwgObject)
   private
     function InitSL: TStringList;
@@ -58,7 +61,11 @@ type
     constructor Create;
     constructor CreateAsTextManager(T:TTextManager;Znaks:PCollection);
     destructor Destroy; override;
-//    function SetTexts(MAINFORM: TFORM;X,Y,Z:Double;UseCoord:Boolean=False;TwgForm_:Pointer = nil): boolean;     // äèàëîã
+  // диалоги ввода значений атрибутов (VarSetForm). Диалог не блокирует
+  // вызывающий код (на Android синхронного ShowModal нет): результат - в Done
+    procedure SetTexts(MainForm: TObject; X, Y, Z: Double; UseCoord: Boolean; TwgForm_: Pointer; const Done: TTextsDone);
+  // атрибуты знака точки Point_ в форме GlobalVarSetDlgClass (режим TABLET)
+    procedure SetTexts2(TwgForm_: Pointer; Point_: Pointer; EditMode: Boolean; Mode: Byte; const Done: TTextsDone);
     procedure SetZnaks(znaks: PCollection);          // Âûçûâàòü ïîñëå Create èëè Load
     procedure Update(znaks: PCollection);            // Âûçûâàòü åñëè Znaks èçìåíèëñÿ
 
@@ -91,7 +98,9 @@ type
     function UseAttr(V: AnsiString): boolean;
   end;
 
-implementation uses Lib, DwgText, newConsts, Writer, LConvEncoding;
+// FMX.Forms, WptForm2, EcDot, VarSetForm - для диалогов SetTexts/SetTexts2; в начале
+// списка, чтобы не перекрывать идентификаторы следующих модулей
+implementation uses FMX.Forms, WptForm2, EcDot, VarSetForm, Lib, DwgText, newConsts, Writer, LConvEncoding;
 
 { TTextManager }
 
@@ -347,6 +356,32 @@ begin
   end;
 end;
 *)
+
+// диалог атрибутов (TTextManager.SetTexts старой программы)
+procedure TTextManager.SetTexts(MainForm: TObject; X, Y, Z: Double; UseCoord: Boolean; TwgForm_: Pointer; const Done: TTextsDone);
+var Dlg: TVarSetDlg;
+    SL: TStringList;
+    Owner_: TComponent;
+begin
+ if MainForm is TComponent then Owner_ := TComponent(MainForm) else Owner_ := Application.MainForm;
+ Dlg := TVarSetDlg.Create(Owner_);
+ Dlg.UpdateResults := UpdateResults;
+ SL := InitSL;
+ try
+  Dlg.Execute_Old(SL, FValues, FTexts, X, Y, Z, UseCoord, TForm2(TwgForm_), Done);
+ finally
+  SL.Free;
+ end;
+end;
+
+// диалог атрибутов знака точки в форме по режиму (TTextManager.SetTexts2)
+procedure TTextManager.SetTexts2(TwgForm_: Pointer; Point_: Pointer; EditMode: Boolean; Mode: Byte; const Done: TTextsDone);
+var Dlg: TVarSetDlg;
+begin
+ Dlg := GlobalVarSetDlgClass.Create(Application.MainForm);
+ Dlg.UpdateResults := UpdateResults;
+ Dlg.Execute(TForm2(TwgForm_), TPointDot(Point_), EditMode, Mode, Done);
+end;
 
 function TTextManager.InitSL: TStringList;
 var i: integer;

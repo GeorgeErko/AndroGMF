@@ -1,0 +1,210 @@
+inherited VarSetDlg1: TVarSetDlg1
+  Caption = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1072#1090#1088#1080#1073#1091#1090#1086#1074'.'
+  ClientWidth = 854
+  DesignerMasterStyle = 0
+  inherited Panel1: TPanel
+    inherited Grid: TStringGrid
+      Viewport.Width = 453.000000000000000000
+      Viewport.Height = 309.000000000000000000
+      inherited colName: TStringColumn
+        Size.Width = 139.000000000000000000
+      end
+      inherited colValue: TStringColumn
+        Size.Width = 285.000000000000000000
+      end
+    end
+  end
+  inherited SpeedButton14: TSpeedButton
+    Text = '.'
+  end
+  inherited SpeedButton13: TSpeedButton
+    Images = ImageList1
+  end
+  inherited CBCoord: TCheckBox
+    Visible = False
+  end
+  inherited CBZ: TCheckBox
+    Visible = False
+  end
+  object Button5: TButton
+    Position.X = 487.000000000000000000
+    Position.Y = 90.000000000000000000
+    Size.Width = 75.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 8
+    Text = #1048#1089#1090#1086#1088#1080#1103' >'
+    TextSettings.Trimming = None
+    OnClick = Button5Click
+  end
+  object sbLastNumber: TSpeedButton
+    Hint = 
+      #1059#1089#1090#1072#1085#1072#1074#1083#1080#1074#1072#1077#1090' '#1085#1086#1084#1077#1088' '#1085#1072#1089#1072#1078#1076#1077#1085#1080#1103' = '#1084#1072#1082#1089#1080#1084#1072#1083#1100#1085#1086#1084#1091' '#1085#1086#1084#1077#1088#1091' '#1047#1053' '#1085#1072' '#1087#1083#1072#1085 +
+      #1077' + 1'
+    Images = ImageList1
+    ImageIndex = 0
+    Position.X = 10.000000000000000000
+    Position.Y = 324.000000000000000000
+    Size.Width = 101.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    ParentShowHint = False
+    ShowHint = True
+    Text = '0 + 1'
+    TextSettings.Trimming = None
+    OnClick = sbLastNumberClick
+  end
+  object hGrid: TStringGrid
+    CanFocus = True
+    ClipChildren = True
+    Position.X = 588.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 257.000000000000000000
+    Size.Height = 311.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 9
+    RowCount = 0
+    Options = [ColLines, RowLines, RowSelect, AlwaysShowSelection, Header]
+    OnCellClick = hGridCellClick
+    Viewport.Width = 257.000000000000000000
+    Viewport.Height = 311.000000000000000000
+    object hcolNum: TStringColumn
+      Header = #8470
+      HeaderSettings.TextSettings.WordWrap = False
+      ReadOnly = True
+      Size.Width = 39.000000000000000000
+    end
+    object hcolDiam: TStringColumn
+      Header = #1044#1080#1072#1084#1077#1090#1088
+      HeaderSettings.TextSettings.WordWrap = False
+      ReadOnly = True
+      Size.Width = 64.000000000000000000
+    end
+    object hcolHeight: TStringColumn
+      Header = #1042#1099#1089#1086#1090#1072
+      HeaderSettings.TextSettings.WordWrap = False
+      ReadOnly = True
+      Size.Width = 64.000000000000000000
+    end
+    object hcolAge: TStringColumn
+      Header = #1042#1086#1079#1088#1072#1089#1090
+      HeaderSettings.TextSettings.WordWrap = False
+      ReadOnly = True
+      Size.Width = 64.000000000000000000
+    end
+  end
+  object cbNotHistory: TCheckBox
+    Position.X = 594.000000000000000000
+    Position.Y = 326.000000000000000000
+    Size.Width = 160.000000000000000000
+    Size.Height = 19.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 10
+    Text = #1085#1077' '#1079#1072#1087#1086#1083#1085#1103#1090#1100' '#1080#1089#1090#1086#1088#1080#1102
+  end
+  object SpeedButton15: TSpeedButton
+    Hint = #1054#1095#1080#1089#1090#1080#1090#1100' '#1080#1089#1090#1086#1088#1080#1102
+    Position.X = 762.000000000000000000
+    Position.Y = 324.000000000000000000
+    Size.Width = 85.000000000000000000
+    Size.Height = 21.000000000000000000
+    Size.PlatformDefault = False
+    ParentShowHint = False
+    ShowHint = True
+    Text = #1054#1095#1080#1089#1090#1080#1090#1100
+    TextSettings.Trimming = None
+    OnClick = SpeedButton15Click
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009749444154388DA591D119C3
+              2008844FBFAEC7003220198001ED43428A94DA98DC8B22C2FD221044243D9E8D
+              791AF2D507227BB1AD573434D8B6715D6A60AEAA5C5628CE06E66A3358A18088
+              F4383C22E919453AC4E87E8BE2AA22C1CB07129200C0AA65D6F0F30B47B12FF8
+              57FC45309347B7BDAA9693C0DCB26700406B2D8DA74FF062E692C535BBFC4BE6
+              EA69EA0C3B9E9B6BA479A43723A1531145D1F8F40000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\Sort.bmp'
+          end>
+        Name = 'Sort'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000A549444154388D6360A01030
+              C2186B9325FFC3D8C1739F3362578E0958903941132731ACCBCF4351A0D02CFA
+              9F010F6022D626A25CC0F0FF1F868207B5AFF17A07D580EFDF3014E0F202CC60
+              542F7CFB84CF32225CF0E53D4E9B8833E0D3070C05E85E403710D50B9F315D40
+              0850EE05E414C8F015128830B1E0B9CF19615EC06510132CD90659CA3330FCF8
+              C6106426CD00D34CB43F60B6FE9F69F21FC545A4028A34930B00FA1E415197E3
+              EE5D0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\sort_descending16.bmp'
+          end>
+        Name = 'sort_descending16'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000028849444154388DA5924D48D3
+              611CC73FD335E76A6A9A0C1B59199ABD8987C8C002BBF4B24504DD2A3AD4A5F0
+              5497BA54204168978834EB1665D0ADBA0819D2C18AA0173257D9D0D59A56BE6C
+              39F7DFDBF3D661319C75EB7BFC3DDFCF079EE7F9D95894C06CC0F44DF531141B
+              822C60A0C9B5059FC78F6F8DCFB6B85F30687FDF6E42E931F694EFA0BAC8C974
+              2A442C1D219C0811884F51666B64E0C053DB3F05AD2F5ACDEE8A9D6C2E5DC374
+              2A443415219AFA425A25F2E57991E5F9D718C1E33FF25C1140FB70BBD95BDECA
+              EA62175FE36F09CFBDA176593D1DDBFA69F31ECE0BDC4B1CB4AD5D4163779DC9
+              0B023301333CF3824AA308C7DFF12DFE960DCBB773A4FE22A576379525DE823B
+              3B8A8BF05466E81CEC3400F6BE893E3638AB08C75F6389182D9E031C6DE80020
+              628DD21FEECDC3C268123A438DA794071FEF03607FF67D88E6A5492C230A6080
+              E0AF57B4798F00208D4618C5BDF1AB24942038FD212730CAA08CA0CAB9B20006
+              D8F5075E989BC12E925AE27417E704647307B3E949EE7EBE909724659CFEC86D
+              00525A623008A3F9A53208A3B0A6454ED0E46E623E3388BBC4C1CB9F8FD0C0B1
+              860E5CF632AA4A56D219388D341A4B0BD25A91358A7925A8B6798911A2C8BFCA
+              CFE8CF58FE911E4FDEA7E7E33900DA6A0E71A2FE3C519921A925732A435C65B1
+              26042D15ADB96FDCB7DE6773EB467E5816719526A5250F23F7E81C390D4095D3
+              8BA505319921A5257332836DD8C59DB3776DB06013D75DF198759B1C18BB21A9
+              25492DA8736F249818272AA2249524AD257200AEEDEDE1E4C153850280AD5DCD
+              26563686BB7609492D496949562B2C2D90DF0CCB46CAB9E4BF9C87FF1200F43E
+              B9616E3DEDE55374042D406535AB8A6BF16DDECFF533DD7FF5FF3BBF012AD440
+              DAFF35358F0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\Back.bmp'
+          end>
+        Name = 'Back'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'sort_descending16'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Back'
+          end>
+      end>
+    Left = 330
+    Top = 81
+  end
+end

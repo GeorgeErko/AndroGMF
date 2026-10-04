@@ -1,0 +1,43 @@
+inherited VarSetDlg3: TVarSetDlg3
+  Caption = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1072#1090#1088#1080#1073#1091#1090#1086#1074
+  ClientWidth = 585
+  DesignerMasterStyle = 0
+  inherited Panel1: TPanel
+    inherited Grid: TStringGrid
+      Viewport.Width = 453.000000000000000000
+      Viewport.Height = 309.000000000000000000
+      inherited colName: TStringColumn
+        Size.Width = 139.000000000000000000
+      end
+      inherited colValue: TStringColumn
+        Size.Width = 285.000000000000000000
+      end
+    end
+  end
+  inherited Button5: TButton
+    Visible = False
+  end
+  inherited hGrid: TStringGrid
+    Visible = False
+    Viewport.Width = 340.000000000000000000
+    Viewport.Height = 311.000000000000000000
+    inherited hcolNum: TStringColumn
+      Size.Width = 39.000000000000000000
+    end
+    inherited hcolDiam: TStringColumn
+      Size.Width = 154.000000000000000000
+    end
+    inherited hcolHeight: TStringColumn
+      Size.Width = 117.000000000000000000
+    end
+    inherited hcolAge: TStringColumn
+      Size.Width = 64.000000000000000000
+    end
+  end
+  inherited cbNotHistory: TCheckBox
+    Visible = False
+  end
+  inherited SpeedButton15: TSpeedButton
+    Visible = False
+  end
+end

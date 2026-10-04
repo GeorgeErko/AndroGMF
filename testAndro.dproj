@@ -497,6 +497,23 @@
         <DCCReference Include="JSON\ogcCaptureIntf.pas"/>
         <DCCReference Include="JSON\ogcMarker.pas"/>
         <DCCReference Include="MOUSE\objEditMapCaptureDbg.pas"/>
+        <DCCReference Include="JSON\ogcPolyPolyline.pas"/>
+        <DCCReference Include="GMF\objOutline.pas"/>
+        <DCCReference Include="Geomaster\drawTwigs32.pas"/>
+        <DCCReference Include="Geomaster\FrameObjects.pas">
+            <Form>ObjectsFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="Geomaster\objEditMap32.pas"/>
+        <DCCReference Include="Geomaster\objHotSpot32.pas"/>
+        <DCCReference Include="Geomaster\objMouse32.pas"/>
+        <DCCReference Include="Geomaster\objMouseDraw32.pas"/>
+        <DCCReference Include="Geomaster\objMouseSelect32.pas"/>
+        <DCCReference Include="Geomaster\objTopo32.pas"/>
+        <DCCReference Include="Geomaster\objTopology32.pas"/>
+        <DCCReference Include="Geomaster\Selector32.pas"/>
+        <DCCReference Include="MOUSE\objMouseView.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

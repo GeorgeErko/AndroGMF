@@ -2,6 +2,8 @@
 
 interface
 
+{$DEFINE MOUSE32}
+
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
@@ -55,6 +57,41 @@ type
     btnMinus1: TCornerButton;
     btnFrag: TCornerButton;
     btnPan: TCornerButton;
+    ToolBarOZN: TToolBar;
+  // панель ОЗН (бывшая pDendro старой программы MainSkinFormDendro): Tag - код
+  // операции, как в старой программе. Бывший HelpContext: sbSetD 1, sbSetE 2,
+  // sbSetK 3, cbOnlyAttr 4, sbGD 5, sbSetG 6, sbGI 7, sbGC 8, sbGR 9, sbNum 10,
+  // sbNumUCH 11, sbNumUchDropDown 12, sbP2P 21, sSpeedButton40 22,
+  // sSpeedButton39 23, UpDown1 24, sSpeedButton42 25, UpDown2 26
+    ImageListOZN: TImageList;
+    sbSetD: TSpeedButton;
+    sbSetE: TSpeedButton;
+    sbSetK: TSpeedButton;
+    cbOnlyAttr: TCheckBox;
+    sbGD: TSpeedButton;
+    sbSetG: TSpeedButton;
+    sbGI: TSpeedButton;
+    sbGC: TSpeedButton;
+    sbGR: TSpeedButton;
+    sbNum: TSpeedButton;
+    sbNumUCH: TSpeedButton;
+    sbNumUchDropDown: TSpeedButton;
+    dnrPerp: TSpeedButton;
+    dnrZas: TSpeedButton;
+    sbP2P: TSpeedButton;
+    sSpeedButton40: TSpeedButton;
+    sSpeedButton39: TSpeedButton;
+  // бывшие TUpDown: пара кнопок-стрелок, Tag = 1 (вверх) / -1 (вниз)
+    UpDown1: TLayout;
+    UpDown1Up: TButton;
+    UpDown1Down: TButton;
+    sSpeedButton42: TSpeedButton;
+    UpDown2: TLayout;
+    UpDown2Up: TButton;
+    UpDown2Down: TButton;
+    SpeedButton6: TSpeedButton;
+    sbCancel: TSpeedButton;
+    procedure OZNButtonApplyStyleLookup(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -68,6 +105,7 @@ type
     procedure btnDocClick(Sender: TObject);
     procedure cbOSMChange(Sender: TObject);
     procedure btnPanClick(Sender: TObject);
+    procedure btnPlusClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -101,6 +139,9 @@ type
    procedure PaintOverlayLive(const ACanvas: ISkCanvas; const Rect: TRectF); override;
    procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); override;
    procedure UpdateEscButton(Index: Integer);
+  // кнопки дендро (панель ОЗН) - в ToolButtonClick: True - кнопка обработана
+  // (обрабатывает TMainFormDendro)
+   function DendroButtonClick(Sender: TObject): Boolean; virtual;
    procedure ActivateToolsEvent(Sender: TObject);
   // кнопки установки знаков панели точечных знаков (objTopo32)
    procedure InstPointsTool(Sender: TObject; Opr: Integer);
@@ -127,8 +168,8 @@ var
 
 // MOUSE32 (параметры проекта): обработчики мыши, перенесенные из Geomaster (Geomaster\*32)
 implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, newBlock,
-                    {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, objMouseView,{$ENDIF}
-                    UpdateMessages,
+                    {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
+                    objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
                     GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource;
 
@@ -332,15 +373,22 @@ begin
   WriteIn(['================2']);
  FreeAndNil(ListByName);
  ListByName:=TListByName.Create;
- ListByName.LoadFromFile(MainPath+'Names.txt', oghObjectType(TwgForm));
- FreeAndNil(ListByName);
+ ListByName.LoadFromFile(MainPath + 'Attribs.ini'{'Names.txt'}, ''{oghObjectType(TwgForm)});
+// FreeAndNil(ListByName);
  ListByDicts:=TListByName.Create;
  ListByDicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', oghObjectType(TwgForm));
 end;
+
+function TMainFormMouseObj.DendroButtonClick(Sender: TObject): Boolean;
+begin
+ Result := False;
+end;
+
 procedure TMainFormMouseObj.ToolButtonClick(Sender: TObject);
 var Op: Integer;
 begin
  if Selector = nil then exit;
+ if DendroButtonClick(Sender) then exit;
  if MouseObject <> nil then
   if MouseObject.LOperation = TSpeedButton(Sender).Tag then
    TSpeedButton(Sender).IsPressed := False;
@@ -490,7 +538,11 @@ procedure TMainFormMouseObj.btnPanClick(Sender: TObject);
 begin
   inherited;
  //
+end;
 
+procedure TMainFormMouseObj.btnPlusClick(Sender: TObject);
+begin
+  inherited btnPlusClickSkia(Sender);
 end;
 
 procedure TMainFormMouseObj.btnPropertiesClick(Sender: TObject);
@@ -733,6 +785,26 @@ begin
  MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
  UpdateEscButton(1);
 {$ENDIF}
+end;
+
+// кнопки панели ОЗН: глиф в размер картинки (слой ImageListOZN), стиль
+// кнопки по умолчанию уменьшает его до 16-18 пикселов
+procedure TMainFormMouseObj.OZNButtonApplyStyleLookup(Sender: TObject);
+var G: TFmxObject;
+    B: TSpeedButton;
+    D: TCustomDestinationItem;
+begin
+ if not (Sender is TSpeedButton) then exit;
+ B := TSpeedButton(Sender);
+ if not (B.Images is TCustomImageList) or (B.ImageIndex < 0) or (B.ImageIndex >= TCustomImageList(B.Images).Destination.Count) then exit;
+ D := TCustomImageList(B.Images).Destination[B.ImageIndex];
+ if D.Layers.Count = 0 then exit;
+ G := B.FindStyleResource('glyphstyle');
+ if G is TGlyph then begin
+  TGlyph(G).Align := TAlignLayout.Center;
+  TGlyph(G).Width := D.Layers[0].SourceRect.Width;
+  TGlyph(G).Height := D.Layers[0].SourceRect.Height;
+ end;
 end;
 
 // кнопка панели линейных знаков (Opr - код операции objTopology32): обработчик

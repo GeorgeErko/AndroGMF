@@ -4,17 +4,6 @@ inherited MainFormMouseObj: TMainFormMouseObj
   WindowState = wsMaximized
   OnDestroy = FormDestroy
   DesignerMasterStyle = 3
-  inherited Memo1: TMemo
-    Position.Y = 474.000000000000000000
-    Size.Width = 919.000000000000000000
-    Size.Height = 65.000000000000000000
-    Viewport.Width = 919.000000000000000000
-    Viewport.Height = 65.000000000000000000
-  end
-  inherited Splitter1: TSplitter
-    Position.Y = 466.000000000000000000
-    Size.Width = 919.000000000000000000
-  end
   inherited Panel1: TPanel
     Size.Width = 919.000000000000000000
     inherited btnOpen: TCornerButton
@@ -142,7 +131,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
-        OnClick = btnPanClick
+        OnClick = btnPlusClick
       end
       object btnMinus1: TCornerButton
         Tag = -1
@@ -159,7 +148,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
-        OnClick = btnPanClick
+        OnClick = btnPlusClick
       end
       object btnFrag: TCornerButton
         Tag = 2
@@ -198,12 +187,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
   end
   inherited PanelPainter: TPanel
     Size.Width = 919.000000000000000000
-    Size.Height = 362.000000000000000000
+    Size.Height = 387.000000000000000000
     inherited SkPainter: TSkPaintBox
       Margins.Left = -1.000000000000000000
       Padding.Left = -1.000000000000000000
       Size.Width = 451.000000000000000000
-      Size.Height = 362.000000000000000000
+      Size.Height = 387.000000000000000000
       inherited Popup1: TPopup
         StyleLookup = 'Popup1Style1'
       end
@@ -212,13 +201,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Right
       Position.X = 651.000000000000000000
       Size.Width = 268.000000000000000000
-      Size.Height = 362.000000000000000000
+      Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       object InstHost: TLayout
         Align = Client
         Size.Width = 268.000000000000000000
-        Size.Height = 362.000000000000000000
+        Size.Height = 387.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
       end
@@ -229,7 +218,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       MinSize = 20.000000000000000000
       Position.X = 645.000000000000000000
       Size.Width = 6.000000000000000000
-      Size.Height = 362.000000000000000000
+      Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
     end
     object Splitter3: TSplitter
@@ -238,22 +227,21 @@ inherited MainFormMouseObj: TMainFormMouseObj
       MinSize = 20.000000000000000000
       Position.X = 189.000000000000000000
       Size.Width = 6.000000000000000000
-      Size.Height = 362.000000000000000000
+      Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
     end
     object instProperties: TLayout
       Align = Left
       Size.Width = 189.000000000000000000
-      Size.Height = 362.000000000000000000
+      Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
     end
   end
   inherited StatusBar: TStatusBar
-    Position.Y = 443.000000000000000000
     Size.Width = 919.000000000000000000
   end
-  object ToolBarPaint: TToolBar [5]
+  object ToolBarPaint: TToolBar [3]
     Margins.Right = 2.000000000000000000
     Position.Y = 33.000000000000000000
     Size.Width = 917.000000000000000000
@@ -267,9 +255,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 0
-      Margins.Left = 1.000000000000000000
+      Margins.Left = 6.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 28.000000000000000000
+      Position.X = 38.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -285,7 +273,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 10
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 298.000000000000000000
+      Position.X = 308.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -301,7 +289,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 1
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 55.000000000000000000
+      Position.X = 65.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -317,7 +305,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 9
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 244.000000000000000000
+      Position.X = 254.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -333,7 +321,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 6
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 136.000000000000000000
+      Position.X = 146.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -349,7 +337,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 5
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 163.000000000000000000
+      Position.X = 173.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -365,7 +353,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 7
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 190.000000000000000000
+      Position.X = 200.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -381,7 +369,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 8
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 217.000000000000000000
+      Position.X = 227.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -397,7 +385,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 2
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 82.000000000000000000
+      Position.X = 92.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -413,7 +401,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 3
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 109.000000000000000000
+      Position.X = 119.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -429,7 +417,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 4
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 271.000000000000000000
+      Position.X = 281.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -445,7 +433,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       ImageIndex = 11
       Margins.Left = 1.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 325.000000000000000000
+      Position.X = 335.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -483,6 +471,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Right
       Images = ToolImageList
       ImageIndex = 12
+      Margins.Left = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Position.X = 836.000000000000000000
       Size.Width = 25.000000000000000000
@@ -520,7 +509,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inline LayerFrame1: TLayerFrame
       Align = Right
       Margins.Right = 2.000000000000000000
-      Position.X = 452.000000000000000000
+      Position.X = 450.000000000000000000
       Size.Width = 382.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -556,9 +545,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       GroupName = 'PaintTools'
       Images = ToolImageList
       ImageIndex = 16
-      Margins.Left = 1.000000000000000000
+      Margins.Left = 6.000000000000000000
       Margins.Right = 1.000000000000000000
-      Position.X = 1.000000000000000000
+      Position.X = 6.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -577,8 +566,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Right
       Images = ToolImageList
       ImageIndex = 17
-      Margins.Right = 2.000000000000000000
-      Position.X = 425.000000000000000000
+      Margins.Right = 4.000000000000000000
+      Position.X = 421.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -590,6 +579,416 @@ inherited MainFormMouseObj: TMainFormMouseObj
         StartValue = 0.000000000000000000
         StopValue = 0.000000000000000000
       end
+    end
+  end
+  object ToolBarOZN: TToolBar [4]
+    Position.Y = 81.000000000000000000
+    Size.Width = 919.000000000000000000
+    Size.Height = 48.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 27
+    object sbSetD: TSpeedButton
+      Tag = 10
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1083#1080#1089#1090#1074#1077#1085#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072
+      Images = ImageListOZN
+      ImageIndex = 0
+      Margins.Left = 6.000000000000000000
+      Position.X = 6.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbSetE: TSpeedButton
+      Tag = 11
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1093#1074#1086#1081#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072
+      Images = ImageListOZN
+      ImageIndex = 1
+      Position.X = 46.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbSetK: TSpeedButton
+      Tag = 12
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1086#1076#1080#1085#1086#1095#1085#1086#1075#1086' '#1082#1091#1089#1090#1072#1088#1085#1080#1082#1072
+      Images = ImageListOZN
+      ImageIndex = 2
+      Position.X = 86.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object cbOnlyAttr: TCheckBox
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1090#1086#1083#1100#1082#1086' '#1090#1086#1095#1077#1095#1085#1086#1075#1086' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1103' ('#1073#1077#1079' '#1088#1080#1089#1086#1074#1072#1085#1080#1103' '#1087#1088#1080#1084#1080#1090#1080#1074#1072')'
+      Margins.Left = 4.000000000000000000
+      Position.X = 130.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      ParentShowHint = False
+      ShowHint = True
+    end
+    object sbGD: TSpeedButton
+      Tag = 1
+      Align = Left
+      Images = ImageListOZN
+      ImageIndex = 3
+      Position.X = 154.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbSetG: TSpeedButton
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1075#1088#1091#1087#1087#1099' '#1082#1091#1089#1090#1072#1088#1085#1080#1082#1086#1074'/'#1076#1077#1088#1077#1074#1100#1077#1074', '#1078#1080#1074#1086#1081' '#1080#1079#1075#1086#1088#1086#1076#1080
+      Images = ImageListOZN
+      ImageIndex = 4
+      Position.X = 194.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbGI: TSpeedButton
+      Tag = 2
+      Align = Left
+      Images = ImageListOZN
+      ImageIndex = 5
+      Position.X = 234.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbGC: TSpeedButton
+      Tag = 3
+      Align = Left
+      Images = ImageListOZN
+      ImageIndex = 6
+      Position.X = 274.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbGR: TSpeedButton
+      Tag = 4
+      Align = Left
+      Images = ImageListOZN
+      ImageIndex = 7
+      Position.X = 314.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbNum: TSpeedButton
+      Tag = 10
+      Align = Left
+      Hint = 
+        #1048#1079#1084#1077#1085#1077#1085#1080#1077'/'#1091#1089#1090#1072#1085#1086#1074#1082#1072' '#1085#1091#1084#1077#1088#1072#1094#1080#1080' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072'/'#1082#1091#1089#1090#1072#1088#1085#1080#1082#1072'/'#1075 +
+        #1088#1091#1087#1087#1099
+      Images = ImageListOZN
+      ImageIndex = 8
+      Position.X = 354.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbNumUCH: TSpeedButton
+      Tag = 14
+      Align = Left
+      Hint = 
+        #1059#1089#1090#1072#1085#1072#1074#1083#1080#1074#1072#1077#1084' '#1085#1086#1084#1077#1088' '#1075#1072#1079#1086#1085#1072' '#1076#1083#1103' '#1074#1077#1076#1086#1084#1086#1089#1090#1080' ('#1076#1083#1103' '#1086#1073#1098#1077#1082#1090#1086#1074' 1-2 '#1082#1072#1090#1077#1075 +
+        #1086#1088#1080#1081' - '#8470' '#1091#1095#1072#1089#1090#1082#1072')'
+      Images = ImageListOZN
+      ImageIndex = 9
+      Position.X = 394.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbNumUchDropDown: TSpeedButton
+      Tag = 14
+      Align = Left
+      Hint = 
+        #1059#1089#1090#1072#1085#1072#1074#1083#1080#1074#1072#1077#1084' '#1085#1086#1084#1077#1088' '#1075#1072#1079#1086#1085#1072' '#1076#1083#1103' '#1074#1077#1076#1086#1084#1086#1089#1090#1080' ('#1076#1083#1103' '#1086#1073#1098#1077#1082#1090#1086#1074' 1-2 '#1082#1072#1090#1077#1075 +
+        #1086#1088#1080#1081' - '#8470' '#1091#1095#1072#1089#1090#1082#1072')'
+      Images = ImageListOZN
+      ImageIndex = 10
+      Position.X = 434.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object dnrPerp: TSpeedButton
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1047#1053' '#1084#1077#1090#1086#1076#1086#1084' '#1087#1077#1088#1087#1077#1085#1076#1080#1082#1091#1083#1103#1088#1086#1074
+      Images = ImageListOZN
+      ImageIndex = 11
+      Position.X = 462.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object dnrZas: TSpeedButton
+      Align = Left
+      Hint = #1059#1089#1090#1085#1072#1086#1074#1082#1072' '#1047#1053' '#1084#1077#1090#1086#1076#1086#1084' '#1086#1073#1088#1072#1090#1085#1086#1081' '#1079#1072#1089#1077#1095#1082#1080
+      Images = ImageListOZN
+      ImageIndex = 12
+      Position.X = 502.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbP2P: TSpeedButton
+      Tag = 101
+      Align = Left
+      Hint = 
+        #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
+        #1079#1099#1074#1072#1077#1090#1089#1103' '#1076#1074#1077' '#1090#1086#1095#1082#1080')'
+      Images = ImageListOZN
+      ImageIndex = 13
+      Position.X = 542.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sSpeedButton40: TSpeedButton
+      Tag = 102
+      Align = Left
+      Hint = 
+        #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1087#1086#1083 +
+        #1091#1072#1072#1074#1090#1086#1084#1072#1090')'
+      Images = ImageListOZN
+      ImageIndex = 14
+      Position.X = 570.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sSpeedButton39: TSpeedButton
+      Tag = 103
+      Align = Left
+      Hint = 
+        #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
+        #1079#1099#1074#1072#1077#1090#1089#1103' '#1086#1076#1085#1072' '#1090#1086#1095#1082#1072' '#1080' '#1074#1099#1073#1080#1088#1072#1077#1090#1089#1103' '#1085#1072#1087#1088#1072#1074#1083#1077#1085#1080#1077' '#1074' '#1091#1082#1072#1079#1072#1085#1085#1086#1084' '#1088#1072#1076#1080#1091#1089#1077 +
+        ')'
+      Images = ImageListOZN
+      ImageIndex = 15
+      Position.X = 598.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object UpDown1: TLayout
+      Align = Left
+      Margins.Left = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 628.000000000000000000
+      Size.Width = 16.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      object UpDown1Up: TButton
+        Tag = 1
+        Align = Top
+        StyledSettings = [Family, Style, FontColor]
+        Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1088#1091#1095#1085#1099#1093' '#1084#1077#1090#1086#1076#1086#1074
+        Margins.Top = 5.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 16.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = #9650
+        TextSettings.Font.Size = 5.000000000000000000
+        TextSettings.Trimming = None
+        ParentShowHint = False
+        ShowHint = True
+      end
+      object UpDown1Down: TButton
+        Tag = -1
+        Align = Bottom
+        StyledSettings = [Family, Style, FontColor]
+        Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1088#1091#1095#1085#1099#1093' '#1084#1077#1090#1086#1076#1086#1074
+        Margins.Bottom = 5.000000000000000000
+        Position.Y = 23.000000000000000000
+        Size.Width = 16.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = #9660
+        TextSettings.Font.Size = 5.000000000000000000
+        TextSettings.Trimming = None
+        ParentShowHint = False
+        ShowHint = True
+      end
+    end
+    object sSpeedButton42: TSpeedButton
+      Tag = 104
+      Align = Left
+      Hint = 
+        #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
+        #1079#1099#1074#1072#1077#1090#1089#1103' '#1086#1076#1085#1072' '#1090#1086#1095#1082#1072' '#1080' '#1074#1099#1073#1080#1088#1072#1077#1090#1089#1103' '#1085#1072#1087#1088#1072#1074#1083#1077#1085#1080#1077' '#1074' '#1091#1082#1072#1079#1072#1085#1085#1086#1084' '#1088#1072#1076#1080#1091#1089#1077 +
+        ')'
+      Images = ImageListOZN
+      ImageIndex = 16
+      Position.X = 646.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object UpDown2: TLayout
+      Align = Left
+      Margins.Left = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 676.000000000000000000
+      Size.Width = 16.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object UpDown2Up: TButton
+        Tag = 1
+        Align = Top
+        StyledSettings = [Family, Style, FontColor]
+        Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1103
+        Margins.Top = 5.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 16.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = #9650
+        TextSettings.Font.Size = 5.000000000000000000
+        TextSettings.Trimming = None
+        ParentShowHint = False
+        ShowHint = True
+      end
+      object UpDown2Down: TButton
+        Tag = -1
+        Align = Bottom
+        StyledSettings = [Family, Style, FontColor]
+        Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1103
+        Margins.Bottom = 5.000000000000000000
+        Position.Y = 23.000000000000000000
+        Size.Width = 16.000000000000000000
+        Size.Height = 20.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = #9660
+        TextSettings.Font.Size = 5.000000000000000000
+        TextSettings.Trimming = None
+        ParentShowHint = False
+        ShowHint = True
+      end
+    end
+    object SpeedButton6: TSpeedButton
+      Align = Left
+      Hint = #1054#1090#1082#1072#1090
+      Images = ImageListOZN
+      ImageIndex = 17
+      Position.X = 694.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+    end
+    object sbCancel: TSpeedButton
+      Align = Left
+      Hint = #1054#1090#1084#1077#1085#1072' '#1090#1077#1082#1091#1097#1077#1081' '#1086#1087#1077#1088#1072#1094#1080#1080
+      Position.X = 722.000000000000000000
+      Size.Width = 40.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = 'Esc'
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
     end
   end
   inherited ImageList1: TImageList
@@ -1437,5 +1836,633 @@ inherited MainFormMouseObj: TMainFormMouseObj
       end>
     Left = 794
     Top = 99
+  end
+  object ImageListOZN: TImageList
+    Source = <
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C08648800000174494441545885ED57B171C3
+              300C7CE69CDE956B36D983D9442364048C901158790ED61E211547709D144823
+              CA14044A9422D32EF277BAD3E9493C0840100464F09158BB6FC237174CCF7C24
+              D6C87CD13DF99712D11C0F4B41E50696D75E0E99D2A2CE92E9C5E048AE02C2ED
+              D9C886D83F81E40FDAA21EAC0927242E10583AB10613EFD3C9E7C425FA68986C
+              7F6E4BB33FDC1B8D5CEB40EEC492A0E48D92B3D5E225079288B03FC26E7DA077
+              BAD8704A9029502BBE16320A35291822500AD15648C1CE92917DA0B364E65EC3
+              CDC2495072B91389973560B206D3042307E6BE5A4B0804F848E82C9974D21889
+              1D88CF972B27FB390F140A063BF401FEB9F2FBDB112112CE970F7C9F3E2769F1
+              91F8B0F49E6E118FDEB1793DC27504EB03BE4E00156AA2D407AA6B21857E0C02
+              00E32B6D0028E69F1DE9176E9FE6E27E1FDC50037F990726B3002AE701AD0817
+              0EBCEF0C281DD0F63FCF4C08EC3F03AE4AC15D86CE9A22FCFF2F4878F6FF8226
+              FC40B4AC8987D7C02FADC0321C3E8863330000000049454E44AE426082}
+          end>
+        Name = 'sbSetD'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000001AC494441545885D557B171C3
+              300C7CE93C4046E0281821752A8E8251D82473B0CE14CC06EE5320454C09A208
+              8AB2ACF8823BDDF9F4201E026000046E12120B0AD1EF4EC34362A9815AE94CFC
+              6201A5106365243286DEF39B628588185223CF4EE5E7688A562F2CE29633476B
+              62022C929603DA891D3521E34A21B099DB4C6E39111943086C71D764C9A30D5B
+              E1EF49CD9E9A186B6049D8FA044BC73B1E4A42EF7828F149A916FA2D722DB5B3
+              9131D9D7E45A5635F028898CA1E70346EF78B0BCEB6D342DBD6CDFAA890198C3
+              A5C13DE1B71C29EDEA3AC8BF2FE581BDA4D6F95A547424B2230B07F2A1238EEC
+              9D0FD561A48DF43AD3435C4BC143FE0535726288F75C2507FE5B1FB0C2DB9A19
+              3316E11D038000101F63DF143C3A0BB24DBE9186C492220B40F2F1799D70D388
+              F5655BF34193A7C8025ACE8340B3434D035B0416D6DA07E4FB2AE42014677C55
+              03DE73D7142C896BDDB494AFF757444720672894E3B327DC1A6FAD5C29503BFF
+              AD0542E7DE5A445BE74BF2057EF6DECF067996EE7BC13D92120BB9089F086FEE
+              A5DDAACFB87A79FFDB7CCA2737A3661D3CE3AE38017F79573C6D27BC4B9E9182
+              1F02CB446A5D61378F0000000049454E44AE426082}
+          end>
+        Name = 'sbSetE'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C08648800000180494441545885C557BD71C6
+              200C7D6412A648AD113202A368142AD7A953517B0A46709F4229F2190306FF80
+              3F5B77DCD93C1E124808A15011EB5900C06856EFC4978F1278037EBBC21C5739
+              70704BE34954033FC84769F08E080010A7FF5D72D26742BC3400D2E5A2069FAE
+              0CE85950D15FF1A08A4F573170921FF09618084AADE7467AC1925A5F0947B403
+              4FE501D9C14FCD1F802A982AAE06DE1EBF841F8E01A319C0C5E77F96C8B2E20A
+              E7D5D78EDF55792028C98C9018CB0DE80DC2F88C4AB4BD70CB7732269BA8FB3A
+              DE8C81C23957737B29DFA21F933CCF0375FF1EE0ACDC72473D508B9D43FCD67A
+              2031A0103BCA3B161D0086F10015F8AD77C1A678CF620818C6E9DF18EB607983
+              70412A0DDB5FE693105886715AE377D480DE92C0B8FDFB209FA425B7A7380969
+              0840328CD32ABB5ACFF296185884E03C94FC7EE3E7F30BB91146B3BAAD0C7706
+              629C4BF244F1717289CF1D0B28ED332F3774D50367706F294A4C24A6B71E382B
+              DAB8706F004ED1D6E0279F668F3F4E5BDF0597E17FF5957B92A4EB5F1F000000
+              0049454E44AE426082}
+          end>
+        Name = 'sbSetK'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000001D9494441545885CD57BB71C3
+              300C7DCE79104E911A55E6C028182123304DEA8C80DA53A049934ABD0BA4D08F
+              96208B522C5F70C742780401E28104856CE2D9C4B12047E32F4BC0D3258AB2D4
+              1D8D1FEF50E0117E5A5A8493CCB0DDB86074CC82123FBE060AE790F986010066
+              E294E0001C105713974CDD77ABFBBC34610A4B99E182714478194002F9E7A519
+              94CA705271BF369E499C7770BEE4BCB439671357281268021352023EBEDFA150
+              BCFD7C21436E6670925315E70C8F6A86939CC21AF06BE366D3802AA586F3A94C
+              2930132756CFD652C0447514D4723ED5998913469E6528BE62F0EC4A9DCFA9E0
+              3C0CA80FA0AF7422BA31F66BE3DC65A4335C1C5B7BC31900525720FA2A61E4BD
+              748534E02423A632CC4136C12EA9E4CC0138C97C60CCC4F6AB7A83415500B51B
+              8ACF711044813B709BFE5E74D40D6BADADBFBB1714CEC2EFCD524DC16DAAA371
+              DFFE9ECF3583C945131EC1A97DDB4BE0ACBADACC0660CDF996736E5D5765558F
+              F0BA1A081E14356226CE99C05469B0C879B0F39A9AC9D4F6972A0AF6A4FDDE82
+              96C953EEDF13EDDB22B47F34E740D75B4806CE99C61A98CA395C7527E783A842
+              5501C03975F644A0ACAE4CF11BE1119C47F82A0533C54ECE97F0C7DD0307E1FF
+              E7DF1078EEBFE05FDE030FC57F0173420B067466DC690000000049454E44AE42
+              6082}
+          end>
+        Name = 'sbGD'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000001AF494441545885CD57C191C3
+              200CDCDCA4104A512994A25278A50EBD530525F89FC7DEE39298016163C7CE9C
+              667898B5B4C22B0446CACA9495E8D8D9F84F0FF8BA7959967367E3E7132AE8E1
+              975E9018B4C176E38A99382A4AFCFC1A28C8A1ED820100392B25800008282D2B
+              0384B7FB443E262A4044733F61690DAE9887879709BC08DF094119B3D22228C9
+              DCADB4A6798FBCF4B9A6AC341802A4F93211404C025173358F412F439A47B0E7
+              DFAF81A09060902C4E6A0B36A2796D4B1228C06883128C6A5ECF95847542D994
+              80F2769FEA24D88C01CDDD845E09BC485296F733005804215A06EE8E4FCF86F5
+              170A32D179D449EC8A3FA85943EE24B1BD556F70184A607441FE3E7692287002
+              8068FBAECD73EF586BF1779F050599FBBCD98625A80ACE19CBFE4B9C6B0E55A3
+              71B760EDCFC7C4246D335BDC096BE45BB6594E423CBBA9878FD58073A118B19C
+              953109A20C3A743577563E523349FEDAF990047B3EFB52C09C8421295F3520D6
+              F13F5A73E079B614674794B9066ABBBA51776AFE36339819003086A7BF082419
+              2D8A7F473842730F5F95A099D8A9790F3FAE0F9C84FF9F7F43E0BBFF829FDC07
+              0EC57F0118A11F8A3F8661BF0000000049454E44AE426082}
+          end>
+        Name = 'sbSetG'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C08648800000202494441545885CD57BB91E3
+              300C7DDED942540A92CBAF04948212AE046CB27520DE2A985CAEDCC1BB40A644
+              49A44C79ED9DC30CC6233E02203E046878327A32A241AFC6DF5AC08F53ED94E5
+              DAABF1D71B34B0865F6A0A74B0D5FA993D55DCB018564389BF01800B080D0201
+              1F029F5F234341883125A3681000781DE962F0D43A5E850AE330D41DE375A40A
+              E81154182D84229327E501544100D4886A65EF426C58B886E7087CFCFD035381
+              A700000C0948B256AE4998DCA07AFB1EECB25558865DDDCA285C767896CF4AA6
+              F04E1EE2E6FD748785A24695C9F3D0E9B7345C2BB8CC5D7D80D7911FBF7E0316
+              5018C2011163CABBC2E043C0459AC5B9325E787E773F0064EF781DA9307E7E8D
+              7497A50861949B1765041EC97949ABB57B9B2BEBDC71C378B78D56BE781DB9C1
+              9B7C7636AC66C15103CAB80E367F8B2D5CEC3952714C9D3923008AED194B24CE
+              A7E08440D7017A1D9A9BC989DE4E601DF64CB1ACCDBAEEE97FF83D5018AB7E9F
+              A6EE14D8BEF2377C2C7F64F3EE3D5D379AEA15DCCAE716BF1D60CDABDABCC79B
+              FE5E15AEC827977982D6F0BE1AA83C287A2825A3BA40A553A099F38AE73D35E3
+              22D35CE949C123613F52985C38B831D7804443FED939076EAFA8E24D91A76D4D
+              FEBDAAF5C19CCF1481880000CEB34104E2C1D0C69BE21939AFE17753B05B7830
+              E72DFC797DE045F8FFF3DF10F8D9FF82DF790F3C15FF0770E22D94AC4329F400
+              00000049454E44AE426082}
+          end>
+        Name = 'sbGI'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000001C3494441545885CD57BB71C3
+              300C7DCC241C05A370148C9011982673B0CE147491DEBD0BA490258314BF92ED
+              0BEE7047F1111FF2811FC147161F59509157E31F35E0ED52CA52F7BD1A7F7940
+              114809372507CE72D23F33A6848B600BFC7561687C5703CEB2A9158DDCAEDD04
+              77362AB831D8DBC5C842C4C291456E57F144429EC40712B21040A9A3290A44B0
+              6909DF12B0B4385E13F8FEB98AEE5F0D56AC16309F792D7862E3030911171348
+              660F085C283A69053F750E58227024F8C8006002082EEC93C883AFED22E7B9D4
+              28D02B032C330D0EA21338C4B9121F599622CC8B8D486AFD7AB2B90E71DE48E8
+              CE2789A38CD3FBF6537C5675F66E486AA0B7BF9D65E32C3F129387AA312D176D
+              193C6A93E5CE785F759E820983A1044627B41DBB1367FBB2630A2C9B8787ADD5
+              F37FF83D604CFB7B5A4629C896BAA44DFB66CC9E4185EF640B6AFBE034BE5C78
+              2DFF1BD00B3EB2CFF5A9DAF23F5403A507454F2EBF9FF08186C626D9E5EDDACC
+              BB35E34940EA4DE142DBFEC8B277130A0B1500C09C5E649BCDB338EFE1D19390
+              DF5FE5C51A38C2792E31F0EE01636DC3E034E7059CD536B43C780E9CE2BC54C4
+              B7B13764E2E4199C8FE2FFE7DF1078EFBFE099F7C053F13F7A12568516A1E70B
+              0000000049454E44AE426082}
+          end>
+        Name = 'sbGC'
+      end
+      item
+        MultiResBitmap.Height = 30
+        MultiResBitmap.Width = 30
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 30
+            Height = 30
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001E0000001E08060000003B30AE
+              A20000000473424954080808087C08648800000182494441544889C5575B92C4
+              20086CE7641CAD8FC69C8CFDC84B11D4647766A9B26A0049231D300355355535
+              24F229FF2B0BF89A4459D5B64FF8BF026486A6E4250A1491C67E674FE437C309
+              F87E2B8080631129C3B24C12F352839682E5B854564A6D867375319BC2D340C0
+              C04D2760DC7E6F8BB48CC788D314D4039317E8994492541D3F029DF6B1AA1A08
+              A8884BACD2E9C37B59E674CFC6007499D1D93C2D77384D4BADAAE6813ABDA5C2
+              FC1A72EA6C67A945A4882A44B4D9DCE83CAB1DB65B295B9FAAAA452D77B4AAAA
+              DACB3B48A279A1789D8E24B81B00C0EC5AD533A29CC6E23961C8715B56C7EBB1
+              A6A51E1A6BE0CABF041C1DA403CC4624F701E2FCCBC0A3E70FEF630225E3AC94
+              B1BE2CABD79C3B59B486F153F0686352D67000A9AA91B59FC7DCCFC167A0A3EC
+              EB7806D330ECE34CA28B7C265B3B72696FCA6974D2D93BD196B9BF52C3A04366
+              E59D2552734AA2E5F82F391DF9CDDABB3CE4F809A711A0FF6860BA11CF398D4B
+              DD723CCCF2379CDEF17783EE70DEF96E7EE2FFB7FF4E3F8595DE14AF36AF0B00
+              00000049454E44AE426082}
+          end>
+        Name = 'sbGR'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C0864880000019C494441545885ED57B171C3
+              300C7CE63C80ABB4E1146ED2608E54AC5267048C901158658854A85D65048EE0
+              2A455C2085441E4F8144E92CCB2E823BDDE9F020F8025E1005541613AB75BF09
+              BEF986D91713AB05D641D7C41FC680CDED662D185D20A4E4A140770511BD36A1
+              02C444CAFDA60090841520FD389E746D4DD81A10808911891C003C3DBF2192E0
+              F3FB6B2CEF3A3656223D9F9401A5D8F91277159ABB7E0A77B5237876C305C1B3
+              4B91D4470022CEDA788EF9C4B0F2377BC68CD2FFECAB2B70A9267653AC5324F5
+              411084F072D817F69EC5E5E4F9A9AC0A2EB221CBEEC9B928BF156FF916CF8102
+              08290DCA9E83E7967CAE0877568067860090C31EE87B1D3C23BF0573CC6A47F0
+              ECF21E1937354011662F0361B2E717EBA04EB4D467F53F2556EA75D48A5F2CA0
+              1AB3703D9FFA6F4943C853A26A09AE11A314583D48798BF300039A98BA511D45
+              01B8C8ED75CD519CFC8C2C7FC9744215D24884D7E31B7E1EDFED513CE6582A3A
+              AE2A50C82F11610DACF5BD1F12B0D6DFCF991058FF0C78D11C5885905021F0FF
+              5FD0B4FBFB2FB801A1026CA9899B6BE017C002AFCCD65AABD50000000049454E
+              44AE426082}
+          end>
+        Name = 'sbNum'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000001D6494441545885C557B171C3
+              300C7CE692DEBD0B73143499C31AC1236014661366136403F72E9042A24CC394
+              04C9B1833BDDF1F82000034F10062A49C2DA5ABF047FB9C3B29784B505D64ACF
+              C4DFA68097CBDA142AA0ADCF7BBEB9E739501C6DC5ED3A4C2975916FB0F2EBBE
+              84D1C2EDF963ECF582F161EDBB38A080062058637352F46D5966A595A2DAC0D6
+              6B576CACEE0353CEB704D4CA4412D63057F3008CF8717FC2CFE70E881931D1A8
+              9B3229111091673901F4BCB0655CDF0712432F677F5D079922EDD56EE39EDB14
+              0B4185488578ACA908AB80350BABE4EB35942E6BDD05CB159DF37943BCBB802E
+              E73E80947B07A9C74B007A390FFBB95AF39DC31621EF826811E61A006B4AA482
+              DB00EA4C8CD94AB949ECDAF9B6B780082046EDE0B03FE10046CC009071C81BEC
+              7A4B00007D164825F3988D94A8E200A9C88A12781A874D6BEE065256A9AF0376
+              35B6A9F7BA0E22494F321B800CBF484023F1EA4FD2ED4D6871EBA17920460EDF
+              DCAFC3C72E94FE5FBED891FBED70F581B9331EDCDD073C07B60C304BE74760EE
+              11D932035AE2ADEA03ABDF7423E55173297B66C029DCEE59FD25FBEE9AD68617
+              F14C8B014FCE03F6E0D48C68656906B4F2DEDAF44871B4E4C02D7F71CF1FC15F
+              EED0DD079E8DFFFB7FC35F162C0A5CB2AB68B80000000049454E44AE426082}
+          end>
+        Name = 'sbNumUCH'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 21
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 21
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000015000000200806000000FDA033
+              880000000473424954080808087C08648800000153494441544889AD563192C3
+              200C5C6EEEFAEBD3E467CE13FC049E9027383FE12934E9D3BBD015B17CB290B0
+              E26467186323AD845803C082A9669A6A2600A0F941DCA69ACDBEF50D1E9898FB
+              3D123DCE7EA9473C9C4633F0ED7E85359E7E7E13007CB9297F129C25D79880A6
+              695BE0B90E5D4200D00412724C2EEE2E6164569258FAAF35BD9C73E2E9266701
+              3512904209B01101544AD9CD7EB5F76A2A1D754D755F070C93965248666E3D5F
+              268D901F22F54A119E3EAFBE26D599CA20DD855A451CD4A8CCD2D52923ACBD85
+              7057D3EFFCA6D2D724B6C85FD950DEDA4FB58DBB9FCAE8D2D98217D425F4BEE9
+              77EB38E91246601D7CDFDA88E607716DD09756029E25D0656AF653CBD1230CC3
+              290389D6D8EF4E7F388D40FD77BE9C735A32239DE15433590A68487580611E65
+              7604F8E73EA3D1E9ED7E8DE92F0A7D8D397AEDD910025B311FBDA0756B0A6C75
+              6895A5ABD34FE20F30BB3E0279EFA5350000000049454E44AE426082}
+          end>
+        Name = 'sbNumUchDropDown'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 30
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 30
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001E0000002008060000000540C8
+              7F0000000473424954080808087C086488000000F1494441544889ED954116C3
+              200844212F07E7E676A551441D304D16ED6C5A03E5EB4023D15FBFA2E4CA1695
+              AFD700EB70016BC8E8D3A9C74F9CBF24F2C2FDC086E5B75A43831637BBE88AA2
+              703C5E585C3DE02E598829AA719D44447C0C93ED1DB761113B0ED4D1609EAE51
+              0175FAE1926279DC66A08E3DD5BB50A0CE41D734973E0C7BE7E5F6750A2BFE3F
+              DED4ABE0DC877BFA3A5761BD76E27311AF870375041ACC1A9C7FC06ABD2AB802
+              99F10CB64EC3B43E71329E6B90E9D4CAEAC8C0E90BC1D43909A22F91B0D5330B
+              2D2BADBC1514B8241E126275C8CA40CE3332FB83DE4E22C2B35C11D97F0D239B
+              B9EB3AFDAA3ED3926690584C3EF40000000049454E44AE426082}
+          end>
+        Name = 'dnrPerp'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 32
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 32
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000020000000200806000000737A7A
+              F40000000473424954080808087C086488000000BC494441545885ED96410E80
+              200C04C597F373BC19535ABA5B4AD484BD184B6126408CC7B1B3F3A134AABB8A
+              7EF90EB24E0A2A61D633985776E05968DA002D82C16F56EC08247C72EB3BAB90
+              44020B5EA8D6DAF56A3547022B3220422226800040095E80D962A0971320CF17
+              99837F07227067AECA528B33F0C11A984006DC58CBFF0E64C207125DDA2AB822
+              A10B3097C68977A9EF7A1193641D8116A7CF1A2F52C08A26B662CE3B61B67A25
+              7F980C39738DB93FA284FCE2087696E6023E028AAFEFD9D37E0000000049454E
+              44AE426082}
+          end>
+        Name = 'dnrZas'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 24
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 24
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000018000000200806000000085EB8
+              380000000473424954080808087C0864880000012B494441544889B5565976C3
+              200C1CFA722FEB6699A3E966EA07C1612F58543F360266843608180961D5380C
+              D76E09611DF056E722D8D1FF21DF632780912B06F3AA6AA2FA55BCDF40081D8C
+              550BAB75240D6696C8409AAADA74D32E494D9813BCB680C7A83720016836E527
+              204D452022210E599CEEC7839D5C91C055D558AD7111884820105D449A5C1708
+              40AEAB5AB953488F8AEE6016F9C1EF7D319824AD0E6C2EAE18947C7D223701C9
+              90FFF74FB31D03B6ED026D0D9404CB591453B255F749DA6EBA4432BF7C3EF158
+              B8A01C97CC2CB38E102439D44D33432AF7F9086E60663A1637DFF33A202C02B3
+              990078931FABE4914C53C9008BFD18A56F9732246E9AC62000A1F1C0A63C74D1
+              3AEBF3E7E01DE4891144F064D19271CE4263F5CDFE3F069C79314F2AF9DFE517
+              2DE49CFC286BF75E0000000049454E44AE426082}
+          end>
+        Name = 'sbP2P'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 24
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 24
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000018000000200806000000085EB8
+              380000000473424954080808087C0864880000013A494441544889CD964B72C4
+              200C445BA91C8C9B4DE766DC4C5904C67C24D9C02CA22A976D8CFB81240402CF
+              081DDEC5EDBB64841AE273DB1160A5FDC6AE695701CF15CEF79CB3A69CAE8697
+              022286C6D3110EFD482854B5C2401A3AABD32FFD55E1085EF6B524BC61FF1B20
+              0221883E06D09CF3DB6DDF8703444A19F81180F8CBA697224D59B4B290B616DD
+              66161D7526A0442054D293A43248D5DB2087908E67835C009B321241484AFB6C
+              CF26F0298BAB3AC820C2C65D9E4A98191D8434CB830799ABA90761070C379F12
+              8F071BD458392D77059065C02A04D8A845B4B2ABC6D018D056B19B21C4FB1A40
+              DBD5B40B7AFBD2824E00A3700FB92C4C250554EA7FED663F2F3407C478060208
+              58AEC0AAA8358BBDD31A6B60EF3BEE1F076F210408D90FF2C3C11DEEC91CEECD
+              7319C0674ECCED0AFED829FCA1FD02FE43BD68A04C2FE10000000049454E44AE
+              426082}
+          end>
+        Name = 'sSpeedButton40'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 24
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 24
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000018000000200806000000085EB8
+              380000000473424954080808087C08648800000135494441544889D5565B12C3
+              20085C3A3D586F5672336F463FA2068CA221ED4799C9C404DCE52124C0481862
+              AE9119B34064A87F7681F73B75C8E8643F9147DFAD0628005CC47AE9810DF4CC
+              2CFBEB2CEF3740546D6C8A3C4F8BAE932ADE9928AF85454493C02BE280ACDAB7
+              454E2999E77E0DBE287F42B06D75F94AC9A8CE7D1010C6719ADA53542CDC6E0D
+              DB9A4D3FB3BFEC4DD9C74BFBA64516041D582128E07749DC340920E53AECD7D2
+              03E8080624A406A20072053CEFF7092A38F749EF4943DA4DD7442E8D8A53BA16
+              E4F2A82080F4E922804CA4CDB722348BCE247C28CB21C844E1694A0A53583DEC
+              A3AFD6EFD6B826056C49948D072080544FCD6F8CED050D4E4D346E04B98034FB
+              6D29A0D48922D6300C812EAC6318EFC82909030C8A1779D1B99BDF646EEE6A9D
+              1DF8CED0723AF9E7F2019E9C918FE6B347DE0000000049454E44AE426082}
+          end>
+        Name = 'sSpeedButton39'
+      end
+      item
+        MultiResBitmap.Height = 32
+        MultiResBitmap.Width = 24
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 24
+            Height = 32
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000018000000200806000000085EB8
+              380000000473424954080808087C0864880000010F494441544889D5564112C3
+              20085C3A7D589EC6D3C8CBE8216AD0AA1535873293C948741716D4105AC6D062
+              4CCDB92E636805FCDBB744E0F1BB807B208DEF22A20A648F88547046230CF322
+              C845A0D95AC58DF532D18D1591411EB95EA313676D1301C1D6E014D94DA02080
+              0897CCC77124B9B74B748A548A0CB8BBA86531FABCB3BC9B885BBD3E11517B1D
+              0FADFB9736FD65EE1A8CC9034C75D138380073FE78B2D87AF92CDAE3457E6F41
+              B19916F2AD11246036BED00481685E22862A03CAB93BF902F9961A2873F6B6D6
+              6D370594E21AABADD90B55D0E4E37E060450B8839B815041508E2725BA41CA0C
+              6A19CD7264FF42602EC6AB4536B245594A7980C57D901AA0E60B01EC39B43A3B
+              F971FB0029CC95B4D59CF1860000000049454E44AE426082}
+          end>
+        Name = 'sSpeedButton42'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000004A49444154388D6360180544
+              80FDFF91714343C37F3C0AB169C45487C310640DD83462B78C09BBA423237E03
+              10008B01C4B880A001F80CD9FFBFA1E120B1E6A30248E011EFBA51402400002D
+              6427258696321E0000000049454E44AE426082}
+          end>
+        Name = 'SpeedButton6'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'sbSetD'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbSetE'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbSetK'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbGD'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbSetG'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbGI'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbGC'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbGR'
+            SourceRect.Right = 30.000000000000000000
+            SourceRect.Bottom = 30.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbNum'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbNumUCH'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbNumUchDropDown'
+            SourceRect.Right = 21.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'dnrPerp'
+            SourceRect.Right = 30.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'dnrZas'
+            SourceRect.Right = 32.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbP2P'
+            SourceRect.Right = 24.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sSpeedButton40'
+            SourceRect.Right = 24.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sSpeedButton39'
+            SourceRect.Right = 24.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sSpeedButton42'
+            SourceRect.Right = 24.000000000000000000
+            SourceRect.Bottom = 32.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'SpeedButton6'
+          end>
+      end>
+    Left = 794
+    Top = 160
   end
 end

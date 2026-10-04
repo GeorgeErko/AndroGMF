@@ -22,6 +22,7 @@ type
     procedure upmClick(Sender: TObject);
     procedure btnPDFClick(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
+    procedure btnPlusClickSkia(Sender: TObject);
   private
     FStatusLabel: TLabel;
     FDrawerSkia: TogsDrawerSkia;
@@ -59,7 +60,6 @@ type
     procedure btnOpenClickSkia(Sender: TObject);
     procedure btnLocalOpenClickSkia(Sender: TObject);
     procedure btnPaintClickSkia(Sender: TObject);
-    procedure btnPlusClickSkia(Sender: TObject);
   //
     procedure SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
     procedure LivePainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
@@ -618,7 +618,7 @@ begin
    //
     FDrawerSkia.DebugDrawTextBounds := False;
    //
-    Memo1.Lines.Clear;
+   // Memo1.Lines.Clear;
     FormCreate(Self);
    // InitSkPainterInput;
     {$IFDEF WIN64}
@@ -786,7 +786,7 @@ end;
 
 procedure TMainFormSkia.upmClick(Sender: TObject);
 begin
- Memo1.GoToTextEnd;
+// Memo1.GoToTextEnd;
  ExportSceneToPdf(MainPath + 'test.pdf')
 end;
 
