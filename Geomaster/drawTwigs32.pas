@@ -240,6 +240,8 @@ type
 // отрисовка на ISkCanvas в мировых координатах; толщины и штрихи - в пикселах
  function SkPixToWorld(const Canvas: ISkCanvas; Pix: Single): Single;
  function SkPen(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single; Dashed: Boolean): ISkPaint;
+ // цвет для live-слоя (смешивается со сценой в режиме Difference): на светлом окне - инвертированный
+ function SkLiveColor(Color: TAlphaColor): TAlphaColor;
  procedure SkDrawLineClipped(const Canvas: ISkCanvas; X1, Y1, X2, Y2: Double; const Paint: ISkPaint);
  procedure SkDrawTwig(const Canvas: ISkCanvas; Tw: TTwig; const Paint: ISkPaint);
 
@@ -258,6 +260,15 @@ begin
  M := Canvas.GetLocalToDeviceAs3x3;
  Scale := Sqrt(Sqr(M.m11) + Sqr(M.m12));
  if Scale > 0 then Result := Pix / Scale;
+end;
+
+// как у маркера (TMarker.Draw): на светлом фоне Difference инвертирует цвет
+// (красный становился голубым), поэтому рисуется инвертированным
+function SkLiveColor(Color: TAlphaColor): TAlphaColor;
+begin
+ Result := Color;
+ if (GSelector <> nil) and (GlobalSettings.Settings.gsWindowColor <> TAlphaColors.Black) then
+  Result := $FF000000 or (not Color and $00FFFFFF);
 end;
 
 function SkPen(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single; Dashed: Boolean): ISkPaint;
@@ -433,7 +444,7 @@ var Paint: ISkPaint;
     TempDot: Boolean;
 begin
  if (Canvas = nil) or (Twig.Coord.Count = 0) then exit;
- if TForm2(GTwgForm).Settings.psWidthPath then Paint := SkPen(Canvas, Color, 2, False) else Paint := SkPen(Canvas, Color, 1, True);
+ if TForm2(GTwgForm).Settings.psWidthPath then Paint := SkPen(Canvas, SkLiveColor(Color), 2, False) else Paint := SkPen(Canvas, SkLiveColor(Color), 1, True);
 // у сплайна положение мыши - временная последняя точка (как в старом Draw)
  TempDot := (Twig is TTwigSpline) and (mX <> xyNull);
  if TempDot then begin

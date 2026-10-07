@@ -9,8 +9,9 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   MainFrmSkia, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
-  FMX.Memo, {$IFDEF MOUSE32}objMouse32{$ELSE}objMouse{$ENDIF}, System.IOUtils, WPTForm2, instPointSign, FMX.Ani,
-  InstLineSign, InstBlockSign, InstLayerFrame, FramePropEditor, DlgRootPropEditor;
+  FMX.Memo, {$IFDEF MOUSE32}objMouse32{$ELSE}objMouse{$ENDIF}, System.IOUtils, WPTForm2,
+  instPointSign, FMX.Ani, InstLineSign, InstBlockSign, InstLayerFrame,
+  FramePropEditor, DlgRootPropEditor, StylusInput;
 
 type
   TMainFormMouseObj = class(TMainFormSkia)
@@ -121,6 +122,10 @@ type
    procedure OverlayDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
    procedure DrawOverlay(const ACanvas: ISkCanvas; const ADest: TRectF);
    procedure InteractionWatchTimer(Sender: TObject);
+  // перо (StylusInput): наведение - движение мыши без нажатия, щелчок кнопкой
+  // пера над экраном - правая кнопка
+   procedure StylusHover(Action: TStylusHoverAction; const P: TPointF);
+   procedure StylusButtonClick(const P: TPointF);
   protected
    InstPoints: TInstPointsFrame;
    InstLines : TInstLinesFrame;
@@ -267,6 +272,28 @@ begin
  InstBlocks.OnZnakSelected := InstBlocksZnakSelected;
 //
  instPanel.OnResize := instPanelResize;
+// перо: слушатели ставятся на вид уже созданной формы
+ TThread.ForceQueue(nil, procedure begin InstallStylus(Self, StylusHover, StylusButtonClick); end);
+end;
+
+// перо над экраном - движение мыши без нажатия (резиновые линии, маркер,
+// координаты), как мышь на Windows
+procedure TMainFormMouseObj.StylusHover(Action: TStylusHoverAction; const P: TPointF);
+var L: TPointF;
+begin
+ if (SkPainter = nil) or (Action = shExit) then exit;
+ L := SkPainter.AbsoluteToLocal(P);
+ SkPainterMouseMove(SkPainter, [], L.X, L.Y);
+end;
+
+// щелчок кнопкой пера над экраном - щелчок правой кнопкой мыши
+procedure TMainFormMouseObj.StylusButtonClick(const P: TPointF);
+var L: TPointF;
+begin
+ if SkPainter = nil then exit;
+ L := SkPainter.AbsoluteToLocal(P);
+ SkPainterMouseDown(SkPainter, TMouseButton.mbRight, [ssRight], L.X, L.Y);
+ SkPainterMouseUp(SkPainter, TMouseButton.mbRight, [ssRight], L.X, L.Y);
 end;
 
 procedure TMainFormMouseObj.FormDestroy(Sender: TObject);
@@ -373,7 +400,7 @@ begin
   WriteIn(['================2']);
  FreeAndNil(ListByName);
  ListByName:=TListByName.Create;
- ListByName.LoadFromFile(MainPath + 'Attribs.ini'{'Names.txt'}, ''{oghObjectType(TwgForm)});
+ ListByName.LoadFromFile(MainPath + 'attribs.ini'{'Names.txt'}, ''{oghObjectType(TwgForm)});
 // FreeAndNil(ListByName);
  ListByDicts:=TListByName.Create;
  ListByDicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', oghObjectType(TwgForm));
@@ -883,6 +910,7 @@ begin
  if (LayerFrame = nil) or (PropEditorForm = nil) then exit;
  L := LayerFrame.ActiveLayer;
  if L = nil then exit;
+ if MouseObject = nil then exit;
  PropEditorForm.ApplyToObjects('SetLayer...', L,
   function(Obj: TObject): Boolean
   begin
@@ -1038,6 +1066,15 @@ begin
   inherited;
   exit;
  end;
+// работа пером: палец только перемещает карту; перо с нажатой кнопкой - правая кнопка
+ If FingerOnlyPans then begin
+  inherited;
+  exit;
+ end;
+ If StylusRightButton then begin
+  Button := TMouseButton.mbRight;
+  Shift := Shift - [ssLeft] + [ssRight];
+ end;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
@@ -1057,11 +1094,12 @@ begin
  MousePos := PointF(X, Y);
 // карта перемещается (нажато колесо или начато формой) - движение только форме:
 // обработчики мыши перехватывают каждое движение (Hook) и обрывали перемещение
- If IsPanning or (ssMiddle in Shift) then begin
+ If IsPanning or (ssMiddle in Shift) or FingerOnlyPans then begin
   inherited;
   UpdateStatusGeo(X, Y, '');
   exit;
  end;
+ If StylusRightButton and (ssLeft in Shift) then Shift := Shift - [ssLeft] + [ssRight];
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
@@ -1088,10 +1126,14 @@ var Hook: Boolean;
 begin
  Hook := False;
 // средняя кнопка (конец перемещения карты) - всегда форме
- If Button = TMouseButton.mbMiddle then begin
+ If (Button = TMouseButton.mbMiddle) or FingerOnlyPans then begin
   inherited;
   RequestOverlayRedraw;
   exit;
+ end;
+ If StylusRightButton then begin
+  Button := TMouseButton.mbRight;
+  Shift := Shift - [ssLeft] + [ssRight];
  end;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;

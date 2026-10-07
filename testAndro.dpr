@@ -128,11 +128,19 @@ uses
   objTopo32 in 'Geomaster\objTopo32.pas',
   objTopology32 in 'Geomaster\objTopology32.pas',
   Selector32 in 'Geomaster\Selector32.pas',
-  objMouseView in 'MOUSE\objMouseView.pas';
+  objMouseView in 'MOUSE\objMouseView.pas',
+  AssetRefresh in 'AssetRefresh.pas',
+  StylusInput in 'StylusInput.pas';
 
 {$R *.res}
 
 begin
+{$IFDEF ANDROID}
+// AnsiString <-> String через cp1251 - как AnsiString-литералы, которые компилятор пишет в cp1251
+ SetMultiByteConversionCodePage(1251);
+// справочники из APK - в рабочую папку, если изменились (StartUpCopy не перезаписывает)
+ RefreshAssetFiles;
+{$ENDIF}
 // Skia-канвас для всей формы с GPU-бэкендом (на Windows - Vulkan); ставится до Application.Initialize
  GlobalUseSkia := True;
  GlobalUseSkiaRasterWhenAvailable := False;

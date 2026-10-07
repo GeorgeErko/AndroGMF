@@ -47,6 +47,7 @@ type
     procedure Button5Click(Sender: TObject);
     procedure SpeedButton15Click(Sender: TObject);
     procedure sbLastNumberClick(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   protected
     FPoint: TPointDot;
     FHistFile: String;
@@ -87,9 +88,8 @@ var
 // строка атрибута по имени; -1 - нет
 function FindRow(Grid: TStringGrid; const CellName: String): Integer;
 
-implementation
-
-uses System.IOUtils, System.Math, FMX.DialogService, newProcs, textmanager, EcLot;
+implementation uses System.IOUtils, System.Math, FMX.DialogService, newProcs,
+                    textmanager, EcLot, Writer, Selector32;
 
 {$R *.fmx}
 
@@ -333,9 +333,18 @@ begin
  FreeAndNil(Names);
  FreeAndNil(Dicts);
  Names := TListByName.Create;
- Names.LoadFromFile(MainPath + 'Names.txt', AnsiString(oghObjectType(TwgForm)));
+ WriteIn([MainPath + '/Names.txt', GroupName,AnsiString(GroupName) ]);
+ {$IFDEF ANDROID}
+  Names.LoadFromFile(MainPath + '/Names.txt', AnsiString(oghObjectType(TwgForm)));
+ {$ELSE}
+  Names.LoadFromFile(MainPath + 'Names.txt', AnsiString(oghObjectType(TwgForm)));
+ {$ENDIF}
  Dicts := TListByName.Create(0);
- Dicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', AnsiString(oghObjectType(TwgForm)));
+ {$IFDEF ANDROID}
+  Dicts.LoadFromFile(MainPath + '/Dictionary_digits.txt', AnsiString(oghObjectType(TwgForm)));
+ {$ELSE}
+  Dicts.LoadFromFile(MainPath + 'Dictionary_digits.txt', AnsiString(oghObjectType(TwgForm)));
+ {$ENDIF}
  Result := Names.FindByName2(AnsiString(GroupName), 0);
  if Result = nil then
   FMX.Dialogs.ShowMessage('Не найдена секция ' + GroupName + ' в справочнике ' + String(MainPath) + 'Names.txt' +
@@ -401,6 +410,11 @@ procedure TVarSetDlg1.SetHistoryVisible(Value: Boolean);
 begin
  if Value then ClientWidth := Round(HistoryWidth) else ClientWidth := WidthNoHistory;
  if Value then Button5.Text := '< История' else Button5.Text := 'История >';
+end;
+
+procedure TVarSetDlg1.Button2Click(Sender: TObject);
+begin
+ Selector32.UpdateImage;
 end;
 
 procedure TVarSetDlg1.Button5Click(Sender: TObject);

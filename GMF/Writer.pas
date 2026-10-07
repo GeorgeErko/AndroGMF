@@ -139,7 +139,7 @@ begin
  }
 {$IFDEF ANDROID}
  __android_log_write(ANDROID_LOG_INFO, PAnsiChar(AnsiString('DELPHI')),
-  PAnsiChar(AnsiString(String(Fmt(Params,C)))));
+  PAnsiChar(UTF8Encode(String(Fmt(Params,C))))); // logcat - в UTF-8
 {$ELSE}
  Writeln(Fmt(Params,C));
 {$ENDIF}

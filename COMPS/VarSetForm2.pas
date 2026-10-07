@@ -15,7 +15,8 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs, FMX.StdCtrls,
   FMX.Controls.Presentation, FMX.Grid.Style, FMX.Grid, FMX.ScrollBox, FMX.ListBox,
-  FMX.Layouts, VarSetForm1, System.Rtti, VarSetForm, EcDot, EcLot, WptForm2;
+  FMX.Layouts, VarSetForm1, System.Rtti, VarSetForm, EcDot, EcLot, WptForm2,
+  System.ImageList, FMX.ImgList;
 
 type
   TVarSetDlg2 = class(TVarSetDlg1)

@@ -28,14 +28,15 @@ type
     btnMinus: TButton;
     btnScaleM: TButton;
     btnScaleP: TButton;
+    Label1: TLabel;
+    ImageList2: TImageList;
     pnlTools: TLayout;
+    Panel2: TPanel;
     sbSetPoint: TSpeedButton;
     sbRotatePoint: TSpeedButton;
     sbSetAttrib: TSpeedButton;
     sbSetPerLine: TSpeedButton;
     cbActivate: TCheckBox;
-    Label1: TLabel;
-    ImageList2: TImageList;
     procedure Button2Click(Sender: TObject);
     procedure sbSetPointClick(Sender: TObject);
     procedure btnTabsClick(Sender: TObject);

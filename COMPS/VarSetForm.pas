@@ -56,7 +56,6 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean); virtual;
     procedure GridSelectCell(Sender: TObject; const ACol, ARow: Integer; var CanSelect: Boolean);
     procedure GridKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
-    procedure GridMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure GridCellClick(const Column: TColumn; const Row: Integer);
     procedure GridCellDblClick(const Column: TColumn; const Row: Integer);
     procedure GridEditingDone(Sender: TObject; const ACol, ARow: Integer);
@@ -71,7 +70,7 @@ type
     procedure SpeedButton3Click(Sender: TObject); virtual;
     procedure Button4Click(Sender: TObject);
   private
-    FLastMouseDown: TPointF;
+    FLastMouseDown: TPointF; // точка последнего нажатия на форме (абсолютные координаты)
     FListRow: Integer;
     FHasList: TArray<Boolean>;
     function ListIconRect(const CellBounds: TRectF): TRectF;
@@ -100,6 +99,8 @@ type
     TwgForm: TForm2;
     Names: TStrings;
     destructor Destroy; override;
+   // любое нажатие на контролах формы (мышь, касание) - запоминается точка
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
    // TTextManager.SetTexts2: атрибуты знака точки (наследники - дендро-формы)
     procedure Execute(TwgForm_: TForm2; Point: TPointDot; EditMode: Boolean; Mode: Byte; const Done: TVarSetDone); virtual;
    // TTextManager.SetTexts: имена, значения и тексты менеджера текстов
@@ -325,9 +326,12 @@ begin
  end;
 end;
 
-procedure TVarSetDlg.GridMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+// точка нажатия - для проверки попадания в значок «…» (OnMouseDown сетки не
+// вызывается: нажатие получает представление сетки)
+procedure TVarSetDlg.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
  FLastMouseDown := PointF(X, Y);
+ inherited;
 end;
 
 procedure TVarSetDlg.GridDrawColumnCell(Sender: TObject; const Canvas: TCanvas; const Column: TColumn;
@@ -343,13 +347,16 @@ begin
  Canvas.FillText(R, '…', False, 1, [], TTextAlign.Center, TTextAlign.Center);
 end;
 
-// щелчок по значку «…» ячейки значения - список значений справочника
+// щелчок по значку «…» ячейки значения - список значений справочника.
+// CellRect - в координатах содержимого сетки (как в TStyledGrid.CellByPoint)
 procedure TVarSetDlg.GridCellClick(const Column: TColumn; const Row: Integer);
 var R: TRectF;
+    P: TPointF;
 begin
  if (Column <> colValue) or (Row < 0) or (Row >= Length(FHasList)) or not FHasList[Row] then exit;
- R := ListIconRect(Grid.CellRect(1, Row));
- if FLastMouseDown.X >= R.Left then OpenList(Row);
+ R := ListIconRect(TRectF.Create(Grid.CellRect(1, Row)));
+ P := Grid.Content.AbsoluteToLocal(FLastMouseDown);
+ if P.X >= R.Left then OpenList(Row);
 end;
 
 procedure TVarSetDlg.GridCellDblClick(const Column: TColumn; const Row: Integer);
@@ -377,8 +384,8 @@ begin
   St.Free;
  end;
  FListRow := ARow;
-// по высоте - у ячейки, по которой щелкнули
- P := Panel1.AbsoluteToLocal(Grid.LocalToAbsolute(PointF(0, FLastMouseDown.Y)));
+// по высоте - у ячейки строки ARow
+ P := Panel1.AbsoluteToLocal(Grid.Content.LocalToAbsolute(PointF(0, Grid.CellRect(1, ARow).Top)));
  ListCombo.Position.X := Grid.Position.X + colName.Width;
  ListCombo.Position.Y := P.Y;
  ListCombo.Width := Max(colValue.Width, 120);

@@ -304,7 +304,7 @@ begin
    LMouseDown := False;
    if Point.TextManager <> nil then Point.TextManager.UpdateResults := False;
    if not OK then begin
-    if not UpdateResults then FreeAndNil(Point.TextManager);
+    if not UpdateResults then Point.FreeTextManager;
    end else
    if LastPrim <> nil then
     try

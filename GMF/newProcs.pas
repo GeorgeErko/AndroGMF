@@ -15,7 +15,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
  var MainPath:AnsiString;
      ApplicationMainForm:TForm;
      GlobalRender: Boolean = False;
-     etcIniName:String = {$IFDEF UNIX}'etc'+ {$ENDIF}SLash+'registry.ini';
+     etcIniName:String = {$IFDEF UNIX}'etc'+ {$ENDIF}{SLash+}'Registry.ini';
 
 // Конвертация
  Function GStrToFloat(S: AnsiString):Double;
@@ -70,7 +70,7 @@ interface uses SysUtils, Classes, Collect, newSelector, System.UITypes, FMX.Form
 implementation uses IniFiles, Math, System.Types,
                     FMX.DialogService,
                     FMX.Types, FMX.Controls, FMX.StdCtrls, FMX.Controls.Presentation,
-                    System.UIConsts;
+                    System.UIConsts, Writer;
 
 // Конвертация
 
@@ -366,6 +366,7 @@ end;
 function GWriteFloat(Name: AnsiString; S: Double): boolean;
 var Ini:TIniFile;
 begin
+ Writein(['FExists=', FileExists(MainPath+Slash+etcIniName)]);
  Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
   Ini.WriteFloat('Registry',Name,S);
  Ini.Free;

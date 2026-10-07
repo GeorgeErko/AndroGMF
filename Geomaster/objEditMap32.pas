@@ -418,6 +418,10 @@ begin
   fActiveDots.Free;
   StvorTwigs.Free;
   Error := '4';
+// DeleteAll вызывает OnUpdate (PropEditorForm.Update) - редактор снова запомнил
+// бы освобождаемый список: сначала событие отключается, затем список отцепляется
+  Objects.OnUpdate := nil;
+  Objects2.OnUpdate := nil;
   if PropEditorForm <> nil then begin
    PropEditorForm.DetachObjects(Objects);
    PropEditorForm.DetachObjects(Objects2);

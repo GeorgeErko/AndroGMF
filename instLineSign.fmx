@@ -5,21 +5,34 @@ inherited InstLinesFrame: TInstLinesFrame
       TabOrder = 6
     end
   end
+  inherited LB: TListBox
+    Viewport.Width = 380.000000000000000000
+    Viewport.Height = 174.000000000000000000
+  end
+  inherited Lay: TLayout
+    inherited SB: THorzScrollBox
+      Viewport.Width = 50.000000000000000000
+      Viewport.Height = 50.000000000000000000
+    end
+  end
   inherited pnlTools: TLayout
-    inherited sbSetPoint: TSpeedButton
-      Visible = False
-    end
-    inherited sbRotatePoint: TSpeedButton
-      Visible = False
-    end
-    inherited sbSetAttrib: TSpeedButton
-      Visible = False
-    end
-    inherited sbSetPerLine: TSpeedButton
-      Visible = False
-    end
-    inherited cbActivate: TCheckBox
-      Position.X = 54.000000000000000000
+    inherited Panel2: TPanel
+      Size.Width = 336.000000000000000000
+      inherited sbSetPoint: TSpeedButton
+        Visible = False
+      end
+      inherited sbRotatePoint: TSpeedButton
+        Visible = False
+      end
+      inherited sbSetAttrib: TSpeedButton
+        Visible = False
+      end
+      inherited sbSetPerLine: TSpeedButton
+        Visible = False
+      end
+      inherited cbActivate: TCheckBox
+        Position.X = 6.000000000000000000
+      end
     end
     object sbLineRotate: TSpeedButton
       Tag = 603
@@ -51,16 +64,6 @@ inherited InstLinesFrame: TInstLinesFrame
       ShowHint = True
       TextSettings.Trimming = None
       OnClick = sbSetPointClick
-    end
-  end
-  inherited LB: TListBox
-    Viewport.Width = 380.000000000000000000
-    Viewport.Height = 174.000000000000000000
-  end
-  inherited Lay: TLayout
-    inherited SB: THorzScrollBox
-      Viewport.Width = 50.000000000000000000
-      Viewport.Height = 50.000000000000000000
     end
   end
   inherited ImageList2: TImageList

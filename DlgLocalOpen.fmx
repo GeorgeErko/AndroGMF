@@ -24,7 +24,7 @@ object localOpenForm: TlocalOpenForm
     Size.Height = 462.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    OnClick = ListView1Click
+    OnItemClick = ListView1ItemClick
   end
   object Panel1: TPanel
     Align = MostBottom

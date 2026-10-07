@@ -155,6 +155,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
        Constructor CreateTaheo(PR:TResource;TInd:Integer;Nm:AnsiString;X1,Y1,Z1:Double;FontHandle:Pointer=nil);
        Constructor CreateTaheoTextManager(PR:TResource;Znak:TPoint_Sign;Name:AnsiString;X1,Y1,Z1:Double;TI:Integer;notNumberZ:Boolean = False);
        Destructor  Destroy;Override;
+      // освобождение менеджера надписей: картинки надписей общие с BlockTextBitmaps
+       Procedure FreeTextManager;
        constructor Load(Stream:TBufStream);Override;
        Procedure   Store(Stream:TBufStream);Override;
     { Новая загрузка }
@@ -617,6 +619,17 @@ destructor TPointDot.Destroy;
   If Bind<>nil then Bind.Free;
   If Trees<>nil then Trees.Free;
  end;
+
+// GetGabarites кладет картинки надписей менеджера (FTextBitmaps) в
+// BlockTextBitmaps без копирования - сначала они убираются из BlockTextBitmaps,
+// иначе при освобождении точки они освобождаются второй раз
+procedure TPointDot.FreeTextManager;
+begin
+ if TextManager = nil then exit;
+ if BlockTextBitmaps <> nil then BlockTextBitmaps.DeleteAll;
+ FreeAndNil(TextManager);
+ FGabValid := False;
+end;
 
 function TPointDot.GetDist(x, y: single): single;
 begin
@@ -1652,7 +1665,7 @@ begin
     B1:=TextManager.SetSysValue(4,FloatToStrF(Z,ffFixed,_LD,Const_Of_DecimalHeight)) else B1:=False;
    B:=B or B1;
    If UID<>nil then StrDispose(UID);UID:=StrNew(PAnsiChar(Name));
-   If not(B) and (notNumberZ=False) then begin TextManager.Free;TextManager:=nil;end;
+   If not(B) and (notNumberZ=False) then FreeTextManager;
   end;
  end;
 end;

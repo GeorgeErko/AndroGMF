@@ -25,6 +25,8 @@ type
     btnCancel: TButton;
     btnOk: TButton;
     ImageList1: TImageList;
+    Layout1: TLayout;
+    SizeGrip1: TSizeGrip;
     procedure btnDropClick(Sender: TObject);
     procedure chkLayerChange(Sender: TObject);
     procedure TreeLayersMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -44,7 +46,14 @@ type
    // popup открыт и еще не вернулся во фрейм (OnClosePopup не пришел)
     FPopupShown: Boolean;
     FPopupClosedTick: UInt64;
+   // Android: действия в списке - по двойному нажатию (одиночное бывает
+   // концом прокрутки); пункт и время первого нажатия, точка нажатия
+    FTapItem: TTreeViewItem;
+    FTapTick: UInt64;
+    FDownPos: TPointF;
+    FDownValid: Boolean;
     procedure PopupLayersClosePopup(Sender: TObject);
+    procedure TreeLayersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 
     function ChkLayerCtrl: TCheckBox;
     function RectColorCtrl: TRectangle;
@@ -98,10 +107,27 @@ type
   end;
 
 var LayerFrame: TLayerFrame;
+// размер шрифта списка слоев и заголовка (имя активного слоя); высота строк,
+// флажок и цветной квадрат подстраиваются под него (LayerRowHeight)
+    LayerListFontSize: Single = {$IFDEF ANDROID}14{$ELSE}16{$ENDIF};
 
 implementation
 
 uses Writer;
+
+// высота строки списка слоев: по шрифту, не меньше 24 (флажок 20 + отступы)
+function LayerRowHeight: Single;
+begin
+ Result := Round(LayerListFontSize * 1.7);
+ if Result < 24 then Result := 24;
+end;
+
+// шрифт метки имени слоя - LayerListFontSize (не из стиля)
+procedure SetLayerLabelFont(Nm: TLabel);
+begin
+ Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.Size];
+ Nm.TextSettings.Font.Size := LayerListFontSize;
+end;
 
 {$R *.fmx}
 
@@ -110,6 +136,7 @@ var
  Grip: TSizeGrip;
  C: TComponent;
 begin
+ exit;
  if PopupLay = nil then Exit;
  C := FindComponent('PopupSizeGrip');
  if (C <> nil) and (C is TSizeGrip) then Exit;
@@ -212,6 +239,7 @@ begin
  EnsurePopupResizeGrip;
  LoadPopupSize;
  if PopupLayers <> nil then PopupLayers.OnClosePopup := PopupLayersClosePopup;
+ TreeLayers.OnMouseDown := TreeLayersMouseDown;
 end;
 
 // popup закрыт полностью: содержимое вернулось во фрейм
@@ -364,8 +392,11 @@ var
  Chk: TCheckBox;
  Col: TRectangle;
  Nm: TLabel;
+ H: Single;
 begin
  if HeaderBg = nil then Exit;
+ H := LayerRowHeight + 4;
+ HeaderLay.Height := H;
 
  Chk := ChkLayerCtrl;
  if Chk = nil then
@@ -374,7 +405,7 @@ begin
   Chk.Name := 'chkLayer';
   Chk.Stored := False;
   Chk.Position.X := 2;
-  Chk.Position.Y := 4;
+  Chk.Position.Y := (H - 20) / 2;
   Chk.Width := 20;
   Chk.Height := 20;
   Chk.OnChange := chkLayerChange;
@@ -388,7 +419,7 @@ begin
   Col.Name := 'rectColor';
   Col.Stored := False;
   Col.Position.X := 24;
-  Col.Position.Y := 8;
+  Col.Position.Y := (H - 10) / 2;
   Col.Size.Width := 10;
   Col.Size.Height := 10;
   Col.HitTest := False;
@@ -402,9 +433,10 @@ begin
   Nm.Name := 'lblLayerName';
   Nm.Stored := False;
   Nm.Position.X := 38;
-  Nm.Position.Y := 4;
-  Nm.Height := 20;
+  Nm.Position.Y := 2;
+  Nm.Height := H - 4;
   Nm.Width := 420;
+  SetLayerLabelFont(Nm);
 //  Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.WordWrap];
   Nm.TextSettings.WordWrap := False;
   Nm.HitTest := False;
@@ -492,6 +524,7 @@ var
  Chk: TCheckBox;
  C: TRectangle;
  Nm: TLabel;
+ H: Single;
 begin
  if Layer = nil then Exit(nil);
  if FLayerToItem.TryGetValue(Layer, Result) then Exit;
@@ -505,25 +538,30 @@ begin
  Item.Stored := False;
  Item.TagObject := Layer;
  Item.Text := '';
- Item.Height := 24;
+ H := LayerRowHeight;
+ Item.Height := H;
 
  Chk := TCheckBox.Create(Item);
  Chk.Stored := False;
  Chk.Name := 'chkVis';
  Chk.Position.X := 2;
- Chk.Position.Y := 2;
+ Chk.Position.Y := (H - 20) / 2;
  Chk.Width := 20;
  Chk.Height := 20;
  Chk.IsChecked := (Layer.Check <> 0);
  Chk.TagObject := Layer;
  Chk.OnChange := ItemVisCheckChange;
+{$IFDEF ANDROID}
+// флажок переключается двойным нажатием (TreeLayersMouseUp), не при прокрутке
+ Chk.HitTest := False;
+{$ENDIF}
  Item.AddObject(Chk);
 
  C := TRectangle.Create(Item);
  C.Stored := False;
  C.Name := 'rectColor';
  C.Position.X := 24;
- C.Position.Y := 6;
+ C.Position.Y := (H - 10) / 2;
  C.Size.Width := 10;
  C.Size.Height := 10;
  C.Fill.Color := GetLayerFillColor(Layer);
@@ -536,7 +574,8 @@ begin
  Nm.Name := 'lblName';
  Nm.Position.X := 38;
  Nm.Position.Y := 2;
- Nm.Height := 20;
+ Nm.Height := H - 4;
+ SetLayerLabelFont(Nm);
  Nm.Width := 400;
 // Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.WordWrap];
  Nm.TextSettings.WordWrap := False;
@@ -680,15 +719,32 @@ begin
   TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
 end;
 
+procedure TLayerFrame.TreeLayersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ FDownPos := TPointF.Create(X, Y);
+ FDownValid := True;
+end;
+
 // смена выделения в дереве (в т.ч. клавишами) слой не выбирает - выбор
-// щелчком (TreeLayersMouseUp) или кнопкой OK
+// щелчком (TreeLayersMouseUp) или кнопкой OK. На Android - по двойному
+// нажатию: первое только выделяет пункт (группа не раскрывается), отпускание
+// после сдвига пальца (прокрутка) нажатием не считается; второе нажатие на тот
+// же пункт - флажок видимости, раскрытие/свертывание группы или выбор слоя
 procedure TLayerFrame.TreeLayersMouseUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 var
  Item: TTreeViewItem;
  L: TResource;
  PAbs: TPointF;
  PItem: TPointF;
+{$IFDEF ANDROID}
+ Moved: Boolean;
+ Chk: TCheckBox;
+{$ENDIF}
 begin
+{$IFDEF ANDROID}
+ Moved := FDownValid and ((Abs(X - FDownPos.X) > 10) or (Abs(Y - FDownPos.Y) > 10));
+{$ENDIF}
+ FDownValid := False;
  if FUpdating then Exit;
  Item := TreeLayers.ItemByPoint(X, Y) as TTreeViewItem;
  if Item = nil then Exit;
@@ -697,7 +753,26 @@ begin
 // флажок видимости - X=2..22 (EnsureItemForLayer): щелчок по нему слой не выбирает
  PAbs := TreeLayers.LocalToAbsolute(TPointF.Create(X, Y));
  PItem := Item.AbsoluteToLocal(PAbs);
+{$IFDEF ANDROID}
+ if Moved then begin
+  FTapItem := nil;
+  Exit;
+ end;
+ if (FTapItem <> Item) or (TThread.GetTickCount64 - FTapTick > 500) then begin
+  FTapItem := Item;
+  FTapTick := TThread.GetTickCount64;
+  TreeLayers.Selected := Item;
+  Exit;
+ end;
+ FTapItem := nil;
+ if (PItem.X >= 2) and (PItem.X <= 22) then begin
+  Chk := FindItemVisCheck(Item);
+  if Chk <> nil then Chk.IsChecked := not Chk.IsChecked;
+  Exit;
+ end;
+{$ELSE}
  if (PItem.X >= 2) and (PItem.X <= 22) then Exit;
+{$ENDIF}
  TreeLayers.Selected := Item;
 // группа слоев - только раскрыть/свернуть (выбрать группу - кнопкой OK)
  if IsGroupLayer(L) then begin

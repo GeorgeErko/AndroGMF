@@ -2,17 +2,11 @@
 Visible=False
 Coordinates=411,357,77,36
 
-[pnlTools]
-Coordinates=430,155,63,36
-
 [btnPlus]
 Coordinates=11,261,58,58
 
 [TC]
 Coordinates=430,210,40,36
-
-[sbSetPerLine]
-Coordinates=430,78,92,58
 
 [CB]
 Coordinates=0,0,101,146
@@ -23,20 +17,11 @@ Coordinates=430,265,40,36
 [SB]
 Coordinates=430,320,40,36
 
-[sbSetAttrib]
-Coordinates=218,261,78,58
-
 [btnScaleM]
 Coordinates=70,261,75,58
 
 [Label1]
 Coordinates=297,1,53,58
-
-[cbActivate]
-Coordinates=41,165,74,58
-
-[sbRotatePoint]
-Coordinates=297,155,95,58
 
 [btnTabs]
 Coordinates=149,261,61,58
@@ -46,9 +31,6 @@ Coordinates=297,78,73,58
 
 [Panel1]
 Coordinates=352,357,55,36
-
-[sbSetPoint]
-Coordinates=430,1,77,58
 
 [LB]
 Coordinates=120,1,139,212
@@ -61,5 +43,5 @@ Visible=True
 Coordinates=297,232,67,58
 
 []
-Coordinates=174,357,91,36
+Coordinates=430,155,63,36
 

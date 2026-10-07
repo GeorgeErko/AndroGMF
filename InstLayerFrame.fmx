@@ -51,7 +51,7 @@ object LayerFrame: TLayerFrame
       object TreeLayers: TTreeView
         Align = Client
         Size.Width = 460.000000000000000000
-        Size.Height = 255.000000000000000000
+        Size.Height = 235.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
         OnMouseUp = TreeLayersMouseUp
@@ -60,15 +60,21 @@ object LayerFrame: TLayerFrame
       end
       object ButtonsLay: TLayout
         Align = Bottom
-        Position.Y = 255.000000000000000000
+        Position.Y = 235.000000000000000000
         Size.Width = 460.000000000000000000
-        Size.Height = 25.000000000000000000
+        Size.Height = 45.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
         object btnAllOn: TButton
           Align = Left
+          Margins.Left = 5.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 5.000000000000000000
+          Margins.Bottom = 1.000000000000000000
+          Position.X = 5.000000000000000000
+          Position.Y = 5.000000000000000000
           Size.Width = 70.000000000000000000
-          Size.Height = 25.000000000000000000
+          Size.Height = 32.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 0
           Text = #1042#1082#1083'.'#1074#1089#1077
@@ -77,9 +83,14 @@ object LayerFrame: TLayerFrame
         end
         object btnAllOff: TButton
           Align = Left
-          Position.X = 70.000000000000000000
+          Margins.Left = 5.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 5.000000000000000000
+          Margins.Bottom = 1.000000000000000000
+          Position.X = 85.000000000000000000
+          Position.Y = 5.000000000000000000
           Size.Width = 80.000000000000000000
-          Size.Height = 25.000000000000000000
+          Size.Height = 32.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 1
           Text = #1054#1090#1082#1083'.'#1074#1089#1077
@@ -88,9 +99,14 @@ object LayerFrame: TLayerFrame
         end
         object btnInvert: TButton
           Align = Left
-          Position.X = 150.000000000000000000
+          Margins.Left = 5.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 5.000000000000000000
+          Margins.Bottom = 1.000000000000000000
+          Position.X = 175.000000000000000000
+          Position.Y = 5.000000000000000000
           Size.Width = 80.000000000000000000
-          Size.Height = 25.000000000000000000
+          Size.Height = 32.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 2
           Text = #1048#1085#1074#1077#1088#1090
@@ -99,9 +115,14 @@ object LayerFrame: TLayerFrame
         end
         object btnCancel: TButton
           Align = Right
-          Position.X = 390.000000000000000000
+          Margins.Left = 5.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 5.000000000000000000
+          Margins.Bottom = 1.000000000000000000
+          Position.X = 385.000000000000000000
+          Position.Y = 5.000000000000000000
           Size.Width = 70.000000000000000000
-          Size.Height = 25.000000000000000000
+          Size.Height = 32.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 4
           Text = #1054#1090#1084#1077#1085#1072
@@ -110,14 +131,34 @@ object LayerFrame: TLayerFrame
         end
         object btnOk: TButton
           Align = Right
-          Position.X = 340.000000000000000000
+          Margins.Left = 5.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 5.000000000000000000
+          Margins.Bottom = 1.000000000000000000
+          Position.X = 325.000000000000000000
+          Position.Y = 5.000000000000000000
           Size.Width = 50.000000000000000000
-          Size.Height = 25.000000000000000000
+          Size.Height = 32.000000000000000000
           Size.PlatformDefault = False
           TabOrder = 3
           Text = 'OK'
           TextSettings.Trimming = None
           OnClick = btnOkClick
+        end
+        object Layout1: TLayout
+          Align = MostBottom
+          Position.Y = 38.000000000000000000
+          Size.Width = 460.000000000000000000
+          Size.Height = 7.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          object SizeGrip1: TSizeGrip
+            Align = FitRight
+            Position.X = 453.000000000000000000
+            Size.Width = 7.000000000000000000
+            Size.Height = 7.000000000000000000
+            Size.PlatformDefault = False
+          end
         end
       end
     end

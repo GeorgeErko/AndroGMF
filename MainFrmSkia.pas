@@ -526,6 +526,19 @@ begin
   OpenGmfFileSkia(LocalPath);
 end;
 
+var GFontFiles: TStringList = nil; // зарегистрированные файлы шрифтов
+
+// шрифт регистрируется один раз за сеанс (а не при каждом открытии карты)
+function NewFontFile(const F: string): Boolean;
+begin
+ if GFontFiles = nil then begin
+  GFontFiles := TStringList.Create;
+  GFontFiles.CaseSensitive := False;
+ end;
+ Result := GFontFiles.IndexOf(F) = -1;
+ if Result then GFontFiles.Add(F);
+end;
+
 procedure TMainFormSkia.OpenGmfFileSkia(const LocalPath: string);
 var
   Stream: TBufStream;
@@ -542,22 +555,29 @@ var
     TF: ISkTypeface;
   begin
     Dir := GmfLocalPath;
+    WriteIn(['START===']);
     if Dir = '' then
       Exit;
     try
       Files := TDirectory.GetFiles(Dir, '*.ttf');
       for F in Files do
         try
+         if not NewFontFile(F) then continue;
+        // Windows: TFontManager рассылает WM_FONTCHANGE всем окнам системы
+        // (SendMessage(HWND_BROADCAST) - висит, если какое-то окно не отвечает);
+        // текст FMX рисует Skia (GlobalUseSkia) - достаточно RegisterTypeface
+        {$IFNDEF MSWINDOWS}
          TFontManager.AddCustomFontFromFile(F);
+        {$ENDIF}
           TSkDefaultProviders.RegisterTypeface(F);
           RegisterSkiaTypefaceFromFile(F);
           TF := TSkTypeface.MakeFromFile(F);
            if TF <> nil then
             begin
-            // WriteIn(['RegisterFont=',TF.FamilyName]);
+             WriteIn(['RegisterFont=',TF.FamilyName]);
              RegisterSkiaFontFile(TF.FamilyName, F);
             end;
-          // WriteIn(['===', F]);
+           WriteIn(['===', F]);
         except
         end;
     except
@@ -566,13 +586,17 @@ var
       Files := TDirectory.GetFiles(Dir, '*.otf');
       for F in Files do
         try
+          if not NewFontFile(F) then continue;
+        {$IFNDEF MSWINDOWS}
           TFontManager.AddCustomFontFromFile(F);
+        {$ENDIF}
           TSkDefaultProviders.RegisterTypeface(F);
           RegisterSkiaTypefaceFromFile(F);
         except
         end;
     except
     end;
+    WriteIn(['END===']);
   end;
   procedure localSetGabarites;
   var
@@ -625,8 +649,8 @@ begin
      GLines := nil;
      newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
     {$ELSE}
-     GLines := Memo1.Lines;
-     newProcs.MainPath := TPath.GetDocumentsPath;
+   // GLines := Memo1.Lines;
+     newProcs.MainPath := TPath.GetDocumentsPath + '/';
      WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
      WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
     {$ENDIF}
@@ -644,7 +668,10 @@ begin
       FreeAndNil(TwgForm);
      //
       TwgForm := TForm2(Stream.Get);
-
+     //
+      TwgForm.About.Path := ExtractFilePath(LocalPath);
+      TwgForm.About.MyName := ExtractFileName(LocalPath);
+     //
       Selector.GLineCol := TwgForm.MkLib.LSLib;
       Selector.GSqwearCol := TwgForm.MkLib.SSLib;
       Selector.GPointCol := TwgForm.MkLib.PSLib;
@@ -1600,4 +1627,6 @@ end;
 
 initialization
  newProcs.MainPath := TPath.GetLibraryPath;
+finalization
+ FreeAndNil(GFontFiles);
 end.

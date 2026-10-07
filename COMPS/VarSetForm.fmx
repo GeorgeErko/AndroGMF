@@ -31,11 +31,11 @@ object VarSetDlg: TVarSetDlg
       Options = [Editing, ColumnResize, ColLines, RowLines, Tabs, Header, HeaderClick]
       OnSelectCell = GridSelectCell
       OnDrawColumnCell = GridDrawColumnCell
+      OnEditingDone = GridEditingDone
       OnCellClick = GridCellClick
       OnCellDblClick = GridCellDblClick
-      OnEditingDone = GridEditingDone
-      Viewport.Width = 453.000000000000000000
-      Viewport.Height = 309.000000000000000000
+      Viewport.Width = 449.000000000000000000
+      Viewport.Height = 284.000000000000000000
       object colName: TStringColumn
         Header = 'Name'
         HeaderSettings.TextSettings.WordWrap = False

@@ -229,7 +229,7 @@ begin
      Quants_For_Arcs := cirKvant;
     // ветви незавершенного мультиконтура
      if MultiLot <> nil then begin
-      if Twigs.Settings.psWidthPath then Paint := SkPen(Canvas, TAlphaColorRec.Red, 2, False) else Paint := SkPen(Canvas, TAlphaColorRec.Red, 1, True);
+      if Twigs.Settings.psWidthPath then Paint := SkPen(Canvas, SkLiveColor(TAlphaColorRec.Red), 2, False) else Paint := SkPen(Canvas, SkLiveColor(TAlphaColorRec.Red), 1, True);
       for I := 0 to MultiLot.Coord.Count - 1 do SkDrawTwig(Canvas, MultiLot.GetTwig(Twigs.Twigs, I), Paint);
      end;
      mpDrawTwig(Canvas);
@@ -1305,7 +1305,7 @@ var I: Integer;
     Paint: ISkPaint;
 begin
  if (Canvas = nil) or (HatchLot.Count = 0) then exit;
- Paint := SkPen(Canvas, TAlphaColorRec.Red, 1, True);
+ Paint := SkPen(Canvas, SkLiveColor(TAlphaColorRec.Red), 1, True);
  for I := 0 to HatchLot.Count - 1 do SkDrawTwig(Canvas, HatchTwig[I], Paint);
 end;
 

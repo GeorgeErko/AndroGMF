@@ -27,6 +27,7 @@ type
     procedure btnCloseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
     procedure ListView1Click(Sender: TObject);
+    procedure ListView1ItemClick(const Sender: TObject; const AItem: TListViewItem);
     procedure ListView1DblClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
   private
@@ -248,6 +249,13 @@ begin
  end;
 end;
 
+// OnItemClick - после смены выделения (OnClick списка приходит до нее, и кнопка
+// открытия становилась доступна только со второго щелчка)
+procedure TlocalOpenForm.ListView1ItemClick(const Sender: TObject; const AItem: TListViewItem);
+begin
+ ListView1Click(Sender);
+end;
+
 procedure TlocalOpenForm.ListView1DblClick(Sender: TObject);
 var
  Item: TListItem;
@@ -265,7 +273,8 @@ begin
   Exit;
  end;
  if (Item <> nil) and (Item.Tag = 0) then
-  btnOpenClick(Sender);
+  ListView1Click(Sender);
+//  btnOpenClick(Sender);
 end;
 
 procedure TlocalOpenForm.btnDeleteClick(Sender: TObject);

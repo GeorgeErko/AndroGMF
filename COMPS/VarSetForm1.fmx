@@ -14,6 +14,9 @@ inherited VarSetDlg1: TVarSetDlg1
       end
     end
   end
+  inherited Button2: TButton
+    OnClick = Button2Click
+  end
   inherited SpeedButton14: TSpeedButton
     Text = '.'
   end
@@ -66,8 +69,8 @@ inherited VarSetDlg1: TVarSetDlg1
     RowCount = 0
     Options = [ColLines, RowLines, RowSelect, AlwaysShowSelection, Header]
     OnCellClick = hGridCellClick
-    Viewport.Width = 257.000000000000000000
-    Viewport.Height = 311.000000000000000000
+    Viewport.Width = 253.000000000000000000
+    Viewport.Height = 286.000000000000000000
     object hcolNum: TStringColumn
       Header = #8470
       HeaderSettings.TextSettings.WordWrap = False

@@ -67,12 +67,52 @@ function oghObjectTypeRus(TwgForm: TForm2): String;
 
 var ListByName:TListByName;ListByDicts:TListByName;
 
-implementation uses Writer;
+implementation uses Writer, System.IOUtils;
+
+// строки справочника: файл в UTF-8 (с BOM или без - справочники на устройстве)
+// или в cp1251 (старые справочники Windows); в String - по кодировке файла
+procedure LoadDictLines(const FileName: String; L: TStrings);
+var B: TBytes;
+    Enc: TEncoding;
+    N: Integer;
+function IsUtf8: Boolean;
+var I, K: Integer;
+begin
+ Result := False;
+ I := 0;
+ while I < Length(B) do begin
+  if B[I] < $80 then K := 0 else
+  if B[I] and $E0 = $C0 then K := 1 else
+  if B[I] and $F0 = $E0 then K := 2 else
+  if B[I] and $F8 = $F0 then K := 3 else exit;
+  Inc(I);
+  while K > 0 do begin
+   if (I >= Length(B)) or (B[I] and $C0 <> $80) then exit;
+   Inc(I);
+   Dec(K);
+  end;
+ end;
+ Result := True;
+end;
+begin
+ B := TFile.ReadAllBytes(FileName);
+ Enc := nil;
+ N := TEncoding.GetBufferEncoding(B, Enc, nil);
+ if Enc = nil then
+  if IsUtf8 then Enc := TEncoding.UTF8 else Enc := TEncoding.GetEncoding(1251);
+ try
+  L.Text := Enc.GetString(B, N, Length(B) - N);
+ finally
+  if not TEncoding.IsStandardEncoding(Enc) then Enc.Free;
+ end;
+end;
 
 function oghObjectType(TwgForm: TForm2): String;
 begin
  Result := '';
+// WriteIn(['nil=', TwgForm.Settings.Properties.PropValue['Тип объекта']=nil]);
  If TwgForm.Settings.Properties.PropValue['Тип объекта'] <> nil then begin
+//  WriteIn(['OT=', TwgForm.Settings.Properties.PropValue['Тип объекта'].Value]);
   If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОДХ' then Result := '_odh' else
   If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ДТ' then Result := '_dt' else
   If ansiUpperCase(TwgForm.Settings.Properties.PropValue['Тип объекта'].Value) = 'ОО' then Result := '_oo';
@@ -404,8 +444,8 @@ begin
  end;
 // Writein(['===============================']);
  For I:=0 to Sections.Count-1 do begin
-//  Writein([SectionName, TSectionName(Sections[I]).IndexName(Index) ]);
-  WriteIn(['Find=', SectionName, TSectionName(Sections[I]).IndexName(Index)]);
+  Writein([SectionName, TSectionName(Sections[I]).IndexName(Index) ]);
+  //WriteIn(['Find=', SectionName, TSectionName(Sections[I]).IndexName(Index)]);
   If SectionName=TSectionName(Sections[I]).IndexName(Index) then begin
    Result:=Sections[I];
    exit;
@@ -579,7 +619,7 @@ begin
 end;
 
 procedure TListByName.LoadFromFile(FileName: AnsiString; objType: AnsiString);
-var F:TextFile;
+var Lines: TStringList;
     I:Integer;
     S: AnsiString;
     SectionName:TSectionName;
@@ -598,12 +638,12 @@ If objType <> '' then begin
  DelSubStr(FileName, Ext);
  FileName := FileName + objType + Ext;
 end;
-AssignFile(F,FileName);
-Reset(F);
+Lines := TStringList.Create;
 try
+LoadDictLines(String(FileName), Lines);
 SectionName:=nil;
- While not Eof(F) do begin
-  Readln(F,S);//S:=Trim(S);
+ For I := 0 to Lines.Count - 1 do begin
+  S := AnsiString(Lines[I]);
   If Pos('[',S) = 1 then begin
    DelSubStr(S,'[');DelSubStr(S,']');S:=Trim(S);
    SectionName :=TSectionName.Create(S);
@@ -635,7 +675,7 @@ SectionName:=nil;
   If FileExists(FileName) then Additional.LoadFromFile(FileName, objType);
  end;
 finally
- CloseFile(F);
+ Lines.Free;
 // WriteIn([FileName, Sections.Count]);
 // Tree.SaveToFile('lll');
 end;

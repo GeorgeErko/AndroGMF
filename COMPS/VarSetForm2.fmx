@@ -2,9 +2,22 @@ inherited VarSetDlg2: TVarSetDlg2
   Caption = #1043#1072#1079#1086#1085#1099
   ClientWidth = 934
   DesignerMasterStyle = 0
+  inherited Panel1: TPanel
+    inherited Grid: TStringGrid
+      Viewport.Width = 453.000000000000000000
+      Viewport.Height = 309.000000000000000000
+      inherited colName: TStringColumn
+        Size.Width = 139.000000000000000000
+      end
+      inherited colValue: TStringColumn
+        Size.Width = 285.000000000000000000
+      end
+    end
+  end
   inherited hGrid: TStringGrid
     Size.Width = 340.000000000000000000
-    Viewport.Width = 336.000000000000000000
+    Viewport.Width = 340.000000000000000000
+    Viewport.Height = 311.000000000000000000
     inherited hcolNum: TStringColumn
       Size.Width = 39.000000000000000000
     end
@@ -18,6 +31,7 @@ inherited VarSetDlg2: TVarSetDlg2
     end
     inherited hcolAge: TStringColumn
       Visible = False
+      Size.Width = 64.000000000000000000
     end
   end
   inherited SpeedButton15: TSpeedButton
