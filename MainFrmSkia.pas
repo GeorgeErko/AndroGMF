@@ -127,7 +127,7 @@ uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, 
 {$IFDEF ANDROID}
      , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
-     , Lib;
+     , Lib, StylusInput;
 
 type
   TBitmapAccess = class(TBitmap);
@@ -143,6 +143,7 @@ end;
 var
   WheelZoomTmr: TTimer;
   WheelZoomLastTick: UInt64;
+  GSceneDrawCount: Integer = 0; // отладка фризов: число отрисовок сцены
 
 {$R *.fmx}
 
@@ -1081,11 +1082,14 @@ end;
 procedure TMainFormSkia.LivePainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
 var ViewScale, Tx, Ty: Single;
     LayerPaint: ISkPaint;
+    T0, Dt: UInt64;
 begin
  if (ACanvas = nil) or (Selector = nil) or (Selector.GlobalRect = nil) then exit;
  if InteractionBitmapActive then exit;
  ViewScale := Single(Selector.GetScale);
  if ViewScale <= 0 then exit;
+ T0 := TThread.GetTickCount64;
+ try
 // та же матрица вида, что у сцены в SkPainterDraw
  Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
  Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
@@ -1113,6 +1117,11 @@ begin
   end;
  finally
   ACanvas.Restore;
+ end;
+ finally
+ // отладка фризов: отрисовка live-слоя 30 мс и больше; номер отрисовки сцены
+  Dt := TThread.GetTickCount64 - T0;
+  if Dt >= 30 then WriteIn(['LivePainterDraw ms=', Dt, ' scene#', GSceneDrawCount]);
  end;
 end;
 
@@ -1227,10 +1236,22 @@ begin
  Selector.OnInvalidateOverlayStatic := DoInvalidateOverlayStatic;
 end;
 
+// FitView - вся карта в окне. Вызов из кода (Sender = nil, после открытия
+// карты) - всегда. Двойной щелчок (OnDblClick - левая кнопка или касание):
+// на Windows не выполняется (FitView - двойной щелчок средней кнопкой,
+// SkPainterMouseDown), на Android - только пальцем, не пером
 procedure TMainFormSkia.SkPainterDblClick(Sender: TObject);
 begin
   if Selector = nil then
     Exit;
+  if Sender <> nil then
+  begin
+{$IFDEF ANDROID}
+    if StylusTool in [stStylus, stEraser, stMouse] then Exit;
+{$ELSE}
+    Exit;
+{$ENDIF}
+  end;
   InteractionActive := False;
   PanActive := False;
   LastZoomDistance := 0;
@@ -1622,6 +1643,10 @@ begin
   finally
   if Clipped then ACanvas.Restore;
     Dt := TThread.GetTickCount64 - T0;
+   // отладка фризов: номер отрисовки сцены (растет при движении мыши - сцена
+   // перерисовывается) и время, если 30 мс и больше
+    Inc(GSceneDrawCount);
+    if Dt >= 30 then WriteIn(['SkPainterDraw #', GSceneDrawCount, ' ms=', Dt]);
   end;
 end;
 

@@ -52,7 +52,12 @@ type
     FTapTick: UInt64;
     FDownPos: TPointF;
     FDownValid: Boolean;
+   // Android: окно списка ставится FMX со сдвигом по Y; поправка измеряется
+   // после открытия (CorrectPopupY) и применяется при следующих открытиях
+    FPopupYCorr: Single;
     procedure PopupLayersClosePopup(Sender: TObject);
+    procedure PopupLayersPopup(Sender: TObject);
+    procedure CorrectPopupY;
     procedure TreeLayersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 
     function ChkLayerCtrl: TCheckBox;
@@ -77,6 +82,7 @@ type
     function GetActiveLayer: TResource;
     procedure SetActiveLayer(const Value: TResource);
     procedure RebuildTree;
+    procedure SyncTree;
     function EnsureItemForLayer(Layer: TResource): TTreeViewItem;
     procedure SyncHeader;
     procedure UpdateTreeChecksFromModel;
@@ -225,8 +231,32 @@ begin
  if btnDrop = nil then Exit;
  PopupLayers.PlacementTarget := btnDrop;
  PopupLayers.Placement := TPlacement.Bottom;
- PopupLayers.VerticalOffset := 0;
+ PopupLayers.VerticalOffset := {$IFDEF ANDROID}FPopupYCorr{$ELSE}0{$ENDIF};
  PopupLayers.HorizontalOffset := btnDrop.Width - PopupLayers.Width;
+end;
+
+procedure TLayerFrame.PopupLayersPopup(Sender: TObject);
+begin
+{$IFDEF ANDROID}
+// окно уже размещено, но еще может выравниваться - замер после обработки события
+ TThread.ForceQueue(nil, procedure begin CorrectPopupY; end);
+{$ENDIF}
+end;
+
+// список - точно под HeaderBg: верх списка и низ заголовка в экранных
+// координатах (у каждой формы - фактическое положение ее вида на экране);
+// разница - сдвиг окна списка (PopupLayers лежит прямо на нем) и поправка
+// для следующих открытий
+procedure TLayerFrame.CorrectPopupY;
+var F: TCustomPopupForm;
+    D: Single;
+begin
+ if not FPopupShown or not (PopupLayers.Parent is TCustomPopupForm) then Exit;
+ D := HeaderBg.LocalToScreen(TPointF.Create(0, HeaderBg.Height)).Y - PopupLayers.LocalToScreen(TPointF.Zero).Y;
+ if Abs(D) < 1 then Exit;
+ FPopupYCorr := FPopupYCorr + D;
+ F := TCustomPopupForm(PopupLayers.Parent);
+ F.Offset := TPointF.Create(F.Offset.X, F.Offset.Y + D);
 end;
 
 { TLayerFrame }
@@ -239,6 +269,7 @@ begin
  EnsurePopupResizeGrip;
  LoadPopupSize;
  if PopupLayers <> nil then PopupLayers.OnClosePopup := PopupLayersClosePopup;
+ if PopupLayers <> nil then PopupLayers.OnPopup := PopupLayersPopup;
  TreeLayers.OnMouseDown := TreeLayersMouseDown;
 end;
 
@@ -491,8 +522,19 @@ begin
  if FUpdating then Exit;
  FUpdating := True;
  try
-  TreeLayers.Clear;
+// не TreeLayers.Clear: он обходит Content.Controls по индексу, запомненному до
+// освобождения пунктов, и на заполненном дереве выходил за границу ("List index
+// out of bounds"); здесь последний пункт верхнего уровня берется заново после
+// каждого освобождения
+  TreeLayers.BeginUpdate;
+  try
+   TreeLayers.Selected := nil;
+   while TreeLayers.Count > 0 do TreeLayers.Items[TreeLayers.Count - 1].Free;
+  finally
+   TreeLayers.EndUpdate;
+  end;
   FLayerToItem.Clear;
+  FTapItem := nil;
   if FLayerTable = nil then Exit;
 
   for I := 0 to FLayerTable.L2Count - 1 do
@@ -511,6 +553,22 @@ begin
    TreeLayers.Selected := Item;
    Item.Expand;
   end;
+ finally
+  FUpdating := False;
+ end;
+end;
+
+// дерево по модели без перестройки: видимость, цвета и имена слоев, выделен
+// активный слой
+procedure TLayerFrame.SyncTree;
+var Item: TTreeViewItem;
+begin
+ UpdateTreeChecksFromModel;
+ if FUpdating then Exit;
+ if (ActiveLayer = nil) or not FLayerToItem.TryGetValue(ActiveLayer, Item) then Exit;
+ FUpdating := True;
+ try
+  TreeLayers.Selected := Item;
  finally
   FUpdating := False;
  end;
@@ -664,7 +722,9 @@ begin
  end;
 // щелчок по кнопке при открытом списке сам закрыл его (потеря фокуса) - не открываем снова
  if TThread.GetTickCount64 - FPopupClosedTick < 300 then Exit;
- RebuildTree;
+// состав дерева меняется только при смене таблицы слоев (SetLayerTable);
+// перед открытием - только флажки, цвета, имена и выделение активного слоя
+ SyncTree;
  AlignPopupToDropButton;
  FPopupShown := True;
  try

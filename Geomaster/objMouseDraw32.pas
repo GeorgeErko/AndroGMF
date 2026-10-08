@@ -119,7 +119,7 @@ implementation
 
 uses Math, EcDot, GBFWUndo, UndoColNew, maths_basic, newClassBuilder, newBlock, FramePropEditor,
      newForm0, newResource, newSettings, newSelector, WpRects, FrameAccuDraw,
-     FrameParaLine, newProcs, Writer, Selector32;
+     FrameParaLine, newProcs, Writer, Selector32, System.Diagnostics;
 
 { TMousePainter }
 
@@ -402,7 +402,11 @@ end;
 procedure TMousePainter.MouseMove(Form: TForm2; Shift: TShiftState; X,
   Y: Double; var Hook: boolean);
 var Kvant:Integer;
+    SW: TStopwatch;
+    MsMarker, MsPath, MsFixed, MsImage: Double; // отладка фризов, мс
 begin
+ SW := TStopwatch.StartNew;
+ MsMarker := 0; MsPath := 0; MsFixed := 0; MsImage := 0;
  inherited MouseMove(Form,Shift,X,Y,Hook);
  if ShiftPress or ControlPresS then begin Hook:=False;Exit;end;
  Hook:=True;
@@ -427,24 +431,37 @@ begin
                      If mpTwig<>nil then begin
                       X0:=X;Y0:=Y;
                       if Twigs.Settings.psAuto then emGetDotMarker(X0,Y0,mpTwig.FirstPoint,mpTwig.mpStvor,objTemporary,True,True,True);
+                      MsMarker := SW.Elapsed.TotalMilliseconds;
                       mpMoveTwigPath(X0,Y0);
+                      MsPath := SW.Elapsed.TotalMilliseconds;
                       If fixPoint1.Visible then begin fixPoint2.mX:=X0;fixPoint2.mY:=Y0;end;
                      end else begin
                       Stvor_.X1:=xyNull;
                       if Twigs.Settings.psAuto then emGetDotMarker(X,Y,nil,Stvor_,objTemporary,True,True,True);
+                      MsMarker := SW.Elapsed.TotalMilliseconds;
+                      MsPath := MsMarker;
                       X0:=X;Y0:=Y;
                       If fixPoint1.Visible then begin fixPoint2.mX:=X0;fixPoint2.mY:=Y0;end;
                      end;
  //                     Writeln('1===',fixPoint2.mX,' ',fixPoint2.mY);
                      UpdateFixedPoints(fixPoint2.mX,fixPoint2.mY);
+                     MsFixed := SW.Elapsed.TotalMilliseconds;
  //                     Writeln('2===',fixPoint2.mX,' ',fixPoint2.mY);
                     // перерисовка live-слоя (резиновая линия, маркер, направляющие)
                      UpdateImage;
+                     MsImage := SW.Elapsed.TotalMilliseconds;
                     finally
                      Quants_For_Arcs:=Kvant;
                     end;
                    end;
   end;
+// отладка фризов: части обработки движения (мс), если всего 10 мс и больше
+ if MsImage >= 10 then
+  WriteIn(['MousePainter.MouseMove marker=', FloatToStrF(MsMarker, ffFixed, 8, 1),
+   ' path=', FloatToStrF(MsPath - MsMarker, ffFixed, 8, 1),
+   ' fixed=', FloatToStrF(MsFixed - MsPath, ffFixed, 8, 1),
+   ' image=', FloatToStrF(MsImage - MsFixed, ffFixed, 8, 1),
+   ' ortho=', OrthoTwigs.Twigs.Count]);
 end;
 
 procedure TMousePainter.MouseRightDown(Form: TForm2; Button: TMouseButton;

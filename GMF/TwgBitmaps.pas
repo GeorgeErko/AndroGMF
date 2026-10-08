@@ -33,6 +33,11 @@ type
   Function PointIn(X, Y: Double): boolean;
  // точка внутри повернутого габарита Bounds (контур надписи); без Bounds - по Sect
   Function PointInB(X, Y: Double): boolean;
+ // быстрые фильтры по габаритам Sect (пустые габариты - False):
+ // пересечение с прямоугольником Rect (видимость в Selector.ActiveRect)
+  Function SectVisible(const Rect: TSect): boolean;
+ // точка внутри габаритов, расширенных на R (допуск притяжения)
+  Function PointInSect(X, Y, R: Double): boolean;
  end;
 
  TTwgBitmaps = class(PCollection)
@@ -56,7 +61,14 @@ type
    Function PointIn(X, Y: Double): boolean;
   // точка внутри контура Bounds одного из элементов или собственного Bitmap
    Function PointInB(X, Y: Double): boolean;
+  // быстрые фильтры по общим габаритам Sect (после CalcSect; пустые - False):
+  // пересечение с прямоугольником Rect и точка в габаритах, расширенных на R
+   Function SectVisible(const Rect: TSect): boolean;
+   Function PointInSect(X, Y, R: Double): boolean;
  end;
+
+// габариты не заданы (точка или нулевой прямоугольник)
+function SectIsEmpty(const Sect_: TSect): Boolean;
 
 implementation uses Writer, System.Math.Vectors, ogcMathUtils;
 
@@ -79,6 +91,22 @@ end;
 function SectIsEmpty(const Sect_: TSect): Boolean;
 begin
  Result := (Sect_.Left = Sect_.Right) and (Sect_.Top = Sect_.Bottom);
+end;
+
+// габариты Sect_ пересекаются с Rect (стороны TSect - в любом порядке)
+function SectIntersects(const Sect_, Rect: TSect): Boolean;
+begin
+ Result := not SectIsEmpty(Sect_) and
+  (Max(Sect_.Left, Sect_.Right) >= Min(Rect.Left, Rect.Right)) and (Min(Sect_.Left, Sect_.Right) <= Max(Rect.Left, Rect.Right)) and
+  (Max(Sect_.Top, Sect_.Bottom) >= Min(Rect.Top, Rect.Bottom)) and (Min(Sect_.Top, Sect_.Bottom) <= Max(Rect.Top, Rect.Bottom));
+end;
+
+// точка (X, Y) в габаритах Sect_, расширенных на R
+function SectContains(const Sect_: TSect; X, Y, R: Double): Boolean;
+begin
+ Result := not SectIsEmpty(Sect_) and
+  (X >= Min(Sect_.Left, Sect_.Right) - R) and (X <= Max(Sect_.Left, Sect_.Right) + R) and
+  (Y >= Min(Sect_.Top, Sect_.Bottom) - R) and (Y <= Max(Sect_.Top, Sect_.Bottom) + R);
 end;
 
 procedure DrawSectRect(const Canvas: ISkCanvas; const Sect_: TSect; const Paint: ISkPaint);
@@ -265,7 +293,27 @@ begin
  Result := point_in_polygon_xy(X, Y, PX, PY);
 end;
 
+function TTwgBitmap.SectVisible(const Rect: TSect): boolean;
+begin
+ Result := SectIntersects(fSect, Rect);
+end;
+
+function TTwgBitmap.PointInSect(X, Y, R: Double): boolean;
+begin
+ Result := SectContains(fSect, X, Y, R);
+end;
+
 { TTwgBitmaps }
+
+function TTwgBitmaps.SectVisible(const Rect: TSect): boolean;
+begin
+ Result := SectIntersects(fSect, Rect);
+end;
+
+function TTwgBitmaps.PointInSect(X, Y, R: Double): boolean;
+begin
+ Result := SectContains(fSect, X, Y, R);
+end;
 
 constructor TTwgBitmaps.Create(ALimit: Integer; ADelta: Integer);
 begin

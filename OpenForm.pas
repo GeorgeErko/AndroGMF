@@ -72,6 +72,22 @@ type
 var
   _AndroidGpkgPicker: TAndroidGpkgPicker;
 
+// папка для выбранного файла: карты .gmf - в личное внешнее хранилище
+// приложения (Внутреннее хранилище\Android\data\<пакет>\files, видно в
+// проводнике телефона, разрешений не требует); остальные (.zip и др.) - в
+// рабочую папку программы, как раньше
+function PickedFileDir(const DisplayName: string): string;
+var Dir: JFile;
+begin
+ Result := TPath.GetDocumentsPath;
+ if not SameText(ExtractFileExt(DisplayName), '.gmf') then exit;
+ try
+  Dir := TAndroidHelper.Context.getExternalFilesDir(nil);
+  if Dir <> nil then Result := JStringToString(Dir.getAbsolutePath);
+ except
+ end;
+end;
+
 class function TAndroidGmfPicker.Instance: TAndroidGmfPicker;
 begin
   if _AndroidGmfPicker = nil then _AndroidGmfPicker := TAndroidGmfPicker.Create;
@@ -390,7 +406,7 @@ begin
       end;
       DisplayName := GetDisplayNameFromUri(TargetUri);
       if DisplayName = '' then DisplayName := 'import_' + I.ToString;
-      LocalPath := TPath.Combine(TPath.GetDocumentsPath, DisplayName);
+      LocalPath := TPath.Combine(PickedFileDir(DisplayName), DisplayName);
       try
         CopyUriToFile(TargetUri, LocalPath);
         if FirstGmfLocalPath = '' then
@@ -416,7 +432,7 @@ begin
   end;
   DisplayName := GetDisplayNameFromUri(Uri);
   if DisplayName = '' then DisplayName := 'import';
-  LocalPath := TPath.Combine(TPath.GetDocumentsPath, DisplayName);
+  LocalPath := TPath.Combine(PickedFileDir(DisplayName), DisplayName);
   try
     CopyUriToFile(Uri, LocalPath);
     ResolvedPath := ResolvePickedLocalPath(LocalPath);

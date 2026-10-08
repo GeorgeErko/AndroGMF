@@ -92,6 +92,7 @@ type
     UpDown2Down: TButton;
     SpeedButton6: TSpeedButton;
     sbCancel: TSpeedButton;
+    LabelVer: TLabel;
     procedure OZNButtonApplyStyleLookup(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
@@ -176,9 +177,33 @@ implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource;
+                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource
+                    {$IFDEF ANDROID}, Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText{$ENDIF};
 
 {$R *.fmx}
+
+// версия сборки: Android - versionName (VerInfo_Keys) и versionCode (номер
+// сборки VerInfo_Build) из манифеста APK; Windows - версия из ресурса exe
+function AppVersion: String;
+{$IFDEF ANDROID}
+var Info: JPackageInfo;
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+var Major, Minor, Build: Cardinal;
+{$ENDIF}
+begin
+ Result := '?';
+ try
+{$IFDEF ANDROID}
+  Info := TAndroidHelper.Context.getPackageManager.getPackageInfo(TAndroidHelper.Context.getPackageName, 0);
+  if Info <> nil then Result := JStringToString(Info.versionName) + ' (' + IntToStr(Info.versionCode) + ')';
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+  if GetProductVersion(ParamStr(0), Major, Minor, Build) then Result := Format('%d.%d.%d', [Major, Minor, Build]);
+{$ENDIF}
+ except
+ end;
+end;
 
 var
   OverlayStatLastTick: UInt64;
@@ -222,6 +247,7 @@ end;
 
 procedure TMainFormMouseObj.FormCreate(Sender: TObject);
 begin
+ LabelVer.Text := 'gmfv:' + AppVersion;
 // загружаем uf,fhbns панелей
  instProperties.Width := GReadFloat(Name + '_instPropertiesW',  instProperties.Width);
  skPainter.Width := GReadFloat(Name + '_skPainterW',  skPainter.Width);
@@ -1089,6 +1115,7 @@ procedure TMainFormMouseObj.SkPainterMouseMove(Sender: TObject;
   Shift: TShiftState; X, Y: Single);
 var Hook: Boolean;
     XPix, YPix, XGeo, YGeo: Double;
+    T0, T1: UInt64;
 begin
  Hook := False;
  MousePos := PointF(X, Y);
@@ -1103,11 +1130,16 @@ begin
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
+  T0 := TThread.GetTickCount64;
   MouseObject.MouseMove(TwgForm, Shift, XGeo, YGeo, Hook);
+  T1 := TThread.GetTickCount64;
   UpdateStatusGeo(X, Y, MouseObject.Hint);
   InvalidateOverlayLive;
  // live-слой (резиновые линии, рамка) перерисовывается без перерендера сцены
   RepaintLive;
+ // отладка фризов: обработка движения инструментом и строка состояния 30 мс и больше
+  if TThread.GetTickCount64 - T0 >= 30 then
+   WriteIn(['MouseMove ', MouseObject.ClassName, ' tool ms=', T1 - T0, ' status+live ms=', TThread.GetTickCount64 - T1]);
  // if SkPainter <> nil then
  //   SkPainter.Redraw;
   if not Hook then

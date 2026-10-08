@@ -7,14 +7,31 @@ inherited MainFormMouseObj: TMainFormMouseObj
   inherited Panel1: TPanel
     Size.Width = 919.000000000000000000
     inherited btnOpen: TCornerButton
-      Position.X = 11.000000000000000000
-      Position.Y = 4.000000000000000000
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 65.000000000000000000
+      Position.Y = 3.000000000000000000
+      Size.Height = 27.000000000000000000
     end
     inherited btnLocalOpen: TCornerButton
-      Position.Y = 4.000000000000000000
+      Align = Left
+      Margins.Left = 5.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 95.000000000000000000
+      Position.Y = 3.000000000000000000
+      Size.Height = 27.000000000000000000
     end
     inherited btnPaint: TCornerButton
-      Position.X = 112.000000000000000000
+      Align = Left
+      Margins.Left = 10.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 160.000000000000000000
+      Position.Y = 3.000000000000000000
+      Size.Height = 27.000000000000000000
     end
     inherited btnPlus: TCornerButton
       Position.Y = 4.000000000000000000
@@ -27,7 +44,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Visible = False
     end
     inherited btnPDF: TCornerButton
-      Position.Y = 4.000000000000000000
+      Align = Left
+      Margins.Left = 5.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 125.000000000000000000
+      Position.Y = 3.000000000000000000
+      Size.Height = 27.000000000000000000
     end
     inherited btnClose: TButton
       Align = MostRight
@@ -35,10 +58,14 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TabOrder = 75
     end
     object Load: TButton
-      Position.X = 148.000000000000000000
-      Position.Y = 4.000000000000000000
+      Align = Left
+      Margins.Left = 15.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 200.000000000000000000
+      Position.Y = 3.000000000000000000
       Size.Width = 73.000000000000000000
-      Size.Height = 25.000000000000000000
+      Size.Height = 27.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 38
       Text = 'Load'
@@ -118,6 +145,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TabOrder = 95
       object btnPlus1: TCornerButton
         Tag = 1
+        Enabled = False
         Images = ImageList1
         ImageIndex = 3
         Position.X = 38.000000000000000000
@@ -135,6 +163,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       end
       object btnMinus1: TCornerButton
         Tag = -1
+        Enabled = False
         Images = ImageList1
         ImageIndex = 4
         Position.X = 63.000000000000000000
@@ -152,6 +181,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       end
       object btnFrag: TCornerButton
         Tag = 2
+        Enabled = False
         Images = ImageList1
         ImageIndex = 8
         Position.X = 90.000000000000000000
@@ -168,6 +198,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       end
       object btnPan: TCornerButton
         Tag = 1
+        Enabled = False
         Images = ImageList1
         ImageIndex = 9
         Position.X = 10.000000000000000000
@@ -183,6 +214,20 @@ inherited MainFormMouseObj: TMainFormMouseObj
         YRadius = 3.000000000000000000
         OnClick = ToolButtonClick
       end
+    end
+    object LabelVer: TLabel
+      Align = Left
+      AutoSize = True
+      StyledSettings = [Family, Size, Style]
+      Margins.Left = 10.000000000000000000
+      Position.X = 10.000000000000000000
+      Size.Width = 45.000000000000000000
+      Size.Height = 33.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.FontColor = claDarkred
+      TextSettings.WordWrap = False
+      Text = 'gmfv:'
+      TabOrder = 122
     end
   end
   inherited PanelPainter: TPanel
@@ -247,6 +292,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     Size.Width = 917.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
+    StyleLookup = 'ToolBarPaintStyle1'
     TabOrder = 21
     object btnToolLine: TSpeedButton
       Tag = 100111
@@ -1767,8 +1813,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
             SourceRect.Bottom = 18.000000000000000000
           end>
       end>
-    Left = 404
-    Top = 96
+    Left = 432
+    Top = 132
   end
   object imgEsc: TImageList
     Source = <

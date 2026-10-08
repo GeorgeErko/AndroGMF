@@ -70,7 +70,16 @@ implementation
 
 uses MathS, EMath, WpGeo, NotLink_, WptForm0, newForm0, newBlock, UndoColNew,
      TwgColle, WpArcs, FMX.Dialogs, newSelector, newSettings, drawGrid,
-     newProcs, Writer, Selector32;
+     newProcs, Writer, Selector32, System.Diagnostics, TwgBitmaps;
+
+var GDotMarkerDepth: Integer = 0; // отладка фризов: глубина рекурсии emGetDotMarker
+
+// ветвь может оказаться ближе R к точке (X, Y): точка в габаритах ветви,
+// расширенных на R; габариты не рассчитаны (XMin > XMax) - ветвь проверяется
+function TwigNear(Tw: TTwig; X, Y, R: Double): Boolean;
+begin
+ Result := (Tw.XMin > Tw.XMax) or ((X >= Tw.XMin - R) and (X <= Tw.XMax + R) and (Y >= Tw.YMin - R) and (Y <= Tw.YMax + R));
+end;
 
 { TMouseSelector }
 
@@ -140,6 +149,10 @@ var Dist:Double;XX,YY,XX1,YY1:Double;Twig:TTwig;
     Twigs_:TForm2;
     T0: UInt64;
     DtMs: UInt64;
+    SW: TStopwatch; // отладка фризов: части поиска, мс от начала
+    MsNear, MsTwig, MsLink, MsBlk: Double;
+    LinkFound: Boolean;
+    BlockR: Double;
 Function PerpendOn(P1,P2:TDot;var XOut,YOut: Double):boolean;
 var X,Y:Double;Tw1,Tw2:TTwig;Angle:Double;
     W:TWorkPere;
@@ -195,9 +208,10 @@ begin
 end;
 Function GetTwig(var aDist:Double;P:PCollection):TTwig;
 var I:Integer;Ms:Double;Twig:TTwig;a,b:Double;
-    S:Double;
+    S,R:Double;
 begin
  Ms:=10000;Result:=nil;aDist:=10000;
+ R:=XGeoRasst(Twigs.Settings.psAutoDisst);
 //Writeln('GetTwigBeg',TimeToStr(now));
  If UsePathTwig then begin
 //  Writeln('OTCount=',OrthoTwigs.Twigs.Count);
@@ -210,7 +224,8 @@ begin
  For I:=1 to Twigs.Twigs.TwigsCount-1 do begin
   Twig:=Twigs.Twigs.TAt(I);
 //  Writeln(I);
-  if Twig.IsVisible(GRect) then If Twig.Closed=1 then begin
+ // дальше радиуса притяжения ветвь не используется - по габаритам отсекается
+  if TwigNear(Twig,varX,varY,R) then if Twig.IsVisible(GRect) then If Twig.Closed=1 then begin
    S:=Twig.GetTwigDist(varX,varY,a,b);
    If XRasst(S)<=Twigs.Settings.psAutoDisst then If P.IndexOf(Twig)=-1 then P.Insert(Twig);
    If (S<=Ms) then begin Ms:=S;Result:=Twig;aDist:=S;end;
@@ -226,6 +241,9 @@ end;
 begin
  Result := False; // в старом коде при раннем выходе результат не задавался
  T0 := TThread.GetTickCount64;
+ SW := TStopwatch.StartNew;
+ MsNear := -1; MsTwig := -1; MsLink := -1; MsBlk := -1;
+ Inc(GDotMarkerDepth);
  try
  If GGraphSet.PaintFragment<1 then GGraphSet.PaintFragment:=300;
  If YGeoRasst(GSelector.Drawer.Height)>GGraphSet.PaintFragment then begin
@@ -260,6 +278,7 @@ try
     end;
 //  WRiteln('GetNearestPointBeg',TimeToStr(Now));
    DrawDot:=emGetNearestPoint(varX,varY);
+   MsNear := SW.Elapsed.TotalMilliseconds;
 //  WRiteln('GetNearestPointEnd',TimeToStr(Now));
   // Marker.Draw(GCanvas,Marker.mX,Marker.mY);
    If DrawDot<>nil then begin
@@ -282,10 +301,13 @@ try
     end;
    end else With Twigs do begin
     Twig:=GetTwig(Dist,LinkTwigs);
+    MsTwig := SW.Elapsed.TotalMilliseconds;
     XX:=varX;YY:=varY;
     If XRasst(Dist)<=Settings.psAutoDisst then
      objPoint:=Twig;
-    If GetNearestPointFromLink(LinkTwigs,XX,YY) and not(Twig is TTwigCircle) then
+    LinkFound := GetNearestPointFromLink(LinkTwigs,XX,YY);
+    MsLink := SW.Elapsed.TotalMilliseconds;
+    If LinkFound and not(Twig is TTwigCircle) then
      If XRasst(Distance(varX,varY,XX,YY))<=Settings.psAutoDisst then begin
       // выбрали точку пересечения - выход
       UsedOperation:=GlobalSettings.MarkerView.Checked['mvInterSect'];
@@ -427,8 +449,11 @@ try
      end;
     end;
     If not Marker.Visible then begin // ищем притяжение к блокам
+     MsBlk := SW.Elapsed.TotalMilliseconds;
  //    Writeln('Blocks_begin');
      Stvor_.X1:=xyNull;
+    // допуск притяжения - по настройкам карты (в цикле Twigs - карта блока)
+     BlockR:=XGeoRasst(Twigs.Settings.psAutoDisst);
      For I:=0 to Twigs.Twigs.AnyCount-1 do begin
    //   Writeln('begI=',I);
       PP:=Twigs.Twigs.AAt(I,W);
@@ -456,7 +481,12 @@ try
           oldTwigs:=Twigs;
           Twigs:=TGeoBlock(PP.userObj).TwgForm;
           If Twigs = nil then begin { нулевой Twigs } Moved:=False; continue;end;
-           If not True{PP.BlockVisible (PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,)} then begin Moved:=False;continue;end;
+          // блок вне фрагмента карты (Selector.ActiveRect) или курсор дальше допуска
+          // притяжения от его габаритов (BlockTextBitmaps, в координатах карты) - не
+          // ищем (в старой программе - PP.BlockVisible). Габариты считаются при
+          // отрисовке: их нет - блок ни разу не был на экране, тоже не ищем
+           If (PP.BlockTextBitmaps=nil) or not PP.BlockTextBitmaps.SectVisible(GRect) or
+              not PP.BlockTextBitmaps.PointInSect(varX,varY,BlockR) then begin Moved:=False;continue;end;
           Moved:=True;
           PP.userObj.MoveTo(PP.XDot,PP.YDot,PP.Ugol,PP.XKoef,PP.YKoef,PP.Extrusion);
           saveTemporaryTwig:=objTemporaryTwig;
@@ -484,6 +514,14 @@ end;
   DtMs := TThread.GetTickCount64 - T0;
   if DtMs >= 50 then
    WriteIn(['emGetDotMarker ms=', DtMs]);
+  Dec(GDotMarkerDepth);
+ // отладка фризов: отметки времени частей (мс от начала; -1 - часть не выполнялась),
+ // только внешний вызов (блоки ищут рекурсивно)
+  if (GDotMarkerDepth = 0) and (SW.Elapsed.TotalMilliseconds >= 5) then
+   WriteIn(['emGetDotMarker near=', FloatToStrF(MsNear, ffFixed, 8, 1), ' twig=', FloatToStrF(MsTwig, ffFixed, 8, 1),
+    ' link=', FloatToStrF(MsLink, ffFixed, 8, 1), ' blocks from=', FloatToStrF(MsBlk, ffFixed, 8, 1),
+    ' total=', FloatToStrF(SW.Elapsed.TotalMilliseconds, ffFixed, 8, 1),
+    ' twigs=', Twigs.Twigs.TwigsCount, ' any=', Twigs.Twigs.AnyCount]);
  end;
 end;
 
@@ -499,7 +537,8 @@ begin
  For I:=1 to Twigs.Twigs.TwigsCount-1 do begin
   Tw:=Twigs.Twigs.TAt(I);
 //  writeln('I=',I);
-  If Tw.Closed=1 then begin
+ // вершины ветви не ближе MinS, если до ее габаритов дальше MinS
+  If (Tw.Closed=1) and TwigNear(Tw,X,Y,MinS) then begin
    D:=Tw.GetNearestPoint(X,Y,N);
     if D<>nil then begin
     //Writeln(I,' ',D.XDot,' ',Tw.ClassName,' ',Tw.Dots[0].XDot=Tw.Dots[1].XDot);
@@ -668,12 +707,16 @@ begin
 end;
 
 function TMouseSelector.emFilterActiveLot(X, Y: Double): boolean;
-var I,J,K:Integer;Lot:TLot;Twig:TTwig;Dot:TDot;Dist:Double;
+var I,J,K:Integer;Lot:TLot;Twig:TTwig;Dot:TDot;Dist,R:Double;
 begin
+// точка (X, Y) - вершина ветви: ветви, габариты которых ее не содержат (с
+// запасом на допуск совпадения точек EqualAnyPoints), не просматриваются
+ R:=1/Const_Of_PrecCoord;
  For I:=0 to Twigs.Twigs.LotsCount-1 do begin
   Lot:=Twigs.Twigs.LAt(I);
   For J:=0 to Lot.Coord.Count-1 do begin
    Twig:=Lot.GetTwig(Twigs.Twigs,J);
+   If not TwigNear(Twig,X,Y,R) then continue;
     For K:=0 to Twig.Coord.Count-1 do begin
     Dot:=Twig[K];
     If EqualAnyPoints(Dot.XDot,Dot.YDot,X,Y) then
