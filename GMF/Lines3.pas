@@ -233,7 +233,7 @@ begin
   Structura:=Pcollection.Create(1);
    Structura.Insert(TLineStruct.Create);
  StrPCopy(NameOf,AnsiString(Name));
- WriteIn(['NameLine=',NameOf]);
+// WriteIn(['NameLine=',NameOf]);
  IdNum:=Id;
  LocalScale := 1;
 end;
@@ -286,7 +286,7 @@ procedure TGeoLine.Store;
 const s: array[0..4] of AnsiChar = #1#1#1#0#1;
 begin
   st.Write(s, sizeof(s));
-  StrPCopy(NameOf, Utf8ToCP1251(NameOf));
+ // NameOf уже в cp1251; Utf8ToCP1251 заменял кириллицу на '?' (и в памяти)
 	ST.Write(NameOf,30);
 	ST.write(IdNum,SizeOf(IdNum));
    ST.put(structura);

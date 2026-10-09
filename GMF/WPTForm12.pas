@@ -488,14 +488,13 @@ end;
 constructor TFormTaheo.Load(Stream: TBufStream);
 begin
   inherited Load(Stream);
-  If not mirrorobject then
-   WriteIn(['LoadF2']);
+//  If not mirrorobject then   WriteIn(['LoadF2']);
    thIndexPointsXY:=TIndexPointsXY.Create(1);thIndexPointsXY.Duplicates:=True;
    thIndexLotsXY  :=TIndexLotsXY.Create(1);thIndexLotsXY.Duplicates:=True;
    thIndexTwigsXY :=TIndexTwigsXY.Create(1);thIndexTwigsXY.Duplicates:=True;
    thIndexPointsUID:=TIndexPointsUID.Create(1);thIndexPointsUID.Duplicates:=True;
    thIndexLotsUID :=TIndexLotsUID.Create(1);thIndexLotsUID.Duplicates:=True;
-  WriteIn(['+*LoadF22']);
+//  WriteIn(['+*LoadF22']);
 end;
 
 initialization

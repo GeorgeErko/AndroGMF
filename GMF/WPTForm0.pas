@@ -194,9 +194,11 @@ Procedure StoreAbout;
     Write(GraphSet,SizeOf(GraphSet));
     WriteString(A.ClassName);
     WriteString(MyName);
-    Write(XMin,SizeOf(XMin));Write(YMin,SizeOf(YMin));Write(XMax,SizeOf(XMax));Write(YMax,SizeOf(YMax));
-    Write(MaxLotNum,SizeOf(MaxLotNum));
-    Write(Fragment,SizeOf(TSect));
+   // как в LoadAboutNew: Extended - по 10 байт (формат Geomaster; на Win64/Android
+   // Extended = Double, 8 байт), Fragment - 4 таких числа
+    WriteExtended(XMin);WriteExtended(YMin);WriteExtended(XMax);WriteExtended(YMax);
+    WriteInt32(MaxLotNum);
+    WriteExtended(Fragment.Left);WriteExtended(Fragment.Top);WriteExtended(Fragment.Right);WriteExtended(Fragment.Bottom);
     Write(MirrorObject,SizeOf(MirrorObject));
     Write(Dop,SizeOf(Dop));
    end;

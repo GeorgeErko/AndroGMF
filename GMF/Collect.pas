@@ -73,6 +73,7 @@ interface
     Function ReadExtended: Extended;
     Procedure WriteExtended(Ext:Extended);
     Function ReadInt32: FixedInt;
+    Procedure WriteInt32(Value: FixedInt);
     Function ReadSect: TExtendedSect;
     Procedure WriteSect(Sect:TExtendedSect);
     Function Seek(Offset : Longint; Origin : Word): Longint;
@@ -170,6 +171,13 @@ interface
      Function IndexOf(S:AnsiString): Integer;
   end;
 
+// отладка записи: если задано - Put сообщает каждый записанный объект (границы
+// его Store в потоке и глубину вложенности); формат записи не меняется
+type
+  TPutTraceProc = reference to procedure(Stream: TBufStream; Obj: TTwgObject; StartPos, EndPos: Int64; Depth: Integer);
+var
+  PutTrace: TPutTraceProc = nil;
+
 Procedure RegisterObject(CType  : TStreamClass;RCode   : SmallInt);
 Procedure ReplaceRegister(replaceFrom,replaceTo:Integer);
 
@@ -195,6 +203,8 @@ const
 Procedure ReplaceRegister(replaceFrom,replaceTo:Integer);
 var I:Integer;
 begin
+  If NrOfStRecs = 0 then exit;
+  I := 1;
   Repeat
     If StreamRecords^[I].ObjType = replaceFrom then begin
       StreamRecords^[I].ObjType:=replaceTo;
@@ -334,16 +344,18 @@ begin
   end;
 end;
 
+// зеркало Get: код типа (SmallInt, 0 - nil), затем Store объекта
+var PutDepth: Integer = 0; // вложенность Put при отладке (PutTrace)
+
 Procedure TBufStream.Put(P :TTwgObject);
 var
-  OType,
+  OType: SmallInt;
   i: WORD;
+  StartPos: Int64;
 begin
-//  If NrOfStRecs = 0 then
-//    Raise EStreamError.Create('Нет зарегистрированных типов');
    If P=nil then begin OType:=0;FStream.Write(OType, SIZEOF(OType));exit;end;
   i := 1;
-//  Writeln(P.ClassName);
+  If NrOfStRecs > 0 then
   Repeat
     If StreamRecords^[i].VmtLink = P.ClassType then
      begin
@@ -351,17 +363,35 @@ begin
      end;
     INC(I);
   Until i > NrOfStRecs;
-  If i > NrOfStRecs then begin
-  // Writeln('raise');
-    Raise EStreamError.CreateFmt('Не зарегистрирован тип %d',[0]);
-  end;
+  If (NrOfStRecs = 0) or (i > NrOfStRecs) then
+    Raise EStreamError.CreateFmt('Не зарегистрирован класс %s',[P.ClassName]);
   With StreamRecords^[i] do
   begin
     FStream.Write(ObjType, SIZEOF(ObjType));
-    P.Store(Self);
+    If not Assigned(PutTrace) then P.Store(Self) else begin
+      StartPos := FStream.Position;
+      Inc(PutDepth);
+      try
+        P.Store(Self);
+      finally
+        Dec(PutDepth);
+      end;
+      PutTrace(Self, P, StartPos, FStream.Position, PutDepth);
+    end;
   end;
 end;
 
+// строки в потоке - байты cp1251 (формат файлов Geomaster); перекодировка
+// явная, а не по системной кодовой странице (на Android она не 1251)
+var GEnc1251: TEncoding;
+function Enc1251: TEncoding;
+begin
+ if GEnc1251 = nil then GEnc1251 := TEncoding.GetEncoding(1251);
+ Result := GEnc1251;
+end;
+
+// длина (Byte при CollectVer = 9, иначе Integer), байты cp1251; строка AnsiString -
+// из тех же символов (через Unicode, независимо от системной кодовой страницы)
 Function TBufStream.ReadStr:AnsiString;
 var
   L: Byte;
@@ -395,30 +425,23 @@ begin
     Result:='';
 end;
 
+// зеркало ReadStr: длина (Byte при CollectVer = 9, не больше 255 байт, иначе
+// Integer) и байты cp1251
 Procedure TBufStream.WriteStr(P: AnsiString);
  var L:Integer;
+     LB:Byte;
+     A:TBytes;
 begin
-  If P <> '' then
-   begin
-   { ShowMessage(IntToStr(Length(P^)));}
-    L:=Length(P);P:=Utf8ToCP1251(P);
-    FStream.Write(L,SizeOf(L));
-    FStream.Write(P[1],L);
-   end
-  Else
-   begin
-    L:=0;
-    FStream.Write(L,SizeOf(L));
-   end;
-end;
-
-// строки в потоке - байты cp1251 (формат файлов Geomaster); перекодировка
-// явная, а не по системной кодовой странице (на Android она не 1251)
-var GEnc1251: TEncoding;
-function Enc1251: TEncoding;
-begin
- if GEnc1251 = nil then GEnc1251 := TEncoding.GetEncoding(1251);
- Result := GEnc1251;
+  A := Enc1251.GetBytes(String(P));
+  L := Length(A);
+  If CollectVer=9 then
+  begin
+   If L>255 then L:=255;
+   LB:=L;
+   FStream.Write(LB,SizeOf(LB));
+  end else
+   FStream.Write(L,SizeOf(L));
+  If L>0 then FStream.Write(A[0],L);
 end;
 
 // в поток пишутся байты cp1251 (раньше писались L байт памяти UTF-16 -
@@ -433,6 +456,7 @@ begin
  If L > 0 then FStream.Write(A[0],L);
 end;
 
+// длина Word и байты как есть (cp1251), без перекодировки
 Function TBufStream.StrRead: PAnsiChar;
 var
   L : WORD;
@@ -489,19 +513,17 @@ begin
 end;
 *)
 
+// зеркало StrRead: длина Word и байты строки как есть (без перекодировки)
 Procedure TBufStream.StrWrite(P: PAnsiChar);
 var
-  L: Word;S:AnsiString;
+  L: Word;
 begin
   If P = nil then
     L := 0
   Else
-    L := StrLen(P);
+    L := Min(StrLen(P), High(Word));
   FStream.Write(L, SizeOf(Word));
-  If P <> nil then begin
-    S:=Utf8ToCP1251(P);
-    FStream.Write(S[1], L);
-  end;
+  If L > 0 then FStream.Write(P^, L);
 end;
 
 function _Ext80ToDouble(Val: Pointer {PExtended80}): Double;
@@ -526,6 +548,11 @@ begin
  Stream.Read(Result, SizeOf(FixedInt));
 end;
 
+procedure TBufStream.WriteInt32(Value: FixedInt);
+begin
+ Stream.Write(Value, SizeOf(FixedInt));
+end;
+
 function TBufStream.ReadSect: TExtendedSect;
 var extExt:TExtended80Rec;Sect:TExtendedSect;
 begin
@@ -546,24 +573,22 @@ begin
   Result := FStream.Read(Buffer,Count);
 end;
 
+// зеркало ReadExtended: 10 байт Extended (80 бит) старого формата - на Win64 и
+// Android Extended = Double, число переводится в 80-битную запись
 Procedure TBufStream.WriteExtended(Ext:Extended);
 var extExt:TExtended80Rec;
 begin
-// extExt:=DoubleToExtended80(Ext);
- //FStream.Write(extExt,SizeOf(TExtended80Rec));
+ extExt:=TExtended80Rec(Ext);
+ FStream.Write(extExt,SizeOf(TExtended80Rec));
 end;
 
+// зеркало ReadSect: Left, Top, Right, Bottom - по 10 байт Extended
 procedure TBufStream.WriteSect(Sect: TExtendedSect);
-var extSect:TExtended80Sect;
 begin
-{ With extSect do begin
-  Left:=DoubleToExtended80(Sect.Left);
-  Right:=DoubleToExtended80(Sect.Right);
-  Top:=DoubleToExtended80(Sect.Top);
-  Bottom:=DoubleToExtended80(Sect.Bottom);
- end;
- FStream.Write(extSect,SizeOf(extSect));
- }
+ WriteExtended(Sect.Left);
+ WriteExtended(Sect.Top);
+ WriteExtended(Sect.Right);
+ WriteExtended(Sect.Bottom);
 end;
 
 Function TBufStream.Write(Const Buffer; Count: Longint): Longint;
@@ -677,8 +702,11 @@ begin
  Delta1:=1;Capacity1:=1;
   If Assigned(FList) then
   begin
+   // в формате счетчики SmallInt: больше 32767 элементов не записать
+    If FList.Count > High(SmallInt) then
+      Raise EStreamError.CreateFmt('%s: %d элементов, в поток - не больше %d',[ClassName, FList.Count, High(SmallInt)]);
     Count1       := FList.Count;
-    Capacity1    := FList.Capacity;
+    Capacity1    := Min(FList.Capacity, High(SmallInt));
   end Else
   begin
     Count1       := 0;
@@ -687,8 +715,7 @@ begin
   S.Write(Count1,SizeOf(Count1));
   S.Write(Capacity1, SizeOf(Capacity1));
   S.Write(Delta1, SizeOf(Delta1));       { The old PCollectionObject had this field also. }
-{  S.Write(Capacity, SizeOf(Capacity));}
-  For I := 0 TO Count-1 do
+  For I := 0 TO Count1-1 do
     PutItem(S,FList[I])
 end;
 
@@ -874,8 +901,11 @@ begin
  Delta1:=1;Capacity1:=1;
   If Assigned(FList) then
   begin
+   // в формате счетчики SmallInt: больше 32767 элементов не записать
+    If FList.Count > High(SmallInt) then
+      Raise EStreamError.CreateFmt('%s: %d элементов, в поток - не больше %d',[ClassName, FList.Count, High(SmallInt)]);
     Count1       := FList.Count;
-    Capacity1    := FList.Capacity;
+    Capacity1    := Min(FList.Capacity, High(SmallInt));
   end Else
   begin
     Count1       := 0;
@@ -884,7 +914,7 @@ begin
   S.Write(Count1,SizeOf(Count1));
   S.Write(Capacity1, SizeOf(Capacity1));
   S.Write(Delta1, SizeOf(Delta1));       { The old PCollectionObject had this field also. }
-  For I := 0 TO Count-1 do
+  For I := 0 TO Count1-1 do
     PutItem(S,FList[I])
 end;
 

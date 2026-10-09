@@ -150,14 +150,22 @@ var sl: TStringList;
     ss: TCStrings;
 begin
   ss := TCStrings.Create(1);
+  sl := nil;
   try
     buf.Put(FValues);
 {   ss.InsertStrings(FValues);
     buf.Put(ss);}
-    sl := InitSL;
-    ss.InsertStrings(sl);
+   // имена надписей - из надписей знака (FTexts); точка еще не построена по
+   // библиотеке знаков (FTexts пуст после Load) - имена, прочитанные Load (FVars)
+    if (FTexts.Count = 0) and (FVars <> nil) then
+      ss.InsertStrings(FVars)
+    else begin
+      sl := InitSL;
+      ss.InsertStrings(sl);
+    end;
     buf.Put(ss);
   finally
+    sl.Free;
     ss.free;
   end;
 end;

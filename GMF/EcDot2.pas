@@ -190,9 +190,13 @@ begin
 end;
 
 procedure TText.Store(Stream: TBufStream);
+var Idx: Integer;
 begin
  Stream.WriteString(Text);
- Stream.Write(FontView.Index, SizeOf(FontView.Index));
+// номер шрифта: Load читает его в fontIndex, FontView назначается позже по нему
+// (ResetParams); шрифт не назначен - номер, прочитанный Load
+ if FontView <> nil then Idx := FontView.Index else Idx := fontIndex;
+ Stream.Write(Idx, SizeOf(Idx));
  Stream.Write(Height,SizeOf(Height));
  Stream.Write(Align,SizeOf(Align));
  Stream.Write(Color,SizeOf(Color));
@@ -923,7 +927,7 @@ procedure TDotText.Store(Stream: TBufStream);
 begin
  inherited;
  Stream.Put(Text);
- Stream.WriteString(GyperLink.Text);
+ if GyperLink <> nil then Stream.WriteString(GyperLink.Text) else Stream.WriteString('');
 end;
 
 function TDotText.GetDistance(X, Y: Double; Flag: Boolean): Double;
@@ -1082,6 +1086,7 @@ end;
 procedure TDotText.SkiaDraw(const ACanvas: ISkCanvas);
 var skObj: TogsSkiaObject ;
 begin
+ if Closed then exit;
  skObj := DrawerObject as TogsSkiaObject;
  if skObj = nil then exit;
 // if Selector.XRasst(Text.Height) <= LOD2_TEXT_HEIGHT_THRESHOLD then

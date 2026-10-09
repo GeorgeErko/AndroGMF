@@ -559,7 +559,7 @@ begin
  For I := TC.TabCount - 1 downto 0 do TC.Delete(I);
  TC.TabPosition := TTabPosition.Bottom;
  I := Group.Count;
- WriteIn(['TC.Count=', TC.TabCount]);
+// WriteIn(['TC.Count=', TC.TabCount]);
  For I := 0 to Group.Count - 1 do begin
   LB.Items.Add(Group[I].Name);
   Tab := TC.Add;

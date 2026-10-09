@@ -501,7 +501,7 @@ begin
   if FSkCanvas <> nil then
   begin
     Paint := TSkPaint.Create;
-    Paint.AntiAlias := False;
+    Paint.AntiAlias := True;
     Paint.Style := TSkPaintStyle.Stroke;
     Paint.Color := EnsureOpaqueAlpha(Pen.penColor);
    if Pen.penWidth > 0 then

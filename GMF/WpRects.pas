@@ -55,7 +55,7 @@ end;
 procedure TTwigRect.Store(Stream: TBufStream);
 begin
   inherited;
- Stream.Read(Proportional,SizeOf(Proportional));
+ Stream.Write(Proportional,SizeOf(Proportional));
 end;
 
 function TTwigRect.Angle: Double;

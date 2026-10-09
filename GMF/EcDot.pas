@@ -818,6 +818,7 @@ end;
 procedure TPointDot.SkiaDraw(const ACanvas: ISkCanvas);
 var skObj: TogsSkiaObject ;
 begin
+ if Closed then exit;
  skObj := DrawerObject as TogsSkiaObject;
  if skObj = nil then exit;
  SkObj.Draw(ACanvas, LOD1_INDEX);
@@ -945,6 +946,7 @@ constructor TPointDot.Load(Stream: TBufStream);
 procedure TPointDot.LoadNew(Stream: TBufStream);
 var TI:ShortInt;
  begin
+//  WriteIn(['LoadStart', Stream.Position]);
   Selector:=Stream.Selector;
    CreateGUID(GUID);
 //    Inc(gCountDots);Writeln('cnt=',gCountDots);
@@ -1012,10 +1014,12 @@ var TI:ShortInt;
     MessageError('Except');
    end;
 //   SetGabarites(MRect);
+//   WriteIn(['LoadEnd', Stream.Position]);
   end;
 
     procedure TPointDot.Store(Stream: TBufStream);
    begin
+//   WriteIn(['StoreStart', Stream.Position]);
     Stream.Write(TaheoIndex,SizeOf(TaheoIndex));
     Stream.Write(XDot,SizeOf(XDot));
     Stream.Write(YDot,SizeOf(YDot));
@@ -1027,10 +1031,10 @@ var TI:ShortInt;
     Stream.Write(NLot,SizeOf(NLot));
     Stream.Write(Ins,SizeOf(Ins));
     Stream.Put(DataFonts);
-    Stream.Write(Z,SizeOf(Z));
+    Stream.Write(Z,SizeOf(Z));// WriteIn(['St Z ', Stream.Position]);
     Stream.Write(Control,SizeOf(Control));
-    Stream.StrWrite(UID);
-    Stream.Put(TextManager);
+    Stream.StrWrite(UID);// WriteIn(['St UID ', Stream.Position]);
+    Stream.Put(TextManager);// WriteIn(['St TextManager ', Stream.Position]);
     if userObj<>nil then userObj.Check:=1;
     try Stream.Put(userObj) finally if userObj<>nil then userObj.Check:=0;end;
     Stream.Write(XKoef,SizeOf(XKoef));
@@ -1042,6 +1046,7 @@ var TI:ShortInt;
      Stream.Put(Trees);
     end;
     Stream.Write(GUID,SizeOf(GUID));
+//   WriteIn(['StoreEnd', Stream.Position]);
    end;
 
   function TPointDot.isNoClosed: Boolean;

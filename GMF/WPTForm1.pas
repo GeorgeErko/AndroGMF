@@ -725,7 +725,7 @@ Constructor TForm1.Load;
    // Writein(['ClassNAme=', MainPath+Slash+(ExtractFileName(About.ClassName))]);
     DelSubStr(About.ClassName, 'VCLASS\');
    clFile := MainPath + Slash + (About.ClassName);
-   WriteIn(['clName=', MainPath + Slash +(About.ClassName)]);
+ //  WriteIn(['clName=', MainPath + Slash +(About.ClassName)]);
    If not MirrorObject then
     If FileExists(MainPath+ Slash + (About.ClassName)) then
      begin

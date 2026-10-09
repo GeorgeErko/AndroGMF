@@ -3,7 +3,7 @@
 interface
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants, 
+  System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.DialogService,
   FMX.Ani,
@@ -47,6 +47,12 @@ type
     ZoomActive: Boolean;
     InteractionActive: Boolean;
     BaseDx, BaseDy, BaseScale: Double;
+  // растровый снимок сцены (последний полный кадр): при сдвиге/масштабе рисуется
+  // он со смещением и масштабом, полная перерисовка - после окончания жеста
+    FSceneImage: ISkImage;
+    FSnapRect: TRectF;
+    FSnapK: Single;
+    FSnapGx, FSnapGy, FSnapDx, FSnapDy, FSnapScale: Double;
     FSceneDirty: Boolean;
     procedure SetSceneDirty(AValue: Boolean);
   //
@@ -121,7 +127,7 @@ var
 
 implementation
 
-uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager,
+uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager, System.Diagnostics, System.Math, System.Math.Vectors,
      EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
      WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw
 {$IFDEF ANDROID}
@@ -520,6 +526,11 @@ begin
 
   if WheelZoomTmr <> nil then
     WheelZoomTmr.Enabled := False;
+ // колесо остановилось: конец жеста - полный кадр вместо снимка
+ if PanActive or ZoomActive then Exit;
+ InteractionActive := False;
+ BaseScale := 0;
+ if SkPainter <> nil then SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.OpenGmfFile(const LocalPath: string);
@@ -840,6 +851,22 @@ var
   Prog: Single;
   SkObj: TObject;
   StartTick, ElapsedMs: UInt64;
+ // отладка скорости: контуры - из картинки / записаны заново / слой выключен /
+ // вне экрана / видимые и из них меньше 2 пикселей; вершины видимых; время
+  nCached, nRecorded, nHidden, nOff, nVis, nTiny, nVerts: Integer;
+  SWDraw, SWRec: TStopwatch;
+  VisR: TSect;
+  ScalePix, SizePix: Double;
+  procedure CountLot(L: TLot);
+  var K: Integer;
+  begin
+   if (L.ClassHandle <> nil) and (L.ClassHandle.Check = 0) then begin Inc(nHidden); exit; end;
+   if (L.XMax < VisR.XMin) or (L.XMin > VisR.XMax) or (L.YMax < VisR.YMin) or (L.YMin > VisR.YMax) then begin Inc(nOff); exit; end;
+   Inc(nVis);
+   SizePix := Max(L.XMax - L.XMin, L.YMax - L.YMin) * ScalePix;
+   if SizePix < 2 then Inc(nTiny);
+   for K := 0 to L.Coord.Count - 1 do Inc(nVerts, L.GetTwig(TwgForm.Twigs, K).Coord.Count);
+  end;
 begin
   Error := 1;
   if FDrawerSkia = nil then
@@ -872,20 +899,34 @@ begin
         begin
           if FillLot = 1 then
           begin
+            nCached := 0; nRecorded := 0; nHidden := 0; nOff := 0; nVis := 0; nTiny := 0; nVerts := 0;
+            SWDraw := TStopwatch.Create; SWRec := TStopwatch.Create;
+           // Self.Selector: внутри with GGraphSet имя Selector - поле записи;
+           // видимая область - ActiveRect (у TSect из GRect YMin/YMax переставлены)
+            VisR.XMin := Self.Selector.ActiveRect.XMin; VisR.XMax := Self.Selector.ActiveRect.XMax;
+            VisR.YMin := Min(Self.Selector.ActiveRect.YMin, Self.Selector.ActiveRect.YMax);
+            VisR.YMax := Max(Self.Selector.ActiveRect.YMin, Self.Selector.ActiveRect.YMax);
+            ScalePix := Self.Selector.GetScale;
             for I := 0 to TwgForm.Twigs.LotsCount - 1 do
             begin
               Lot := TwgForm.Twigs.LAt(I);
               try
                 if (Lot.TypeLot <> 254) {and (Lot.Closed = 1)} then
                 begin
+                  CountLot(Lot);
                   SkObj := Lot.DrawerObject;
                   if (not Lot.Modified) and (SkObj is TogsSkiaObject) and
                      (TogsSkiaObject(SkObj).Picture <> nil) then
                   begin
+                    Inc(nCached);
+                    SWDraw.Start;
                     Lot.SkiaDraw(FDrawerSkia.SkCanvas);
+                    SWDraw.Stop;
                   end
                   else
                   begin
+                    Inc(nRecorded);
+                    SWRec.Start;
                     FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
                     try
                     // GGraphSet.ViewZnaks := 0;
@@ -898,6 +939,7 @@ begin
                     Lot.SetMinMax(TwgForm.Twigs);
                     SetPrimitiveBounds(Lot);
                     Lot.SkiaDraw(FDrawerSkia.SkCanvas);
+                    SWRec.Stop;
                   end;
                 end;
               except
@@ -905,6 +947,11 @@ begin
               end;
               Prog := Prog + 1;
             end;
+            WriteIn(['Lots: всего=', TwgForm.Twigs.LotsCount, ' из картинки=', nCached, ' записано=', nRecorded,
+              ' слой выкл=', nHidden, ' вне экрана=', nOff, ' видимых=', nVis, ' <2px=', nTiny, ' вершин видимых=', nVerts,
+              ' мс вывод=', Round(SWDraw.Elapsed.TotalMilliseconds), ' мс запись=', Round(SWRec.Elapsed.TotalMilliseconds),
+              ' масштаб px/ед=', FloatToStrF(ScalePix, ffGeneral, 6, 0),
+              ' область X ', Round(VisR.XMin), '..', Round(VisR.XMax), ' Y ', Round(VisR.YMin), '..', Round(VisR.YMax)]);
           end;
         end;
         ElapsedMs := TThread.GetTickCount64 - StartTick;
@@ -916,16 +963,14 @@ begin
           if (B = TWG_Point) then
           begin
             PPoint := PP;
-           // if PPoint.Closed then
-           //   Continue;
+           // if PPoint.Closed then  continue;
            // if PPoint.userObj <> nil then exit;
             try
               SkObj := PPoint.DrawerObject;
-              if (not PPoint.Modified) and (SkObj is TogsSkiaObject) then
-              begin
+              if (not PPoint.Modified) and (SkObj is TogsSkiaObject) then begin
                //If PPoint.BlockTextBitmaps <> nil then
                // if Self.Selector.SectVisible(PPoint.BlockTextBitmaps.Sect) then
-                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas)
+                PPoint.SkiaDraw(FDrawerSkia.SkCanvas)
                  // else
                  //  WriteIn(['nv', i]);
               end
@@ -941,6 +986,7 @@ begin
                 end;
               // LOD2 пока не используется, а TDotText.DrawSelected повторно выполняет Draw32
               //  PPoint.DrawSelected(FDrawerSkia);
+                if PPoint.Closed then  continue;
                 SetPrimitiveBounds(PPoint);
                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
               end;
@@ -1373,9 +1419,7 @@ var
   RectOK: Boolean;
 begin
  If Selector = nil then Exit;
-
-  WriteIn(['MouseUp', ' Btn=', Ord(Button)]);
-
+ // WriteIn(['MouseUp', ' Btn=', Ord(Button)]);
   if Button = TMouseButton.mbMiddle then
   begin
     Xpx := X * LastCanvasScale;
@@ -1455,6 +1499,7 @@ begin
   ClearOverlayAllCaches;
 
   WheelZoomLastTick := TThread.GetTickCount64;
+ if WheelZoomTmr <> nil then begin WheelZoomTmr.Enabled := False; WheelZoomTmr.Enabled := True; end;
   if SkPainter <> nil then
     SkPainter.Redraw;
 end;
@@ -1475,10 +1520,12 @@ begin
   ZoomActive := True;
   PanActive := False;
 
-  if (EventInfo.Distance <= 0) then
+  if (EventInfo.Distance <= 0) or (TInteractiveGestureFlag.gfEnd in EventInfo.Flags) then
   begin
     LastZoomDistance := 0;
     ResetInteractionState;
+   // конец щипка: полный кадр вместо снимка
+    if SkPainter <> nil then SkPainter.Redraw;
     Exit;
   end;
 
@@ -1559,9 +1606,39 @@ var
   RAct: TogsRect;
   WorldRect: TRectF;
   PrevWorld: Boolean;
+  M: TMatrix;
+  K, R: Single;
+  W, H: Integer;
+  Surf: ISkSurface;
+  SnapDest: TRectF;
+  SnapDone: Boolean;
 const
   DebugDirectSkia = false;
 var Clipped: Boolean;
+// полный кадр сцены на канве C (Tx, Ty, ViewScale уже посчитаны)
+procedure DrawScene(const C: ISkCanvas);
+begin
+ C.Save;
+ try
+  C.Translate(Tx, Ty);
+  C.Scale(ViewScale, ViewScale);
+  WorldRect := TRectF.Create(Single(Selector.GlobalRect.XMin), Single(Selector.GlobalRect.YMin), Single(Selector.GlobalRect.XMax), Single(Selector.GlobalRect.YMax));
+  PrevWorld := FDrawerSkia.UseWorldCoords;
+  FDrawerSkia.UseWorldCoords := True;
+  try
+   FDrawerSkia.BeginFrame(C, WorldRect);
+   try
+    RenderSceneToBackbufferSkia;
+   finally
+    FDrawerSkia.EndFrame;
+   end;
+  finally
+   FDrawerSkia.UseWorldCoords := PrevWorld;
+  end;
+ finally
+  C.Restore;
+ end;
+end;
 begin
   T0 := TThread.GetTickCount64;
   Clipped := False;
@@ -1610,32 +1687,56 @@ begin
       begin
         Tx := -Single(Selector.GlobalRect.XMin + Selector.GetDx) * ViewScale;
         Ty := -Single(Selector.GlobalRect.YMin + Selector.GetDy) * ViewScale;
-        ACanvas.Save;
-        try
-          ACanvas.Translate(Tx, Ty);
-          ACanvas.Scale(ViewScale, ViewScale);
-
-          WorldRect := TRectF.Create(
-            Single(Selector.GlobalRect.XMin),
-            Single(Selector.GlobalRect.YMin),
-            Single(Selector.GlobalRect.XMax),
-            Single(Selector.GlobalRect.YMax));
-         // WorldRect.Inflate(1000, 1000);
-
-          PrevWorld := FDrawerSkia.UseWorldCoords;
-          FDrawerSkia.UseWorldCoords := True;
+       // масштаб канвы в пиксели устройства (без поворота), иначе снимок не делаем
+        M := ACanvas.GetLocalToDeviceAs3x3;
+        K := M.m11;
+        if (K <= 0) or (Abs(M.m12) > 1E-4) or (Abs(M.m21) > 1E-4) or (Abs(M.m22 - K) > 1E-4) then K := 0;
+        W := Ceil(ADest.Width * K);
+        H := Ceil(ADest.Height * K);
+        SnapDone := False;
+       // идет сдвиг/масштаб: рисуем снимок со смещением и масштабом, без полной отрисовки
+        if InteractionActive and (FSceneImage <> nil) and (K > 0) and (Abs(FSnapK - K) < 1E-4) and (FSceneImage.Width = W) and (FSceneImage.Height = H) and (FSnapScale > 0) then
+        begin
+         // точка снимка P0 переходит в P = P0 * S/S0 + (G0 + D0 - G - D) * S
+          R := ViewScale / FSnapScale;
+          ACanvas.Save;
           try
-            FDrawerSkia.BeginFrame(ACanvas, WorldRect);
-            try
-              RenderSceneToBackbufferSkia;
-            finally
-              FDrawerSkia.EndFrame;
-            end;
+            ACanvas.Translate(Single((FSnapGx + FSnapDx - Selector.GlobalRect.XMin - Selector.GetDx) * ViewScale), Single((FSnapGy + FSnapDy - Selector.GlobalRect.YMin - Selector.GetDy) * ViewScale));
+            ACanvas.Scale(R, R);
+            ACanvas.DrawImageRect(FSceneImage, FSnapRect, TSkSamplingOptions.Create(TSkFilterMode.Linear, TSkMipmapMode.None));
           finally
-            FDrawerSkia.UseWorldCoords := PrevWorld;
+            ACanvas.Restore;
           end;
-        finally
-          ACanvas.Restore;
+          SnapDone := True;
+        end;
+       // полный кадр: рисуем в поверхность (снимок для жестов), затем выводим ее
+        if not SnapDone and (K > 0) and (W > 0) and (H > 0) then
+        begin
+          Surf := ACanvas.MakeSurface(TSkImageInfo.Create(W, H));
+          if Surf <> nil then
+          begin
+           // прозрачный фон: под снимком видна подложка (OSM в TMainFormOSM.PaintBefore)
+            Surf.Canvas.Clear(TAlphaColors.Null);
+            Surf.Canvas.Scale(K, K);
+            Surf.Canvas.Translate(-ADest.Left, -ADest.Top);
+            DrawScene(Surf.Canvas);
+            FSceneImage := Surf.MakeImageSnapshot;
+            FSnapRect := TRectF.Create(ADest.Left, ADest.Top, ADest.Left + W / K, ADest.Top + H / K);
+            FSnapK := K;
+            FSnapGx := Selector.GlobalRect.XMin;
+            FSnapGy := Selector.GlobalRect.YMin;
+            FSnapDx := Selector.GetDx;
+            FSnapDy := Selector.GetDy;
+            FSnapScale := ViewScale;
+            ACanvas.DrawImageRect(FSceneImage, FSnapRect);
+            SnapDone := True;
+          end;
+        end;
+       // поверхность не создалась - прямая отрисовка, снимка нет
+        if not SnapDone then
+        begin
+          FSceneImage := nil;
+          DrawScene(ACanvas);
         end;
       end;
     end;
@@ -1655,3 +1756,4 @@ initialization
 finalization
  FreeAndNil(GFontFiles);
 end.
+

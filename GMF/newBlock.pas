@@ -251,7 +251,7 @@ begin
  Selector:=Buf.Selector;
  Buf.Read(Check,SizeOf(Check));
  Name:=Buf.ReadString;
- WriteIn(['LoadBlock=', Name]);
+// WriteIn(['LoadBlock=', Name, Buf.Position]);
 // If Name = 'ЛЕГЕНДА' then
 //  Writeln('Name=',Name);
  If Check=0 then begin
@@ -305,19 +305,22 @@ BLOCK_DEBUG:=BD;
  If Name = 'MAF_OB_Skamya_sospin_met' then If Check=0 then begin
 //  WriteIn(['endOfBlock_DEBUG=',Name]);
  end;
- WriteIn(['LoadBlockEnd=', Name]);
+// WriteIn(['LoadBlockEnd=', Name, Buf.Position]);
 end;
 
 procedure TGeoBlock.Store(Buf: TBufStream);
+var ExtSect: TExtendedSect;
 begin
+// WriteIn(['StoreBlock=', Name, Buf.Position]);
  Buf.Write(Check,SizeOf(Check));
  Buf.WriteString(Name);
  If Check=0 then begin
    Buf.Write(X,SizeOf(X));Buf.Write(Y,SizeOf(Y));
    Buf.Put(TwgForm);
    Buf.Write(useUserParams,SizeOf(useUserParams));
-  // не работает на WIN64 !!!
-   Buf.Write(blockRect,SizeOf(blockRect));
+  // как в Load (ReadSect): 4 числа по 10 байт (Extended старого формата)
+   ExtSect.Left:=blockRect.Left;ExtSect.Top:=blockRect.Top;ExtSect.Right:=blockRect.Right;ExtSect.Bottom:=blockRect.Bottom;
+   Buf.WriteSect(ExtSect);
    Buf.Write(useBum,SizeOf(useBum));
    Buf.Write(useAutoScale,SizeOf(useautoScale));
    Buf.Write(useRect,SizeOf(useRect));
@@ -326,6 +329,7 @@ begin
    Buf.Write(Settings,SizeOf(Settings));
    Buf.Put(Properties);
  end;
+// WriteIn(['StoreBlockEnd=', Name, Buf.Position]);
 end;
 
 constructor TGeoBlock.LoadHeader(Buf: TBufStream);

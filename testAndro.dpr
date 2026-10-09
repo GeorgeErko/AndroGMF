@@ -130,7 +130,8 @@ uses
   Selector32 in 'Geomaster\Selector32.pas',
   objMouseView in 'MOUSE\objMouseView.pas',
   AssetRefresh in 'AssetRefresh.pas',
-  StylusInput in 'StylusInput.pas';
+  StylusInput in 'StylusInput.pas',
+  FramePropEditor in 'FramePropEditor.pas' {PropEditorFrame: TFrame};
 
 {$R *.res}
 

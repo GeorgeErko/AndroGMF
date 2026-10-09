@@ -244,13 +244,9 @@ end;
 
 destructor TSelector.Destroy;
 begin
- Writein(['sel.destr1']);
  inherited Destroy;
- Writein(['sel.destr2']);
  GlobalSettings.Free;
- Writein(['sel.destr3']);
  TGridPath(GridPath).Free;
- Writein(['sel.destr4']);
 end;
 
 function TSelector.EqualAnyPoints(X, Y, X2, Y2: Double): Boolean;

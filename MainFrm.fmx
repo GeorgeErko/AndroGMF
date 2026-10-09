@@ -1,7 +1,6 @@
 object MainForm: TMainForm
   Left = 0
   Top = 0
-  BorderStyle = SizeToolWin
   Caption = 'Form2'
   ClientHeight = 539
   ClientWidth = 910

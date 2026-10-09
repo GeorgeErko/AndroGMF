@@ -435,7 +435,7 @@ end;
 function TListByName.FindByName2(SectionName: AnsiString;Index:Integer = 0): TSectionName;
 var I:Integer;S: AnsiString;
 begin
- WriteIn(['-------------------']);
+// WriteIn(['-------------------']);
  Result:=nil;
  If Pos('[',SectionName)<>0 then begin
   S:=SectionName;
@@ -444,7 +444,7 @@ begin
  end;
 // Writein(['===============================']);
  For I:=0 to Sections.Count-1 do begin
-  Writein([SectionName, TSectionName(Sections[I]).IndexName(Index) ]);
+ // Writein([SectionName, TSectionName(Sections[I]).IndexName(Index) ]);
   //WriteIn(['Find=', SectionName, TSectionName(Sections[I]).IndexName(Index)]);
   If SectionName=TSectionName(Sections[I]).IndexName(Index) then begin
    Result:=Sections[I];

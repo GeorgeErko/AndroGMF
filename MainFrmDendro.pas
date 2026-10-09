@@ -37,6 +37,10 @@ const
 
 type
   TMainFormDendro = class(TMainFormOSM)
+    btnSave: TCornerButton;
+    btnSaveAs: TCornerButton;
+    procedure btnSaveClick(Sender: TObject);
+    procedure btnSaveAsClick(Sender: TObject);
   private
     FLawnMenu: TPopupMenu;
     FGroupTag: Integer; // вид группы, контур которой рисуется
@@ -66,9 +70,28 @@ var
 implementation
 
 uses newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2, VarSetForm3
-     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32{$ENDIF};
+     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32{$ENDIF}, Collect,
+     StreamSelfTest;
 
 {$R *.fmx}
+
+procedure TMainFormDendro.btnSaveAsClick(Sender: TObject);
+begin
+ RunStreamSelfTest(TwgForm)
+end;
+
+procedure TMainFormDendro.btnSaveClick(Sender: TObject);
+var Buf:TBufStream;S:String;
+begin
+ Buf:=TBufStream.InitFileStream(TwgForm.About.Path+'\'+'29svTest.gmf',fmCreate);
+ try
+  TwgForm.About.ClassName := 'VCLASS\' + ExtractFileName(TwgForm.About.ClassName);
+  Buf.Put(TwgForm);
+ finally
+  Buf.Free;
+ end;
+end;
+
 
 constructor TMainFormDendro.Create(AOwner: TComponent);
 begin

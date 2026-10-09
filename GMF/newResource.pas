@@ -1,4 +1,4 @@
-unit newResource;
+п»їunit newResource;
 interface
 Uses SysUtils,Collect,newProcs,Classes,newConsts;
 Const
@@ -15,7 +15,7 @@ const
 Const
   ClassVersion:Integer=15;
   ClassVerConst=19;
-  Russian_CharSet = 100 + 1; // заглушка FMX
+  Russian_CharSet = 100 + 1; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ FMX
   Use_Lot      =0;
   Use_Field    =1;
   Use_Mark     =2;
@@ -74,21 +74,21 @@ Type
       SSInd    :SmallInt;
       ZnkInd   :TZnakInd;
       Check    :SmallInt;
-     { По базе }
+     { пїЅпїЅ пїЅпїЅпїЅпїЅ }
       NBase    :Byte;
       Hatch    :Byte;
      { Ver 6 }
       NameBase :AnsiString;
       NameMark :AnsiString;
       NameLot  :AnsiString;
-     { Ver 7 отображение}
-      Lot      :Byte;  { Заливка-ветви }
-      Znak     :Byte;  { Условные знаки }
-      Fon      :Byte;  { Непрозрачный фон }
-      Marked   :Byte;  { Подписывать }
-      Standart :Byte;  { Использовать все стандартные установки }
+     { Ver 7 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ}
+      Lot      :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅ }
+      Znak     :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ }
+      Fon      :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ }
+      Marked   :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
+      Standart :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
       MakeUsel :Boolean;
-     {Шрифт}
+     {пїЅпїЅпїЅпїЅпїЅ}
       FName    :AnsiString;
       FColor   :FixedInt;
       FAttr    :TAttr;
@@ -102,7 +102,7 @@ Type
       ConGen   :Byte;
       FRasp    :Integer;
       FDx,FDy  :Single;
-     { Дочерние классы }
+     { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ }
       Childs   :PCollection;
      {}
       Self     :Pointer;
@@ -136,14 +136,14 @@ Type
       PereFree:Boolean;
      {}
       ColorK:SmallInt;
-     {подписи}
+     {пїЅпїЅпїЅпїЅпїЅпїЅпїЅ}
       AlwaysHor,Relation:Boolean;
      {}
       ZnakKoef:Single;
       GlassFon:boolean;
-     { внешние данные}
+     { пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ}
       obStruct:AnsiString;
-     {растр сверху}
+     {пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ}
       UpRastr:boolean;
      {}
       ShowAttr:boolean;
@@ -183,7 +183,7 @@ Type
     SSInd    :SmallInt;
     ZnkInd   :TZnakInd;
     Check    :SmallInt;
-   { По базе }
+   { пїЅпїЅ пїЅпїЅпїЅпїЅ }
     NBase    :Byte;
     Hatch    :Byte;
    { Ver 6 }
@@ -193,12 +193,12 @@ Type
     NameLot  :Array[0..25] of Ansichar;
    {}
     Flag:Boolean;
-   {Ver 7 отображение}
-    Lot      :Byte;  { Заливка-ветви }
-    Znak     :Byte;  { Условные знаки }
-    Fon      :Byte;  { Непрозрачный фон }
-    Marked   :Byte;  { Подписывать }
-    Standart :Byte;  { Использовать все стандартные установки }
+   {Ver 7 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ}
+    Lot      :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅпїЅ }
+    Znak     :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ }
+    Fon      :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ }
+    Marked   :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
+    Standart :Byte;  { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
     MakeUsel :Boolean;
    {}
     FName    :AnsiString;
@@ -215,7 +215,7 @@ Type
    {}
     Clip     :Byte;
     ConGen   :Byte;
-   { Броузер }
+   { пїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
     brTabName:Array[0..24] of AnsiChar;
     brFieldName:Array[0..49] of AnsiChar;
     brFieldIn:Array[0..49] of AnsiChar;
@@ -243,7 +243,7 @@ Type
     PereFree:Boolean;
    {}
     ColorK:SmallInt;
-   {подписи}
+   {пїЅпїЅпїЅпїЅпїЅпїЅпїЅ}
     AlwaysHor,Relation:Boolean;
    {}
     ZnakKoef:Single;
@@ -256,11 +256,11 @@ Type
     notClearNad:Boolean;
     Dop:Array[0..306] of AnsiChar;
    {}
-   { Дочерние классы }
+   { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ }
     Childs   :PCollection;
     Point,Line,Sqwear:Pointer;
    {}
-    FontHandle: Integer; //АЬЧ
+    FontHandle: Integer; //пїЅпїЅпїЅ
    {}
     privDLL:Pointer; // DllLoader
    {}
@@ -268,10 +268,10 @@ Type
     CheckWithGroup:boolean;
     Frozen:Boolean;
    {}
-    UseNObject:boolean; // используется ли объектом
+    UseNObject:boolean; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
    //
     ObjectTypes:TObjectTypes;
-    Level:Integer; // уникальный номер слоя
+    Level:Integer; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
     Symbology:TSymbology;
     Resources:PCollection;
     Parent:TResource;
@@ -297,21 +297,21 @@ Type
      Function     FoundChild(Pr:Pointer):TResource;
      Procedure    ISetCheck(C:Boolean);
      Function     GetBrowInfo(var BName,Lot,InLot,Mark:AnsiString):Boolean;
-   { Марки для внешних данных и броузера }
+   { пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
      Function GetOutMarks(S:TStrings):Boolean;
      Function GetBrowMarks(S:TStrings):Boolean;
      Function GetColor:Integer;
      Procedure SetColor(C:Integer);
    {}
      Function ValidReport(St:TStrings):Boolean;
-   { Запрос на изменение идентификатора }
+   { пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ }
      Procedure idQueryOnUID(L,P:Pointer);
    {}
      Property DLL:Pointer read privDll write privDll;
    {}
      Destructor   Destroy;Override;
    {
-     Function GetModelLayer:TLayerRec; // закрыто unit vModel;
+     Function GetModelLayer:TLayerRec; // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ unit vModel;
    }
      function GetLayer(Index: Integer): TResource;
      Property Items[Index:Integer]:TResource read GetLayer;default;
@@ -320,7 +320,7 @@ Type
      Procedure CreateProperties;
      Procedure FreeProperties;
   end;
-{ Для ОДХ (работа с бортами)
+{ пїЅпїЅпїЅ пїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
 var BortODH:TListByName;
     BortDT:TListByName;
 }
@@ -328,7 +328,7 @@ var BortODH:TListByName;
 implementation uses newProperties, TwgColle, LConvEncoding, Writer;
   { TExt }
 {----------------------------------------------------------------------}
-{ Методы Tresource                                                     }
+{ пїЅпїЅпїЅпїЅпїЅпїЅ Tresource                                                     }
 {----------------------------------------------------------------------}
   Constructor TResource.CreateNew;
    begin
@@ -341,8 +341,9 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     Symbology:=nil;
     Resources:=PCollection.Create(1);
     LineWidth:=-1;
-    propDicts:='Имя слоя='+RecString+#13#10+'Группа='+#13#10;
+    propDicts:='пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ='+RecString+#13#10+'пїЅпїЅпїЅпїЅпїЅпїЅ='+#13#10;
    end;
+
   Constructor TResource.CreateRes;
    begin
     FName:='';
@@ -375,7 +376,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     Standart :=F.Standart;
     MakeUsel :=F.MakeUsel;
    {}
-// старое   If FName<>nil then DisposeStr(FName);
+// пїЅпїЅпїЅпїЅпїЅпїЅ   If FName<>nil then DisposeStr(FName);
     FName    :=F.FName;
     FColor   :=F.FColor;
     FAttr    :=F.FAttr;
@@ -436,6 +437,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     notClearNad:=F.notClearNad;
     propDicts:=F.propDicts;
    end;
+
   Function TResource.GetResRec;
   var F:TResRec;
    begin
@@ -527,38 +529,41 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
    {}
     Result:=F;
    end;
+
   Procedure  TResource.RestructBitmap;
    begin
-    // цвет
+    // пїЅпїЅпїЅпїЅ
     RGB.Argb[1]:=GetR(F.Color);
     RGB.Argb[2]:=GetG(F.Color);
     RGB.Argb[3]:=GetB(F.Color);
-    // фон
+    // пїЅпїЅпїЅ
     FColor   :=F.Fon;
-    // прозрачный
+    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
     Opaque   :=F.Glass;
-    // окна
+    // пїЅпїЅпїЅпїЅ
     OpWin    :=F.Window;
-   // использовать точки
+   // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
     RUse:=ord(F.UsePoint);
     UpRastr:=F.UpRastr;
    end;
+
   Function TResource.GetBitmapRec;
   var F:TBitmapRec;
    begin
-     // цвет
+     // пїЅпїЅпїЅпїЅ
      F.Color:=RGBToCol(RGB.Argb[1],RGB.Argb[2],RGB.Argb[3]);
-     // фон
+     // пїЅпїЅпїЅ
      F.Fon:=FColor;
-     // прозрачный
+     // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
      F.Glass:=Opaque;
-     // окна
+     // пїЅпїЅпїЅпїЅ
      F.Window:=OpWin;
-     // использовать точки
+     // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
      F.UsePoint:=Boolean(RUse);
      F.UpRastr:=UpRastr;
     Result:=F;
    end;
+
   Constructor TResource.Create;
    begin
     ID:=Id1;
@@ -581,20 +586,21 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     Childs:=PCollection.Create(1);
     ColorK:=0;
     LineWidth:=-1;
-    propDicts:='Имя слоя='+RecString+#13#10+'Группа='+#13#10;
+    propDicts:='пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ='+RecString+#13#10+'пїЅпїЅпїЅпїЅпїЅпїЅ='+#13#10;
    end;
 
   Constructor TResource.Load;
    var I:Integer;
        LM: Array [0..255] of AnsiChar;
        NM :Array[0..25] of AnsiChar;
-       P:PAnsiChar;S:AnsiString;
+       P:PAnsiChar; S:AnsiString;
    begin
-//   WriteIn(['TREsource.Load=', Stream.Position]);
+    I := Stream.Position;
     ID:=Stream.ReadExtended;
+//    WriteIn(['TResource.Load=', Id, I]);
     P :=  Stream.StrRead;
     RecString:=P; StrDispose(P);
-//    Writein(['Name=',RecString,'ID=',ID]);
+//   Writein(['Name=',RecString,'ID=',ID, Stream.Position]);
     Rang:=Stream.ReadExtended;//(Rang,SizeOf(Rang));
     Stream.Read(RGB,SizeOf(Rgb));
     Stream.Read(SSInd,SizeOf(SSInd));
@@ -605,18 +611,21 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
   {}
    If newConsts.Version>5 then
     begin
+// РјР°СЃСЃРёРІС‹ СЃРёРјРІРѕР»РѕРІ РІ С„Р°Р№Р»Рµ Рё РІ РїР°РјСЏС‚Рё - cp1251 (РєР°Рє РІСЃРµ AnsiString РїСЂРѕРіСЂР°РјРјС‹);
+// РїРµСЂРµРєРѕРґРёСЂРѕРІРєР° РЅР° РјРµСЃС‚Рµ (StrPCopy(x, AnsiToUtf8(x))) РїРёСЃР°Р»Р° РІ РјР°СЃСЃРёРІ UTF-8 -
+// РІРґРІРѕРµ РґР»РёРЅРЅРµРµ, СЃ РїРµСЂРµРїРѕР»РЅРµРЅРёРµРј РјР°СЃСЃРёРІР° Рё РїРѕСЂС‡РµР№ СЃРѕСЃРµРґРЅРёС… РїРѕР»РµР№ (NameMark)
      Stream.Read(NameBase,SizeOf(NameBase));
-     StrPCopy(NameBase, AnsiToUtf8(NameBase));
      Stream.Read(NameLot,SizeOf(NameLot));
-     StrPCopy(NameLot, AnsiToUtf8(NameLot[0]));
+//     Writein(['NameLot=',NameLot,'ID=',ID, Stream.Position, ClassVersion]);
     If ClassVersion<12 then
      begin
       Stream.Read(NM,SizeOf(NM));
-      NameMark:=AnsiToUtf8(NM);
+      NameMark:=NM;
      end else
       NameMark:=Stream.ReadString;
     end;
-   If newConsts.Version>6 then
+//    Writein(['Name1=',RecString,'ID=',ID, Stream.Position]);
+    If newConsts.Version>6 then
     begin
      Stream.Read(Lot,SizeOf(Lot));
      Stream.Read(Znak,SizeOf(Znak));
@@ -643,11 +652,12 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     { Childs }
      //Childs:=PCollection.Create(1);
      Childs:=PCollection(Stream.Get);
+//     Writein(['Name2.PExt=',RecString,'ID=',ID, Stream.Position]);
      Stream.Read(MakeUsel,1);
      Stream.Read(OpWin,1);
-     Stream.Read(brTabName,SizeOf(brTabName)); StrPCopy(brTabName, CP1251ToUtf8(brTabName));
-     Stream.Read(brFieldName,SizeOf(brFieldName));StrPCopy(brFieldName,CP1251ToUtf8(brFieldName));
-     Stream.Read(brFieldIn,SizeOf(brFieldIn));StrPCopy(brFieldIn, CP1251ToUtf8(brFieldIn));
+     Stream.Read(brTabName,SizeOf(brTabName));
+     Stream.Read(brFieldName,SizeOf(brFieldName));
+     Stream.Read(brFieldIn,SizeOf(brFieldIn));
     If ClassVersion>11 then
      brMark:=Stream.ReadString;
     {}
@@ -680,7 +690,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      Stream.Read(Relation,1);
      Stream.Read(ZnakKoef,SizeOf(ZnakKoef));
      Stream.Read(GlassFon,SizeOf(GlassFon));
-     Stream.Read(ObStruct,SizeOf(ObStruct)); StrPCopy(obStruct, CP1251ToUtf8(obStruct));
+     Stream.Read(ObStruct,SizeOf(ObStruct));
      Stream.Read(UpRastr,SizeOf(UpRastr));
      Stream.Read(ShowAttr,1);
      Stream.Read(CheckWithGroup,1);
@@ -692,7 +702,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      Stream.Read(notClearNad,1);
      Stream.Read(Dop,SizeOf(Dop));
      If ClassVersion<=18 then
-      propDicts:='Имя слоя='+RecString+#13#10+'Группа='+#13#10
+      propDicts:='пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ='+RecString+#13#10+'пїЅпїЅпїЅпїЅпїЅпїЅ='+#13#10
      else propDicts:=Stream.ReadString;
     end else
     begin
@@ -702,21 +712,24 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      FW:=2;
      Childs:=PCollection.Create(1);
      ColorK:=0;
-     propDicts:='Имя слоя='+RecString+#13#10+'Группа='+#13#10;
+     propDicts:='пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ='+RecString+#13#10+'пїЅпїЅпїЅпїЅпїЅпїЅ='+#13#10;
     end;
     Flag:=False;
+//    WriteIn(['TResource.LoadEnd=', Stream.Position]);
    end;
 
 
   Procedure TResource.Store;
    var P:PCollection;I:Integer;C:PAnsiChar;
    begin
+ //  WriteIn(['TResource.Store=', ID, Stream.Position]);
 //   Writeln('R1=',1);
     Stream.WriteExtended(Id);
     C:=StrNew(PAnsiChar(RecString));
     Stream.StrWrite(C);
     StrDispose(C);
-//   Writeln('R1=',2);
+//    Writein(['Name=',RecString,'ID=',ID, Stream.Position]);
+   //   Writeln('R1=',2);
     Stream.WriteExtended(Rang);
     Stream.Write   (RGB,SizeOf(Rgb));
     Stream.Write   (SSInd,SizeOf(SSInd));
@@ -730,8 +743,10 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     begin
      Stream.Write(NameBase,SizeOf(NameBase));
      Stream.Write(NameLot,SizeOf(NameLot));
+//    Writein(['NameLot=',NameLot,'ID=',ID, Stream.Position, ClassVersion]);
      Stream.WriteString(NameMark);
     end;
+//    Writein(['Name1=',RecString,'ID=',ID, Stream.Position]);
 //   Writeln('R1=',4);
    If newConsts.Version>6 then
     begin
@@ -759,17 +774,18 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      Stream.Write(FDx,SizeOf(FDy));
      Stream.Write(FDy,SizeOf(FDy));
 //   Writeln('R1=',7);
-    { Сохраняем ссылки }
+    { пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ }
      P:=PCollection.Create(1);
 //   Writeln('R111=',Childs=nil);
      For I:=0 to Childs.Count-1 do
       begin
-       Writeln(TResource(Childs[I]).ID);
+//       Writeln(TResource(Childs[I]).ID);
        P.Insert(TExt.Create(TResource(Childs[I]).ID));
       end;
 //   Writeln('R222=',1);
      Stream.Put(P);
-//   Writeln('R223=',1);
+//     Writein(['Name2.PExt=',RecString,'ID=',ID, Stream.Position]);
+    //   Writeln('R223=',1);
     P.Free;
      Stream.Write(MakeUsel,1);
      Stream.Write(OpWin,1);
@@ -818,7 +834,9 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      Stream.WriteString(propDicts);
 //   Writeln('R4=',1);
     end;
+//    WriteIn(['TResource.StoreEnd=', Stream.Position]);
    end;
+
   Function TResource.FoundChild;
    var I,J:Integer;
    begin
@@ -831,7 +849,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
         Result:=Self;
         Exit;
        end;
-     {Продумаем на 2 уровня}
+     {пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ 2 пїЅпїЅпїЅпїЅпїЅпїЅ}
       Result:=TResource(Childs[I]).FoundChild(Pr);
       If Result<>nil then Exit;
 {       For J:=0 to TResource(Childs[I]).Childs.Count-1 do
@@ -893,7 +911,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
    end;
   Procedure TResource.idQueryOnUID;
    begin
-   { старый код
+   { пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ
     If IDLot then
      IDForm.GenUID else
     if IDQuery then
@@ -1034,72 +1052,72 @@ end;
 Function BortHandle(Handle:TResource;var BortWidth:Double;Var Material,Inter:AnsiString;DT:Boolean):AnsiString;
 var S:AnsiString;SN:TSectionName;
 begin
- If DT then SN:=BortDT.FindByName('Бортовой камень из Гранита') else SN:=BortODH.FindByName('Бортовой камень из Гранита');
+ If DT then SN:=BortDT.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ') else SN:=BortODH.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ');
  If SN=nil then exit;
  If SN.FindParam(Handle.RecString)<>'' then begin
-  Inter:='Бортовой камень из гранита [fence_granite_stone;2]';Result:=SN.FindParam(Handle.RecString);
-  Material:='Гранит';
+  Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]';Result:=SN.FindParam(Handle.RecString);
+  Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';
  end;
- If DT then SN:=BortDT.FindByName('Бортовой камень из Бетона') else SN:=BortODH.FindByName('Бортовой камень из Бетона');
+ If DT then SN:=BortDT.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ') else SN:=BortODH.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ');
  If SN = nil then exit;
  If SN.FindParam(Handle.RecString)<>'' then begin
-  Inter:='Бортовой камень из бетона [fence_beton_stone;1]';Result:=SN.FindParam(Handle.RecString);
-  Material:='Бетон';
+  Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]';Result:=SN.FindParam(Handle.RecString);
+  Material:='пїЅпїЅпїЅпїЅпїЅ';
  end;
- If DT then SN:=BortDT.FindByName('Дорожный бортовой камень') else SN:=BortODH.FindByName('Дорожный бортовой камень');
+ If DT then SN:=BortDT.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ') else SN:=BortODH.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ');
  If SN = nil then exit;
  If SN.FindParam(Handle.RecString)<>'' then begin
-  Inter:='Дорожный бортовой камень [fence_road_stone;4]';Result:=SN.FindParam(Handle.RecString);
-  Material:='Бетон';
+  Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_road_stone;4]';Result:=SN.FindParam(Handle.RecString);
+  Material:='пїЅпїЅпїЅпїЅпїЅ';
  end;
- If DT then SN:=BortDT.FindByName('Садовый бортовой камень') else SN:=BortODH.FindByName('Садовый бортовой камень');
+ If DT then SN:=BortDT.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ') else SN:=BortODH.FindByName('пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ');
  If SN = nil then exit;
  If SN.FindParam(Handle.RecString)<>'' then begin
-  Inter:='Садовый бортовой камень [fence_garden_stone;3]';Result:=SN.FindParam(Handle.RecString);
-  Material:='Бетон';
+  Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_garden_stone;3]';Result:=SN.FindParam(Handle.RecString);
+  Material:='пїЅпїЅпїЅпїЅпїЅ';
  end;
 exit;
  S:=AnsiUpperCase(Handle.RecString);
- BortWidth:=0.15;Material:='Бетон';Inter:='Дорожный бортовой камень [fence_road_stone;4]';
- If S = 'BORT_DOROGI_L_БР 100.30.18' then Result:='БР 100.30.15' else
- If S = 'BORT_DOROGI_L_БР 100.45.15' then Result:='БР 100.30.15' else
- If S = 'BORT_DOROGI_L_БР 100.45.18' then Result:='БР 100.30.15' else
- If S = 'BORT_DOROGI_L_БР 100.30.8' then Result:='БР 100.30.8' else
- If S = 'BORT_DOROGI_L_БР 100.30.12' then Result:='БР 100.30.12' else
- If S = 'BORT_TROTUARA_L_DOR_БР 100.30.18' then begin Result:='БР 100.30.18';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_DOR_БР 100.30.12' then begin Result:='БР 100.30.12';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_DOR_БР 100.30.8' then begin Result:='БР 100.30.8';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_DOR_БР 100.45.15' then begin Result:='БР 100.45.15';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_DOR_БР 100.45.18' then begin Result:='БР 100.45.18';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_БР 100.30.18' then begin Result:='БР 100.30.18';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_БР 100.45.15' then begin Result:='БР 100.30.15';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_БР 100.45.18' then begin Result:='БР 100.30.18';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
-  If S = 'BORT_TROTUARA_L_БР 100.30.12' then begin Result:='БР 100.30.12';Inter:='  [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_БР 100.30.8' then begin Result:='БР 100.30.8';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_(100X20X8)' then begin Result:='БР 100.20.8';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_(50X20X8)' then begin Result:='БР 50.20.8';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_DOROGI_L_GRANIT_GP1' then begin Result:='1ГП'; BortWidth:=0.15;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GRANIT_GP2' then begin Result:='2ГП'; BortWidth:=0.18;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GRANIT_GP3' then begin Result:='3ГП'; BortWidth:=0.20;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GRANIT_GP4' then begin Result:='4ГП';BortWidth:=0.10;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GRANIT_GP5' then begin Result:='5ГП';BortWidth:=0.08;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GRANIT_GPV' then begin Result:='ГПВ';BortWidth:=0.08;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_DOROGI_L_GP 70-200.60.45' then begin Result:='ГПВ';BortWidth:=0.45;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GP 70-200.60.25' then begin Result:='ГПВ';BortWidth:=0.25;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GP 70-200.60.45' then begin Result:='ГПВ';BortWidth:=0.45;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP1' then begin Result:='1ГП';BortWidth:=0.15;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP2' then begin Result:='2ГП';BortWidth:=0.18;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP3' then begin Result:='3ГП';BortWidth:=0.20;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP4' then begin Result:='4ГП';BortWidth:=0.10;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP5' then begin Result:='5ГП';BortWidth:=0.08;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GPV' then begin Result:='ГПВ';BortWidth:=0.08;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L' then begin Result:='БР 100.20.8';BortWidth:=0.08;Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_SAD' then begin Result:='БР 50.20.8';BortWidth:=0.08;Inter:='Садовый бортовой камень [fence_garden_stone;3]'; end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP1_30CM' then begin Result:='1ГП';BortWidth:=0.30;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_GRANIT_GP1_40CM' then begin Result:='1ГП';BortWidth:=0.40;Material:='Гранит';Inter:='Бортовой камень из Гранита [fence_granite_stone;2]' end else
- If S = 'BORT_TROTUARA_L_БР 100.30.12' then begin Result:='БР 100.30.12';Inter:='Бортовой камень из Бетона [fence_beton_stone;1]'; end else
- If S = 'BORT_TROTUARA_L_SAD_8' then begin Result:='БР 50.20.8';BortWidth:=0.08;Inter:='Садовый бортовой камень [fence_garden_stone;3]'; end else
- If S = 'BORT_TROTUARA_L_SAD_10' then begin Result:='БР 50.20.8';BortWidth:=0.08;Inter:='Садовый бортовой камень [fence_garden_stone;3]'; end else
+ BortWidth:=0.15;Material:='пїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_road_stone;4]';
+ If S = 'BORT_DOROGI_L_пїЅпїЅ 100.30.18' then Result:='пїЅпїЅ 100.30.15' else
+ If S = 'BORT_DOROGI_L_пїЅпїЅ 100.45.15' then Result:='пїЅпїЅ 100.30.15' else
+ If S = 'BORT_DOROGI_L_пїЅпїЅ 100.45.18' then Result:='пїЅпїЅ 100.30.15' else
+ If S = 'BORT_DOROGI_L_пїЅпїЅ 100.30.8' then Result:='пїЅпїЅ 100.30.8' else
+ If S = 'BORT_DOROGI_L_пїЅпїЅ 100.30.12' then Result:='пїЅпїЅ 100.30.12' else
+ If S = 'BORT_TROTUARA_L_DOR_пїЅпїЅ 100.30.18' then begin Result:='пїЅпїЅ 100.30.18';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_DOR_пїЅпїЅ 100.30.12' then begin Result:='пїЅпїЅ 100.30.12';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_DOR_пїЅпїЅ 100.30.8' then begin Result:='пїЅпїЅ 100.30.8';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_DOR_пїЅпїЅ 100.45.15' then begin Result:='пїЅпїЅ 100.45.15';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_DOR_пїЅпїЅ 100.45.18' then begin Result:='пїЅпїЅ 100.45.18';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.30.18' then begin Result:='пїЅпїЅ 100.30.18';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.45.15' then begin Result:='пїЅпїЅ 100.30.15';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.45.18' then begin Result:='пїЅпїЅ 100.30.18';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+  If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.30.12' then begin Result:='пїЅпїЅ 100.30.12';Inter:='  [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.30.8' then begin Result:='пїЅпїЅ 100.30.8';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_(100X20X8)' then begin Result:='пїЅпїЅ 100.20.8';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_(50X20X8)' then begin Result:='пїЅпїЅ 50.20.8';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_DOROGI_L_GRANIT_GP1' then begin Result:='1пїЅпїЅ'; BortWidth:=0.15;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GRANIT_GP2' then begin Result:='2пїЅпїЅ'; BortWidth:=0.18;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GRANIT_GP3' then begin Result:='3пїЅпїЅ'; BortWidth:=0.20;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GRANIT_GP4' then begin Result:='4пїЅпїЅ';BortWidth:=0.10;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GRANIT_GP5' then begin Result:='5пїЅпїЅ';BortWidth:=0.08;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GRANIT_GPV' then begin Result:='пїЅпїЅпїЅ';BortWidth:=0.08;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_DOROGI_L_GP 70-200.60.45' then begin Result:='пїЅпїЅпїЅ';BortWidth:=0.45;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GP 70-200.60.25' then begin Result:='пїЅпїЅпїЅ';BortWidth:=0.25;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GP 70-200.60.45' then begin Result:='пїЅпїЅпїЅ';BortWidth:=0.45;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP1' then begin Result:='1пїЅпїЅ';BortWidth:=0.15;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP2' then begin Result:='2пїЅпїЅ';BortWidth:=0.18;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP3' then begin Result:='3пїЅпїЅ';BortWidth:=0.20;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP4' then begin Result:='4пїЅпїЅ';BortWidth:=0.10;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP5' then begin Result:='5пїЅпїЅ';BortWidth:=0.08;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GPV' then begin Result:='пїЅпїЅпїЅ';BortWidth:=0.08;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L' then begin Result:='пїЅпїЅ 100.20.8';BortWidth:=0.08;Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_SAD' then begin Result:='пїЅпїЅ 50.20.8';BortWidth:=0.08;Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_garden_stone;3]'; end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP1_30CM' then begin Result:='1пїЅпїЅ';BortWidth:=0.30;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_GRANIT_GP1_40CM' then begin Result:='1пїЅпїЅ';BortWidth:=0.40;Material:='пїЅпїЅпїЅпїЅпїЅпїЅ';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ [fence_granite_stone;2]' end else
+ If S = 'BORT_TROTUARA_L_пїЅпїЅ 100.30.12' then begin Result:='пїЅпїЅ 100.30.12';Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_beton_stone;1]'; end else
+ If S = 'BORT_TROTUARA_L_SAD_8' then begin Result:='пїЅпїЅ 50.20.8';BortWidth:=0.08;Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_garden_stone;3]'; end else
+ If S = 'BORT_TROTUARA_L_SAD_10' then begin Result:='пїЅпїЅ 50.20.8';BortWidth:=0.08;Inter:='пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ [fence_garden_stone;3]'; end else
  Result:='';
 end;
 }

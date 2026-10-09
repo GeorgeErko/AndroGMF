@@ -383,19 +383,15 @@ end;
 
 procedure TMainFormMouseObj.OpenGmfFileSkia(const LocalPath: string);
 begin
- if Selector<> nil then WriteIn(['1=', Selector.Drawer.ClassName]);
   MouseObject := nil;
- if Selector<> nil then WriteIn(['2=',Selector.Drawer.ClassName]);
   inherited;
- if Selector<> nil then WriteIn(['3=',Selector.Drawer.ClassName]);
   MouseObject := nil;
- if Selector<> nil then WriteIn(['4=',Selector.Drawer.ClassName]);
 end;
 
 procedure TMainFormMouseObj.SetTwgForm(const Value: TForm2);
 var LF: TLayerFrame; ilVisible: Boolean;
 begin
- WriteIn(['================1']);
+// WriteIn(['================1']);
  inherited;
  if InstPoints <> nil then InstPoints.ClearTilesAndResources;
  if InstLines <> nil then begin
@@ -423,7 +419,7 @@ begin
  InstBlocks.TwgForm := Value;
 // свойства по умолчанию новых примитивов - заново для новой карты ('по слою')
  if FPropEditor <> nil then FPropEditor.SetDefaultsForm(Value);
-  WriteIn(['================2']);
+//  WriteIn(['================2']);
  FreeAndNil(ListByName);
  ListByName:=TListByName.Create;
  ListByName.LoadFromFile(MainPath + 'attribs.ini'{'Names.txt'}, ''{oghObjectType(TwgForm)});

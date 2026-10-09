@@ -325,11 +325,12 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
  var I,Cnt:SmallInt;
   begin
    FromLarge;
-  // не работает allCount WIN64!!!
-   Stream.Write(AllCount,SizeOf(AllCount));
-   Stream.Write(TwigsCount,SizeOf(TwigsCount));
-   Stream.Write(LotsCount,SizeOf(LotsCount));
-   Stream.Write(AnyCount,SizeOf(AnyCount));
+  // как в Load: AllCount - 10 байт (Extended старого формата), счетчики - по
+  // 4 байта (LongInt на Android64 - 8 байт)
+   Stream.WriteExtended(AllCount);
+   Stream.WriteInt32(TwigsCount);
+   Stream.WriteInt32(LotsCount);
+   Stream.WriteInt32(AnyCount);
    Stream.Write(TwigsCol,SizeOf(TwigsCol));
    Stream.Write(LotsCol,SizeOf(LotsCol));
    Stream.Write(AnyCol,SizeOf(AnyCol));
