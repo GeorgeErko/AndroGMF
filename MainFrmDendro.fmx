@@ -20,20 +20,23 @@ inherited MainFormDendro: TMainFormDendro
     end
     inherited btnPDF: TCornerButton
       Position.X = 185.000000000000000000
-      TabOrder = 5
+      TabOrder = 14
     end
     inherited btnClose: TButton
       TabOrder = 71
     end
     inherited Load: TButton
       Position.X = 260.000000000000000000
-      TabOrder = 42
+      TabOrder = 51
     end
     inherited btnDoc: TButton
       TabOrder = 79
     end
     inherited Panel2: TPanel
       TabOrder = 85
+    end
+    inherited Panel3: TPanel
+      TabOrder = 86
     end
     inherited btnGPKGB: TButton
       TabOrder = 78
@@ -45,7 +48,7 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 124
     end
     inherited lMas: TLabel
-      TabOrder = 86
+      TabOrder = 95
     end
     object btnSave: TCornerButton
       Align = Left
@@ -86,6 +89,11 @@ inherited MainFormDendro: TMainFormDendro
       OnClick = btnSaveAsClick
     end
   end
+  inherited StatusBar: TStatusBar
+    inherited PanelHint: TLabel
+      TextSettings.Font.StyleExt = {00070000000000000004000000}
+    end
+  end
   inherited ToolBarPaint: TToolBar
     inherited LayerFrame1: TLayerFrame
       inherited PopupLayers: TPopup
@@ -96,9 +104,18 @@ inherited MainFormDendro: TMainFormDendro
           end
         end
       end
+      inherited ImageList1: TImageList
+        Left = 344
+        Top = 142
+      end
     end
   end
   inherited ToolBarOZN: TToolBar
+    inherited cbOnlyAttr: TCheckBox
+      Margins.Left = 8.000000000000000000
+      Position.X = 134.000000000000000000
+      Size.Width = 20.000000000000000000
+    end
     inherited SpeedButton6: TSpeedButton
       Visible = False
     end
@@ -544,8 +561,20 @@ inherited MainFormDendro: TMainFormDendro
     Left = 100
     Top = 143
   end
+  inherited ImageListStatus: TImageList
+    Left = 182
+    Top = 141
+  end
   inherited ToolImageList: TImageList
-    Left = 422
-    Top = 162
+    Left = 272
+    Top = 142
+  end
+  inherited imgEsc: TImageList
+    Left = 480
+    Top = 143
+  end
+  inherited ImageListOZN: TImageList
+    Left = 410
+    Top = 142
   end
 end

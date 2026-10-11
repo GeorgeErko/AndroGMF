@@ -229,6 +229,8 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
  //
      procedure Draw32(Drawer: TogsDrawer; PntZnk:TSortedCollection;FontColEx:TFontManagerEx;AlwaysShowAttr:Boolean = False);virtual;
      procedure SkiaDraw(const ACanvas: ISkCanvas); override;
+   // пометка по свойству '#Статус' поверх знака (DrawStatus старой программы)
+     procedure DrawStatus(const ACanvas: ISkCanvas);
      procedure DrawSelected(Drawer: TogsDrawer); override;
      function GetDrawerObject: TObject; override;
      procedure SetDrawerObject(Obj: TObject); override;
@@ -804,13 +806,10 @@ begin
         end;
       end;
     1:
-    { oieuei a neo?aa aeaeiinoe auaiaei oi?eo }
-    RS:=XGeoRasst(GGraphSet.RPoint);
-    If (XDot>Grect.Left-RS) and (XDot<Grect.Right+RS) and
-       (YDot<Grect.Top+RS) and (YDot>Grect.Bottom-RS) then
-       // inherited Draw32(Drawer,0,0,GMS,GMS);
-      // PSetPixelDbl(XDot,YDot);
-     // DeleteObject(SelectObject(Handle,Pen1));
+    // габариты (Sect, BlockTextBitmaps) - всегда, не только при видимой точке
+    // вставки (проверка по GRect): по ним строится BoundsWorld картинки и
+    // отсекается выделение (ogsDrawPictureEffect). Пересчет кэширован по
+    // положению, углу, масштабу и знаку (FGabValid), видимость на них не влияет
     DrawGabariteSect;
     end;
 end;
@@ -822,6 +821,38 @@ begin
  skObj := DrawerObject as TogsSkiaObject;
  if skObj = nil then exit;
  SkObj.Draw(ACanvas, LOD1_INDEX);
+// пометка статуса - поверх картинки знака, в картинку не записывается
+ DrawStatus(ACanvas);
+end;
+
+// пометка статуса (DrawStatus старой программы): '#Статус' = 'Удаление' -
+// красный крест, 'Удаление2' - голубой (автопритягивание деревьев); размер
+// 5 пикселов, толщина 2 пиксела, концы плоские. Канва - в мировых координатах
+procedure TPointDot.DrawStatus(const ACanvas: ISkCanvas);
+var I: Integer;
+    S: AnsiString;
+    Color: TAlphaColor;
+    Sel: TSelector;
+    D: Single;
+    Paint: ISkPaint;
+begin
+ if (ACanvas = nil) or (Properties = nil) or (Properties.Count = 0) then exit;
+ I := Properties.IndexOf('#Статус');
+ if I = -1 then exit;
+ S := Properties[I].PropValue.Value;
+ if S = 'Удаление' then Color := TAlphaColors.Red else
+ if S = 'Удаление2' then Color := TAlphaColors.Aqua else exit;
+ Sel := Selector;
+ if Sel = nil then exit;
+ D := Sel.XGeoRasst(5);
+ Paint := TSkPaint.Create;
+ Paint.AntiAlias := False;
+ Paint.Style := TSkPaintStyle.Stroke;
+ Paint.Color := Color;
+ Paint.StrokeWidth := Sel.XGeoRasst(3);
+ Paint.StrokeCap := TSkStrokeCap.Butt;
+ ACanvas.DrawLine(XDot - D, YDot - D, XDot + D, YDot + D, Paint);
+ ACanvas.DrawLine(XDot - D, YDot + D, XDot + D, YDot - D, Paint);
 end;
 
 function TPointDot.DrawUserObject: Boolean;

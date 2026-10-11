@@ -54,6 +54,7 @@ type
     procedure ClearOsm;
     procedure ClearOsmTileCache;
     procedure RequestOsmTilesFromActiveRect;
+    procedure PruneOsmTiles;
     procedure DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64);
     function TryGetOsmBboxWgs84FromActiveRect(out LonMin, LatMin, LonMax, LatMax: Double): Boolean;
     procedure BuildOsmView(const LonMin, LatMin, LonMax, LatMax: Double; const Dest: TRectF);
@@ -440,6 +441,8 @@ begin
   end;
   begin
    if FOsmClosing then exit;
+  // запрос устарел (вид сдвинут/масштаб изменен) - тайл не нужен
+   if RequestId <> FOsmRequestId then exit;
    WriteIn(['DownloadTileAsync task start ', Tile.Key]);
    Client := nil;
    MS := nil;
@@ -467,8 +470,7 @@ begin
          if RequestId <> FOsmRequestId then exit;
          EnsureOsm;
          FOsmTiles.AddOrSetValue(Tile.Key, Img);
-         if SkPainter <> nil then
-          SkPainter.Redraw;
+         RedrawUnderlay;
         end);
        exit;
       end;
@@ -477,6 +479,7 @@ begin
      end;
     end;
 
+    if RequestId <> FOsmRequestId then exit;
     Url := Format('https://tile.openstreetmap.org/%d/%d/%d.png', [Tile.Z, Tile.X, Tile.Y]);
     WriteIn(['OSM GET start ', Url]);
     Client := THTTPClient.Create;
@@ -565,7 +568,7 @@ begin
          FOsmRedrawPending := True;
          WriteIn(['Before SkPainter.Redraw ', Tile.Key]);
          try
-          SkPainter.Redraw;
+          RedrawUnderlay;
           WriteIn(['After SkPainter.Redraw ', Tile.Key]);
          except on E: Exception do
           WriteIn(['SkPainter.Redraw exception ', E.ClassName, ' ', E.Message]);
@@ -613,7 +616,10 @@ begin
   FOsmLastReqValid := True;
  end;
  Inc(FOsmRequestId);
- ClearOsm;
+// уже загруженные тайлы остаются в памяти (FOsmTiles), заново запрашиваются
+// только недостающие; задачи прежних запросов прекращаются по RequestId
+ SetLength(FOsmTileList, 0);
+ FOsmHasView := False;
  if Selector <> nil then
   WriteIn(['OSM ActiveRect ', Selector.ActiveRect.XMin, ' ', Selector.ActiveRect.YMin,
    '  ', Selector.ActiveRect.XMax, ' ', Selector.ActiveRect.YMax]);
@@ -662,10 +668,36 @@ begin
  FOsmLatMin := LatMin;
  FOsmLonMax := LonMax;
  FOsmLatMax := LatMax;
+ PruneOsmTiles;
  for I := 0 to Length(FOsmTileList) - 1 do
-  DownloadTileAsync(FOsmTileList[I], FOsmRequestId);
- if SkPainter <> nil then
-  SkPainter.Redraw;
+  if not FOsmTiles.ContainsKey(FOsmTileList[I].Key) then DownloadTileAsync(FOsmTileList[I], FOsmRequestId);
+ RedrawUnderlay;
+end;
+
+// кэш тайлов в памяти: при переполнении убираются тайлы других уровней,
+// если и этого мало - все, кроме текущего списка
+procedure TMainFormOSM.PruneOsmTiles;
+const MaxTiles = 400;
+var Keys: TArray<string>;
+    Key, Prefix: string;
+    Need: TDictionary<string, Boolean>;
+    I: Integer;
+begin
+ if (FOsmTiles = nil) or (FOsmTiles.Count <= MaxTiles) then exit;
+ Prefix := IntToStr(FOsmZoom) + '/';
+ Keys := FOsmTiles.Keys.ToArray;
+ for Key in Keys do
+  if not Key.StartsWith(Prefix) then FOsmTiles.Remove(Key);
+ if FOsmTiles.Count <= MaxTiles then exit;
+ Need := TDictionary<string, Boolean>.Create;
+ try
+  for I := 0 to Length(FOsmTileList) - 1 do Need.AddOrSetValue(FOsmTileList[I].Key, True);
+  Keys := FOsmTiles.Keys.ToArray;
+  for Key in Keys do
+   if not Need.ContainsKey(Key) then FOsmTiles.Remove(Key);
+ finally
+  Need.Free;
+ end;
 end;
 
 procedure TMainFormOSM.DrawOsmTiles(const ACanvas: ISkCanvas; const Rect: TRectF);

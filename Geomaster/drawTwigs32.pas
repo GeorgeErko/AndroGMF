@@ -275,7 +275,7 @@ function SkPen(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single; Da
 var Dash: Single;
 begin
  Result := TSkPaint.Create;
- Result.AntiAlias := True;
+ Result.AntiAlias := False;
  Result.Style := TSkPaintStyle.Stroke;
  Result.Color := Color;
  Result.StrokeWidth := SkPixToWorld(Canvas, WidthPix);

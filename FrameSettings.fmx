@@ -1,0 +1,1067 @@
+object SettingsFrame: TSettingsFrame
+  Size.Width = 431.000000000000000000
+  Size.Height = 380.000000000000000000
+  Size.PlatformDefault = False
+  object Panel333: TPanel
+    Align = Top
+    Size.Width = 431.000000000000000000
+    Size.Height = 28.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object SpeedButton1: TSpeedButton
+      Align = Left
+      GroupName = 'NotePage'
+      IsPressed = True
+      StaysPressed = True
+      Size.Width = 75.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1056#1080#1089#1086#1074#1072#1085#1080#1077
+      OnClick = SpeedButton3Click
+    end
+    object SpeedButton2: TSpeedButton
+      Tag = 1
+      Align = Left
+      GroupName = 'NotePage'
+      StaysPressed = True
+      Position.X = 75.000000000000000000
+      Size.Width = 60.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1057#1077#1090#1082#1072
+      OnClick = SpeedButton3Click
+    end
+    object SpeedButton3: TSpeedButton
+      Tag = 2
+      Align = Left
+      GroupName = 'NotePage'
+      StaysPressed = True
+      Position.X = 135.000000000000000000
+      Size.Width = 60.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1056#1072#1089#1090#1088
+      OnClick = SpeedButton3Click
+    end
+    object SpeedButton4: TSpeedButton
+      Tag = 3
+      Align = Left
+      GroupName = 'NotePage'
+      StaysPressed = True
+      Position.X = 195.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1059#1089#1090#1072#1085#1086#1074#1082#1080
+      OnClick = SpeedButton3Click
+    end
+    object SpeedButton9: TSpeedButton
+      Tag = 4
+      Align = Left
+      GroupName = 'NotePage'
+      StaysPressed = True
+      Position.X = 275.000000000000000000
+      Size.Width = 75.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1052#1072#1088#1082#1077#1088#1099
+      OnClick = SpeedButton3Click
+    end
+    object ResSpeedBtn1: TSpeedButton
+      Align = Right
+      Position.X = 366.000000000000000000
+      Size.Width = 65.000000000000000000
+      Size.Height = 28.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1047#1072#1082#1088#1099#1090#1100
+      OnClick = ResSpeedBtn1Click
+    end
+  end
+  object Panel2: TPanel
+    Align = Right
+    Position.X = 399.000000000000000000
+    Position.Y = 28.000000000000000000
+    Size.Width = 32.000000000000000000
+    Size.Height = 352.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+  end
+  object Note: TTabControl
+    Align = Client
+    Size.Width = 399.000000000000000000
+    Size.Height = 352.000000000000000000
+    Size.PlatformDefault = False
+    TabIndex = 0
+    TabOrder = 1
+    TabPosition = None
+    object TS0: TTabItem
+      IsSelected = True
+      Size.Width = 8.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'TS0'
+      object CbOrtho: TCheckBox
+        Position.X = 8.000000000000000000
+        Position.Y = 7.000000000000000000
+        Size.Width = 210.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = #1087#1088#1103#1084#1099#1077' '#1091#1075#1083#1099' '#1089' '#1086#1090#1082#1083#1086#1085#1077#1085#1080#1077#1084
+      end
+      object SEOrtho: TSpinBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 1
+        Cursor = crIBeam
+        Min = 1.000000000000000000
+        Max = 15.000000000000000000
+        Value = 1.000000000000000000
+        Position.X = 222.000000000000000000
+        Position.Y = 5.000000000000000000
+        Size.Width = 80.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object Label8: TLabel
+        Position.X = 306.000000000000000000
+        Position.Y = 7.000000000000000000
+        Size.Width = 60.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1087#1080#1082#1089#1077#1083
+        TabOrder = 2
+      end
+      object GB: TGroupBox
+        Position.X = 6.000000000000000000
+        Position.Y = 37.000000000000000000
+        Size.Width = 300.000000000000000000
+        Size.Height = 110.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        object CbInsert: TCheckBox
+          Position.X = 10.000000000000000000
+          Position.Y = 22.000000000000000000
+          Size.Width = 270.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          Text = #1074#1089#1090#1072#1074#1082#1072' '#1090#1086#1095#1077#1082' '#1087#1088#1080' '#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1080
+        end
+        object CbTwise: TCheckBox
+          Position.X = 24.000000000000000000
+          Position.Y = 42.000000000000000000
+          Size.Width = 260.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          Text = #1088#1072#1079#1073#1080#1074#1082#1072' '#1089#1077#1075#1084#1077#1085#1090#1086#1074' '#1087#1088#1080' '#1074#1089#1090#1072#1074#1082#1077
+        end
+        object CbTwiseLot: TCheckBox
+          Position.X = 24.000000000000000000
+          Position.Y = 63.000000000000000000
+          Size.Width = 260.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          Text = #1088#1072#1079#1073#1080#1074#1082#1072' '#1082#1086#1085#1090#1091#1088#1086#1074' '#1087#1086' '#1089#1077#1075#1084#1077#1085#1090#1072#1084
+        end
+        object CbStvor: TCheckBox
+          Position.X = 9.000000000000000000
+          Position.Y = 85.000000000000000000
+          Size.Width = 270.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+          Text = #1087#1088#1080#1090#1103#1075#1080#1074#1072#1090#1100' '#1087#1086' '#1089#1090#1074#1086#1088#1091' '#1083#1080#1085#1080#1080
+        end
+      end
+      object CbAuto: TCheckBox
+        Position.X = 10.000000000000000000
+        Position.Y = 32.000000000000000000
+        Size.Width = 150.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+        Text = #1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077
+      end
+      object SEAuto: TSpinBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 5
+        Cursor = crIBeam
+        Min = 1.000000000000000000
+        Max = 10.000000000000000000
+        Value = 1.000000000000000000
+        Position.X = 164.000000000000000000
+        Position.Y = 30.000000000000000000
+        Size.Width = 80.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object cbOrthoTwigs: TCheckBox
+        Position.X = 10.000000000000000000
+        Position.Y = 156.000000000000000000
+        Size.Width = 210.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 6
+        Text = #1085#1072#1087#1088#1072#1074#1083#1103#1102#1097#1080#1093' '#1086#1090#1088#1077#1079#1082#1086#1074' '#1076#1086
+      end
+      object SEOrthoTwigsCount: TSpinBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 7
+        Cursor = crIBeam
+        Min = 1.000000000000000000
+        Max = 20.000000000000000000
+        Value = 1.000000000000000000
+        Position.X = 222.000000000000000000
+        Position.Y = 154.000000000000000000
+        Size.Width = 80.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object GroupBox1: TGroupBox
+        Position.X = 4.000000000000000000
+        Position.Y = 180.000000000000000000
+        Size.Width = 340.000000000000000000
+        Size.Height = 76.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1050#1088#1080#1074#1099#1077
+        TabOrder = 8
+        object Label9: TLabel
+          Position.X = 6.000000000000000000
+          Position.Y = 22.000000000000000000
+          Size.Width = 210.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1086#1090#1088#1077#1079#1082#1086#1074' '#1087#1088#1080' '#1087#1086#1089#1090#1088#1086#1077#1085#1080#1080' '#1076#1091#1075#1080
+          TabOrder = 0
+        end
+        object Label10: TLabel
+          Position.X = 6.000000000000000000
+          Position.Y = 48.000000000000000000
+          Size.Width = 210.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1086#1090#1088#1077#1079#1082#1086#1074' '#1087#1088#1080' '#1087#1086#1089#1090#1088#1086#1077#1085#1080#1080' '#1089#1087#1083#1072#1081#1085#1072
+          TabOrder = 1
+        end
+        object SEArc: TSpinBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 2
+          Cursor = crIBeam
+          Min = 1.000000000000000000
+          Max = 50.000000000000000000
+          Value = 1.000000000000000000
+          Position.X = 220.000000000000000000
+          Position.Y = 19.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+        end
+        object SESpline: TSpinBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 3
+          Cursor = crIBeam
+          Min = 1.000000000000000000
+          Max = 50.000000000000000000
+          Value = 1.000000000000000000
+          Position.X = 220.000000000000000000
+          Position.Y = 45.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+        end
+        object cbLineArc: TCheckBox
+          Hint = #1087#1088#1080' '#1089#1086#1079#1076#1072#1085#1080#1080' '#1076#1091#1075#1080' '#1087#1088#1077#1086#1073#1088#1072#1079#1086#1074#1099#1074#1072#1077#1090' '#1076#1091#1075#1091' '#1074' '#1085#1072#1073#1086#1088' '#1090#1086#1095#1077#1082
+          Position.X = 308.000000000000000000
+          Position.Y = 20.000000000000000000
+          Size.Width = 20.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          ShowHint = True
+        end
+        object cbLineSpline: TCheckBox
+          Hint = #1087#1088#1080' '#1089#1086#1079#1076#1072#1085#1080#1080' '#1076#1091#1075#1080' '#1087#1088#1077#1086#1073#1088#1072#1079#1086#1074#1099#1074#1072#1077#1090' '#1076#1091#1075#1091' '#1074' '#1085#1072#1073#1086#1088' '#1090#1086#1095#1077#1082
+          Position.X = 308.000000000000000000
+          Position.Y = 46.000000000000000000
+          Size.Width = 20.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          ShowHint = True
+        end
+      end
+      object GroupBox3: TGroupBox
+        Position.X = 5.000000000000000000
+        Position.Y = 260.000000000000000000
+        Size.Width = 252.000000000000000000
+        Size.Height = 73.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1079#1072#1087#1088#1086#1089' '#1085#1072' '#1074#1099#1073#1086#1088' '#1089#1083#1086#1103
+        TabOrder = 9
+        object cbQueryLayerDraw: TCheckBox
+          Position.X = 10.000000000000000000
+          Position.Y = 21.000000000000000000
+          Size.Width = 115.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          Text = #1087#1088#1080' '#1088#1080#1089#1086#1074#1072#1085#1080#1080
+        end
+        object cbQueryLayerSbor: TCheckBox
+          Position.X = 128.000000000000000000
+          Position.Y = 21.000000000000000000
+          Size.Width = 110.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          Text = #1087#1088#1080' '#1089#1073#1086#1088#1077
+        end
+        object cbQueryLayerAttrib: TCheckBox
+          Position.X = 10.000000000000000000
+          Position.Y = 46.000000000000000000
+          Size.Width = 160.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          Text = #1087#1088#1080' '#1091#1089#1090'. '#1072#1090#1088#1080#1073#1091#1090#1086#1074
+        end
+      end
+      object cbNoAssociative: TCheckBox
+        Position.X = 262.000000000000000000
+        Position.Y = 312.000000000000000000
+        Size.Width = 135.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 10
+        Text = #1072#1089#1089#1086#1094#1080#1072#1090#1080#1074#1085#1072#1103' '#1079#1072#1083#1080#1074#1082#1072
+      end
+    end
+    object TS1: TTabItem
+      IsSelected = False
+      Size.Width = 8.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'TS1'
+      object cbShowGrid: TCheckBox
+        Position.X = 10.000000000000000000
+        Position.Y = 12.000000000000000000
+        Size.Width = 150.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = #1087#1086#1082#1072#1079#1099#1074#1072#1090#1100' '#1089#1077#1090#1082#1091
+      end
+      object Label1: TLabel
+        Position.X = 168.000000000000000000
+        Position.Y = 13.000000000000000000
+        Size.Width = 40.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1052' 1 :'
+        TabOrder = 1
+      end
+      object RbDownScale: TComboBox
+        Items.Strings = (
+          '50'
+          '100'
+          '200'
+          '500'
+          '1000'
+          '2000'
+          '5000'
+          '10000'
+          '25000'
+          '50000')
+        ItemIndex = 3
+        Position.X = 208.000000000000000000
+        Position.Y = 10.000000000000000000
+        Size.Width = 90.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+      end
+      object Label7: TLabel
+        Position.X = 10.000000000000000000
+        Position.Y = 40.000000000000000000
+        Size.Width = 220.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1088#1072#1089#1089#1090#1086#1103#1085#1080#1077' '#1084#1077#1078#1076#1091' '#1082#1088#1077#1089#1090#1072#1084#1080
+        TabOrder = 3
+      end
+      object Label12: TLabel
+        Position.X = 22.000000000000000000
+        Position.Y = 66.000000000000000000
+        Size.Width = 36.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'X'#1084#1072#1090
+        TabOrder = 4
+      end
+      object EGridX: TNumberBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 5
+        Cursor = crIBeam
+        Min = 1.000000000000000000
+        Value = 1.000000000000000000
+        ValueType = Float
+        DecimalDigits = 2
+        Position.X = 60.000000000000000000
+        Position.Y = 63.000000000000000000
+        Size.Width = 60.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object Label11: TLabel
+        Position.X = 124.000000000000000000
+        Position.Y = 66.000000000000000000
+        Size.Width = 24.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1089#1084
+        TabOrder = 6
+      end
+      object Label13: TLabel
+        Position.X = 152.000000000000000000
+        Position.Y = 66.000000000000000000
+        Size.Width = 36.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = 'Y'#1084#1072#1090
+        TabOrder = 7
+      end
+      object EGridY: TNumberBox
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        TabOrder = 8
+        Cursor = crIBeam
+        Min = 1.000000000000000000
+        Value = 1.000000000000000000
+        ValueType = Float
+        DecimalDigits = 2
+        Position.X = 190.000000000000000000
+        Position.Y = 63.000000000000000000
+        Size.Width = 60.000000000000000000
+        Size.Height = 22.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object Label14: TLabel
+        Position.X = 254.000000000000000000
+        Position.Y = 66.000000000000000000
+        Size.Width = 24.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1089#1084
+        TabOrder = 9
+      end
+      object TCGrid: TPanel
+        Position.X = 12.000000000000000000
+        Position.Y = 100.000000000000000000
+        Size.Width = 280.000000000000000000
+        Size.Height = 135.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 10
+        object rbGridLines: TRadioButton
+          GroupName = 'GridType'
+          IsChecked = True
+          Position.X = 8.000000000000000000
+          Position.Y = 6.000000000000000000
+          Size.Width = 100.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          Text = #1083#1080#1085#1080#1103#1084#1080
+          OnChange = TCGridChange
+        end
+        object rbGridCross: TRadioButton
+          GroupName = 'GridType'
+          Position.X = 120.000000000000000000
+          Position.Y = 6.000000000000000000
+          Size.Width = 100.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          Text = #1082#1088#1077#1089#1090#1072#1084#1080
+          OnChange = TCGridChange
+        end
+        object Label4Color: TLabel
+          Position.X = 10.000000000000000000
+          Position.Y = 35.000000000000000000
+          Size.Width = 36.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1094#1074#1077#1090
+          TabOrder = 2
+        end
+        object CBGridColor: TColorComboBox
+          Position.X = 46.000000000000000000
+          Position.Y = 32.000000000000000000
+          Size.Width = 70.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+        end
+        object Label5: TLabel
+          Position.X = 124.000000000000000000
+          Position.Y = 35.000000000000000000
+          Size.Width = 60.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1090#1086#1083#1097#1080#1085#1072
+          TabOrder = 4
+        end
+        object SEGridWidth: TSpinBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 5
+          Cursor = crIBeam
+          Max = 10.000000000000000000
+          Position.X = 188.000000000000000000
+          Position.Y = 32.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+        end
+        object PanelSize: TPanel
+          Position.X = 2.000000000000000000
+          Position.Y = 64.000000000000000000
+          Size.Width = 270.000000000000000000
+          Size.Height = 62.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 6
+          object Label6: TLabel
+            Position.X = 11.000000000000000000
+            Position.Y = 10.000000000000000000
+            Size.Width = 140.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1088#1072#1079#1084#1077#1088' '#1096#1090#1088#1080#1093#1072' ('#1089#1084')'
+            TabOrder = 0
+          end
+          object EGridSize: TNumberBox
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 1
+            Cursor = crIBeam
+            Max = 10.000000000000000000
+            Value = 1.000000000000000000
+            ValueType = Float
+            DecimalDigits = 2
+            Position.X = 160.000000000000000000
+            Position.Y = 7.000000000000000000
+            Size.Width = 60.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbHalfGrid: TCheckBox
+            Position.X = 11.000000000000000000
+            Position.Y = 36.000000000000000000
+            Size.Width = 120.000000000000000000
+            Size.Height = 19.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 2
+            Text = #1087#1086#1083#1091#1082#1088#1077#1089#1090#1099
+          end
+        end
+      end
+      object cbGlass: TCheckBox
+        Position.X = 10.000000000000000000
+        Position.Y = 244.000000000000000000
+        Size.Width = 260.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 11
+        Text = #1087#1086#1083#1091#1087#1088#1086#1079#1088#1072#1095#1085#1099#1077' '#1083#1080#1085#1080#1080' '#1089#1077#1090#1082#1080
+      end
+    end
+    object TS2: TTabItem
+      IsSelected = False
+      Size.Width = 8.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'TS2'
+      object GroupBox2: TGroupBox
+        Position.X = 8.000000000000000000
+        Position.Y = 8.000000000000000000
+        Size.Width = 280.000000000000000000
+        Size.Height = 80.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1062#1074#1077#1090
+        TabOrder = 0
+        object Label2: TLabel
+          Position.X = 10.000000000000000000
+          Position.Y = 24.000000000000000000
+          Size.Width = 70.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1055#1086#1076#1083#1086#1078#1082#1072
+          TabOrder = 0
+        end
+        object cbColorBitmap: TColorComboBox
+          Position.X = 80.000000000000000000
+          Position.Y = 21.000000000000000000
+          Size.Width = 70.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+        end
+        object Label3: TLabel
+          Position.X = 160.000000000000000000
+          Position.Y = 24.000000000000000000
+          Size.Width = 30.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1060#1086#1085
+          TabOrder = 2
+        end
+        object cbColorBack: TColorComboBox
+          Position.X = 196.000000000000000000
+          Position.Y = 21.000000000000000000
+          Size.Width = 70.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+        end
+        object cbGlassBitmap: TCheckBox
+          Position.X = 150.000000000000000000
+          Position.Y = 52.000000000000000000
+          Size.Width = 120.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          Text = #1087#1088#1086#1079#1088#1072#1095#1085#1086#1089#1090#1100
+        end
+      end
+      object cbFrameBitmap: TCheckBox
+        Position.X = 12.000000000000000000
+        Position.Y = 96.000000000000000000
+        Size.Width = 290.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = #1087#1086#1082#1072#1079#1099#1074#1072#1090#1100' '#1088#1072#1084#1082#1091' '#1072#1082#1090#1080#1074#1085#1086#1075#1086' '#1088#1072#1089#1090#1088#1072
+      end
+    end
+    object TS3: TTabItem
+      IsSelected = False
+      Size.Width = 8.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'TS3'
+      object GroupBox8: TGroupBox
+        Position.X = 4.000000000000000000
+        Position.Y = 6.000000000000000000
+        Size.Width = 390.000000000000000000
+        Size.Height = 250.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1054#1090#1086#1073#1088#1072#1078#1077#1085#1080#1077
+        TabOrder = 0
+        object GroupBox4: TGroupBox
+          Position.X = 6.000000000000000000
+          Position.Y = 20.000000000000000000
+          Size.Width = 378.000000000000000000
+          Size.Height = 89.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1058#1086#1095#1082#1080
+          TabOrder = 0
+          object Label17: TLabel
+            Position.X = 7.000000000000000000
+            Position.Y = 23.000000000000000000
+            Size.Width = 40.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1094#1074#1077#1090' :'
+            TabOrder = 0
+          end
+          object Label18: TLabel
+            Position.X = 44.000000000000000000
+            Position.Y = 23.000000000000000000
+            Size.Width = 54.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1091#1079#1083#1086#1074#1099#1093
+            TabOrder = 1
+          end
+          object cbColorUzl: TColorComboBox
+            Position.X = 98.000000000000000000
+            Position.Y = 20.000000000000000000
+            Size.Width = 56.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 2
+          end
+          object Label20: TLabel
+            Position.X = 158.000000000000000000
+            Position.Y = 23.000000000000000000
+            Size.Width = 54.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1087#1088#1086#1084#1077#1078'.'
+            TabOrder = 3
+          end
+          object cbColorDot: TColorComboBox
+            Position.X = 212.000000000000000000
+            Position.Y = 20.000000000000000000
+            Size.Width = 56.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 4
+          end
+          object Label22: TLabel
+            Position.X = 272.000000000000000000
+            Position.Y = 23.000000000000000000
+            Size.Width = 44.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1085#1072' '#1090#1086#1095#1082#1072#1093
+            TabOrder = 5
+          end
+          object cbColorPoint: TColorComboBox
+            Position.X = 314.000000000000000000
+            Position.Y = 20.000000000000000000
+            Size.Width = 56.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 6
+          end
+          object Label19: TLabel
+            Position.X = 7.000000000000000000
+            Position.Y = 59.000000000000000000
+            Size.Width = 120.000000000000000000
+            Size.Height = 17.000000000000000000
+            Size.PlatformDefault = False
+            Text = #1088#1072#1076#1080#1091#1089' '#1074' '#1087#1080#1082#1089#1077#1083#1072#1093
+            TabOrder = 7
+          end
+          object sePointSize: TSpinBox
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 8
+            Cursor = crIBeam
+            Max = 25.000000000000000000
+            Position.X = 128.000000000000000000
+            Position.Y = 56.000000000000000000
+            Size.Width = 76.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbFillPOint: TCheckBox
+            Position.X = 210.000000000000000000
+            Position.Y = 58.000000000000000000
+            Size.Width = 104.000000000000000000
+            Size.Height = 19.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 9
+            Text = #1079#1072#1083#1080#1074#1072#1090#1100' '#1090#1086#1095#1082#1091
+          end
+          object cbFillPointColor: TColorComboBox
+            Position.X = 314.000000000000000000
+            Position.Y = 56.000000000000000000
+            Size.Width = 56.000000000000000000
+            Size.Height = 22.000000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 10
+          end
+        end
+        object Label21: TLabel
+          Position.X = 9.000000000000000000
+          Position.Y = 120.000000000000000000
+          Size.Width = 130.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1074#1099#1076#1077#1083#1077#1085#1080#1077' '#1086#1073#1098#1077#1082#1090#1086#1074
+          TabOrder = 1
+        end
+        object cbSelectColor: TColorComboBox
+          Position.X = 140.000000000000000000
+          Position.Y = 117.000000000000000000
+          Size.Width = 60.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+        end
+        object Label23: TLabel
+          Position.X = 206.000000000000000000
+          Position.Y = 120.000000000000000000
+          Size.Width = 110.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1074#1099#1076#1077#1083#1077#1085#1080#1077' '#1090#1086#1095#1077#1082
+          TabOrder = 3
+        end
+        object cbSelectPointColor: TColorComboBox
+          Position.X = 318.000000000000000000
+          Position.Y = 117.000000000000000000
+          Size.Width = 60.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+        end
+        object Label28: TLabel
+          Position.X = 9.000000000000000000
+          Position.Y = 152.000000000000000000
+          Size.Width = 130.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1084#1072#1088#1082#1077#1088' '#1079#1072#1083#1080#1087#1072#1085#1080#1103
+          TabOrder = 5
+        end
+        object cbGlueMarkerColor: TColorComboBox
+          Position.X = 140.000000000000000000
+          Position.Y = 149.000000000000000000
+          Size.Width = 60.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 6
+        end
+        object cbBinds: TCheckBox
+          Position.X = 206.000000000000000000
+          Position.Y = 151.000000000000000000
+          Size.Width = 180.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 7
+          Text = #1087#1086#1082#1072#1079#1099#1074#1072#1090#1100' '#1087#1088#1080#1074#1103#1079#1082#1080' (bind)'
+        end
+        object Label15: TLabel
+          Position.X = 9.000000000000000000
+          Position.Y = 184.000000000000000000
+          Size.Width = 130.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1092#1086#1085#1086#1074#1099#1081' '#1094#1074#1077#1090' '#1086#1082#1085#1072
+          TabOrder = 8
+        end
+        object panColor: TPanel
+          Position.X = 140.000000000000000000
+          Position.Y = 180.000000000000000000
+          Size.Width = 64.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 9
+          object Shape4: TRectangle
+            Fill.Color = claBlack
+            Position.X = 42.000000000000000000
+            Position.Y = 2.000000000000000000
+            Size.Width = 20.000000000000000000
+            Size.Height = 20.000000000000000000
+            Size.PlatformDefault = False
+            OnMouseDown = Shape4MouseDown
+          end
+          object Shape2: TRectangle
+            Fill.Color = claSilver
+            Position.X = 22.000000000000000000
+            Position.Y = 2.000000000000000000
+            Size.Width = 20.000000000000000000
+            Size.Height = 20.000000000000000000
+            Size.PlatformDefault = False
+            OnMouseDown = Shape4MouseDown
+          end
+          object Shape1: TRectangle
+            Fill.Color = claWhite
+            Position.X = 2.000000000000000000
+            Position.Y = 2.000000000000000000
+            Size.Width = 20.000000000000000000
+            Size.Height = 20.000000000000000000
+            Size.PlatformDefault = False
+            OnMouseDown = Shape4MouseDown
+          end
+          object Label29: TLabel
+            StyledSettings = [Family, Size, Style]
+            HitTest = False
+            Position.X = 4.000000000000000000
+            Position.Y = 2.000000000000000000
+            Size.Width = 14.000000000000000000
+            Size.Height = 18.000000000000000000
+            Size.PlatformDefault = False
+            TextSettings.Font.Size = 12.000000000000000000
+            TextSettings.FontColor = claRed
+            Text = 'v'
+            TabOrder = 0
+          end
+        end
+        object cbWindowColor: TColorComboBox
+          Position.X = 284.000000000000000000
+          Position.Y = 182.000000000000000000
+          Size.Width = 65.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 10
+          Visible = False
+        end
+        object cbColorZnaksCheck: TCheckBox
+          Position.X = 12.000000000000000000
+          Position.Y = 218.000000000000000000
+          Size.Width = 300.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 11
+          Text = #1077#1076#1080#1085#1086#1086#1073#1088#1072#1079#1085#1099#1081' '#1094#1074#1077#1090' '#1083#1080#1085#1080#1081', '#1087#1086#1076#1087#1080#1089#1077#1081' '#1080' '#1079#1085#1072#1082#1086#1074
+        end
+        object cbColorZnaks: TColorComboBox
+          Position.X = 318.000000000000000000
+          Position.Y = 216.000000000000000000
+          Size.Width = 60.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 12
+        end
+      end
+      object Label444: TLabel
+        Position.X = 14.000000000000000000
+        Position.Y = 272.000000000000000000
+        Size.Width = 190.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1059#1089#1083#1086#1074#1085#1086#1077' '#1086#1090#1086#1073#1088#1072#1078#1077#1085#1080#1077' '#1090#1086#1095#1082#1080' :'
+        TabOrder = 1
+      end
+      object PS: TPanel
+        Hint = #1059#1089#1083#1086#1074#1085#1099#1081' '#1079#1085#1072#1082' '#1076#1083#1103' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1103' '#1087#1080#1082#1077#1090#1085#1086#1081' '#1090#1086#1095#1082#1080' '#1089' '#1086#1090#1084#1077#1090#1082#1086#1081
+        Position.X = 206.000000000000000000
+        Position.Y = 262.000000000000000000
+        Size.Width = 80.000000000000000000
+        Size.Height = 45.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        ShowHint = True
+        object sbZnak: TSpeedButton
+          Align = Right
+          Position.X = 58.000000000000000000
+          Size.Width = 22.000000000000000000
+          Size.Height = 45.000000000000000000
+          Size.PlatformDefault = False
+          Text = '...'
+          OnClick = sbZnakClick
+        end
+      end
+    end
+    object TS4: TTabItem
+      IsSelected = False
+      Size.Width = 8.000000000000000000
+      Size.Height = 8.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'TS4'
+      object Label24: TLabel
+        Position.X = 8.000000000000000000
+        Position.Y = 10.000000000000000000
+        Size.Width = 100.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1060#1091#1085#1082#1094#1080#1103' :'
+        TabOrder = 0
+      end
+      object lbMarkerNames: TListBox
+        Position.X = 12.000000000000000000
+        Position.Y = 29.000000000000000000
+        Size.Width = 181.000000000000000000
+        Size.Height = 161.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        ShowCheckboxes = True
+        OnChange = lbMarkerNamesChange
+        OnChangeCheck = lbMarkerNamesChangeCheck
+      end
+      object cbWidthPath: TCheckBox
+        Position.X = 12.000000000000000000
+        Position.Y = 204.000000000000000000
+        Size.Width = 185.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = #1059#1090#1086#1083#1097#1077#1085#1085#1072#1103' '#1083#1080#1085#1080#1103' '#1088#1080#1089#1086#1074#1072#1085#1080#1103
+      end
+      object Label25: TLabel
+        Position.X = 200.000000000000000000
+        Position.Y = 10.000000000000000000
+        Size.Width = 120.000000000000000000
+        Size.Height = 17.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1054#1090#1086#1073#1088#1072#1078#1077#1085#1080#1077' :'
+        TabOrder = 3
+      end
+      object lbMarker: TSkPaintBox
+        Position.X = 200.000000000000000000
+        Position.Y = 29.000000000000000000
+        Size.Width = 177.000000000000000000
+        Size.Height = 204.000000000000000000
+        Size.PlatformDefault = False
+        OnMouseDown = lbMarkerMouseDown
+        OnDraw = lbMarkerDraw
+      end
+      object GroupBox7: TGroupBox
+        Position.X = 12.000000000000000000
+        Position.Y = 239.000000000000000000
+        Size.Width = 369.000000000000000000
+        Size.Height = 86.000000000000000000
+        Size.PlatformDefault = False
+        Text = #1044#1086#1087'. '#1087#1072#1088#1072#1084#1077#1090#1088#1099
+        TabOrder = 4
+        object Label26: TLabel
+          Position.X = 10.000000000000000000
+          Position.Y = 24.000000000000000000
+          Size.Width = 150.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1088#1072#1079#1084#1077#1088' '#1084#1072#1088#1082#1077#1088#1072' '#1074' '#1087#1080#1082#1089#1077#1083#1072#1093
+          TabOrder = 0
+        end
+        object seMarkerSize: TSpinBox
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          TabOrder = 1
+          Cursor = crIBeam
+          Max = 52.000000000000000000
+          Value = 32.000000000000000000
+          Increment = 2.000000000000000000
+          Position.X = 160.000000000000000000
+          Position.Y = 21.000000000000000000
+          Size.Width = 76.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          OnChange = seMarkerSizeClick
+        end
+        object cbRotate: TCheckBox
+          Position.X = 244.000000000000000000
+          Position.Y = 23.000000000000000000
+          Size.Width = 120.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          Text = #1087#1086#1074#1086#1088#1086#1090' '#1087#1086' '#1083#1080#1085#1080#1080
+          OnChange = seMarkerSizeClick
+        end
+        object Label27: TLabel
+          Position.X = 122.000000000000000000
+          Position.Y = 56.000000000000000000
+          Size.Width = 34.000000000000000000
+          Size.Height = 17.000000000000000000
+          Size.PlatformDefault = False
+          Text = #1094#1074#1077#1090
+          TabOrder = 3
+        end
+        object cbMarkerColor: TColorComboBox
+          Position.X = 160.000000000000000000
+          Position.Y = 53.000000000000000000
+          Size.Width = 76.000000000000000000
+          Size.Height = 22.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          OnChange = seMarkerSizeClick
+        end
+        object cbDoubleLine: TCheckBox
+          Position.X = 244.000000000000000000
+          Position.Y = 55.000000000000000000
+          Size.Width = 120.000000000000000000
+          Size.Height = 19.000000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          Text = #1076#1074#1086#1081#1085#1072#1103' '#1083#1080#1085#1080#1103
+          OnChange = seMarkerSizeClick
+        end
+      end
+    end
+  end
+end

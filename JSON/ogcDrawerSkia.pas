@@ -72,6 +72,8 @@ type
     FPrimitiveLODIndex: Integer;
     FPrimitiveUserObject: TTD;
     FPrimitiveBoundsWorld: TRectF;
+    FStrokeCap: TSkStrokeCap;
+    FStrokeJoin: TSkStrokeJoin;
   protected
     function GetHeight: Integer; override;
     function GetWidth: Integer; override;
@@ -129,6 +131,10 @@ type
     property DebugDrawTextBounds: Boolean read FDebugDrawTextBounds write FDebugDrawTextBounds;
     property skPainter: TSkPaintBox read FskPainter;
     property SkCanvas: ISkCanvas read FSkCanvas;
+   // концы и изломы утолщенных линий DrawLine/DrawPolyline (аналог PS_ENDCAP_*,
+   // PS_JOIN_* пера GDI): по умолчанию концы скругленные, изломы острые
+    property StrokeCap: TSkStrokeCap read FStrokeCap write FStrokeCap;
+    property StrokeJoin: TSkStrokeJoin read FStrokeJoin write FStrokeJoin;
   end;
 
   TogsCaptureDrawerSkia = class(TogsDrawerSkia)
@@ -239,6 +245,8 @@ begin
   FHeight := 1;
   FUseWorldCoords := False;
   FSkPainter := SkPainter_;
+  FStrokeCap := TSkStrokeCap.Round;
+  FStrokeJoin := TSkStrokeJoin.Miter;
 end;
 
 destructor TogsDrawerSkia.Destroy;
@@ -515,14 +523,34 @@ begin
     end
     else
       Paint.StrokeWidth := 0.03;
+    Paint.StrokeCap := FStrokeCap;
+    Paint.StrokeJoin := FStrokeJoin;
     FSkCanvas.DrawLine(P0.X, P0.Y, P1.X, P1.Y, Paint);
   end;
 end;
 
+// координаты точки коллекции: TlDot (знаки Lib) или TogsDot (контуры ECLot);
+// приведение одного класса к другому держалось на совпадении полей
+function OgsDotXY(const AObj: TObject; out AX, AY: Double): Boolean;
+begin
+ Result := False;
+ if AObj is TlDot then begin
+  AX := TlDot(AObj).XDot;
+  AY := TlDot(AObj).YDot;
+  Result := True;
+ end else
+ if AObj is TogsDot then begin
+  AX := TogsDot(AObj).fX;
+  AY := TogsDot(AObj).fY;
+  Result := True;
+ end;
+end;
+
+// ломаная одним путем: изломы по StrokeJoin, концы по StrokeCap
 procedure TogsDrawerSkia.DrawPolyline(Points: TogsCollection; cutRequest: Boolean);
 var
-  I: Integer;
-  P0: TlDot;
+  I, N: Integer;
+  X, Y: Double;
   PathBuilder: ISkPathBuilder;
   Path: ISkPath;
   Paint: ISkPaint;
@@ -534,16 +562,13 @@ begin
   if ogsSelector = nil then
     Exit;
 
-  if cutRequest then
+  if cutRequest and not GlobalRender then
   begin
     R := TogsRect.Create;
     try
       for I := 0 to Points.Count - 1 do
-      begin
-        P0 := TlDot(Points.Items[I]);
-        R.Insert(P0.XDot, P0.YDot);
-      end;
-      if (not ogsSelector.RectVisible(R)) and (not GlobalRender) then
+        if OgsDotXY(TObject(Points.Items[I]), X, Y) then R.Insert(X, Y);
+      if not ogsSelector.RectVisible(R) then
         Exit;
     finally
       R.Free;
@@ -553,19 +578,19 @@ begin
   if FSkCanvas <> nil then
   begin
     PathBuilder := TSkPathBuilder.Create;
-    P0 := TlDot(Points.Items[0]);
-    if FUseWorldCoords then
-      PathBuilder.MoveTo(Single(P0.XDot), Single(P0.YDot))
-    else
-      PathBuilder.MoveTo(ogsSelector.XPix(P0.XDot), ogsSelector.YPix(P0.YDot));
-    for I := 1 to Points.Count - 1 do
+    N := 0;
+    for I := 0 to Points.Count - 1 do
     begin
-      P0 := TlDot(Points.Items[I]);
-      if FUseWorldCoords then
-        PathBuilder.LineTo(Single(P0.XDot), Single(P0.YDot))
-      else
-        PathBuilder.LineTo(ogsSelector.XPix(P0.XDot), ogsSelector.YPix(P0.YDot));
+      if not OgsDotXY(TObject(Points.Items[I]), X, Y) then continue;
+      if not FUseWorldCoords then begin
+        X := ogsSelector.XPix(X);
+        Y := ogsSelector.YPix(Y);
+      end;
+      if N = 0 then PathBuilder.MoveTo(Single(X), Single(Y)) else PathBuilder.LineTo(Single(X), Single(Y));
+      Inc(N);
     end;
+    if N < 2 then
+      Exit;
     Path := PathBuilder.Detach;
 
     Paint := TSkPaint.Create;
@@ -577,6 +602,8 @@ begin
       Paint.StrokeWidth := D;
     end   else
       Paint.StrokeWidth := Max(1.0, Pen.penWidth);
+    Paint.StrokeCap := FStrokeCap;
+    Paint.StrokeJoin := FStrokeJoin;
     FSkCanvas.DrawPath(Path, Paint);
   end;
 end;

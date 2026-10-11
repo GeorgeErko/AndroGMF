@@ -6,6 +6,7 @@ uses
   FMX.Forms,
   FMX.Types,
   FMX.Skia,
+  AppFonts in 'AppFonts.pas',
   FireDAC.FMXUI.Wait,
   circle_di in 'GMF\circle_di.pas',
   Collect in 'GMF\Collect.pas',
@@ -126,12 +127,14 @@ uses
   objMouseDraw32 in 'Geomaster\objMouseDraw32.pas',
   objMouseSelect32 in 'Geomaster\objMouseSelect32.pas',
   objTopo32 in 'Geomaster\objTopo32.pas',
+  objDataZnk32 in 'Geomaster\objDataZnk32.pas',
   objTopology32 in 'Geomaster\objTopology32.pas',
   Selector32 in 'Geomaster\Selector32.pas',
   objMouseView in 'MOUSE\objMouseView.pas',
   AssetRefresh in 'AssetRefresh.pas',
   StylusInput in 'StylusInput.pas',
-  FramePropEditor in 'FramePropEditor.pas' {PropEditorFrame: TFrame};
+  FramePropEditor in 'FramePropEditor.pas' {PropEditorFrame: TFrame},
+  FrameSettings in 'FrameSettings.pas' {SettingsFrame: TFrame};
 
 {$R *.res}
 

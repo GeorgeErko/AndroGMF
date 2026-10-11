@@ -94,6 +94,7 @@ type
     sbCancel: TSpeedButton;
     LabelVer: TLabel;
     procedure OZNButtonApplyStyleLookup(Sender: TObject);
+    procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
@@ -117,6 +118,7 @@ type
    FOverlayPendingRedraw: Boolean;
    FInteractionPrevActive: Boolean;
    FInteractionWatchTimer: TTimer;
+   FMaximizeChecked: Boolean;
    procedure CaptureOverlayInteractionImage;
    procedure SetMouseObject(const Value: TKeyMouseHook);
    procedure EnsureOverlayPainter;
@@ -133,6 +135,7 @@ type
    InstBlocks: TInstBlocksFrame;
    destructor Destroy; override;
    procedure Loaded; override;
+   procedure DoShow; override;
    procedure SetTwgForm(const Value: TForm2); override;
    procedure SetSelectorParams; override;
   //
@@ -364,6 +367,29 @@ begin
 {$ELSE}
   OpenGmfFile('C:\!!!ГЗ\Борт\29.gmf')
  //  OpenGmfFile('C:\!!!ГЗ\Борт\29488_ul._Generala_Belova,_vl._19,_korp._3Kam.gmf');
+{$ENDIF}
+end;
+
+// защита развертывания на Windows: размер формы, записанный в .fmx наследника
+// (ClientHeight/ClientWidth в MainFrmDendro.fmx - IDE пишет его после изменения
+// размера формы в дизайнере), читается после WindowState = wsMaximized и задает
+// окну высоту - окно остается "развернутым", но не на весь экран. После первого
+// показа (очередью) окно разворачивается заново, только если оно меньше рабочей
+// области экрана - в обычном случае ничего не делается и окно не моргает
+procedure TMainFormMouseObj.DoShow;
+begin
+ inherited;
+{$IFDEF MSWINDOWS}
+ if FMaximizeChecked then exit;
+ FMaximizeChecked := True;
+ if WindowState <> TWindowState.wsMaximized then exit;
+ TThread.ForceQueue(nil,
+  procedure
+  begin
+   if (WindowState <> TWindowState.wsMaximized) or ((Height >= Screen.WorkAreaHeight - 40) and (Width >= Screen.WorkAreaWidth - 40)) then exit;
+   WindowState := TWindowState.wsNormal;
+   WindowState := TWindowState.wsMaximized;
+  end);
 {$ENDIF}
 end;
 
@@ -836,24 +862,46 @@ begin
 {$ENDIF}
 end;
 
-// кнопки панели ОЗН: глиф в размер картинки (слой ImageListOZN), стиль
-// кнопки по умолчанию уменьшает его до 16-18 пикселов
+// кнопки панелей ОЗН и ToolBarPaint: картинка в своем размере (ImageListOZN
+// 32x32, ToolImageList 16-18).
+// Размер глифа задавать нельзя: TCustomButton.DoRealign (UpdateGlyphSize)
+// возвращает глифу с Align Center/Left/Top... размер из стиля (Windows - 16).
+// Поэтому глиф - на всю кнопку (Align Client UpdateGlyphSize не трогает), а
+// Stretch = False: рисуется наибольшая картинка списка, что помещается, по центру
 procedure TMainFormMouseObj.OZNButtonApplyStyleLookup(Sender: TObject);
 var G: TFmxObject;
     B: TSpeedButton;
-    D: TCustomDestinationItem;
 begin
  if not (Sender is TSpeedButton) then exit;
  B := TSpeedButton(Sender);
- if not (B.Images is TCustomImageList) or (B.ImageIndex < 0) or (B.ImageIndex >= TCustomImageList(B.Images).Destination.Count) then exit;
- D := TCustomImageList(B.Images).Destination[B.ImageIndex];
- if D.Layers.Count = 0 then exit;
+ if not (B.Images is TCustomImageList) or (B.ImageIndex < 0) then exit;
  G := B.FindStyleResource('glyphstyle');
  if G is TGlyph then begin
-  TGlyph(G).Align := TAlignLayout.Center;
-  TGlyph(G).Width := D.Layers[0].SourceRect.Width;
-  TGlyph(G).Height := D.Layers[0].SourceRect.Height;
+  TGlyph(G).Align := TAlignLayout.Client;
+  TGlyph(G).Stretch := False;
  end;
+end;
+
+// плоские кнопки на Windows: стиль Windows 10 Desktop рисует фон кнопки
+// (background) и в обычном состоянии, стиль Android - только у нажатой.
+// Перед отрисовкой фон показывается только у нажатой кнопки или под мышью;
+// проверка при каждой отрисовке, т.к. IsPressed меняется и кодом (GroupName,
+// сброс инструментов)
+procedure TMainFormMouseObj.FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+{$IFDEF MSWINDOWS}
+var Bg: TFmxObject;
+    B: TSpeedButton;
+    Op: Single;
+{$ENDIF}
+begin
+{$IFDEF MSWINDOWS}
+ if not (Sender is TSpeedButton) then exit;
+ B := TSpeedButton(Sender);
+ Bg := B.FindStyleResource('background');
+ if not (Bg is TControl) then exit;
+ if B.IsPressed or B.IsMouseOver then Op := 1 else Op := 0;
+ if TControl(Bg).Opacity <> Op then TControl(Bg).Opacity := Op;
+{$ENDIF}
 end;
 
 // кнопка панели линейных знаков (Opr - код операции objTopology32): обработчик
@@ -1201,3 +1249,4 @@ initialization
 finalization
  UnRegisterClass(TLayerFrame);
 end.
+

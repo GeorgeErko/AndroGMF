@@ -3546,30 +3546,21 @@ var Tw:TTwig;I,J:Integer;AlphaColor:Integer;
     Pen: TogsPen; Brush: TogsBrush;
     Points2: TogsCollection;
     D: Double;
-Procedure DrawLine(X,Y,X1,Y1:Double);
-var XX,YY,XX1,YY1:Integer; Pen: TogsPen;
+// ветвь одной ломаной (TogsDrawerSkia.DrawPolyline: один путь, изломы по
+// StrokeJoin, концы по StrokeCap) вместо отдельных отрезков DrawLine; точки -
+// как раньше Twig[J] (у дуги при ArcView = 1)
+Procedure DrawTwigPolyline(Twig: TTwig);
+var Col: TogsCollection;
+    J: Integer;
 begin
- if GlobalRender then With Selector do
- begin
-   Drawer.DrawLine(X, Y, X1, Y1, True);
-   Exit;
+ if Twig.Coord.Count < 2 then exit;
+ Col := TogsCollection.Create(Twig.Coord.Count);
+ try
+  for J := 0 to Twig.Coord.Count - 1 do Col.Add(TogsDot.Create(Twig[J].XDot, Twig[J].YDot, 0));
+  Selector.Drawer.DrawPolyline(Col, True);
+ finally
+  Col.Free;
  end;
- With Selector do
-  try
-   XX:=XPix(X);YY:=YPix(Y);XX1:=XPix(X1);YY1:=YPix(Y1);
-   If (XX=XX1) and (YY=YY1) then exit;
-   If PointVis(X,Y) and PointVis(X1,Y1) then begin
-     ogsDrawer.DrawLine(XX,YY,XX1,YY1,True);
-   end else
-    If Clip_Interval(GRect.Left,GRect.Bottom,Grect.Right,Grect.Top,X,Y,X1,Y1) then begin
-     Drawer.DrawLine(X, Y, X1, Y1, True);
-  //  Bitmap.FrameRectS(XX-2,YY-2,XX-2,XX-2);Bitmap.FrameRectS(XX1-2,YY1-2,XX1-2,XX1-2);
-   end;
-  except
-    raise Exception.Create('Polygon Line Exception 1');
-     //Image.Bitmap.Line(XPix(X),YPix(Y),XPix(X1),YPix(Y1),Image.Bitmap.PenColor,True);
-     //Writeln(1);
-  end;
 end;
 Procedure DrawTwig(Twig: TTwig);
 var Ind: Integer;
@@ -3589,7 +3580,7 @@ begin
        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
        DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
      end else
-      For J:=0 to Twig.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+      DrawTwigPolyline(Twig);
     end else
    If (ClassHandle.Standart = 0) and (ClassHandle.Znak = 1) then begin
      Ind:=SearchLine(GLineCol, Twig.UZnak);
@@ -3597,9 +3588,9 @@ begin
        TGeoLine(GLineCol.At(Ind)).Layer:=Twig.ClassHandle;
         DrawGeoLine(Drawer,TGeoLine(GLineCol.At(Ind)),Twig.Coord,Twig.Koef,Twig.LineWidth ,Twig.Zdx,Inv = 1, Twig.TwigColor);
      end else
-      For J:=0 to Twig.Coord.Count-2 do DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+      DrawTwigPolyline(Twig);
   end else
-   For J:=0 to Tw.Coord.Count-2 do Drawer.DrawLine(Twig[J].XDot,Twig[J].YDot,Twig[J+1].XDot,Twig[J+1].YDot);
+   DrawTwigPolyline(Twig);
   // If GGraphSet.PointView = 1 then For J:=0 to Tw.Coord.Count-1 do TDot(Twig.Coord[J]).Draw32(Drawer, 0, 0, GMS, GMS);
  finally
  end;
@@ -3639,7 +3630,8 @@ begin
       Points2.Add(TogsDot.Create(XDot, YDot, 0));
      Drawer.drawPolygon(Points2, nil);
     finally
-  //
+    // коллекция освобождает и точки (утекала при каждой записи картинки)
+     Points2.Free;
     end;
      For I:=0 to Coord.Count-1 do begin
      Tw:=GetTwig(Twf,I);

@@ -1,6 +1,6 @@
 ﻿unit StylusInput;
 
-// Перо (S-Pen) на Android.
+// Перо (S-Pen) на Android, активное перо на Windows (см. ветку MSWINDOWS).
 // FMX превращает касание пером и пальцем в одинаковые события мыши (mbLeft),
 // кнопку пера не читает, а наведение пера над экраном (без касания) не
 // обрабатывает совсем. InstallStylus ставит на вид формы два слушателя:
@@ -9,7 +9,7 @@
 // - наведения: движение пера над экраном - в OnHover, щелчок кнопкой пера
 //   над экраном - в OnButtonClick (координаты - формы).
 // Форма по StylusTool / StylusButton сама решает, что делать с касанием.
-// На остальных платформах InstallStylus ничего не делает.
+// На остальных платформах (кроме Windows) InstallStylus ничего не делает.
 
 interface
 
@@ -38,7 +38,7 @@ function StylusRightButton: Boolean;
 
 implementation
 
-{$IFDEF ANDROID}
+{$IF DEFINED(ANDROID)}
 uses
   System.SysUtils, Androidapi.JNIBridge, Androidapi.JNI.GraphicsContentViewText, FMX.Platform.Android;
 
@@ -148,6 +148,117 @@ begin
  if GHoverListener = nil then GHoverListener := TStylusHoverListener.Create;
  View.setOnTouchListener(GTouchListener);
  View.setOnHoverListener(GHoverListener);
+end;
+{$ELSEIF DEFINED(MSWINDOWS)}
+// Windows (Torex RuggedTablet и др.): перо и касание Windows сама превращает в
+// сообщения мыши, наведение пера - в WM_MOUSEMOVE (OnHover не нужен), касание
+// пером с нажатой кнопкой - в правую кнопку. Окно формы подклассируется:
+// по WM_POINTER* (приходят раньше синтезированных из них сообщений мыши)
+// запоминается инструмент и кнопка пера, щелчок кнопкой пера над экраном -
+// в OnButtonClick; сообщения не перехватываются - их, как и раньше, обрабатывает FMX.
+// Системные жесты пера (нажать и удерживать = правая кнопка, флики, круги
+// отклика) для окна отключаются. Указатели (WM_POINTER) - Windows 8 и выше.
+uses
+  System.SysUtils, Winapi.Windows, Winapi.Messages, Winapi.CommCtrl, FMX.Platform.Win;
+
+const
+ // winuser.h: POINTER_INPUT_TYPE
+  PTR_TOUCH = 2;
+  PTR_PEN = 3;
+ // сообщения мыши, синтезированные из пера или касания (GetMessageExtraInfo)
+  MI_WP_SIGNATURE = $FF515700;
+  SIGNATURE_MASK = $FFFFFF00;
+ // tpcshrd.h: отключение системных жестов пера и касания для окна
+  TABLET_DISABLE_PRESSANDHOLD = $00000001;
+  TABLET_DISABLE_PENTAPFEEDBACK = $00000008;
+  TABLET_DISABLE_PENBARRELFEEDBACK = $00000010;
+  TABLET_DISABLE_FLICKS = $00010000;
+  TABLET_GESTURE_FLAGS = TABLET_DISABLE_PRESSANDHOLD or TABLET_DISABLE_PENTAPFEEDBACK or TABLET_DISABLE_PENBARRELFEEDBACK or TABLET_DISABLE_FLICKS;
+  TABLET_PROP = 'MicrosoftTabletPenServiceProperty';
+  STYLUS_SUBCLASS_ID = $5354594C;
+
+var
+  GForm: TCommonCustomForm;
+  GWnd: HWND;
+  GOnButtonClick: TStylusPointEvent;
+  GHoverButton: Boolean; // кнопка пера была нажата (наведение или касание)
+
+// пикселы экрана - в координаты формы
+function FormPoint(Wnd: HWND; P: TPoint): TPointF;
+var S: Single;
+begin
+ Winapi.Windows.ScreenToClient(Wnd, P);
+ S := 1;
+ if (GForm <> nil) and (GForm.Handle <> nil) and (GForm.Handle.Scale > 0) then S := GForm.Handle.Scale;
+ Result := TPointF.Create(P.X / S, P.Y / S);
+end;
+
+procedure PointerMessage(Wnd: HWND; Msg: UINT; wParam: WPARAM);
+var Id: UINT32;
+    PType: POINTER_INPUT_TYPE;
+    Info: POINTER_PEN_INFO;
+    Btn: Boolean;
+    P: TPointF;
+begin
+ Id := GET_POINTERID_WPARAM(wParam);
+ if not GetPointerType(Id, @PType) then exit;
+ if PType = PTR_TOUCH then begin
+  if Msg = WM_POINTERDOWN then StylusTool := stFinger;
+  exit;
+ end;
+ if PType <> PTR_PEN then exit;
+ FillChar(Info, SizeOf(Info), 0);
+ if not GetPointerPenInfo(Id, @Info) then exit;
+ StylusDetected := True;
+// перевернутое перо или кнопка ластика - ластик
+ if (Info.penFlags and (PEN_FLAG_INVERTED or PEN_FLAG_ERASER)) <> 0 then StylusTool := stEraser else StylusTool := stStylus;
+ Btn := (Info.penFlags and PEN_FLAG_BARREL) <> 0;
+ if IS_POINTER_INCONTACT_WPARAM(wParam) then begin
+  StylusButton := Btn;
+  GHoverButton := Btn;
+  exit;
+ end;
+ StylusButton := False;
+ if Msg = WM_POINTERLEAVE then begin
+  GHoverButton := False;
+  exit;
+ end;
+// щелчок кнопкой пера над экраном (без касания); вызов - вне оконной процедуры
+ if Btn and not GHoverButton and Assigned(GOnButtonClick) then begin
+  P := FormPoint(Wnd, Info.pointerInfo.ptPixelLocation);
+  TThread.ForceQueue(nil, procedure begin if Assigned(GOnButtonClick) then GOnButtonClick(P); end);
+ end;
+ GHoverButton := Btn;
+end;
+
+function StylusWndProc(Wnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM; uIdSubclass: UINT_PTR; dwRefData: DWORD_PTR): LRESULT; stdcall;
+begin
+ case Msg of
+  WM_POINTERENTER, WM_POINTERDOWN, WM_POINTERUPDATE, WM_POINTERUP, WM_POINTERLEAVE: PointerMessage(Wnd, Msg, wParam);
+ // настоящая мышь (не синтезирована из пера или касания)
+  WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN: if (DWORD(GetMessageExtraInfo) and SIGNATURE_MASK) <> MI_WP_SIGNATURE then StylusTool := stMouse;
+  WM_TABLET_QUERYSYSTEMGESTURESTATUS: exit(TABLET_GESTURE_FLAGS);
+ end;
+ Result := DefSubclassProc(Wnd, Msg, wParam, lParam);
+end;
+
+procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
+var Wnd: HWND;
+    Atom: Word;
+begin
+ if (Form = nil) or (Form.Handle = nil) then exit;
+ GForm := Form;
+ GOnButtonClick := OnButtonClick;
+ if not TOSVersion.Check(6, 2) then exit;
+ Wnd := FormToHWND(Form);
+ if (Wnd = 0) or (Wnd = GWnd) then exit;
+ if GWnd <> 0 then RemoveWindowSubclass(GWnd, @StylusWndProc, STYLUS_SUBCLASS_ID);
+ GWnd := Wnd;
+ SetWindowSubclass(Wnd, @StylusWndProc, STYLUS_SUBCLASS_ID, 0);
+// Windows 8+: системные жесты пера отключаются свойством окна
+ Atom := GlobalAddAtom(TABLET_PROP);
+ SetProp(Wnd, TABLET_PROP, THandle(TABLET_GESTURE_FLAGS));
+ GlobalDeleteAtom(Atom);
 end;
 {$ELSE}
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);

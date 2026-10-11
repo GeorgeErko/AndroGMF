@@ -9,7 +9,7 @@ uses
   FMX.Ani,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
-  ogcBasic, ogcDrawerSkia, newSelector;
+  ogcBasic, ogcDrawerSkia, newSelector, FrameSettings;
 
 type
   TMainFormSkia = class(TMainForm)
@@ -17,14 +17,38 @@ type
     SkPainter: TSkPaintBox;
     Popup1: TPopup;
     btnClose: TButton;
+  // строка состояния (как в старой MasterForm): координаты, кнопка панели
+  // установок, кнопки-переключатели, подсказка, масштаб; значки - ImageListStatus
+    PanelXY: TLabel;
+    ResSpeedBtn59: TSpeedButton;
+    SbShowPoints: TSpeedButton;
+    SbSaveOrthoTwigs: TSpeedButton;
+    sbShowGrid: TSpeedButton;
+    sbShowZnak: TSpeedButton;
+    sbOrthoDraw: TSpeedButton;
+    sbShowPlan: TSpeedButton;
+    PanelHint: TLabel;
+    pMas: TLabel;
+    ImageListStatus: TImageList;
     procedure FormCreate(Sender: TObject);
     procedure btnPaintClick(Sender: TObject);
     procedure upmClick(Sender: TObject);
     procedure btnPDFClick(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
     procedure btnPlusClickSkia(Sender: TObject);
+   //
+    procedure StatusButtonEnter(Sender: TObject);
+    procedure StatusButtonLeave(Sender: TObject);
+    procedure ResSpeedBtn59Click(Sender: TObject);
+    procedure SbShowPointsClick(Sender: TObject);
+    procedure SbSaveOrthoTwigsClick(Sender: TObject);
+    procedure sbShowGridClick(Sender: TObject);
+    procedure sbShowZnakClick(Sender: TObject);
+    procedure sbOrthoDrawClick(Sender: TObject);
+    procedure sbShowPlanClick(Sender: TObject);
   private
-    FStatusLabel: TLabel;
+    FSettingsFrame: TSettingsFrame; // панель установок (CPPainter старой версии)
+    FStatusSync: Boolean;
     FDrawerSkia: TogsDrawerSkia;
     FBuildingScene: Boolean;
     FRebuildQueued: Boolean;
@@ -53,6 +77,7 @@ type
     FSnapRect: TRectF;
     FSnapK: Single;
     FSnapGx, FSnapGy, FSnapDx, FSnapDy, FSnapScale: Double;
+    FUnderlayOnly: Boolean; // RedrawUnderlay: следующий кадр - снимок сцены, если вид тот же
     FSceneDirty: Boolean;
     procedure SetSceneDirty(AValue: Boolean);
   //
@@ -81,6 +106,11 @@ type
     procedure DoInvalidateOverlayStatic;
     procedure ClearOverlayAllCaches;
     procedure EnsureIndicator;
+  // строка состояния
+    procedure SettingsFrameApply(Sender: TObject);
+    procedure SettingsFrameClose(Sender: TObject);
+    procedure PlaceSettingsFrame;
+    procedure UpdateScaleLabel;
   protected
     procedure Loaded; override;
     procedure SetSelectorParams; virtual;
@@ -108,6 +138,8 @@ type
   protected
     MousePos: TPointF;
     procedure UpdateStatusGeo(const X, Y: Single; Hint: String);
+  // кнопки строки состояния - по установкам открытого файла
+    procedure SyncStatusButtons;
     procedure OpenGmfFileSkia(const LocalPath: string); virtual;
    // карта перемещается мышью (нажата кнопка над картой, перемещение начато)
     property IsPanning: Boolean read PanActive;
@@ -119,6 +151,9 @@ type
     procedure StopIndicator;
    //
     procedure InvalidateCachedPictureOnly;
+  // изменилась только подложка (PaintBefore, напр. пришел тайл OSM): сцена не
+  // перерисовывается, если вид не менялся - выводится ее снимок FSceneImage
+    procedure RedrawUnderlay;
     property SceneDirty: Boolean read FSceneDirty write SetSceneDirty;
   end;
 
@@ -270,6 +305,7 @@ procedure TMainFormSkia.SkPainterResize(Sender: TObject);
 var
   R: TogsRect;
 begin
+ if (FSettingsFrame <> nil) and FSettingsFrame.Visible then PlaceSettingsFrame;
   if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) then
     Exit;
   if (SkPainter.Width <= 0) or (SkPainter.Height <= 0) then
@@ -406,12 +442,6 @@ begin
   BaseDx := 0;
   BaseDy := 0;
 
-  if (StatusBar <> nil) and (FStatusLabel = nil) then
-  begin
-    FStatusLabel := TLabel.Create(StatusBar);
-    FStatusLabel.Parent := StatusBar;
-    FStatusLabel.Align := TAlignLayout.Client;
-  end;
 
   if btnPaint <> nil then
     btnPaint.OnClick := btnPaintClickSkia;
@@ -722,6 +752,8 @@ begin
 
     InitSkPainterInput;
     SkPainterResize(SkPainter);
+    SyncStatusButtons;
+    if (FSettingsFrame <> nil) and FSettingsFrame.Visible then FSettingsFrame.ResetSettings(TwgForm);
     GlobalRender := False;
   //  if SkPainter <> nil then
    //   SkPainter.Redraw;
@@ -802,6 +834,7 @@ end;
 procedure TMainFormSkia.UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
 begin
  if Obj is TTD then TTD(Obj).Modified := True;
+ FUnderlayOnly := False;
  if SkPainter <> nil then SkPainter.Redraw;
 end;
 
@@ -819,8 +852,140 @@ begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := - Selector.YGeo(Round(YPix));; YGeo := Selector.XGeo(Round(XPix));
   S := Fmt(['XGeo=', XGeo, 'YGeo=', YGeo]);//, 'objRect=', Selector.ActiveRect.XMin, Selector.ActiveRect.YMin, Selector.ActiveRect.XMax, Selector.ActiveRect.YMax]);
-  if FStatusLabel <> nil then
-    FStatusLabel.Text := S + ' '+Hint;
+  if PanelXY <> nil then PanelXY.Text := S;
+  if PanelHint <> nil then PanelHint.Text := Hint;
+end;
+//
+procedure TMainFormSkia.StatusButtonEnter(Sender: TObject);
+begin
+ if PanelHint <> nil then PanelHint.Text := TControl(Sender).Hint;
+end;
+
+procedure TMainFormSkia.StatusButtonLeave(Sender: TObject);
+begin
+ if PanelHint <> nil then PanelHint.Text := '';
+end;
+
+procedure TMainFormSkia.SyncStatusButtons;
+begin
+ if (TwgForm = nil) or (Selector = nil) or (SbShowPoints = nil) then exit;
+ FStatusSync := True;
+ try
+  SbShowPoints.IsPressed := Selector.GGraphSet.PointView = 1;
+  sbShowZnak.IsPressed := Selector.GGraphSet.ViewZnaks = 1;
+  SbSaveOrthoTwigs.IsPressed := TwgForm.Settings.psSaveOrthoTwigs;
+  sbShowGrid.IsPressed := TwgForm.Settings.gsShowGrid;
+  sbOrthoDraw.IsPressed := TwgForm.Settings.psOrthoMode;
+  if Selector.GlobalSettings <> nil then sbShowPlan.IsPressed := Selector.GlobalSettings.Settings.gsShowPlan;
+ finally
+  FStatusSync := False;
+ end;
+end;
+
+// масштаб 1:N по размеру пиксела 0.28 мм (как TMainFormOSM.TryEstimateScaleDenom)
+procedure TMainFormSkia.UpdateScaleLabel;
+var Denom: Double;
+    S: string;
+begin
+ if (pMas = nil) or (Selector = nil) or (Selector.GetScale <= 0) then exit;
+ Denom := LastCanvasScale / Selector.GetScale / 0.00028;
+ S := 'М 1:' + IntToStr(Round(Denom));
+ if pMas.Text <> S then pMas.Text := S;
+end;
+
+// панель установок - над строкой состояния, от кнопки ResSpeedBtn59
+procedure TMainFormSkia.PlaceSettingsFrame;
+var P: TPointF;
+begin
+ if (FSettingsFrame = nil) or (ResSpeedBtn59 = nil) then exit;
+// у FMX абсолютные координаты контрола - это координаты клиентской области формы
+ P := ResSpeedBtn59.LocalToAbsolute(PointF(0, 0));
+ if P.X + FSettingsFrame.Width > ClientWidth then P.X := ClientWidth - FSettingsFrame.Width;
+ if P.X < 0 then P.X := 0;
+ FSettingsFrame.Position.Point := PointF(P.X, StatusBar.Position.Y - FSettingsFrame.Height);
+end;
+
+procedure TMainFormSkia.ResSpeedBtn59Click(Sender: TObject);
+begin
+ if TwgForm = nil then exit;
+ if (FSettingsFrame <> nil) and FSettingsFrame.Visible then begin
+  FSettingsFrame.ApplySettings;
+  FSettingsFrame.Visible := False;
+  exit;
+ end;
+ if FSettingsFrame = nil then begin
+  FSettingsFrame := TSettingsFrame.Create(Self);
+  FSettingsFrame.Parent := Self;
+  FSettingsFrame.Align := TAlignLayout.None;
+  FSettingsFrame.OnApply := SettingsFrameApply;
+  FSettingsFrame.OnClose := SettingsFrameClose;
+ end;
+ FSettingsFrame.ResetSettings(TwgForm);
+ PlaceSettingsFrame;
+ FSettingsFrame.Visible := True;
+ FSettingsFrame.BringToFront;
+end;
+
+procedure TMainFormSkia.SettingsFrameApply(Sender: TObject);
+begin
+ SyncStatusButtons;
+ SceneDirty := True;
+ ClearOverlayAllCaches;
+ if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.SettingsFrameClose(Sender: TObject);
+begin
+ if FSettingsFrame <> nil then FSettingsFrame.Visible := False;
+end;
+
+procedure TMainFormSkia.SbShowPointsClick(Sender: TObject);
+begin
+ if FStatusSync or (TwgForm = nil) or (Selector = nil) then exit;
+ TwgForm.fGraphSet.PointView := Ord(SbShowPoints.IsPressed);
+ Selector.GGraphSet.PointView := TwgForm.fGraphSet.PointView;
+ SceneDirty := True;
+ if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.SbSaveOrthoTwigsClick(Sender: TObject);
+begin
+ if FStatusSync or (TwgForm = nil) then exit;
+ TwgForm.Settings.psSaveOrthoTwigs := SbSaveOrthoTwigs.IsPressed;
+ ClearOverlayAllCaches;
+ if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.sbShowGridClick(Sender: TObject);
+begin
+ if FStatusSync or (TwgForm = nil) then exit;
+ TwgForm.Settings.gsShowGrid := sbShowGrid.IsPressed;
+ if (FSettingsFrame <> nil) and FSettingsFrame.Visible then FSettingsFrame.cbShowGrid.IsChecked := sbShowGrid.IsPressed;
+ if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.sbShowZnakClick(Sender: TObject);
+var I: Integer;
+begin
+ if FStatusSync or (TwgForm = nil) or (Selector = nil) then exit;
+ TwgForm.fGraphSet.ViewZnaks := Ord(sbShowZnak.IsPressed);
+ Selector.GGraphSet.ViewZnaks := TwgForm.fGraphSet.ViewZnaks;
+ for I := 0 to TwgForm.LayerTable.LinearLayers.Count - 1 do TwgForm.LayerTable.LinearLayer[I].Znak := TwgForm.fGraphSet.ViewZnaks;
+ SceneDirty := True;
+ if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.sbOrthoDrawClick(Sender: TObject);
+begin
+ if FStatusSync or (TwgForm = nil) then exit;
+ TwgForm.Settings.psOrthoMode := sbOrthoDraw.IsPressed;
+end;
+
+procedure TMainFormSkia.sbShowPlanClick(Sender: TObject);
+begin
+ if FStatusSync or (Selector = nil) or (Selector.GlobalSettings = nil) then exit;
+ Selector.GlobalSettings.Settings.gsShowPlan := sbShowPlan.IsPressed;
+ if SkPainter <> nil then SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.upmClick(Sender: TObject);
@@ -1284,7 +1449,7 @@ end;
 
 // FitView - вся карта в окне. Вызов из кода (Sender = nil, после открытия
 // карты) - всегда. Двойной щелчок (OnDblClick - левая кнопка или касание):
-// на Windows не выполняется (FitView - двойной щелчок средней кнопкой,
+// на Windows - только пальцем (мышью FitView - двойной щелчок средней кнопкой,
 // SkPainterMouseDown), на Android - только пальцем, не пером
 procedure TMainFormSkia.SkPainterDblClick(Sender: TObject);
 begin
@@ -1295,7 +1460,7 @@ begin
 {$IFDEF ANDROID}
     if StylusTool in [stStylus, stEraser, stMouse] then Exit;
 {$ELSE}
-    Exit;
+    if StylusTool <> stFinger then Exit;
 {$ENDIF}
   end;
   InteractionActive := False;
@@ -1583,8 +1748,15 @@ end;
 
 procedure TMainFormSkia.InvalidateCachedPictureOnly;
 begin
+  FUnderlayOnly := False;
   if SkPainter <> nil then
     SkPainter.Redraw;
+end;
+
+procedure TMainFormSkia.RedrawUnderlay;
+begin
+ if FSceneImage <> nil then FUnderlayOnly := True;
+ if SkPainter <> nil then SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.SkPainterDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
@@ -1695,7 +1867,9 @@ begin
         H := Ceil(ADest.Height * K);
         SnapDone := False;
        // идет сдвиг/масштаб: рисуем снимок со смещением и масштабом, без полной отрисовки
-        if InteractionActive and (FSceneImage <> nil) and (K > 0) and (Abs(FSnapK - K) < 1E-4) and (FSceneImage.Width = W) and (FSceneImage.Height = H) and (FSnapScale > 0) then
+       // RedrawUnderlay: снимок годится, только если вид с момента снимка не менялся
+        if FUnderlayOnly and ((FSnapGx <> Selector.GlobalRect.XMin) or (FSnapGy <> Selector.GlobalRect.YMin) or (FSnapDx <> Selector.GetDx) or (FSnapDy <> Selector.GetDy) or (FSnapScale <> ViewScale)) then FUnderlayOnly := False;
+        if (InteractionActive or FUnderlayOnly) and (FSceneImage <> nil) and (K > 0) and (Abs(FSnapK - K) < 1E-4) and (FSceneImage.Width = W) and (FSceneImage.Height = H) and (FSnapScale > 0) then
         begin
          // точка снимка P0 переходит в P = P0 * S/S0 + (G0 + D0 - G - D) * S
           R := ViewScale / FSnapScale;
@@ -1743,6 +1917,9 @@ begin
 
   finally
   if Clipped then ACanvas.Restore;
+   // масштаб в строке состояния (после сдвига/зума и полного кадра)
+    if not InteractionActive then UpdateScaleLabel;
+    FUnderlayOnly := False;
     Dt := TThread.GetTickCount64 - T0;
    // отладка фризов: номер отрисовки сцены (растет при движении мыши - сцена
    // перерисовывается) и время, если 30 мс и больше

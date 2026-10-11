@@ -285,6 +285,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
   end
   inherited StatusBar: TStatusBar
     Size.Width = 919.000000000000000000
+    inherited pMas: TLabel
+      Position.X = 805.000000000000000000
+    end
+    inherited PanelHint: TLabel
+      Size.Width = 343.000000000000000000
+      TextSettings.Font.StyleExt = {00070000000000000004000000}
+    end
   end
   object ToolBarPaint: TToolBar [3]
     Margins.Right = 2.000000000000000000
@@ -308,7 +315,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolPoint: TSpeedButton
       Tag = 10010
@@ -324,7 +333,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolPolyline: TSpeedButton
       Tag = 10011
@@ -340,7 +351,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolPolygon: TSpeedButton
       Tag = 10012
@@ -356,7 +369,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolSpline: TSpeedButton
       Tag = 10013
@@ -372,7 +387,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolArc: TSpeedButton
       Tag = 10014
@@ -388,7 +405,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolCircle: TSpeedButton
       Tag = 10015
@@ -404,7 +423,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolRect: TSpeedButton
       Tag = 10016
@@ -420,7 +441,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolParaline: TSpeedButton
       Tag = 10017
@@ -436,7 +459,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolMultiline: TSpeedButton
       Tag = 10020
@@ -452,7 +477,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolMultiAngle: TSpeedButton
       Tag = 10019
@@ -468,7 +495,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object btnToolText: TSpeedButton
       Tag = -1
@@ -484,7 +513,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation1: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -504,7 +535,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation3: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -524,7 +557,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation4: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -544,7 +579,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation2: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -598,7 +635,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation5: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -618,7 +657,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = btnPropertiesClick
+      OnPainting = FlatButtonPainting
       object FloatAnimation6: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
@@ -649,6 +690,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbSetE: TSpeedButton
       Tag = 11
@@ -665,6 +707,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbSetK: TSpeedButton
       Tag = 12
@@ -681,6 +724,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object cbOnlyAttr: TCheckBox
       Align = Left
@@ -706,6 +750,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbSetG: TSpeedButton
       Align = Left
@@ -721,6 +766,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbGI: TSpeedButton
       Tag = 2
@@ -734,6 +780,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbGC: TSpeedButton
       Tag = 3
@@ -747,6 +794,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbGR: TSpeedButton
       Tag = 4
@@ -760,6 +808,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbNum: TSpeedButton
       Tag = 10
@@ -778,6 +827,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbNumUCH: TSpeedButton
       Tag = 14
@@ -796,6 +846,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbNumUchDropDown: TSpeedButton
       Tag = 14
@@ -814,6 +865,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object dnrPerp: TSpeedButton
       Align = Left
@@ -829,6 +881,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object dnrZas: TSpeedButton
       Align = Left
@@ -844,6 +897,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbP2P: TSpeedButton
       Tag = 101
@@ -862,6 +916,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sSpeedButton40: TSpeedButton
       Tag = 102
@@ -880,6 +935,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sSpeedButton39: TSpeedButton
       Tag = 103
@@ -899,6 +955,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object UpDown1: TLayout
       Align = Left
@@ -962,6 +1019,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object UpDown2: TLayout
       Align = Left
@@ -1021,6 +1079,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
     object sbCancel: TSpeedButton
       Align = Left
@@ -1035,6 +1094,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnPainting = FlatButtonPainting
     end
   end
   inherited ImageList1: TImageList
@@ -1361,8 +1421,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Name = 'HAND3'
           end>
       end>
-    Left = 102
-    Top = 101
+    Left = 124
+    Top = 139
+  end
+  inherited ImageListStatus: TImageList
+    Left = 372
+    Top = 17
   end
   object ToolImageList: TImageList
     Source = <
@@ -1373,11 +1437,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000006949444154388DA5D2510E80
-              300803D09678FF2BD79F4D519991CADF4878830025093F220000A40D50C0D981
-              D14CCC22B787983F4B028D51223F1C24EE892EB255C90A596DBB04AA029225F2
-              18E10DAC46FB0CAC9016704106D4068074BAA4071C272F9940427C60C40E9B03
-              31116A459E670000000049454E44AE426082}
+              610000000473424954080808087C0864880000003D49444154388D6360A006F8
+              CFC0F09F5CBD8CC89A19191818297101D9AE40336BA819822FD0D00D212F80F1
+              1838D40D812540B2028692A44F5D43A80200444F14F2D9D905A8000000004945
+              4E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Polyline.png'
           end>
         Name = 'Polyline'
@@ -1389,11 +1452,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000007749444154388DA5934112C0
-              20080313A7FFFF727AB05807115BE5A8B2042294241C44394906802B3A249926
-              F5A2070049ACBAEADF94D9C5D768802899E4B29DE9100D2829858400AF26831C
-              DB18027CC56CB8E13FF090CC9929609568D15AD85D88AAC0FA2591BBFE141BBE
-              B25421D26F25AF0B9B5B7D032DA1392477F4E4880000000049454E44AE426082}
+              610000000473424954080808087C0864880000005649444154388DC5923B0E00
+              200843D578FF2BD749C3406B83831D4B1FE0A7B5DFEAC44791B3609971609ACB
+              4C08FF6AC2AC5900AD8FAC5355A5234CD1B087207D77D540825BE70EDC0F904E
+              40E0AF23590CF525DEB400BE8D1AFA13B1C3EF0000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Poygon.png'
           end>
         Name = 'Poygon'
@@ -1405,11 +1467,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000006549444154388DCD52410EC0
-              2008A366FFFF72BD4C141809C683EB4531B405012429076827E47F083CFE0180
-              DE2BDF63040018928F9D9308395BF84A26692A32E4F75481AD590E23AD6051AC
-              626436AF18CD621B6BBBA86E62369D30C60C99CFFD4DBC2FD00188172E1A687C
-              E5A80000000049454E44AE426082}
+              610000000473424954080808087C0864880000004249444154388D636018058C
+              58C4FE1390C70BFE13E0234BFC47B7E13F1E1731A209601A8C55108F2B60EA99
+              9039780CC100184E25A01967D89012CA14C5CE28C00300AB4016F4F9D4C4B300
+              00000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Spline.png'
           end>
         Name = 'Spline'
@@ -1421,12 +1482,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 18
             PNG = {
               89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
-              570000000473424954080808087C0864880000008A49444154388DB594DB0AC0
-              200C43D3FD78ED97670FCECB143B1517108492834D5521491CD07502F2134804
-              66B64F620C29AF1002770492D10C30717760489BD6BC0A13B28CDFCCA0AA1011
-              90EC3253D58F8C264FE2D53A506D28B340579B028D0CDE305E19B5F2324A790E
-              33F2D4B65C9F6C09D4B5555DE065508655AF611BF4823D72C35ED1B16FE406F3
-              FBB3A4BE50B2EA0000000049454E44AE426082}
+              570000000473424954080808087C0864880000005F49444154388DDD934B0AC0
+              3008055F4E2E9EDC2E5A2188F9F1EC26032188388831C0FD1860008496F86165
+              F249CC634AB688A7B4A458F176D61299329DEDE6A605166E4AD6337C8C38A395
+              4C43EE686699B8764DCA16B8FB0D145221F98F07A88526D85D72E16700000000
+              49454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Paraline.png'
           end>
         Name = 'Paraline'
@@ -1438,12 +1498,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 18
             PNG = {
               89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
-              570000000473424954080808087C0864880000008649444154388DB5944B0EC0
-              20084419E3FDAF3C5D1415BFF5D749DCE0F0C0400449CA05B96614B8000A1040
-              A06728BD77790C22E1A5A4504F17668ABA1483D040AC7A302483F80A32A932C7
-              CF26965D9585F1C6CE37A03DFE1DD0702A2BA00BCD24D08DAE6247A7B0EC6911
-              B602546FB54734862F9CF5D60B49BE554899DA2EF5E2DFFF68430F6846412ADC
-              0DE2030000000049454E44AE426082}
+              570000000473424954080808087C0864880000006049444154388DCD93C10A00
+              20084367F4FFBF6C27A162959241030FD27C0D41E0A514D0E88CEC20B2F1F57E
+              E11C9A88265440AD8EE6C37B18C23C435F1D00934CC37C2FB72A19905ED7A9D2
+              130149BB7A038BDC9A79BDB7B682F87E8924FA4F0DF99528E978354DA0000000
+              0049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Multiline.png'
           end>
         Name = 'Multiline'
@@ -1455,10 +1514,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000004E49444154388DED92C10AC0
-              300C4275F4FF7FF9EDD042190C0964D0CBBC46C588065003573ADAEE19B4139C
-              37A8F49B13144A1C93F724025B6C4BF0CE91E4B883254EC82F743BF887F4C590
-              0AB801E5101A1B562090010000000049454E44AE426082}
+              610000000473424954080808087C0864880000003149444154388D6360A031F8
+              4F480113A5360CBC01B405FF89084446845A547164CD8C1075186AA8E2029A83
+              D184440F00008D920A08522E3E6A0000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Point.png'
           end>
         Name = 'Point'
@@ -1470,11 +1528,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000007649444154388DAD924B0E00
-              210843E9C48373F3CE429DE007833ADD9994276D0049CA859E9BE116001C0152
-              330C88C544D2A5E2CC1052EC080A780542A444002E2454A2AA7EDB0CE24222A4
-              AA9AF7687723D80FAB6316C58D507DD64F7288B2EC2072A33F5E6250FD527B00
-              73B1678049B3FB1D74CDBED79269D7DBE44ADA0000000049454E44AE426082}
+              610000000473424954080808087C0864880000005449444154388DCD92410A00
+              200804D73EDED3B74B4189096A87F6AA332C22F04D0830C38986C598571A10C9
+              6696A8949E949013BE36718EC46D59D61E7DC695DC5B4473085AD51616E8FE91
+              83E88F0DB1A6E44906828519F45CC17AAF0000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Arc.png'
           end>
         Name = 'Arc'
@@ -1486,11 +1543,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 18
             PNG = {
               89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
-              570000000473424954080808087C0864880000007249444154388DED54410EC0
-              20088385FF7FB93B6C2CCC5074C4E37A32B6420155014036C07CA1AA9F0F470F
-              C68819C6C456096260B6EF38B26CCC59E5F81568B54F99EE296DB53F4C9796D6
-              C11F688EF242322E9B9CDD0A91406642DF63894C9C08C13A0F58016074D4C1D5
-              EC0D5FD2B6A99D42E13126F76F65C10000000049454E44AE426082}
+              570000000473424954080808087C0864880000005949444154388D6360A01260
+              4462FFA7503FD906A1A86721A000978B315CC284C336AC4EC6238E6110B1DE23
+              2918D015E3D58CCB6B248351830803420912971CF6F4F41F5533A13482559E11
+              D91046884DC42436A25C344C00005EF2140ECA3BC2960000000049454E44AE42
+              6082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Text.png'
           end>
         Name = 'Text'
@@ -1502,11 +1559,10 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000007249444154388DA593510EC0
-              2008432DD9FDAFCC3E164CA66D25B19FA43CA9283233C7851E5604B0D5D4391B
-              000035AB7A744C35019B6C025CB38344B75941C278C72023AFD2806A3E4034A0
-              221DA2F9088D7B89CFC757C4B45EF89CA00361DBFA457010B5EAED292B48FB2F
-              383393DF42432F8DE8401E52124F900000000049454E44AE426082}
+              610000000473424954080808087C0864880000004A49444154388D6360A01030
+              E210FF4F825AA234E3132749115E79A26CC0A58E58CD18EA9908A82268304E03
+              609A893104C54944BA00439CEC3020C7108AA292A2C484559C267981BE0000F3
+              E11BED1D9BB64F0000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Circke.png'
           end>
         Name = 'Circke'
@@ -1518,11 +1574,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 17
             PNG = {
               89504E470D0A1A0A0000000D49484452000000110000001108060000003B6D47
-              FA0000000473424954080808087C0864880000006649444154388DA5D33116C0
-              200803D0E0FDEF9C0E156BAB55882CF018FE2303469238ACD226B343C40111BA
-              919A48BDE5894382244CB8A67C170A34200A3445B2D02F9281964814DA221128
-              84ECA030B28252C80BEAB0340200EDED2B2421FE6BDE35A487005CF2462D1EFB
-              0B641F0000000049454E44AE426082}
+              FA0000000473424954080808087C0864880000003549444154388D6360A026F8
+              CFC0F09F5CBD8CE8063042C5287109D9AEC162DEA841A3060D228390B30A1325
+              4EA124D352C7007400001B0F17EE40D3D4EC0000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Line.png'
           end>
         Name = 'Line'
@@ -1534,12 +1588,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 18
             PNG = {
               89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
-              570000000473424954080808087C0864880000008849444154388DADD34B0E80
-              200C04D029F1E070F27123844F7F89CC4AB1BCB40485247121252A1091FF9088
-              80640A33A18E0048612A34233D1176401A92C116C84300A0B56663FC323DAAA9
-              B52EEF7B3D420438100D139234479A4750BECFFB8A7B887D73800CC84DF20F1A
-              50F6066BDD1C1D6530EB3CE3D19279F685A82BEBC21E9057ECE5DA682FFC82CC
-              1C5C29EA2D0000000049454E44AE426082}
+              570000000473424954080808087C0864880000005949444154388DCDD2310E00
+              20080340F4E33E1D07E342040A12238913EDE920D1C3E14AE40A93E514A69542
+              981786302F34901C8A987915E1B59388DAD374DE07854C2C82988B4C1EC54ABE
+              C071DFC117B8D322B73A9DCF66025B3C255E80ADB4620000000049454E44AE42
+              6082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\MultiAngle.png'
           end>
         Name = 'MultiAngle'
@@ -1551,10 +1604,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Height = 16
             PNG = {
               89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
-              610000000473424954080808087C0864880000004D49444154388DED53CB0A00
-              2008DBC2FFFFE57510A94310EA2DDA4984CD071B25090D8C0E19002C0A922962
-              2C6EA7E60DFBB0F6095FE02D816A20DC89E12C1239438780E422527A93F58362
-              AA27EE4712232400E89E0000000049454E44AE426082}
+              610000000473424954080808087C0864880000003549444154388D63601868C0
+              88C4FE4F815E920D80AB6522D1560C306AC0F03280D46408038C50CDFF510448
+              D00B07FFC977046500006004081078E8B2230000000049454E44AE426082}
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Rect.png'
           end>
         Name = 'Rect'
@@ -1813,8 +1865,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
             SourceRect.Bottom = 18.000000000000000000
           end>
       end>
-    Left = 432
-    Top = 132
+    Left = 428
+    Top = 148
   end
   object imgEsc: TImageList
     Source = <
@@ -2508,7 +2560,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
             Name = 'SpeedButton6'
           end>
       end>
-    Left = 794
+    Left = 796
     Top = 160
   end
 end

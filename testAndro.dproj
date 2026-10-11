@@ -356,6 +356,7 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <DCCReference Include="AppFonts.pas"/>
         <DCCReference Include="GMF\circle_di.pas"/>
         <DCCReference Include="GMF\Collect.pas"/>
         <DCCReference Include="GMF\dsolve.pas"/>
@@ -526,6 +527,7 @@
         <DCCReference Include="Geomaster\objMouseDraw32.pas"/>
         <DCCReference Include="Geomaster\objMouseSelect32.pas"/>
         <DCCReference Include="Geomaster\objTopo32.pas"/>
+        <DCCReference Include="Geomaster\objDataZnk32.pas"/>
         <DCCReference Include="Geomaster\objTopology32.pas"/>
         <DCCReference Include="Geomaster\Selector32.pas"/>
         <DCCReference Include="MOUSE\objMouseView.pas"/>
@@ -533,6 +535,11 @@
         <DCCReference Include="StylusInput.pas"/>
         <DCCReference Include="FramePropEditor.pas">
             <Form>PropEditorFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="FrameSettings.pas">
+            <Form>SettingsFrame</Form>
             <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>

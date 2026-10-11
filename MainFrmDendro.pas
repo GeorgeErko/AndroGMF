@@ -17,8 +17,14 @@
 // атрибутом NAME = ГК/ГД/ЖИ/ЦВ, точка - в начало контура; при включенном
 // cbOnlyAttr - только знак, без контура. Диалог: цветник - TVarSetDlg3,
 // остальные - TVarSetDlg1 (режим TABLET).
-// Не перенесено: связь с сервером (dendroAddPrim и др.), группы и контуры
-// (рисование линии/полигона), нумерация, засечки, притягивание ЗН.
+// Изменение атрибутов (нумерации) знака (sbNum - TMasterDendro.sbNumClick):
+// обработчик TDataZnkSet (objDataZnk32), операция Lo_TextZnak, VarSetForm1 = 1.
+// Притягивание (sbP2P 101, sSpeedButton40 102, sSpeedButton39 103,
+// sSpeedButton42 104 - TSkinFormDendro.sbP2PClick): TMouseTopo (objTopo32),
+// меню автопритягивания (PopUpAttraction), радиусы поиска UpDown1 (+-0.25) и
+// UpDown2 (+-0.1, автопритягивание заново).
+// Не перенесено: связь с сервером (dendroAddPrim, dendroModifiedPrim, Tree.gmf),
+// засечки.
 
 interface
 
@@ -41,8 +47,10 @@ type
     btnSaveAs: TCornerButton;
     procedure btnSaveClick(Sender: TObject);
     procedure btnSaveAsClick(Sender: TObject);
+    procedure ToolButtonClick(Sender: TObject);
   private
     FLawnMenu: TPopupMenu;
+    FAttractionMenu: TPopupMenu; // меню автопритягивания (PopUpAttraction)
     FGroupTag: Integer; // вид группы, контур которой рисуется
    // Tag - вид насаждения (10, 11, 12, 14), Mode - режим диалога атрибутов
    // (TMouseTopo.VarSetForm1: 0 - TVarSetDlg, 1 - форма по виду, >1 - код газона)
@@ -54,6 +62,18 @@ type
     procedure DendroCreateLine(Sender: TObject);
     procedure OnlyAttrChange(Sender: TObject);
     procedure SetDendroDialogClass(Tag: Integer);
+   // изменение атрибутов знака под курсором (sbNum)
+    procedure DendroNum(Sender: TObject);
+   // притягивание (sbP2P, sSpeedButton40/39/42 - TSkinFormDendro.sbP2PClick):
+   // TMouseTopo, операция = Tag кнопки (mp_Point2Point..mp_Point2Point4)
+    procedure DendroAttraction(Sender: TObject);
+    procedure AttractionMenuPopup(Sender: TObject);
+    procedure BuildAttractionMenu;
+    procedure AttractionMenuClick(Sender: TObject);
+   // радиусы поиска (UpDown1 - ручные методы, UpDown2 - автопритягивание)
+    procedure UpDown1Click(Sender: TObject);
+    procedure UpDown2Click(Sender: TObject);
+    procedure UpdateRadiusHints;
    // знак вида Tag на вкладке дендро-знаков панели точечных знаков
     function SelectDendroZnak(Tag: Integer): Boolean;
   protected
@@ -70,7 +90,7 @@ var
 implementation
 
 uses newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2, VarSetForm3
-     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32{$ENDIF}, Collect,
+     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32, objDataZnk32{$ENDIF}, Collect,
      StreamSelfTest;
 
 {$R *.fmx}
@@ -100,6 +120,18 @@ begin
  Tablet := True;
  FGroupTag := -1;
  if cbOnlyAttr <> nil then cbOnlyAttr.OnChange := OnlyAttrChange;
+// притягивание: стрелки радиусов поиска и подсказки кнопок
+ UpDown1Up.OnClick := UpDown1Click;
+ UpDown1Down.OnClick := UpDown1Click;
+ UpDown2Up.OnClick := UpDown2Click;
+ UpDown2Down.OnClick := UpDown2Click;
+ sbP2P.Hint := 'Перенос точки в точку: щелчок по первой точке, по второй, затем щелчок - перенос';
+ sSpeedButton40.Hint := 'Притягивание дерева к точке съемки: наведение на дерево, щелчок по линии к точке';
+ sSpeedButton39.Hint := 'Притягивание дерева к точке съемки: щелчок по дереву, щелчок по линии к точке';
+ sSpeedButton42.Hint := 'Автопритягивание деревьев к точкам съемки: щелчок по помеченному дереву, правая кнопка - меню';
+// радиусы из настроек читаются при первом использовании (MainPath на Android
+// задается при открытии файла)
+ UpdateRadiusHints;
 end;
 
 // «только знак»: текущая операция отменяется (TMasterDendro.cbOnlyAttrClick)
@@ -121,6 +153,8 @@ begin
  if (Sender = sbSetD) or (Sender = sbSetE) or (Sender = sbSetK) or (Sender = sbNumUCH) then
   DendroSetZnak(Sender, TComponent(Sender).Tag, Ord(Tablet)) else
  if Sender = sbNumUchDropDown then LawnMenuPopup else
+ if Sender = sbNum then DendroNum(Sender) else
+ if (Sender = sbP2P) or (Sender = sSpeedButton40) or (Sender = sSpeedButton39) or (Sender = sSpeedButton42) then DendroAttraction(Sender) else
  if (Sender = sbSetG) or (Sender = sbGD) or (Sender = sbGI) or (Sender = sbGC) or (Sender = sbGR) then
   DendroGroup(Sender, TComponent(Sender).Tag);
 // остальные кнопки ОЗН пока не реализованы
@@ -165,6 +199,143 @@ begin
  if Tag = 14 then GlobalVarSetDlgClass := TVarSetDlg2 else
  if Tag = 3 then GlobalVarSetDlgClass := TVarSetDlg3 else
                  GlobalVarSetDlgClass := TVarSetDlg1;
+end;
+
+procedure TMainFormDendro.ToolButtonClick(Sender: TObject);
+begin
+  inherited;
+
+end;
+
+// изменение атрибутов знака (TMasterDendro.sbNumClick -> TFlyZnkData.rsSetZnakClick
+// с rsResetZnak2, VarSetForm1 = 1): знак под курсором, щелчок - диалог атрибутов
+// по виду насаждения (TVarSetDlg1/2/3)
+procedure TMainFormDendro.DendroNum(Sender: TObject);
+{$IFDEF MOUSE32}
+var I: Integer;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then exit;
+// кнопки инструментов рисования отжимаются
+ for I := 0 to ComponentCount - 1 do
+  if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
+ Selector.LOperation := Lo_TextZnak;
+ MouseObject := nil;
+ MouseObject := TDataZnkSet.Create(TwgForm, nil);
+ TDataZnkSet(MouseObject).VarSetForm1 := 1;
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ UpdateEscButton(1);
+{$ENDIF}
+end;
+
+// притягивание: обработчик TMouseTopo с операцией = Tag кнопки (101..104);
+// автопритягивание - пометки деревьев сразу, меню по правой кнопке
+procedure TMainFormDendro.DendroAttraction(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ InstPointsTool(Sender, TComponent(Sender).Tag);
+ if MouseObject is TMouseTopo then TMouseTopo(MouseObject).OnAttractionMenu := AttractionMenuPopup;
+ UpdateRadiusHints;
+ InvalidateOverlayLive;
+ RepaintLive;
+{$ENDIF}
+end;
+
+// меню автопритягивания (PopUpAttraction): исправить красные, голубые, все
+// меню вызывается из обработчика правой кнопки мыши: точка - положение
+// курсора на экране в момент щелчка (MousePos - последнее движение над картой,
+// не точка щелчка); меню показывается после выхода из обработчика мыши
+// (очередью) и каждый раз создается заново - повторный Popup того же меню из
+// обработчика мыши открывался в точке 0,0 окна
+procedure TMainFormDendro.AttractionMenuPopup(Sender: TObject);
+var P: TPointF;
+begin
+ P := Screen.MousePos;
+ TThread.ForceQueue(nil,
+  procedure
+  begin
+   BuildAttractionMenu;
+   FAttractionMenu.Popup(P.X, P.Y);
+  end);
+end;
+
+procedure TMainFormDendro.BuildAttractionMenu;
+procedure AddItem(const AText: String; ATag: Integer);
+var MI: TMenuItem;
+begin
+ MI := TMenuItem.Create(FAttractionMenu);
+ MI.Text := AText;
+ MI.Tag := ATag;
+ if ATag > 0 then MI.OnClick := AttractionMenuClick;
+ FAttractionMenu.AddObject(MI);
+end;
+begin
+ FreeAndNil(FAttractionMenu);
+ FAttractionMenu := TPopupMenu.Create(Self);
+ FAttractionMenu.Parent := Self;
+ AddItem('Исправить красные', 1);
+ AddItem('Исправить голубые', 2);
+ AddItem('-', 0);
+ AddItem('Исправить все', 3);
+end;
+
+procedure TMainFormDendro.AttractionMenuClick(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ if MouseObject is TMouseTopo then TMouseTopo(MouseObject).FixMarks(TComponent(Sender).Tag);
+ InvalidateOverlayLive;
+ RepaintLive;
+{$ENDIF}
+end;
+
+procedure TMainFormDendro.UpdateRadiusHints;
+var S: String;
+begin
+{$IFDEF MOUSE32}
+ S := 'Радиус поиска для ручных методов = ' + FloatToStrF(AttractionRadius, ffFixed, 15, 2);
+ UpDown1Up.Hint := S;
+ UpDown1Down.Hint := S;
+ S := 'Радиус поиска для автопритягивания = ' + FloatToStrF(AutoRadius, ffFixed, 15, 1);
+ UpDown2Up.Hint := S;
+ UpDown2Down.Hint := S;
+{$ENDIF}
+end;
+
+// радиус ручных методов +-0.25 (Tag стрелки 1/-1); выбранное дерево - заново
+procedure TMainFormDendro.UpDown1Click(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ LoadAttractionRadius;
+ AttractionRadius := AttractionRadius + 0.25 * TComponent(Sender).Tag;
+ if AttractionRadius < 0.25 then AttractionRadius := 0.25;
+ SaveAttractionRadius;
+ UpdateRadiusHints;
+ if PanelHint <> nil then PanelHint.Text := TControl(Sender).Hint;
+ if (MouseObject is TMouseTopo) and (TMouseTopo(MouseObject).LOperation in [mp_Point2Point2, mp_Point2Point3]) then begin
+  TMouseTopo(MouseObject).RefreshAttraction;
+  InvalidateOverlayLive;
+  RepaintLive;
+ end;
+{$ENDIF}
+end;
+
+// радиус автопритягивания +-0.1; автопритягивание запускается заново
+procedure TMainFormDendro.UpDown2Click(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ LoadAttractionRadius;
+ AutoRadius := AutoRadius + 0.1 * TComponent(Sender).Tag;
+ if AutoRadius < 0.1 then AutoRadius := 0.1;
+ SaveAttractionRadius;
+ UpdateRadiusHints;
+ if PanelHint <> nil then PanelHint.Text := TControl(Sender).Hint;
+ DendroAttraction(sSpeedButton42);
+{$ENDIF}
 end;
 
 procedure TMainFormDendro.DendroSetZnak(Sender: TObject; Tag: Integer; Mode: Byte);
