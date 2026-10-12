@@ -10,7 +10,7 @@ uses
   FMX.Edit,
   FMX.Layouts, FMX.ListBox, FMX.Grid, FMX.Grid.Style, Collect, TwgDraw, System.Rtti,
   EcLot, WpTwigs, newSelector, newProcs, WPTForm2, newProperties, SelectedObjects,
-  DlgRootPropEditor, DlgPropColorEditor;
+  DlgRootPropEditor, DlgPropColorEditor, FMX.Controls.Presentation;
 
 type
   TUpdatePropObject = class(TLot)
@@ -26,6 +26,28 @@ type
  //
   TPropEditorFrame = class(TFrame)
     ImageList1: TImageList;
+  // панель кнопок (Panel2 TPropEditorForm старой программы): ImageIndex в
+  // ImageListPanel - sbOr 0, sbAnd 1, sbSelectByLayer 2, sbAllSelect 3,
+  // sbMinus 4, sbMinusMinus 5, sbUp 6, sbDown 7, sbAddProp 8; состояние
+  // блокировки (sbLock) - 9 все, 10 нет, 11 часть объектов
+    ImageListPanel: TImageList;
+    PanelButtons: TLayout;
+    sbOr: TSpeedButton;
+    sbAnd: TSpeedButton;
+    sbSelectByLayer: TSpeedButton;
+    sbAllSelect: TSpeedButton;
+    sbLock: TSpeedButton;
+    sbMinus: TSpeedButton;
+    sbMinusMinus: TSpeedButton;
+    sbUp: TSpeedButton;
+    sbDown: TSpeedButton;
+    sbAddProp: TSpeedButton;
+    procedure sbOrClick(Sender: TObject);
+    procedure sbAndClick(Sender: TObject);
+    procedure sbLockClick(Sender: TObject);
+    procedure sbMoveClick(Sender: TObject);
+    procedure sbMinusMinusClick(Sender: TObject);
+    procedure sbAddPropClick(Sender: TObject);
   private
    FSelector: TSelector;
   //
@@ -78,6 +100,16 @@ type
    procedure SetSystemPropertiesValue(Objects: PCollection);
   //
    function RunPropertyEditorDialog(Row: TPropRow): string;
+  // строка свойства под курсором таблицы; nil - нет
+   function CurrentRow: TPropRow;
+   procedure GridSelChanged(Sender: TObject);
+   procedure UpdateLockButton;
+  // выделение по свойству (sbOrClick старой программы): EqIndex - условие
+  // (PropMatch), InObjects - только среди выделенных, AddObjects - к выделенным
+   procedure SelectByProperty(EqIndex: Integer; const PropName, Pattern: String; Num, InObjects, AddObjects: Boolean);
+  // свойства объектов изменены: строки заново, курсор - на свойство PropName
+   procedure RefreshObjects(const PropName: String; OldRow: Integer);
+   procedure MoveProperty(const PropName: String; Tag: Integer);
   public
    OnActivateSignInstrument: TNotifyEvent;
    ActivePropRow: TPropRow;
@@ -103,7 +135,8 @@ type
 var PropEditorForm: TPropEditorFrame;
 
 implementation uses TwgColle, newForm0, newResource, Writer, LBN, MainFrm,
-                    UndoColNew, userObject, GBFWUndo, DlgPropFontEditor, UpdateMessages;
+                    UndoColNew, userObject, GBFWUndo, DlgPropFontEditor, UpdateMessages,
+                    FMX.DialogService, EcDot, EcDot2, DlgPropAdd, DlgPropSelect, DlgDelProperties;
 
 {$R *.fmx}
 
@@ -132,6 +165,8 @@ begin
  EnsureValueEdit;
  FGrid.ReadOnly := True;
  FGrid.Options := FGrid.Options - [TGridOption.Editing] - [TGridOption.AlwaysShowEditor];
+ if sbSelectByLayer <> nil then sbSelectByLayer.IsPressed := GReadInteger(Name + '_SelectByLayer', 0) = 1;
+ if sbAllSelect <> nil then sbAllSelect.IsPressed := GReadInteger(Name + '_AllSelect', 0) = 1;
  if FColName <> nil then FColName.Width := CW1;
  if (FColValue <> nil) and (CW2 > 0) then FColValue.Width := CW2;
  AlignColumns;
@@ -142,6 +177,8 @@ begin
  GWriteFloat(Name + '_Col1', FColName.Width);
  GWriteFloat(Name + '_Col2', FColValue.Width);
  GWriteFloat(Name + '_W', Width);
+ GWriteInteger(Name + '_SelectByLayer', Ord(sbSelectByLayer.IsPressed));
+ GWriteInteger(Name + '_AllSelect', Ord(sbAllSelect.IsPressed));
 //
  FreeAndNil(FDefaults);
  FRows.Free;
@@ -163,6 +200,7 @@ begin
  FGrid.OnSetValue := GridSetValue;
  FGrid.OnCellClick := GridCellClick;
  FGrid.OnDrawColumnCell := GridDrawColumnCell;
+ FGrid.OnSelChanged := GridSelChanged;
  //
  FColName := TStringColumn.Create(FGrid);
  FColName.Parent := FGrid;
@@ -386,6 +424,7 @@ begin
  FRows.Clear;
  If FGrid <> nil then
   FGrid.RowCount := 0;
+ UpdateLockButton;
 end;
 
 procedure TPropEditorFrame.UpdateRowPickLists;
@@ -535,6 +574,7 @@ begin
    FGrid.Col := 1;
    FGrid.Row := 0;
   end;
+  UpdateLockButton;
  finally
   PropNames.Free;
   PropValues.Free;
@@ -804,6 +844,7 @@ begin
  If RowObj = nil then Exit;
  //
  ActivePropRow := RowObj;
+ UpdateLockButton;
 //
  Pt := FLastMouseDown;
  if (Pt.X = 0) and (Pt.Y = 0) then
@@ -1099,6 +1140,325 @@ begin
     Result := RootPropEditorForm.Execute(Row);
    RootPropEditorForm.Free;
   end;
+end;
+
+{ панель кнопок (Panel2 TPropEditorForm старой программы) }
+
+function PropNum(const S: String; out V: Double): Boolean;
+begin
+ Result := TryStrToFloat(StringReplace(Trim(S), ',', '.', []), V, TFormatSettings.Invariant);
+end;
+
+// условие на значение свойства: 0 '=', 1 '<>', 2 '>=', 3 '<=', 4 '>', 5 '<',
+// 6 '%' (содержит), 7 'a...b' (в диапазоне); Num - сравнение чисел
+function PropMatch(EqIndex: Integer; const Value, Pattern: String; Num: Boolean): Boolean;
+var A, B, V: Double;
+    C, P: Integer;
+    S1, S2: String;
+begin
+ Result := False;
+ if EqIndex = 6 then exit(Pos(Pattern, Value) <> 0);
+ if EqIndex = 7 then begin
+  P := Pos('...', Pattern);
+  if P = 0 then exit;
+  S1 := Trim(Copy(Pattern, 1, P - 1));
+  S2 := Trim(Copy(Pattern, P + 3, MaxInt));
+  if not Num then exit((Value >= S1) and (Value <= S2));
+  if PropNum(S1, A) and PropNum(S2, B) and PropNum(Value, V) then Result := (V >= A) and (V <= B);
+  exit;
+ end;
+ if Num then begin
+  if not (PropNum(Value, V) and PropNum(Pattern, A)) then exit;
+  if V < A then C := -1 else if V > A then C := 1 else C := 0;
+ end else
+  C := CompareStr(Value, Pattern);
+ case EqIndex of
+  0: Result := C = 0;
+  1: Result := C <> 0;
+  2: Result := C >= 0;
+  3: Result := C <= 0;
+  4: Result := C > 0;
+  5: Result := C < 0;
+ end;
+end;
+
+function ObjProps(O: TObject): TProperties;
+begin
+ Result := nil;
+ if O is TLot then Result := TLot(O).Properties else
+ if O is TPointDot then Result := TPointDot(O).Properties;
+end;
+
+function TPropEditorFrame.CurrentRow: TPropRow;
+begin
+ Result := nil;
+ if (FGrid = nil) or (FGrid.Row < 0) or (FGrid.Row >= FRows.Count) then exit;
+ Result := FRows[FGrid.Row];
+end;
+
+procedure TPropEditorFrame.GridSelChanged(Sender: TObject);
+begin
+ UpdateLockButton;
+end;
+
+// блокировка замены свойства при автоматизированных расчетах (sbLock,
+// ObjInsp1SelectCell): только свойства пользователя ('*'); значок - у всех
+// объектов со свойством заблокировано, у части или ни у одного
+procedure TPropEditorFrame.UpdateLockButton;
+var R: TPropRow;
+    I, N, Cnt: Integer;
+    PV: TPropValue;
+begin
+ if sbLock = nil then exit;
+ R := CurrentRow;
+ sbLock.Enabled := HasSelection and (R <> nil) and (Pos('*', R.RawName) = 1);
+ if not sbLock.Enabled then begin
+  sbLock.ImageIndex := 10;
+  exit;
+ end;
+ N := 0;
+ Cnt := 0;
+ for I := 0 to Objects.Count - 1 do begin
+  if not TTD(Objects[I]).UseProperty(AnsiString(R.RawName)) then continue;
+  Inc(N);
+  PV := TPropValue(TTD(Objects[I]).GetPropValue(AnsiString(R.RawName)));
+  if (PV <> nil) and (PV.varType = varTypeLocked) then Inc(Cnt);
+ end;
+ if (Cnt > 0) and (Cnt = N) then sbLock.ImageIndex := 9 else
+ if Cnt > 0 then sbLock.ImageIndex := 11 else sbLock.ImageIndex := 10;
+end;
+
+// заблокировано у всех - блокировка снимается, иначе - ставится всем
+procedure TPropEditorFrame.sbLockClick(Sender: TObject);
+var R: TPropRow;
+    I: Integer;
+    PV: TPropValue;
+    Lock: Boolean;
+begin
+ R := CurrentRow;
+ if (R = nil) or not HasSelection then exit;
+ Lock := sbLock.ImageIndex <> 9;
+ for I := 0 to Objects.Count - 1 do begin
+  if not TTD(Objects[I]).UseProperty(AnsiString(R.RawName)) then continue;
+  PV := TPropValue(TTD(Objects[I]).GetPropValue(AnsiString(R.RawName)));
+  if PV = nil then continue;
+  if Lock then PV.varType := varTypeLocked else PV.varType := 0;
+ end;
+ if TwgForm <> nil then TwgForm.Modified := True;
+ UpdateLockButton;
+end;
+
+// выделение объектов вида образца (первого выделенного объекта: контур, текст,
+// точка; sbAllSelect - всех видов), sbSelectByLayer - только слоя образца.
+// Точке подходит и атрибут подписи с тем же именем (без '#')
+procedure TPropEditorFrame.SelectByProperty(EqIndex: Integer; const PropName, Pattern: String; Num, InObjects, AddObjects: Boolean);
+var Sample, Obj: TTD;
+    SampleKind, I: Integer;
+    Layer: TResource;
+    B: Byte;
+    Sel: TSelectedObjects;
+    Twigs: TTwigsCollect;
+function Kind(O: TObject): Integer;
+begin
+ if O is TLot then Result := 0 else
+ if O is TDotText then Result := 1 else
+ if O is TPointDot then Result := 2 else Result := -1;
+end;
+function Accept(O: TTD): Boolean;
+var A: String;
+begin
+ Result := False;
+ if (Kind(O) = -1) or ((Kind(O) <> SampleKind) and not sbAllSelect.IsPressed) then exit;
+ if sbSelectByLayer.IsPressed and (O.GetLayer <> Layer) then exit;
+ Result := PropMatch(EqIndex, String(O.GetProperty(AnsiString(PropName))), Pattern, Num);
+ if Result or not (O is TPointDot) or (TPointDot(O).TextManager = nil) then exit;
+ A := PropName;
+ while (A <> '') and (A[1] = '#') do Delete(A, 1, 1);
+ Result := PropMatch(EqIndex, String(TPointDot(O).TextManager.AttrValue(AnsiString(A))), Pattern, Num);
+end;
+procedure Check(O: TTD);
+begin
+ if Accept(O) and (Sel.IndexOf(O) = -1) then Sel.Insert(O);
+end;
+begin
+ if not HasSelection or (TwgForm = nil) then exit;
+ Sel := Objects;
+ Sample := TTD(Sel[0]);
+ SampleKind := Kind(Sample);
+ Layer := Sample.GetLayer;
+ Sel.Locked := True;
+ try
+  if InObjects then begin
+   for I := Sel.Count - 1 downto 0 do
+    if not Accept(TTD(Sel[I])) then Sel.AtDelete(I);
+  end else begin
+   if not AddObjects then Sel.DeleteAll;
+   Twigs := TwgForm.Twigs;
+   for I := 0 to Twigs.LotsCount - 1 do begin
+    Obj := Twigs.LAt(I);
+    if TLot(Obj).Closed = 1 then Check(Obj);
+   end;
+   for I := 0 to Twigs.AnyCount - 1 do begin
+    Obj := Twigs.AAt(I, B);
+    if (B = TWG_Point) and not TPointDot(Obj).Closed then Check(Obj);
+   end;
+  end;
+ finally
+  Sel.Locked := False;
+  Sel.Update;
+ end;
+end;
+
+// ИЛИ: к выделенным - объекты с тем же значением свойства
+procedure TPropEditorFrame.sbOrClick(Sender: TObject);
+var R: TPropRow;
+begin
+ R := CurrentRow;
+ if (R = nil) or not HasSelection then exit;
+ SelectByProperty(0, R.RawName, R.Value, False, False, True);
+end;
+
+// И: условие из диалога (DlgPropSelect)
+procedure TPropEditorFrame.sbAndClick(Sender: TObject);
+var R: TPropRow;
+    PropName: String;
+begin
+ R := CurrentRow;
+ if (R = nil) or not HasSelection then exit;
+ PropName := R.RawName;
+ TPropSelectForm.Execute(R.DisplayName, R.Value,
+  procedure(F: TPropSelectForm)
+  var A: Double;
+      P: Integer;
+      Ok: Boolean;
+  begin
+   if F.IsNumber then begin
+    P := Pos('...', F.Pattern);
+    if F.ZnakIndex = 7 then Ok := (P <> 0) and PropNum(Copy(F.Pattern, 1, P - 1), A) and PropNum(Copy(F.Pattern, P + 3, MaxInt), A) else
+     Ok := PropNum(F.Pattern, A);
+    if not Ok then begin
+     MessageError('Задайте число (числа) в строке выражения');
+     exit;
+    end;
+   end;
+   SelectByProperty(F.ZnakIndex, PropName, F.Pattern, F.IsNumber, F.InObjects, F.AddObjects);
+  end);
+end;
+
+// строки заново после изменения свойств объектов; курсор - на PropName или
+// на прежнюю строку
+procedure TPropEditorFrame.RefreshObjects(const PropName: String; OldRow: Integer);
+var I: Integer;
+begin
+ if TwgForm <> nil then TwgForm.Modified := True;
+ Update(Objects);
+ if (FGrid = nil) or (FRows.Count = 0) then exit;
+ if PropName <> '' then
+  for I := 0 to FRows.Count - 1 do
+   if FRows[I].RawName = PropName then begin
+    FGrid.Row := I;
+    UpdateLockButton;
+    exit;
+   end;
+ if OldRow >= FRows.Count then OldRow := FRows.Count - 1;
+ if OldRow < 0 then OldRow := 0;
+ FGrid.Row := OldRow;
+ UpdateLockButton;
+end;
+
+// Tag: 1 - вверх, 2 - вниз, 0 - удаление (sbDownClick)
+procedure TPropEditorFrame.MoveProperty(const PropName: String; Tag: Integer);
+var I, Row: Integer;
+    Props: TProperties;
+begin
+ if not HasSelection then exit;
+ Row := FGrid.Row;
+ for I := 0 to Objects.Count - 1 do begin
+  Props := ObjProps(TObject(Objects[I]));
+  if Props = nil then continue;
+  case Tag of
+   1: Props.Up(AnsiString(PropName));
+   2: Props.Down(AnsiString(PropName));
+  else
+   Props.DeleteProperty(AnsiString(PropName));
+  end;
+ end;
+ if Tag = 0 then RefreshObjects('', Row) else RefreshObjects(PropName, Row);
+end;
+
+procedure TPropEditorFrame.sbMoveClick(Sender: TObject);
+var R: TPropRow;
+    PropName: String;
+begin
+ R := CurrentRow;
+ if (R = nil) or not HasSelection then exit;
+ PropName := R.RawName;
+ if TComponent(Sender).Tag <> 0 then begin
+  MoveProperty(PropName, TComponent(Sender).Tag);
+  exit;
+ end;
+ TDialogService.MessageDialog('Удалить свойство "' + R.DisplayName + '"?', TMsgDlgType.mtConfirmation,
+  [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbNo, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   if AResult = mrYes then MoveProperty(PropName, 0);
+  end);
+end;
+
+// удаление группы свойств: отмеченные в диалоге (DlgDelProperties)
+procedure TPropEditorFrame.sbMinusMinusClick(Sender: TObject);
+begin
+ if not HasSelection then exit;
+ TDelPropertiesForm.Execute(Objects,
+  procedure(Names: TStrings)
+  var I, J: Integer;
+  begin
+   if not HasSelection then exit;
+   for I := 0 to Names.Count - 1 do
+    for J := 0 to Objects.Count - 1 do TTD(Objects[J]).DeleteProperty(AnsiString(Names[I]));
+   RefreshObjects('', FGrid.Row);
+  end);
+end;
+
+// свойства из справочника (DlgPropAdd): значение '--' - свойство удаляется,
+// '++' - только добавляется (если его нет), иначе - устанавливается;
+// «очистить *» - сначала удаляются все свойства пользователя
+procedure TPropEditorFrame.sbAddPropClick(Sender: TObject);
+begin
+ if not HasSelection then begin
+  MessageInform('Выберите объекты...');
+  exit;
+ end;
+ TPropAddForm.Execute([String(MainPath) + 'Properties.ini', String(MainPath) + 'Dictionary.txt', String(MainPath) + 'Dictionary_odh.txt'],
+  procedure(F: TPropAddForm)
+  var I, J: Integer;
+      Obj: TTD;
+      Props: TProperties;
+      N, V: AnsiString;
+  begin
+   if not HasSelection then exit;
+   for I := 0 to Objects.Count - 1 do begin
+    Obj := TTD(Objects[I]);
+    if F.cbClear.IsChecked then begin
+     Props := ObjProps(Obj);
+     if Props <> nil then
+      for J := Props.Count - 1 downto 0 do
+       if Pos('*', String(Props[J].PropName)) = 1 then Obj.DeleteProperty(Props[J].PropName);
+    end;
+    for J := 0 to F.PropNames.Count - 1 do begin
+     N := AnsiString(F.PropNames[J]);
+     V := AnsiString(F.PropValues[J]);
+     if V = '--' then begin
+      if Obj.UseProperty(N) then Obj.DeleteProperty(N);
+     end else
+     if V = '++' then begin
+      if not Obj.UseProperty(N) then Obj.AddProperty(N);
+     end else
+      Obj.SetProperty(N, V);
+    end;
+   end;
+   RefreshObjects('', FGrid.Row);
+  end);
 end;
 
 { TUpdatePropObject }

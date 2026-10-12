@@ -3,6 +3,9 @@
 interface uses Collect, Classes, SysUtils, FMX.Controls, FMX.Objects;
 
 const propNULL ='-123456789';
+// TPropValue.varType: замена значения заблокирована (кнопка sbLock редактора
+// свойств) - AddProperty не меняет значение, кроме GlobalPropertyUnlocked
+      varTypeLocked = -100;
       binaryValue = 'Изображение';
 
 
@@ -76,7 +79,7 @@ type
   Function IndexOf(pName:AnsiString):Integer;
  end;
 
-implementation uses newProcs, newConsts, Writer;
+implementation uses newProcs, newConsts, Writer, UserObject;
 
 { TPropValue }
 
@@ -88,6 +91,7 @@ end;
 constructor TPropValue.CreateAs(P: TPropValue);
 begin
  Value:=P.Value;
+ varType:=P.varType;
  If Value = binaryValue then begin
   Binary:=TImage.Create(nil);
  // Binary.Picture.Bitmap.Assign(P.Binary.Picture.Bitmap);  fmx
@@ -232,7 +236,9 @@ begin
  If  (PropValue[pName] = nil) then begin
 //  If pIndex<>-1 then Properties.Atinsert(pIndex,TProperty.Create(pName,pValue,pIndex)) else
   Properties.Insert(TProperty.Create(pName,pValue,pIndex));
- end else begin
+ end else
+// если не заблокировано изменение или установлен глобальный флаг разблокировки
+ If (PropValue[pName].varType <> varTypeLocked) or GlobalPropertyUnlocked then begin
   PropValue[pName].Value:=pValue;
  end;
 end;

@@ -1,0 +1,80 @@
+object DelPropertiesForm: TDelPropertiesForm
+  Left = 0
+  Top = 0
+  BorderStyle = Single
+  Caption = #1059#1076#1072#1083#1077#1085#1080#1077' '#1089#1074#1086#1081#1089#1090#1074' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+  ClientHeight = 320
+  ClientWidth = 340
+  Position = MainFormCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  DesignerMasterStyle = 0
+  object cbCheck: TCheckBox
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 324.000000000000000000
+    Size.Height = 22.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = #1057#1074#1086#1081#1089#1090#1074#1072' '#1085#1072' '#1091#1076#1072#1083#1077#1085#1080#1077' ('#1074#1089#1077')'
+    OnChange = cbCheckChange
+  end
+  object List: TListBox
+    Align = Client
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 4.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 8.000000000000000000
+    Size.Width = 324.000000000000000000
+    Size.Height = 226.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    ShowCheckboxes = True
+    DisableFocusEffect = True
+    DefaultItemStyles.ItemStyle = ''
+    DefaultItemStyles.GroupHeaderStyle = ''
+    DefaultItemStyles.GroupFooterStyle = ''
+    Viewport.Width = 320.000000000000000000
+    Viewport.Height = 222.000000000000000000
+  end
+  object LayButtons: TLayout
+    Align = Bottom
+    Margins.Left = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 280.000000000000000000
+    Size.Width = 324.000000000000000000
+    Size.Height = 32.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    object btnCancel: TButton
+      Align = Right
+      Cancel = True
+      ModalResult = 2
+      Position.X = 234.000000000000000000
+      Size.Width = 90.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #1054#1090#1084#1077#1085#1072
+    end
+    object btnOk: TButton
+      Align = Right
+      Default = True
+      Margins.Right = 8.000000000000000000
+      ModalResult = 1
+      Position.X = 136.000000000000000000
+      Size.Width = 90.000000000000000000
+      Size.Height = 32.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'OK'
+    end
+  end
+end

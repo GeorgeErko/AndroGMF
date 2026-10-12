@@ -11,7 +11,7 @@ uses
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
   FMX.Memo, {$IFDEF MOUSE32}objMouse32{$ELSE}objMouse{$ENDIF}, System.IOUtils, WPTForm2,
   instPointSign, FMX.Ani, InstLineSign, InstBlockSign, InstLayerFrame,
-  FramePropEditor, DlgRootPropEditor, StylusInput;
+  FramePropEditor, DlgRootPropEditor, StylusInput, instQuickLayers;
 
 type
   TMainFormMouseObj = class(TMainFormSkia)
@@ -32,7 +32,7 @@ type
     Load: TButton;
     imgEsc: TImageList;
     instPanel: TPanel;
-    Splitter2: TSplitter;
+    SplitterHost: TSplitter;
     FloatAnimation1: TFloatAnimation;
     btnInstLine: TSpeedButton;
     FloatAnimation3: TFloatAnimation;
@@ -42,7 +42,7 @@ type
     FloatAnimation2: TFloatAnimation;
     btnSelect: TSpeedButton;
     FloatAnimation5: TFloatAnimation;
-    Splitter3: TSplitter;
+    SplitterProps: TSplitter;
     instProperties: TLayout;
     btnProperties: TSpeedButton;
     FloatAnimation6: TFloatAnimation;
@@ -92,7 +92,25 @@ type
     UpDown2Down: TButton;
     SpeedButton6: TSpeedButton;
     sbCancel: TSpeedButton;
+  // операции ЗН (бывшая pOprZN) и актуализация (pActual) старой программы;
+  // обработка - TMainFormDendro.DendroButtonClick
+    sbOrderProperties: TSpeedButton;
+    sbAutoDT: TSpeedButton;
+    sbAutoZN: TSpeedButton;
+    sbFLKZN: TSpeedButton;
+    sbAttrZN: TSpeedButton;
+    sbFindZN: TSpeedButton;
+    sbExportCSV: TSpeedButton;
+    sSpeedButton36: TSpeedButton;
+    sbStatDelete: TSpeedButton;
+    sbStatRestore: TSpeedButton;
     LabelVer: TLabel;
+    btnBlock: TSpeedButton;
+    FloatAnimation7: TFloatAnimation;
+    btnQuickLayers: TSpeedButton;
+    FloatAnimation8: TFloatAnimation;
+    SplitterHost2: TSplitter;
+    InstHost2: TLayout;
     procedure OZNButtonApplyStyleLookup(Sender: TObject);
     procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
@@ -109,6 +127,7 @@ type
     procedure cbOSMChange(Sender: TObject);
     procedure btnPanClick(Sender: TObject);
     procedure btnPlusClick(Sender: TObject);
+    procedure btnQuickLayersClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FPropEditor: TPropEditorFrame;
@@ -119,6 +138,7 @@ type
    FInteractionPrevActive: Boolean;
    FInteractionWatchTimer: TTimer;
    FMaximizeChecked: Boolean;
+   FQuickHeight: Single; // высота быстрых слоев под панелью знаков
    procedure CaptureOverlayInteractionImage;
    procedure SetMouseObject(const Value: TKeyMouseHook);
    procedure EnsureOverlayPainter;
@@ -129,10 +149,17 @@ type
   // пера над экраном - правая кнопка
    procedure StylusHover(Action: TStylusHoverAction; const P: TPointF);
    procedure StylusButtonClick(const P: TPointF);
+  // быстрые слои: щелчок по слою, «Применить», смена активного слоя
+   procedure QuickLayerClick(Sender: TObject);
+   procedure QuickLayersApply(Sender: TObject);
+   procedure LayerActiveChanged(Sender: TObject);
+  // панель знаков (InstHost) и быстрых слоев (InstHost2) по кнопкам
+   procedure UpdateInstPanel;
   protected
    InstPoints: TInstPointsFrame;
    InstLines : TInstLinesFrame;
    InstBlocks: TInstBlocksFrame;
+   QuickLayers: TQuickLayersFrame;
    destructor Destroy; override;
    procedure Loaded; override;
    procedure DoShow; override;
@@ -258,7 +285,24 @@ begin
  instPanel.Width:= GReadFloat(Name + '_instPanelW', instPanel.Width);
 //
  LayerFrame := FindComponent('LayerFrame1') as TLayerFrame;
- if LayerFrame <> nil then LayerFrame.OnLayerSelected := LayerSelected;
+ if LayerFrame <> nil then begin
+  LayerFrame.OnLayerSelected := LayerSelected;
+  LayerFrame.OnActiveLayerChanged := LayerActiveChanged;
+ end;
+// быстрые слои (FlyQuickLayers): под панелью знаков, кнопка btnQuickLayers
+ QuickLayers := TQuickLayersFrame.Create(InstHost2);
+ QuickLayers.Parent := InstHost2;
+ QuickLayers.Align := TAlignLayout.Client;
+ QuickLayers.OnLayerClick := QuickLayerClick;
+ QuickLayers.OnApply := QuickLayersApply;
+ QuickLayers.sbPrim.OnMouseEnter := StatusButtonEnter;
+ QuickLayers.sbPrim.OnMouseLeave := StatusButtonLeave;
+ QuickLayers.sbAdd.OnMouseEnter := StatusButtonEnter;
+ QuickLayers.sbAdd.OnMouseLeave := StatusButtonLeave;
+ QuickLayers.sbDel.OnMouseEnter := StatusButtonEnter;
+ QuickLayers.sbDel.OnMouseLeave := StatusButtonLeave;
+ FQuickHeight := GReadFloat(Name + '_InstHost2H', InstHost2.Height);
+ btnQuickLayers.IsPressed := GReadInteger(Name + '_QuickLayersVis', 0) = 1;
 //
  InstPoints := TInstPointsFrame.Create(instHost);
  InstLines := TInstLinesFrame.Create(nil);
@@ -334,6 +378,9 @@ begin
  GWriteFloat(Name + '_skPainterW',  skPainter.Width);
  GWriteInteger(Name + '_instPanelVis', ord(instPanel.Visible));
  GWriteFloat(Name + '_instPanelW', instPanel.Width);
+ if InstHost2.Align = TAlignLayout.Bottom then FQuickHeight := InstHost2.Height;
+ GWriteFloat(Name + '_InstHost2H', FQuickHeight);
+ GWriteInteger(Name + '_QuickLayersVis', Ord(btnQuickLayers.IsPressed));
 end;
 
 procedure TMainFormMouseObj.PaintOverlayStatic(const ACanvas: ISkCanvas; const Rect: TRectF);
@@ -393,8 +440,14 @@ begin
 {$ENDIF}
 end;
 
+// развертывание задается здесь, а не в .fmx: WindowState из MainFrmMouseObj.fmx
+// читался раньше размера формы из .fmx наследника (ClientWidth/ClientHeight -
+// IDE пишет их после правки формы в дизайнере), и этот размер портил
+// развертывание. До inherited все .fmx цепочки уже прочитаны, а форма еще не
+// показана - окно сразу открывается развернутым, без переключения и моргания
 procedure TMainFormMouseObj.Loaded;
 begin
+  WindowState := TWindowState.wsMaximized;
   inherited;
   if FInteractionWatchTimer = nil then
   begin
@@ -439,6 +492,8 @@ begin
    LF.LayerTable := Value.LayerTable
   else
    LF.LayerTable := nil;
+ if QuickLayers <> nil then
+  if Value <> nil then QuickLayers.LayerTable := Value.LayerTable else QuickLayers.LayerTable := nil;
 //
  InstPoints.TwgForm := Value;
  InstLines.TwgForm  := Value;
@@ -503,25 +558,67 @@ begin
  end
 end;
 
+// панель instPanel видна, если нажата кнопка панели знаков (btnInstPoint,
+// btnInstLine, btnInstBlock) или быстрых слоев (btnQuickLayers). Быстрые слои
+// со знаками - внизу панели (SplitterHost2), без знаков - на всю панель
+procedure TMainFormMouseObj.UpdateInstPanel;
+var Inst, Quick: Boolean;
+begin
+ Inst := btnInstPoint.IsPressed or btnInstLine.IsPressed or btnInstBlock.IsPressed;
+ Quick := btnQuickLayers.IsPressed;
+ InstPanel.Visible := Inst or Quick;
+ SplitterHost.Visible := InstPanel.Visible;
+ if InstPanel.Visible then SplitterHost.Position.X := InstPanel.Position.X;
+ skPainter.Align := TAlignLayout.Client;
+ InstHost.Visible := Inst;
+ InstHost2.Visible := Quick;
+ SplitterHost2.Visible := Inst and Quick;
+ if not Quick then exit;
+ if not Inst then begin
+  if InstHost2.Align = TAlignLayout.Bottom then FQuickHeight := InstHost2.Height;
+  InstHost2.Align := TAlignLayout.Client;
+ end else
+ if InstHost2.Align <> TAlignLayout.Bottom then begin
+ // нижние по Position.Y: сначала сплиттер, затем слои - под ним
+  InstHost2.Align := TAlignLayout.Bottom;
+  InstHost2.Height := FQuickHeight;
+  SplitterHost2.Position.Y := 100000;
+  InstHost2.Position.Y := 100001;
+ end;
+end;
+
+procedure TMainFormMouseObj.btnQuickLayersClick(Sender: TObject);
+begin
+ UpdateInstPanel;
+ if btnQuickLayers.IsPressed and (QuickLayers <> nil) then QuickLayers.UpdateItems;
+end;
+
+// щелчок по быстрому слою: слой - активный в списке слоев
+procedure TMainFormMouseObj.QuickLayerClick(Sender: TObject);
+var L: TResource;
+begin
+ L := QuickLayers.SelectedLayer;
+ if L = nil then exit;
+ if LayerFrame <> nil then LayerFrame.ActivateLayer(L, 0) else
+ if TwgForm <> nil then TwgForm.LayerTable.ActiveLayer := L;
+end;
+
+// «Применить»: активный слой - выделенным объектам (как выбор слоя в списке)
+procedure TMainFormMouseObj.QuickLayersApply(Sender: TObject);
+begin
+ LayerSelected(Sender);
+end;
+
+procedure TMainFormMouseObj.LayerActiveChanged(Sender: TObject);
+begin
+ if (QuickLayers <> nil) and (LayerFrame <> nil) then QuickLayers.ChangeQuickLayer(LayerFrame.ActiveLayer);
+end;
+
 procedure TMainFormMouseObj.ToolInstClick(Sender: TObject);
 var TagV: Integer;
 procedure UpdateSkPainter;
 begin
- If (btnInstPoint.IsPressed) or (btnInstLine.IsPressed) or (btnInstBlock.IsPressed) then
-  begin
- //  skPainter.Align := TAlignLayout.Left;
- //  InstPanel.Align := TAlignLayout.Right;
-   InstPanel.Visible := True;
-   Splitter2.Visible := True;
-   Splitter2.Position.X := InstPanel.Position.X;
-   skPainter.Align := TAlignLayout.Client;
-  // InstPanel.Align := TAlignLayout.Client;
-  end else begin
-   InstPanel.Visible := False;
-   Splitter2.Visible := False;
-   skPainter.Align := TAlignLayout.Client;
-  // btnEscClick(btnEsc);
-  end;
+ UpdateInstPanel;
 end;
 begin
 // показываем панель знаков (точечные, линейные, блоки)
@@ -627,11 +724,11 @@ begin
  If btnProperties.IsPressed then begin
   instProperties.Position.X:= -100;
   instProperties.Visible := True;
-  Splitter3.Visible := True;
-  Splitter3.Position.X := instProperties.Width;
+  SplitterProps.Visible := True;
+  SplitterProps.Position.X := instProperties.Width;
  end else begin
   instProperties.Visible := False;
-  Splitter3.Visible := False;
+  SplitterProps.Visible := False;
  end;
  btnProperties.IsPressed := instProperties.Visible;
 end;

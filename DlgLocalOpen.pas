@@ -42,6 +42,8 @@ type
     procedure SetBaseDir(const Value: string);
   public
     FCallback: TPickGmfFileCallback;
+   // маски файлов через ';' (например '*.csv'); пусто - *.gmf и *.gpkg
+    FileMask: string;
     property BaseDir: string read FBaseDir write SetBaseDir;
     procedure Init(const ACallback: TPickGmfFileCallback);
   end;
@@ -98,6 +100,7 @@ var
  Dir: string;
  ParentDir: string;
  FileList: TList<string>;
+ Mask: string;
 begin
  if ListView1 = nil then Exit;
  ListView1.BeginUpdate;
@@ -137,12 +140,21 @@ begin
 
   FileList := TList<string>.Create;
   try
-   Files := TDirectory.GetFiles(Dir, '*.gmf');
-   for I := 0 to Length(Files) - 1 do
-    FileList.Add(Files[I]);
-   Files := TDirectory.GetFiles(Dir, '*.gpkg');
-   for I := 0 to Length(Files) - 1 do
-    FileList.Add(Files[I]);
+   if FileMask <> '' then begin
+    for Mask in FileMask.Split([';']) do begin
+     if Trim(Mask) = '' then continue;
+     Files := TDirectory.GetFiles(Dir, Trim(Mask));
+     for I := 0 to Length(Files) - 1 do
+      FileList.Add(Files[I]);
+    end;
+   end else begin
+    Files := TDirectory.GetFiles(Dir, '*.gmf');
+    for I := 0 to Length(Files) - 1 do
+     FileList.Add(Files[I]);
+    Files := TDirectory.GetFiles(Dir, '*.gpkg');
+    for I := 0 to Length(Files) - 1 do
+     FileList.Add(Files[I]);
+   end;
    Files := FileList.ToArray;
   finally
    FileList.Free;

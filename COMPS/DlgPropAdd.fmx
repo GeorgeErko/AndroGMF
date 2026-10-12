@@ -1,0 +1,296 @@
+object PropAddForm: TPropAddForm
+  Left = 0
+  Top = 0
+  BorderStyle = Single
+  Caption = #1056#1077#1076#1072#1082#1090#1086#1088' '#1089#1074#1086#1081#1089#1090#1074
+  ClientHeight = 458
+  ClientWidth = 543
+  Position = MainFormCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object LayFile: TLayout
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object lblFile: TLabel
+      Align = Left
+      Size.Width = 84.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1057#1087#1088#1072#1074#1086#1095#1085#1080#1082':'
+      TabOrder = 0
+    end
+    object cbFile: TComboBox
+      Align = Client
+      Size.Width = 443.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      OnChange = cbFileChange
+    end
+  end
+  object LayGroup: TLayout
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 4.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 37.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+    object lblGroup: TLabel
+      Align = Left
+      Size.Width = 55.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1043#1088#1091#1087#1087#1072' :'
+      TabOrder = 0
+    end
+    object cbGroup: TComboEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      Align = Client
+      TabOrder = 1
+      DropDownCount = 25
+      ItemHeight = 19.000000000000000000
+      ItemIndex = -1
+      Size.Width = 396.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      OnChange = cbGroupChange
+    end
+    object sbGroupSave: TSpeedButton
+      Align = Right
+      Hint = #1047#1072#1087#1086#1084#1085#1080#1090#1100' '#1075#1088#1091#1087#1087#1091' '#1080#1079' '#1090#1077#1082#1089#1090#1072' ('#1085#1086#1074#1072#1103' - '#1076#1086#1073#1072#1074#1083#1103#1077#1090#1089#1103')'
+      Images = ImageList1
+      ImageIndex = 0
+      Margins.Left = 4.000000000000000000
+      Position.X = 455.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbGroupSaveClick
+    end
+    object sbGroupDel: TSpeedButton
+      Align = Right
+      Hint = #1059#1076#1072#1083#1080#1090#1100' '#1075#1088#1091#1087#1087#1091
+      Images = ImageList1
+      ImageIndex = 1
+      Position.X = 479.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbGroupDelClick
+    end
+    object sbFileSave: TSpeedButton
+      Align = Right
+      Hint = #1047#1072#1087#1080#1089#1072#1090#1100' '#1089#1087#1088#1072#1074#1086#1095#1085#1080#1082' '#1074' '#1092#1072#1081#1083
+      Images = ImageList1
+      ImageIndex = 2
+      Position.X = 503.000000000000000000
+      Size.Width = 24.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnClick = sbFileSaveClick
+    end
+  end
+  object lblMemo: TLabel
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 6.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 68.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 20.000000000000000000
+    Size.PlatformDefault = False
+    Text = #1059#1089#1090#1072#1085#1086#1074#1080#1090#1100'/'#1080#1079#1084#1077#1085#1080#1090#1100' '#1089#1074#1086#1081#1089#1090#1074#1072' *'
+    TabOrder = 3
+  end
+  object LayButtons: TLayout
+    Align = Bottom
+    Margins.Left = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 425.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 25.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 6
+    object btnCancel: TButton
+      Align = Right
+      Cancel = True
+      ModalResult = 2
+      Position.X = 437.000000000000000000
+      Size.Width = 90.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #1054#1090#1084#1077#1085#1072
+      TextSettings.Trimming = None
+    end
+    object btnOk: TButton
+      Align = Right
+      Default = True
+      Margins.Right = 8.000000000000000000
+      Position.X = 339.000000000000000000
+      Size.Width = 90.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = 'OK'
+      TextSettings.Trimming = None
+      OnClick = btnOkClick
+    end
+  end
+  object lblNote: TLabel
+    Align = Bottom
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 4.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 394.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 21.000000000000000000
+    Size.PlatformDefault = False
+    Text = 
+      '* '#1091#1076#1072#1083#1077#1085#1080#1077' '#1089#1074#1086#1081#1089#1090#1074#1072' -'#1079#1085#1072#1095#1077#1085#1080#1077' = '#39'--'#39', '#1090#1086#1083#1100#1082#1086' '#1076#1086#1073#1072#1074#1083#1077#1085#1080#1077' ('#1077#1089#1083#1080' '#1089#1074 +
+      #1086#1081#1089#1090#1074#1072' '#1085#1077#1090') - '#1079#1085#1072#1095#1077#1085#1080#1077' = '#39'++'#39
+    TabOrder = 5
+  end
+  object Memo: TMemo
+    Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+    DataDetectorTypes = []
+    Align = Client
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 2.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Margins.Bottom = 10.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 270.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 4
+    Viewport.Width = 523.000000000000000000
+    Viewport.Height = 266.000000000000000000
+  end
+  object cbClear: TCheckBox
+    Align = Bottom
+    Hint = #1057#1085#1072#1095#1072#1083#1072' '#1091#1076#1072#1083#1080#1090#1100' '#1074#1089#1077' '#1089#1074#1086#1081#1089#1090#1074#1072' * '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+    Margins.Left = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 370.000000000000000000
+    Size.Width = 527.000000000000000000
+    Size.Height = 20.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = #1086#1095#1080#1089#1090#1080#1090#1100' *'
+    ParentShowHint = False
+    ShowHint = True
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009249444154388D9552510EC5
+              20086B17EFFDB693F77DB82903348CC48458682B48CC10BE0501A0D91BA9C641
+              72E447049F7395C8028153E20E07EE770099F7E940FA79E2D1BB21083AEC9592
+              25685E0D78D46A33B0A1E94602CED495FAAA067624E05A21C15B2CCB07BF2267
+              A1068B6D864B0D06F5371A46D9DC366D3F9273C1BBF9A51C66E05D5828B34D57
+              B0355130FA3DFE815146815199AE860000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\PLUS.BMP'
+          end>
+        Name = 'PLUS'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000007F49444154388DA5914112C0
+              200803938EFFFF727AD0564AD1C234171D85B01A624AA88900D0EC8994F32079
+              EF8FE2D4979A2CBA717E68439622E0CA386B304CC8C0E9FF1FB0C7518D701A8C
+              950064638C7015E4BC7C822F8E9AAFC95F35AB1442C2EEA0FE27C651766F9B4A
+              318EE6C7E4E60B3D85BD8AB0E90AB61009D0BA4EA2DC371075356EE700000000
+              49454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\MINUS.BMP'
+          end>
+        Name = 'MINUS'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000A349444154388DAD934B0AC3
+              300C445F8A6E14023E4F17DDF43C59E4465ED88B9EC70275913A4D48EA7CDC01
+              A30F3363211054A2011011BB2256D5866C303C30113133B310C2CF98398B4F45
+              C4C2301A94C459981FC06D6BB4186331F6779DB89B067B68DB6F7EC9608E6A03
+              9917BE579C734581EF7551CB1EE1D40400EEB96A15A7D8DC41D775AB5E4A09EF
+              FDAAFFBF25C6D802F19068E4BE80CF31C1F9839A0EA9166F380C76A0600231C3
+              0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\Save4.bmp'
+          end>
+        Name = 'Save4'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'PLUS'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'MINUS'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Save4'
+          end>
+      end>
+    Left = 454
+    Top = 100
+  end
+end

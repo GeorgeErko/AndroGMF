@@ -1,7 +1,9 @@
 inherited MainFormDendro: TMainFormDendro
   Caption = #1054#1047#1053'-'#1040#1085#1076#1088#1086#1080#1076
+  ClientWidth = 1231
   DesignerMasterStyle = 3
   inherited Panel1: TPanel
+    Size.Width = 1231.000000000000000000
     inherited btnOpen: TCornerButton
       TabOrder = 4
     end
@@ -13,42 +15,46 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 2
     end
     inherited btnPlus: TCornerButton
-      TabOrder = 22
+      TabOrder = 25
     end
     inherited ptnMinus: TCornerButton
-      TabOrder = 21
+      TabOrder = 24
     end
     inherited btnPDF: TCornerButton
       Position.X = 185.000000000000000000
-      TabOrder = 14
+      TabOrder = 23
     end
     inherited btnClose: TButton
+      Position.X = 1211.000000000000000000
       TabOrder = 71
     end
     inherited Load: TButton
       Position.X = 260.000000000000000000
-      TabOrder = 51
+      TabOrder = 60
     end
     inherited btnDoc: TButton
       TabOrder = 79
     end
     inherited Panel2: TPanel
+      Position.X = 1121.000000000000000000
       TabOrder = 85
     end
     inherited Panel3: TPanel
+      Position.X = 1048.000000000000000000
       TabOrder = 86
     end
     inherited btnGPKGB: TButton
       TabOrder = 78
     end
     inherited pnlView: TPanel
-      TabOrder = 97
+      Position.X = 932.000000000000000000
+      TabOrder = 105
     end
     inherited LabelVer: TLabel
-      TabOrder = 124
+      TabOrder = 132
     end
     inherited lMas: TLabel
-      TabOrder = 95
+      TabOrder = 104
     end
     object btnSave: TCornerButton
       Align = Left
@@ -68,6 +74,8 @@ inherited MainFormDendro: TMainFormDendro
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnSaveClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object btnSaveAs: TCornerButton
       Align = Left
@@ -87,15 +95,74 @@ inherited MainFormDendro: TMainFormDendro
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnSaveAsClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+    end
+  end
+  inherited PanelPainter: TPanel
+    Size.Width = 1231.000000000000000000
+    inherited SkPainter: TSkPaintBox
+      Size.Width = 763.000000000000000000
+    end
+    inherited instPanel: TPanel
+      Position.X = 963.000000000000000000
+    end
+    inherited SplitterHost: TSplitter
+      Position.X = 957.000000000000000000
     end
   end
   inherited StatusBar: TStatusBar
+    Size.Width = 1231.000000000000000000
+    inherited pMas: TLabel
+      Position.X = 1117.000000000000000000
+    end
     inherited PanelHint: TLabel
+      Size.Width = 655.000000000000000000
       TextSettings.Font.StyleExt = {00070000000000000004000000}
     end
   end
   inherited ToolBarPaint: TToolBar
+    Size.Width = 1229.000000000000000000
+    inherited btnToolLine: TSpeedButton
+      Margins.Top = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+    end
+    inherited btnToolPolyline: TSpeedButton
+      Margins.Top = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+    end
+    inherited btnInstLine: TSpeedButton
+      Position.X = 1175.000000000000000000
+    end
+    inherited btnInstPoint: TSpeedButton
+      Position.X = 1148.000000000000000000
+    end
+    inherited btnInstBlock: TSpeedButton
+      Position.X = 1202.000000000000000000
+    end
     inherited LayerFrame1: TLayerFrame
+      Margins.Right = 10.000000000000000000
+      Position.X = 727.000000000000000000
+      inherited HeaderLay: TLayout
+        inherited HeaderBg: TRectangle
+          Margins.Left = 2.000000000000000000
+          Margins.Top = 2.000000000000000000
+          Margins.Right = 2.000000000000000000
+          Size.Width = 378.000000000000000000
+          Size.Height = 26.000000000000000000
+        end
+        inherited btnDrop: TButton
+          Hint = #1054#1090#1082#1088#1099#1090#1100' '#1089#1087#1080#1089#1086#1082' '#1089#1083#1086#1077#1074
+          Margins.Left = 2.000000000000000000
+          Margins.Top = 5.000000000000000000
+          Margins.Right = 4.000000000000000000
+          Margins.Bottom = 2.000000000000000000
+          Position.X = 356.000000000000000000
+          Position.Y = 5.000000000000000000
+          Size.Width = 22.000000000000000000
+          Size.Height = 21.000000000000000000
+        end
+      end
       inherited PopupLayers: TPopup
         inherited PopupLay: TLayout
           inherited TreeLayers: TTreeView
@@ -109,19 +176,119 @@ inherited MainFormDendro: TMainFormDendro
         Top = 142
       end
     end
+    inherited btnSelect: TSpeedButton
+      Margins.Top = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+    end
+    inherited btnProperties: TSpeedButton
+      Margins.Right = 10.000000000000000000
+      Position.X = 692.000000000000000000
+    end
+    inherited btnBlock: TSpeedButton
+      Position.X = 663.000000000000000000
+    end
+    inherited btnQuickLayers: TSpeedButton
+      Position.X = 1119.000000000000000000
+    end
   end
   inherited ToolBarOZN: TToolBar
+    Size.Width = 1231.000000000000000000
+    inherited sbSetD: TSpeedButton
+      ShowHint = False
+    end
+    inherited sbSetE: TSpeedButton
+      ShowHint = False
+    end
+    inherited sbSetK: TSpeedButton
+      ShowHint = False
+    end
     inherited cbOnlyAttr: TCheckBox
       Margins.Left = 8.000000000000000000
       Position.X = 134.000000000000000000
       Size.Width = 20.000000000000000000
+      ShowHint = False
+    end
+    inherited sbSetG: TSpeedButton
+      ShowHint = False
+    end
+    inherited sbNum: TSpeedButton
+      ShowHint = False
+    end
+    inherited sbNumUCH: TSpeedButton
+      ShowHint = False
+    end
+    inherited sbNumUchDropDown: TSpeedButton
+      ShowHint = False
+    end
+    inherited dnrPerp: TSpeedButton
+      Enabled = False
+      ShowHint = False
+    end
+    inherited dnrZas: TSpeedButton
+      Enabled = False
+      ShowHint = False
+    end
+    inherited sbP2P: TSpeedButton
+      ShowHint = False
+    end
+    inherited sSpeedButton40: TSpeedButton
+      ShowHint = False
+    end
+    inherited sSpeedButton39: TSpeedButton
+      ShowHint = False
+    end
+    inherited sSpeedButton42: TSpeedButton
+      ShowHint = False
     end
     inherited SpeedButton6: TSpeedButton
+      ShowHint = False
       Visible = False
     end
     inherited sbCancel: TSpeedButton
       Position.X = 694.000000000000000000
+      ShowHint = False
       Visible = False
+    end
+    inherited sbOrderProperties: TSpeedButton
+      Margins.Left = 10.000000000000000000
+      Position.X = 704.000000000000000000
+      ShowHint = False
+    end
+    inherited sbAutoDT: TSpeedButton
+      Position.X = 732.000000000000000000
+      ShowHint = False
+    end
+    inherited sbAutoZN: TSpeedButton
+      Position.X = 760.000000000000000000
+      ShowHint = False
+    end
+    inherited sbFLKZN: TSpeedButton
+      Position.X = 788.000000000000000000
+      ShowHint = False
+    end
+    inherited sbAttrZN: TSpeedButton
+      Position.X = 868.000000000000000000
+      ShowHint = False
+    end
+    inherited sbFindZN: TSpeedButton
+      Position.X = 948.000000000000000000
+      ShowHint = False
+    end
+    inherited sbExportCSV: TSpeedButton
+      Position.X = 1028.000000000000000000
+      ShowHint = False
+    end
+    inherited sSpeedButton36: TSpeedButton
+      Position.X = 1108.000000000000000000
+      ShowHint = False
+    end
+    inherited sbStatDelete: TSpeedButton
+      Position.X = 1188.000000000000000000
+      ShowHint = False
+    end
+    inherited sbStatRestore: TSpeedButton
+      Position.X = 1216.000000000000000000
+      ShowHint = False
     end
   end
   inherited ImageList1: TImageList
@@ -566,6 +733,491 @@ inherited MainFormDendro: TMainFormDendro
     Top = 141
   end
   inherited ToolImageList: TImageList
+    Source = <
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000003D49444154388D6360A006F8
+              CFC0F09F5CBD8CC89A19191818297101D9AE40336BA819822FD0D00D212F80F1
+              1838D40D812540B2028692A44F5D43A80200444F14F2D9D905A8000000004945
+              4E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Polyline.png'
+          end>
+        Name = 'Polyline'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000005649444154388DC5923B0E00
+              200843D578FF2BD749C3406B83831D4B1FE0A7B5DFEAC44791B3609971609ACB
+              4C08FF6AC2AC5900AD8FAC5355A5234CD1B087207D77D540825BE70EDC0F904E
+              40E0AF23590CF525DEB400BE8D1AFA13B1C3EF0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Poygon.png'
+          end>
+        Name = 'Poygon'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000004249444154388D636018058C
+              58C4FE1390C70BFE13E0234BFC47B7E13F1E1731A209601A8C55108F2B60EA99
+              9039780CC100184E25A01967D89012CA14C5CE28C00300AB4016F4F9D4C4B300
+              00000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Spline.png'
+          end>
+        Name = 'Spline'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005F49444154388DDD934B0AC0
+              3008055F4E2E9EDC2E5A2188F9F1EC26032188388831C0FD1860008496F86165
+              F249CC634AB688A7B4A458F176D61299329DEDE6A605166E4AD6337C8C38A395
+              4C43EE686699B8764DCA16B8FB0D145221F98F07A88526D85D72E16700000000
+              49454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Paraline.png'
+          end>
+        Name = 'Paraline'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006049444154388DCD93C10A00
+              20084367F4FFBF6C27A162959241030FD27C0D41E0A514D0E88CEC20B2F1F57E
+              E11C9A88265440AD8EE6C37B18C23C435F1D00934CC37C2FB72A19905ED7A9D2
+              130149BB7A038BDC9A79BDB7B682F87E8924FA4F0DF99528E978354DA0000000
+              0049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Multiline.png'
+          end>
+        Name = 'Multiline'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000003149444154388D6360A031F8
+              4F480113A5360CBC01B405FF89084446845A547164CD8C1075186AA8E2029A83
+              D184440F00008D920A08522E3E6A0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Point.png'
+          end>
+        Name = 'Point'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000005449444154388DCD92410A00
+              200804D73EDED3B74B4189096A87F6AA332C22F04D0830C38986C598571A10C9
+              6696A8949E949013BE36718EC46D59D61E7DC695DC5B4473085AD51616E8FE91
+              83E88F0DB1A6E44906828519F45CC17AAF0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Arc.png'
+          end>
+        Name = 'Arc'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005949444154388D6360A01260
+              4462FFA7503FD906A1A86721A000978B315CC284C336AC4EC6238E6110B1DE23
+              2918D015E3D58CCB6B248351830803420912971CF6F4F41F5533A13482559E11
+              D91046884DC42436A25C344C00005EF2140ECA3BC2960000000049454E44AE42
+              6082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Text.png'
+          end>
+        Name = 'Text'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000004A49444154388D6360A01030
+              E210FF4F825AA234E3132749115E79A26CC0A58E58CD18EA9908A82268304E03
+              609A893104C54944BA00439CEC3020C7108AA292A2C484559C267981BE0000F3
+              E11BED1D9BB64F0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Circke.png'
+          end>
+        Name = 'Circke'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 17
+            Height = 17
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000110000001108060000003B6D47
+              FA0000000473424954080808087C0864880000003549444154388D6360A026F8
+              CFC0F09F5CBD8CE8063042C5287109D9AEC162DEA841A3060D228390B30A1325
+              4EA124D352C7007400001B0F17EE40D3D4EC0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Line.png'
+          end>
+        Name = 'Line'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005949444154388DCDD2310E00
+              20080340F4E33E1D07E342040A12238913EDE920D1C3E14AE40A93E514A69542
+              981786302F34901C8A987915E1B59388DAD374DE07854C2C82988B4C1EC54ABE
+              C071DFC117B8D322B73A9DCF66025B3C255E80ADB4620000000049454E44AE42
+              6082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\MultiAngle.png'
+          end>
+        Name = 'MultiAngle'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000003549444154388D63601868C0
+              88C4FE4F815E920D80AB6522D1560C306AC0F03280D46408038C50CDFF510448
+              D00B07FFC977046500006004081078E8B2230000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Rect.png'
+          end>
+        Name = 'Rect'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007C49444154388DCD53410E80
+              200CEB8CFF165F5E0F4A32E760033DD884F4C068DA02C0DF202715E6C63700BB
+              6111355008904FCE2C2D53B28EEEB8CE11009619010F6BB0AF9D4A730A7D4736
+              6E377E4B888E03E989451D89E1614715343C2CE4C5F0E2A61C791D35115D7FD8
+              4DC5F70F72F69B5468EB6F84D21584380099CC33019B4E35AD0000000049454E
+              44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instPoint.bmp'
+          end>
+        Name = 'instPoint'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007A49444154388DCDD3D10AC0
+              200805D0EBD87FAF7DB97BD81CCEACCC5E26848175B810017F2BBA5BE1D8F103
+              C0693A913A501860AE7B6469A644137DEBB9C700B039F314EA4194C17A89A6B0
+              5622798930E641160D25EC41A4FA30D9289145DFE7CE421A236F380309B29C48
+              6355EDB2C97E134F5F81DC94A9BA00629334FC529B9B8C0000000049454E44AE
+              426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instLine.bmp'
+          end>
+        Name = 'instLine'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000008849444154388DCDD3D10E80
+              200805D06BEBBFB32FA7078D112A97D54B6C8D36E1A4CC80BF4569A94AAEFC00
+              70BA5C8A29A802888C39F358A6863B5AAEF53E01808D9C45D08E4F8F1E4116A1
+              D80AD2E63E058ACD208F20837968407481601ED2993C6E07F4B6D89985D01463
+              C80A9A61211241BE39441894DAC91DFBFDF2F637B15F4C17279D6F710131BF4F
+              FACB4DDAFA0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instBlock.bmp'
+          end>
+        Name = 'instBlock'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000005F49444154388DB594DB0E00
+              100C434BFCFF2FF3E2C165B6749B2622414F2A1AC067F5395240EB1C068561A7
+              D90D938C2ED8CB44C3340305B30E5FFB95A163EFD7066B2408008AB468250A37
+              FC049805D5128957C8909A8A7DB534A57D2F4F0D15B71CF29930311700000000
+              49454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\btnSelect.bmp'
+          end>
+        Name = 'btnSelect'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006D49444154388DB593E10A80
+              300806AFE8C17DF3AF1F1534CA4D671D0C04E721D3C185992863268130535DF8
+              14E83C21D6417EC9C83CE4C4255149F6563825F38AD2B25E414A36BADCE447E3
+              F704BAC5006C132238F6AB21D2516AC32382EE8246BEC82FB85DCD4CED335E1F
+              7F07BEC827EF765872BA0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\btnSelect.bmp'
+          end>
+        Name = 'Item 0'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000006549444154388D6360A01738
+              70E0C07F6400E323D370C54429A214A05B820D30303030B0C09C6F6F6F4F94C1
+              8C8C8D58C5590829FAFFBF1E2F1FA2AF01D520EC8A1A51C407DE45D85C884D0F
+              5E17613318976514BB08AB41A36144D8A0014DD9C4F882240000F4B3A4D58A88
+              5B870000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\btnsAndro\instProps.bmp'
+          end>
+        Name = 'instProps'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007749444154388DCD93590AC0
+              200C4427A5F7763CF9F4A72922514809B40F04912C4E169324147054040180D3
+              2FBDF7E7B1B5B6750A6D75435259469F32691615DBCC42E35D5FC21FB9034948
+              8224905C2658067A43280D88E5A5A5399F48FB71FBC7B1F7BACC6766F4A95FDA
+              314366699DE51C6529937601A71C963A45E9781A0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Blocks.png'
+          end>
+        Name = 'Blocks'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009C49444154388DAD92510EC3
+              200C435F26EE558E166E969C2CFBA0EB0AA28CAAB3842211D9C10E1211C103A4
+              FE42447E92CE331B011161F6A051FFF5847C08AC903FB5B728C034C7B3F86890
+              00D32DCCC8001211B16AA117FD8B8523C4AB33221729B83B0029226EADD0DD41
+              DB7ECCD0F755B5566A4DA390AE020340C1B3832AEEB95A584529423663DB36C0
+              30B3EF575E83EE64F6AAF51FDC1369F1069AC79E73625037DC0000000049454E
+              44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\QuickLayers.png'
+          end>
+        Name = 'QuickLayers'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'Line'
+            SourceRect.Right = 17.000000000000000000
+            SourceRect.Bottom = 20.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Polyline'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Paraline'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Multiline'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'MultiAngle'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Arc'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Spline'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Circke'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Rect'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Poygon'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Point'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Text'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instPoint'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instLine'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instBlock'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'btnSelect'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Item 0'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'instProps'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Blocks'
+            SourceRect.Top = 2.000000000000000000
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 17.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'QuickLayers'
+          end>
+      end>
     Left = 272
     Top = 142
   end

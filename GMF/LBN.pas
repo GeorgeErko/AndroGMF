@@ -64,6 +64,8 @@ type
 
 function oghObjectType(TwgForm: TForm2): String;
 function oghObjectTypeRus(TwgForm: TForm2): String;
+// строки файла справочника (UTF-8 или cp1251); True - файл в UTF-8
+function LoadDictLines(const FileName: String; L: TStrings): Boolean;
 
 var ListByName:TListByName;ListByDicts:TListByName;
 
@@ -71,7 +73,7 @@ implementation uses Writer, System.IOUtils;
 
 // строки справочника: файл в UTF-8 (с BOM или без - справочники на устройстве)
 // или в cp1251 (старые справочники Windows); в String - по кодировке файла
-procedure LoadDictLines(const FileName: String; L: TStrings);
+function LoadDictLines(const FileName: String; L: TStrings): Boolean;
 var B: TBytes;
     Enc: TEncoding;
     N: Integer;
@@ -100,6 +102,7 @@ begin
  N := TEncoding.GetBufferEncoding(B, Enc, nil);
  if Enc = nil then
   if IsUtf8 then Enc := TEncoding.UTF8 else Enc := TEncoding.GetEncoding(1251);
+ Result := Enc.CodePage = 65001;
  try
   L.Text := Enc.GetString(B, N, Length(B) - N);
  finally

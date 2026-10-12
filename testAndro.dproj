@@ -4,7 +4,7 @@
         <ProjectVersion>20.3</ProjectVersion>
         <FrameworkType>FMX</FrameworkType>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <Platform Condition="'$(Platform)'==''">Android64</Platform>
         <TargetedPlatforms>693395</TargetedPlatforms>
         <AppType>Application</AppType>
@@ -476,6 +476,18 @@
             <Form>RootPropEditorForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
+        <DCCReference Include="COMPS\DlgPropAdd.pas">
+            <Form>PropAddForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="COMPS\DlgPropSelect.pas">
+            <Form>PropSelectForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="COMPS\DlgDelProperties.pas">
+            <Form>DelPropertiesForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
         <DCCReference Include="COMPS\VarSetForm.pas">
             <Form>VarSetDlg</Form>
         </DCCReference>
@@ -540,6 +552,21 @@
         </DCCReference>
         <DCCReference Include="FrameSettings.pas">
             <Form>SettingsFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="FrameDendro.pas">
+            <Form>FrameDendro</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="FrameJSON.pas">
+            <Form>FrameJSON</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
+        <DCCReference Include="instQuickLayers.pas">
+            <Form>QuickLayersFrame</Form>
             <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>

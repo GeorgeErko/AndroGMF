@@ -100,6 +100,9 @@ uses
   DlgPropColorEditor in 'COMPS\DlgPropColorEditor.pas',
   DlgPropFontEditor in 'COMPS\DlgPropFontEditor.pas',
   DlgRootPropEditor in 'COMPS\DlgRootPropEditor.pas' {RootPropEditorForm},
+  DlgPropAdd in 'COMPS\DlgPropAdd.pas' {PropAddForm},
+  DlgPropSelect in 'COMPS\DlgPropSelect.pas' {PropSelectForm},
+  DlgDelProperties in 'COMPS\DlgDelProperties.pas' {DelPropertiesForm},
   VarSetForm in 'COMPS\VarSetForm.pas' {VarSetDlg},
   VarSetForm1 in 'COMPS\VarSetForm1.pas' {VarSetDlg1},
   VarSetForm2 in 'COMPS\VarSetForm2.pas' {VarSetDlg2},
@@ -134,7 +137,10 @@ uses
   AssetRefresh in 'AssetRefresh.pas',
   StylusInput in 'StylusInput.pas',
   FramePropEditor in 'FramePropEditor.pas' {PropEditorFrame: TFrame},
-  FrameSettings in 'FrameSettings.pas' {SettingsFrame: TFrame};
+  FrameSettings in 'FrameSettings.pas' {SettingsFrame: TFrame},
+  FrameDendro in 'FrameDendro.pas' {FrameDendro: TFrame},
+  FrameJSON in 'FrameJSON.pas' {FrameJSON: TFrame},
+  instQuickLayers in 'instQuickLayers.pas' {QuickLayersFrame: TFrame};
 
 {$R *.res}
 

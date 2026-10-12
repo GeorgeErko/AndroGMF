@@ -1,0 +1,168 @@
+object QuickLayersFrame: TQuickLayersFrame
+  Size.Width = 268.000000000000000000
+  Size.Height = 127.000000000000000000
+  Size.PlatformDefault = False
+  object List: TListBox
+    Align = Client
+    Size.Width = 268.000000000000000000
+    Size.Height = 103.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    DisableFocusEffect = True
+    DefaultItemStyles.ItemStyle = ''
+    DefaultItemStyles.GroupHeaderStyle = ''
+    DefaultItemStyles.GroupFooterStyle = ''
+    OnItemClick = ListItemClick
+    Viewport.Width = 264.000000000000000000
+    Viewport.Height = 99.000000000000000000
+  end
+  object ButtonsLay: TLayout
+    Align = Bottom
+    Position.Y = 103.000000000000000000
+    Size.Width = 268.000000000000000000
+    Size.Height = 24.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object sbPrim: TSpeedButton
+      Align = Left
+      Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1087#1088#1080#1084#1080#1090#1080#1074#1086#1074' '#1072#1082#1090#1080#1074#1085#1099#1081' '#1089#1083#1086#1081
+      Images = ImageList1
+      ImageIndex = 0
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 84.000000000000000000
+      Size.Height = 20.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1055#1088#1080#1084#1077#1085#1080#1090#1100
+      TextSettings.Trimming = None
+      OnClick = sbPrimClick
+    end
+    object sbDel: TSpeedButton
+      Align = Right
+      Hint = #1059#1076#1072#1083#1080#1090#1100' '#1074#1099#1073#1088#1072#1085#1085#1099#1081' '#1089#1083#1086#1081' '#1080#1079' '#1089#1087#1080#1089#1082#1072
+      Images = ImageList1
+      ImageIndex = 2
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 192.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 74.000000000000000000
+      Size.Height = 20.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1059#1076#1072#1083#1080#1090#1100
+      TextSettings.Trimming = None
+      OnClick = sbDelClick
+    end
+    object sbAdd: TSpeedButton
+      Align = Right
+      Hint = #1044#1086#1073#1072#1074#1080#1090#1100' '#1074' '#1089#1087#1080#1089#1086#1082' '#1072#1082#1090#1080#1074#1085#1099#1081' '#1089#1083#1086#1081
+      Images = ImageList1
+      ImageIndex = 1
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 106.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 82.000000000000000000
+      Size.Height = 20.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1044#1086#1073#1072#1074#1080#1090#1100
+      TextSettings.Trimming = None
+      OnClick = sbAddClick
+    end
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.Height = 10
+        MultiResBitmap.Width = 10
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Scale = 1.500000000000000000
+            Width = 15
+            Height = 15
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000000F0000000F08060000003BD695
+              4A0000000473424954080808087C08648800000078494441542891AD91510EC0
+              200843DB9DDC9B771F1365284E93911893D6073500BF97A4CCA90700C025487A
+              3F36A477BA394E56389DD65B886964BD6A9049DA319681AAF4E08F5D0E2666F0
+              77542766AB5931B89CD0C4524A06310ABE043C9B7AAF78FAB64DDE2EA97FF108
+              36D0EE69ECA46820B95CF15EDDC4093F6F0CC2099F0000000049454E44AE4260
+              82}
+            FileName = 'C:\!GEOMASTER24\Office\MAGIC1.BMP'
+          end>
+        Name = 'MAGIC1'
+      end
+      item
+        MultiResBitmap.Height = 13
+        MultiResBitmap.Width = 13
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 13
+            Height = 13
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000000D0000000D080600000072EBE4
+              7C0000000473424954080808087C086488000000454944415428916360A01760
+              C421FE1F9F1A26DCE6FDC7298347136EC04284D1184E65C12D8F553D864D0CA8
+              7EFECF802B9C9035A1EBC026CEC0C0406640E0D1842B0AE90900357D081ACCC9
+              4A1D0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\PLUS2.BMP'
+          end>
+        Name = 'PLUS2'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000006B49444154388DEDCF310AC2
+              401844E16FE31639B09EC2DE3368238208B6F65E262059B222BF553076168216
+              79CD30C51B18667E4F9A9675129F48AB7879792A2F0F1B4E47DA060C41950C28
+              5DA796E291B1BDC63892DFA6CF3BF6175AEEE883DB980D3DEAE2CB1766FE8127
+              B8C224F24A845B220000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\Office\minus16_h.bmp'
+          end>
+        Name = 'minus16_h'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'MAGIC1'
+            SourceRect.Right = 10.000000000000000000
+            SourceRect.Bottom = 10.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'PLUS2'
+            SourceRect.Right = 13.000000000000000000
+            SourceRect.Bottom = 13.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'minus16_h'
+          end>
+      end>
+    Left = 184
+    Top = 58
+  end
+end

@@ -6,20 +6,30 @@ inherited MainFormSkia: TMainFormSkia
     Size.Width = 875.000000000000000000
     inherited btnOpen: TCornerButton
       TabOrder = 3
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     inherited btnLocalOpen: TCornerButton
       TabOrder = 2
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     inherited btnPaint: TCornerButton
       Position.X = 178.000000000000000000
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 130
+      TabOrder = 131
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 129
+      TabOrder = 130
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object btnPDF: TCornerButton
       Images = ImageList1
@@ -35,6 +45,8 @@ inherited MainFormSkia: TMainFormSkia
       XRadius = 3.000000000000000000
       YRadius = 3.000000000000000000
       OnClick = btnPDFClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object btnClose: TButton
       Align = Right
@@ -47,6 +59,8 @@ inherited MainFormSkia: TMainFormSkia
       TabOrder = 78
       TextSettings.Trimming = None
       OnClick = btnCloseClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
   end
   inherited PanelPainter: TPanel

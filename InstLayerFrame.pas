@@ -65,6 +65,7 @@ type
     function LayerNameCtrl: TLabel;
 
     procedure EnsureHeaderControls;
+    procedure HeaderLayResize(Sender: TObject);
     procedure EnsurePopupResizeGrip;
     procedure LoadPopupSize;
     procedure SavePopupSize;
@@ -105,6 +106,8 @@ type
    // слой выбран в списке слоев (щелчком по слою или кнопкой OK, в т.ч. группа):
    // форма переносит в него выделенные объекты; при активации программно не вызывается
     OnLayerSelected: TNotifyEvent;
+   // сменился активный слой (любым способом, в т.ч. программно): быстрые слои
+    OnActiveLayerChanged: TNotifyEvent;
     procedure SelectLayer(Layer: TResource);
     function IsGroupLayer(Layer: TResource): Boolean;
     property LayerTable: TLayerTable read FLayerTable write SetLayerTable;
@@ -115,7 +118,7 @@ type
 var LayerFrame: TLayerFrame;
 // размер шрифта списка слоев и заголовка (имя активного слоя); высота строк,
 // флажок и цветной квадрат подстраиваются под него (LayerRowHeight)
-    LayerListFontSize: Single = {$IFDEF ANDROID}14{$ELSE}16{$ENDIF};
+    LayerListFontSize: Single = {$IFDEF ANDROID}14{$ELSE}14{$ENDIF};
 
 implementation
 
@@ -309,6 +312,8 @@ begin
  if FLayerTable.ActiveLayer = Value then Exit;
  FLayerTable.ActiveLayer := Value;
  SyncHeader;
+ HeaderBg.Hint := Value.RecString;
+ if Assigned(OnActiveLayerChanged) then OnActiveLayerChanged(Self);
 end;
 
 // активный слой по сообщению UpdateMessage.SetActiveLayer (например, выбран
@@ -466,13 +471,30 @@ begin
   Nm.Position.X := 38;
   Nm.Position.Y := 2;
   Nm.Height := H - 4;
-  Nm.Width := 420;
   SetLayerLabelFont(Nm);
 //  Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.WordWrap];
   Nm.TextSettings.WordWrap := False;
   Nm.HitTest := False;
+  Nm.TextSettings.Trimming := TTextTrimming.Character;
   Nm.Parent := HeaderBg;
  end;
+ HeaderLay.OnResize := HeaderLayResize;
+ HeaderLayResize(HeaderLay);
+end;
+
+// имя активного слоя - до кнопки списка (btnDrop) с отступом 5, длинное
+// обрезается многоточием
+procedure TLayerFrame.HeaderLayResize(Sender: TObject);
+var Nm: TLabel;
+    W: Single;
+begin
+ Nm := LayerNameCtrl;
+ if Nm = nil then exit;
+// btnDrop - Align = Right: его левый край по ширине заголовка (в OnResize
+// Position.X кнопки может быть еще прежним)
+ W := HeaderLay.Width - btnDrop.Margins.Right - btnDrop.Width - btnDrop.Margins.Left - 5 - Nm.Position.X;
+ if W < 0 then W := 0;
+ Nm.Width := W;
 end;
 
 procedure TLayerFrame.SyncHeader;

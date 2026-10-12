@@ -135,6 +135,7 @@ type
     function InteractionBitmapActive: Boolean; virtual;
     procedure DrawInteractionOverlay(const ACanvas: ISkCanvas; const ADest, ASceneDst: TRectF); virtual;
     procedure UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
+    procedure SetHint(Sender: TObject); virtual;
   protected
     MousePos: TPointF;
     procedure UpdateStatusGeo(const X, Y: Single; Hint: String);
@@ -223,6 +224,7 @@ begin
   FLivePainter.DrawCacheKind := TSkDrawCacheKind.Never;
   FLivePainter.OnDraw := LivePainterDraw;
  end;
+ Application.OnHint := SetHint;
 end;
 
 procedure TMainFormSkia.EnsureIndicator;
@@ -1176,6 +1178,15 @@ begin
     ElapsedMs := TThread.GetTickCount64 - StartTick;
    WriteIn(['RenderScene points s=', ElapsedMs / 1000]);
   end;
+end;
+
+procedure TMainFormSkia.SetHint(Sender: TObject);
+begin
+ If Application.Hint <> '' then begin
+  If Pos('#',Application.Hint) = 1 then exit;
+  PanelHint.Text := Application.Hint;
+ end else
+  PanelHint.Text := '';
 end;
 
 procedure TMainFormSkia.SetPrimitiveBounds(Obj: TObject);

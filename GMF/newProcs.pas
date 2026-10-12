@@ -205,6 +205,46 @@ function GStrToFloat(S: AnsiString): Double;
 
 // Окна сообщений
 
+{$IFDEF MSWINDOWS}
+// Windows: системное окно MessageBox (синхронное, текст и кнопки системы);
+// Winapi.Windows не подключается - его DeleteFile, TRect и др. перекрыли бы
+// SysUtils и System.Types
+const
+  MB_OK = $0; MB_YESNO = $4; MB_ICONERROR = $10; MB_ICONQUESTION = $20;
+  MB_ICONWARNING = $30; MB_ICONINFORMATION = $40; MB_DEFBUTTON2 = $100;
+  IDOK = 1; IDCANCEL = 2; IDYES = 6; IDNO = 7;
+
+function MessageBoxW(hWnd: NativeUInt; lpText, lpCaption: PWideChar; uType: Cardinal): Integer; stdcall; external 'user32.dll';
+function GetActiveWindow: NativeUInt; stdcall; external 'user32.dll';
+
+  function _MessageDialogSync(const Msg: string; const DlgType: TMsgDlgType;
+    const Buttons: array of TMsgDlgBtn; const DefaultButton: TMsgDlgBtn): TModalResult;
+  var Flags: Cardinal;
+      Title: string;
+      I: Integer;
+      YesNo: Boolean;
+  begin
+   case DlgType of
+    TMsgDlgType.mtWarning: begin Flags := MB_ICONWARNING; Title := 'Предупреждение'; end;
+    TMsgDlgType.mtError: begin Flags := MB_ICONERROR; Title := 'Ошибка'; end;
+    TMsgDlgType.mtConfirmation: begin Flags := MB_ICONQUESTION; Title := 'Подтверждение'; end;
+   else
+    Flags := MB_ICONINFORMATION; Title := 'Информация';
+   end;
+   YesNo := False;
+   for I := 0 to High(Buttons) do
+    if Buttons[I] in [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo] then YesNo := True;
+   if YesNo then Flags := Flags or MB_YESNO else Flags := Flags or MB_OK;
+   if YesNo and (DefaultButton = TMsgDlgBtn.mbNo) then Flags := Flags or MB_DEFBUTTON2;
+   case MessageBoxW(GetActiveWindow, PWideChar(Msg), PWideChar(Title), Flags) of
+    IDYES: Result := mrYes;
+    IDNO: Result := mrNo;
+    IDCANCEL: Result := mrCancel;
+   else
+    Result := mrOk;
+   end;
+  end;
+{$ELSE}
   function _MessageDialogSync(const Msg: string; const DlgType: TMsgDlgType;
     const Buttons: array of TMsgDlgBtn; const DefaultButton: TMsgDlgBtn): TModalResult;
   var
@@ -281,6 +321,7 @@ function GStrToFloat(S: AnsiString): Double;
       F.Free;
     end;
   end;
+{$ENDIF}
 
   function MessageConfirm(S: AnsiString): Word;
   begin

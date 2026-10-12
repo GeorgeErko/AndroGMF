@@ -1,7 +1,6 @@
 inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
   ClientWidth = 919
-  WindowState = wsMaximized
   OnDestroy = FormDestroy
   DesignerMasterStyle = 3
   inherited Panel1: TPanel
@@ -71,6 +70,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Text = 'Load'
       TextSettings.Trimming = None
       OnClick = LoadClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object btnDoc: TButton
       Position.X = 377.000000000000000000
@@ -83,6 +84,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       Visible = False
       OnClick = btnDocClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object Panel2: TPanel
       Align = Right
@@ -104,6 +107,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Text = 'Esc'
         TextSettings.Trimming = None
         OnClick = btnEscClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
     end
     object Panel3: TPanel
@@ -135,6 +140,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       Visible = False
       OnClick = btnGPKGBClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
     object pnlView: TPanel
       Align = Right
@@ -160,6 +167,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
         OnClick = btnPlusClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
       object btnMinus1: TCornerButton
         Tag = -1
@@ -178,6 +187,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
         OnClick = btnPlusClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
       object btnFrag: TCornerButton
         Tag = 2
@@ -195,6 +206,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
         OnClick = ToolButtonClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
       object btnPan: TCornerButton
         Tag = 1
@@ -213,6 +226,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         XRadius = 3.000000000000000000
         YRadius = 3.000000000000000000
         OnClick = ToolButtonClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
     end
     object LabelVer: TLabel
@@ -252,12 +267,29 @@ inherited MainFormMouseObj: TMainFormMouseObj
       object InstHost: TLayout
         Align = Client
         Size.Width = 268.000000000000000000
-        Size.Height = 387.000000000000000000
+        Size.Height = 254.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+      end
+      object SplitterHost2: TSplitter
+        Align = Bottom
+        Cursor = crVSplit
+        MinSize = 20.000000000000000000
+        Position.Y = 254.000000000000000000
+        Size.Width = 268.000000000000000000
+        Size.Height = 6.000000000000000000
+        Size.PlatformDefault = False
+      end
+      object InstHost2: TLayout
+        Align = Bottom
+        Position.Y = 260.000000000000000000
+        Size.Width = 268.000000000000000000
+        Size.Height = 127.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
       end
     end
-    object Splitter2: TSplitter
+    object SplitterHost: TSplitter
       Align = Right
       Cursor = crHSplit
       MinSize = 20.000000000000000000
@@ -266,7 +298,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
     end
-    object Splitter3: TSplitter
+    object SplitterProps: TSplitter
       Align = Left
       Cursor = crHSplit
       MinSize = 20.000000000000000000
@@ -317,6 +349,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolPoint: TSpeedButton
@@ -335,6 +369,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolPolyline: TSpeedButton
@@ -353,6 +389,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolPolygon: TSpeedButton
@@ -371,6 +409,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolSpline: TSpeedButton
@@ -389,6 +429,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolArc: TSpeedButton
@@ -407,6 +449,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolCircle: TSpeedButton
@@ -425,6 +469,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolRect: TSpeedButton
@@ -443,6 +489,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolParaline: TSpeedButton
@@ -461,6 +509,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolMultiline: TSpeedButton
@@ -479,6 +529,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolMultiAngle: TSpeedButton
@@ -497,6 +549,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object btnToolText: TSpeedButton
@@ -515,6 +569,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation1: TFloatAnimation
         Duration = 0.600000023841857900
@@ -537,6 +593,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation3: TFloatAnimation
         Duration = 0.600000023841857900
@@ -559,6 +617,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation4: TFloatAnimation
         Duration = 0.600000023841857900
@@ -581,6 +641,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolInstClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation2: TFloatAnimation
         Duration = 0.600000023841857900
@@ -592,7 +654,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inline LayerFrame1: TLayerFrame
       Align = Right
       Margins.Right = 2.000000000000000000
-      Position.X = 450.000000000000000000
+      Position.X = 423.000000000000000000
       Size.Width = 382.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -637,6 +699,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation5: TFloatAnimation
         Duration = 0.600000023841857900
@@ -652,15 +716,70 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Images = ToolImageList
       ImageIndex = 17
       Margins.Right = 4.000000000000000000
-      Position.X = 421.000000000000000000
+      Position.X = 394.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = btnPropertiesClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
       object FloatAnimation6: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnBlock: TSpeedButton
+      Tag = 500
+      StaysPressed = True
+      Align = Right
+      Enabled = False
+      Images = ToolImageList
+      ImageIndex = 18
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 4.000000000000000000
+      Position.X = 365.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = btnPropertiesClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+      object FloatAnimation7: TFloatAnimation
+        Duration = 0.600000023841857900
+        PropertyName = 'Size.Height'
+        StartValue = 0.000000000000000000
+        StopValue = 0.000000000000000000
+      end
+    end
+    object btnQuickLayers: TSpeedButton
+      StaysPressed = True
+      Align = Right
+      Hint = #1041#1099#1089#1090#1088#1099#1077' '#1089#1083#1086#1080
+      Images = ToolImageList
+      ImageIndex = 19
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Position.X = 807.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 25.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = btnQuickLayersClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+      object FloatAnimation8: TFloatAnimation
         Duration = 0.600000023841857900
         PropertyName = 'Size.Height'
         StartValue = 0.000000000000000000
@@ -690,6 +809,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbSetE: TSpeedButton
@@ -707,6 +828,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbSetK: TSpeedButton
@@ -724,6 +847,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object cbOnlyAttr: TCheckBox
@@ -750,6 +875,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbSetG: TSpeedButton
@@ -766,6 +893,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbGI: TSpeedButton
@@ -780,6 +909,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbGC: TSpeedButton
@@ -794,6 +925,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbGR: TSpeedButton
@@ -808,6 +941,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbNum: TSpeedButton
@@ -827,6 +962,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbNumUCH: TSpeedButton
@@ -846,6 +983,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbNumUchDropDown: TSpeedButton
@@ -865,6 +1004,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object dnrPerp: TSpeedButton
@@ -881,6 +1022,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object dnrZas: TSpeedButton
@@ -897,6 +1040,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbP2P: TSpeedButton
@@ -916,6 +1061,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sSpeedButton40: TSpeedButton
@@ -935,6 +1082,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sSpeedButton39: TSpeedButton
@@ -955,6 +1104,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object UpDown1: TLayout
@@ -982,6 +1133,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         ParentShowHint = False
         ShowHint = True
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
       object UpDown1Down: TButton
         Tag = -1
@@ -999,6 +1152,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         ParentShowHint = False
         ShowHint = True
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
     end
     object sSpeedButton42: TSpeedButton
@@ -1019,6 +1174,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object UpDown2: TLayout
@@ -1046,6 +1203,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         ParentShowHint = False
         ShowHint = True
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
       object UpDown2Down: TButton
         Tag = -1
@@ -1063,6 +1222,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
         TextSettings.Trimming = None
         ParentShowHint = False
         ShowHint = True
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
     end
     object SpeedButton6: TSpeedButton
@@ -1079,6 +1240,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
     object sbCancel: TSpeedButton
@@ -1094,6 +1257,188 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
       OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbOrderProperties: TSpeedButton
+      Align = Left
+      Hint = #1057#1086#1088#1090#1080#1088#1086#1074#1082#1072' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1047#1053' '#1087#1086' '#1089#1087#1088#1072#1074#1086#1095#1085#1080#1082#1091' Names.txt'
+      Images = ImageListOZN
+      ImageIndex = 18
+      Position.X = 762.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbAutoDT: TSpeedButton
+      Align = Left
+      Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1044#1058
+      Images = ImageListOZN
+      ImageIndex = 19
+      Position.X = 790.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbAutoZN: TSpeedButton
+      Align = Left
+      Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1047#1053
+      Images = ImageListOZN
+      ImageIndex = 20
+      Position.X = 818.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbFLKZN: TSpeedButton
+      Align = Left
+      Hint = #1060#1051#1050' '#1076#1083#1103' '#1047#1053
+      Images = ImageListOZN
+      ImageIndex = 21
+      Position.X = 846.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = #1060#1051#1050
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbAttrZN: TSpeedButton
+      Align = Left
+      Hint = #1055#1088#1086#1074#1077#1088#1082#1072' '#1085#1072' '#1089#1086#1086#1090#1074#1077#1090#1089#1090#1074#1080#1077' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1074' '#1075#1088#1091#1087#1087#1072#1093' '#1047#1053
+      Images = ImageListOZN
+      ImageIndex = 22
+      Position.X = 926.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = #1040#1090#1088#1080#1073#1091#1090#1099
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbFindZN: TSpeedButton
+      Align = Left
+      Hint = #1055#1086#1080#1089#1082': '#1088#1072#1089#1090#1077#1085#1080#1103' '#1073#1077#1079' '#1075#1072#1079#1086#1085#1086#1074', '#1076#1091#1073#1083#1080#1082#1072#1090#1099' '#1088#1072#1089#1090#1077#1085#1080#1081
+      Images = ImageListOZN
+      ImageIndex = 23
+      Position.X = 1006.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = #1055#1086#1080#1089#1082
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbExportCSV: TSpeedButton
+      Align = Left
+      Hint = #1048#1084#1087#1086#1088#1090'/'#1101#1082#1089#1087#1086#1088#1090' '#1087#1077#1088#1077#1095#1077#1090#1082#1080', '#1101#1082#1089#1087#1086#1088#1090' '#1092#1086#1090#1086#1092#1080#1082#1089#1072#1094#1080#1080' '#1080' '#1090#1088#1077#1082#1072' (CSV)'
+      Images = ImageListOZN
+      ImageIndex = 24
+      Position.X = 1086.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = 'CSV'
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sSpeedButton36: TSpeedButton
+      Align = Left
+      Hint = #1040#1090#1088#1080#1073#1091#1090#1099' '#1075#1072#1079#1086#1085#1086#1074' '#1080#1079' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1047#1053
+      Images = ImageListOZN
+      ImageIndex = 25
+      Position.X = 1166.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      Text = #1040#1090#1088#1080#1073#1091#1090#1099
+      TextSettings.Trimming = None
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbStatDelete: TSpeedButton
+      Align = Left
+      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+      Images = ImageListOZN
+      ImageIndex = 26
+      Position.X = 1246.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
+      OnPainting = FlatButtonPainting
+    end
+    object sbStatRestore: TSpeedButton
+      Align = Left
+      Hint = #1057#1085#1103#1090#1080#1077' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+      Images = ImageListOZN
+      ImageIndex = 27
+      Position.X = 1274.000000000000000000
+      Size.Width = 28.000000000000000000
+      Size.Height = 48.000000000000000000
+      Size.PlatformDefault = False
+      ParentShowHint = False
+      ShowHint = True
+      TextSettings.Trimming = None
+      OnApplyStyleLookup = OZNButtonApplyStyleLookup
+      OnClick = ToolButtonClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
   end
@@ -1425,8 +1770,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
     Top = 139
   end
   inherited ImageListStatus: TImageList
-    Left = 372
-    Top = 17
+    Left = 288
+    Top = 179
   end
   object ToolImageList: TImageList
     Source = <
@@ -1733,6 +2078,44 @@ inherited MainFormMouseObj: TMainFormMouseObj
             FileName = 'C:\!GEOMASTER\Office\btnsAndro\instProps.bmp'
           end>
         Name = 'instProps'
+      end
+      item
+        MultiResBitmap.Height = 18
+        MultiResBitmap.Width = 18
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 18
+            Height = 18
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000001200000012080600000056CE8E
+              570000000473424954080808087C0864880000007749444154388DCD93590AC0
+              200C4427A5F7763CF9F4A72922514809B40F04912C4E169324147054040180D3
+              2FBDF7E7B1B5B6750A6D75435259469F32691615DBCC42E35D5FC21FB9034948
+              8224905C2658067A43280D88E5A5A5399F48FB71FBC7B1F7BACC6766F4A95FDA
+              314366699DE51C6529937601A71C963A45E9781A0000000049454E44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\Blocks.png'
+          end>
+        Name = 'Blocks'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009C49444154388DAD92510EC3
+              200C435F26EE558E166E969C2CFBA0EB0AA28CAAB3842211D9C10E1211C103A4
+              FE42447E92CE331B011161F6A051FFF5847C08AC903FB5B728C034C7B3F86890
+              00D32DCCC8001211B16AA117FD8B8523C4AB33221729B83B0029226EADD0DD41
+              DB7ECCD0F755B5566A4DA390AE020340C1B3832AEEB95A584529423663DB36C0
+              30B3EF575E83EE64F6AAF51FDC1369F1069AC79E73625037DC0000000049454E
+              44AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\PAINT\QuickLayers.png'
+          end>
+        Name = 'QuickLayers'
       end>
     Destination = <
       item
@@ -1864,6 +2247,20 @@ inherited MainFormMouseObj: TMainFormMouseObj
             SourceRect.Right = 18.000000000000000000
             SourceRect.Bottom = 18.000000000000000000
           end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Blocks'
+            SourceRect.Right = 18.000000000000000000
+            SourceRect.Bottom = 18.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'QuickLayers'
+          end>
       end>
     Left = 428
     Top = 148
@@ -1932,8 +2329,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
             SourceRect.Bottom = 18.000000000000000000
           end>
       end>
-    Left = 794
-    Top = 99
+    Left = 736
+    Top = 157
   end
   object ImageListOZN: TImageList
     Source = <
@@ -2416,6 +2813,200 @@ inherited MainFormMouseObj: TMainFormMouseObj
               6427258696321E0000000049454E44AE426082}
           end>
         Name = 'SpeedButton6'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009849444154388D6360A02698
+              E1C1F39F22CDFF1F34FE27CB90191E3CFFFFDFA9FFFFFF42C1FFFF8792510C11
+              C8E4FC2F90C989D3502698E29939BD0C0CEFDF31CC6C5B0937947457ACF726D9
+              0B2C28BCF71F3014A03BFFC3F4EF8CC87C2614D59F3F91623916177CFD86A100
+              DD46FC06FCFE83A100570CC00C66C226490A6021A480342F6001F812110303B5
+              BD30F3F85B0C0584BC40310000890F449FEBA1E9F80000000049454E44AE4260
+              82}
+          end>
+        Name = 'sbOrderProperties'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000009149444154388DB592510EC3
+              200C439F7771B8B9F741CB020B1D523B4BA81064C73185A7516B35808D6D0C7D
+              ED911BF6C98AE4524A2FE97373D9F495AA6E923BA275826DDB975FC05F73C7C5
+              98413CFB10B198426A758531906D4BE26CAC7639727F8DB172703B83F00AA36D
+              C08755AB6DE2398AB4BF2EB13777F48929D861BE5E4C9F6C95C1849583545499
+              40A6FA37BC01671FEB47966B2BD20000000049454E44AE426082}
+          end>
+        Name = 'sbAutoDT'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000AB49444154388D95534112C4
+              20080B1DFF2D7D79F680A074D1DD6686834848281628A0AA3480240844FCC65B
+              B23CC9BDF7488B447EAD499CB6ED3CCAC8297EDF37869B687255EA15D9317271
+              7155D6490B6B1621E62CC447C572C82A6727DECF471000A2AA5F64AB154B7854
+              B0F5A5B585EC98689E4D258D00123C59DE8DD066229CE4C49C71119B0A2DD7B8
+              63F81A02DCBCC6C343320B2BD15DEC1C64C5E243542EAA9DFCF7D7EDF9EFF001
+              B45B77FA899540550000000049454E44AE426082}
+          end>
+        Name = 'sbAutoZN'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000008749444154388DB592DB0E80
+              200C430FFEB8F5CBE70320BA6C04631C2190D17617063F9B6118C224D93A894A
+              B04646D5F7266625456B2234001372564A4C70D9F49222913C6D39BFEBC7D6CE
+              42010494B63B6ABF1070D4ABA48556F288F6EA1B2F117D20FB6C52DB668F5A18
+              9E48604CE0504A4B0933282DBC7A0BF70875C346E6A3494AB19FEC04BE388B9E
+              305CE4500000000049454E44AE426082}
+          end>
+        Name = 'sbFLKZN'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000022349444154388D8592CF4B15
+              5114C73F77DE984F795AA9D3B34C2314759190FF41444450D422C86510AD9316
+              65F54C5A54522D1241DA246E2ADC4549E022A95D9B480882302B10C3D4ECF166
+              E6CDBC993B736F8BF77AE2EFEFEA9C7BEEF77BCFF99E2B86A756747E39CB7A38
+              DF67B99F39253614D663786A45AFC7DCCFDFFAD6BD497DEDD90FBD13DF885C6F
+              CD81D2E0A904008B7E44EFDDF7DB8A98811F949330D6D8BEC2ACAD45A998FD0B
+              3324A5DABE0369674B64B00B31B94284ED870CBAA7E93ED18EE7E5D07D6CD985
+              F93FB0FD18BB1063FB21CB5907809E57EDF4946E0C8ECF9645B25FBFF0F0CE39
+              016024DC2CA106278CB17D49F7482D275F346D78E9C6741B37A6DB387ED846CA
+              80CCD3CF1AC000C849700A314E18317EF65B9974E6572FFD66A69C0F353E66E9
+              CF225206CC57EFE5D2A38FDAD4AEC209346EA87025B8E1AA6902816559B0501A
+              D3F57082623D3DF3891415985A6BEC50E34A455E2A2E4F769405269A86CA6480
+              0137C36838C1F98BC7305329DE8D7DC01442F0E6C95BB4562815D3A79FB3B434
+              C758FAE61A0FAE84D7A9A9B36846F037175095AC2B6EA17F60F3EF3AD687BE30
+              7F95AECE066EBB196AEAF761351D22557F00B5AB0A47C608218A266E06F10091
+              4EB7D0D17594D1EED734B776D270B095CA3D163251493E2E52CDAD0400AA0D8B
+              96F6233885887CA889CD249199C48B0571C9EBED05AA7793B21A917E840C63DC
+              08BCC82032348964C5CE028691E0E5C8D4EA5862A35DFF005B7E0615D059C501
+              0000000049454E44AE426082}
+          end>
+        Name = 'sbAttrZN'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000008D49444154388DCD53411203
+              21084B3AFDB7F0F2EC45BBE282B5B7E6E42024119000841C2CE28F24499183E4
+              7CBFC56B1CDC1DEE0EDED5DCB83B76F0D549E58000B8123F61427750A27E8649
+              92DEB38315ADB552596A9F7EFDE8C0461C00903A3003A44C3D2A03C914C89BA8
+              27F7BCD1B08420515A487C260C23DD6C9A05E2AC1898F6202138FA0B07885DFF
+              3F5CC530875D0486D56D0000000049454E44AE426082}
+          end>
+        Name = 'sbFindZN'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000E649444154388DED90C171C3
+              2010451F49037207A8837480E8C01D4027169548AA64A1837420DC413AD81C62
+              33C6767CCF4CFE0C87DDE1FDDDFDF02F8373CA34B586034A4AE65A8B88A6943A
+              A8D6CAB22C78EF8D1111F5406732CF94948C88E8B66D586B3B388480F7DEFC6C
+              7099F2CC643C9F5FC2006F00DE7B230039B7CF659EC9AA2FE107898822A2A8B6
+              6743D018A38A883E63CCBD414A897C3A75E7304D4CE671B0738E2EED6B60B556
+              D6103A131B23711C5BBDEF3BDBB699F77B186018066C297C0E035C7A5FC72375
+              5DF9381C1ADC4EB0D6EA6DDAB7C1D510FAB573A694F27B907F4FDF5DA68077BF
+              085A820000000049454E44AE426082}
+          end>
+        Name = 'sbExportCSV'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000008949444154388DAD93411285
+              3008435F3D1947CBD1B8192EFED8A1B57C75945D484819A0F0325A4504C4425C
+              EA87C255F11557BE7A5B97931241C61C58B1D20F8954DCB1BBCFDC689081BBC7
+              DC41E6723E20B6596466E5A4DD1CA64D9C0CAA100AA193F9A5C1AFED75713768
+              D0AA15BA1B2038062BF5210E8775F706FEEA5F1D52269F9CF2F79FE969EC65CE
+              5F1066767B550000000049454E44AE426082}
+          end>
+        Name = 'sSpeedButton36'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000005649444154388DAD92CB0D00
+              2008431B27637436C3138907C12234E1E46B0D1F60520AB16F46216680652121
+              E30F5EB790279301CC0721489BA39092390B89CC8B4AACA8D5426B88AD358E1E
+              D2D7299F40362396296903769CC369293F63090000000049454E44AE426082}
+          end>
+        Name = 'sbStatDelete'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000005049444154388DAD923B0E00
+              300842494FEECDE9D4A48B8A1FD63E305A805519D8670C04C130C465DE038390
+              94890065800BCA662FA4648E421CF3D1122B1AAD303AE2E81B578BD4AAF20F64
+              92BB20EA02544FAE699A0E957A0000000049454E44AE426082}
+          end>
+        Name = 'sbStatRestore'
       end>
     Destination = <
       item
@@ -2558,6 +3149,66 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Layers = <
           item
             Name = 'SpeedButton6'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbOrderProperties'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbAutoDT'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbAutoZN'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbFLKZN'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbAttrZN'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbFindZN'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbExportCSV'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sSpeedButton36'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbStatDelete'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'sbStatRestore'
           end>
       end>
     Left = 796
