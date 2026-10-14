@@ -11,7 +11,7 @@ uses
   FMX.Layouts, FMX.Skia, FMX.Objects, FMX.Controls.Presentation, FMX.ScrollBox,
   FMX.Memo, {$IFDEF MOUSE32}objMouse32{$ELSE}objMouse{$ENDIF}, System.IOUtils, WPTForm2,
   instPointSign, FMX.Ani, InstLineSign, InstBlockSign, InstLayerFrame,
-  FramePropEditor, DlgRootPropEditor, StylusInput, instQuickLayers;
+  FramePropEditor, DlgRootPropEditor, StylusInput, instQuickLayers, instAccuDraw;
 
 type
   TMainFormMouseObj = class(TMainFormSkia)
@@ -160,6 +160,9 @@ type
    InstLines : TInstLinesFrame;
    InstBlocks: TInstBlocksFrame;
    QuickLayers: TQuickLayersFrame;
+  // параметры операций (числа, флажки, переключатели): внизу формы над строкой
+  // состояния, AccuDraw.Show(Имена, Классы) / AccuDraw.Hide
+   AccuDraw: TInstAccuDrawFrame;
    destructor Destroy; override;
    procedure Loaded; override;
    procedure DoShow; override;
@@ -290,6 +293,10 @@ begin
   LayerFrame.OnActiveLayerChanged := LayerActiveChanged;
  end;
 // быстрые слои (FlyQuickLayers): под панелью знаков, кнопка btnQuickLayers
+ AccuDraw := TInstAccuDrawFrame.Create(Self);
+ AccuDraw.Parent := Self;
+ AccuDraw.Align := TAlignLayout.Bottom;
+ AccuDraw.Visible := False;
  QuickLayers := TQuickLayersFrame.Create(InstHost2);
  QuickLayers.Parent := InstHost2;
  QuickLayers.Align := TAlignLayout.Client;
@@ -517,6 +524,9 @@ end;
 procedure TMainFormMouseObj.ToolButtonClick(Sender: TObject);
 var Op: Integer;
 begin
+// фокус - главному окну: клавиши (ввод значений панели параметров) идут
+// операции, а не элементу, который был в фокусе
+ FocusMainForm;
  if Selector = nil then exit;
  if DendroButtonClick(Sender) then exit;
  if MouseObject <> nil then
@@ -1100,20 +1110,39 @@ end;
 
 // клавиши - в обработчик мыши (выбор операции, Esc, Shift/Ctrl), кроме ввода
 // в поля редактирования; только для перенесенных обработчиков (MOUSE32)
+// клавиши с символом (цифры, точка, буквы) FMX передает с Key = 0 и символом в
+// KeyChar - для операций мыши (коды клавиш, как в старой программе) символ
+// переводится в код: цифра и латинская буква - код клавиши ('a' - 'A'), точка
+// и запятая - 190 (VK_OEM_PERIOD), остальные - код символа
 procedure TMainFormMouseObj.KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState);
 {$IFDEF MOUSE32}
 var Hook: Boolean;
+    K: Word;
 {$ENDIF}
 begin
 {$IFDEF MOUSE32}
- if (MouseObject <> nil) and (Key <> 0) and not ((Focused <> nil) and ((Focused.GetObject is TCustomEdit) or (Focused.GetObject is TCustomMemo))) then begin
+ K := Key;
+ if (K = 0) and (KeyChar <> #0) then
+  if CharInSet(KeyChar, ['.', ',']) then K := 190 else
+  if CharInSet(KeyChar, ['a'..'z']) then K := Ord(KeyChar) - 32 else
+   K := Ord(KeyChar);
+ if (MouseObject <> nil) and (K <> 0) and not ((Focused <> nil) and ((Focused.GetObject is TCustomEdit) or (Focused.GetObject is TCustomMemo))) then begin
   Hook := False;
-  MouseObject.KeyDown(TwgForm, Key, Shift, Hook);
+  MouseObject.KeyDown(TwgForm, K, Shift, Hook);
   if Hook then begin
    Key := 0;
    KeyChar := #0;
    exit;
   end;
+ end;
+// Escape, не принятый операцией (отмена преобразования в TEditMap), - кнопка
+// Esc: операция завершается, кнопки инструментов отжимаются. В поле ввода
+// Escape остается полю
+ if (Key = vkEscape) and not ((Focused <> nil) and ((Focused.GetObject is TCustomEdit) or (Focused.GetObject is TCustomMemo))) then begin
+  btnEscClick(btnEsc);
+  Key := 0;
+  KeyChar := #0;
+  exit;
  end;
 {$ENDIF}
  inherited;

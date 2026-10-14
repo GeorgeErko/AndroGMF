@@ -193,7 +193,7 @@ implementation
 
 uses Math, System.Math.Vectors, System.Generics.Collections, FMX.Forms,
      GBFWUndo, UndoColNew, UpdateMessages, newSelector, newSettings, polygons,
-     maths_basic, EMath, FramePropEditor, FrameAccuDraw, TextManager, TwgColle,
+     maths_basic, EMath, FramePropEditor, TextManager, TwgColle,
      newForm0, FrameObjects,
      ogcDrawerSkia, ogcMarker, objOutline, EcDot2, TwgBitmaps, newProcs, Writer, Selector32;
 
@@ -1399,20 +1399,19 @@ begin
      MessageError('Укажите точку от которой будет выполняться масштабирование объекта, либо две точки для направления масштабирования ...');
      exit;
     end;
-    fixKoef := GlobalAccuDraw.Koef;
+    fixKoef := accKoef;
     if (fixKoef <> xyNull) and (Abs(fixKoef) > 1E-6) then begin
      Kx := fixKoef;
      Ky := fixKoef;
      emModifyObjects('Scale_Objects...', procedure(Inverse: Boolean) begin if Inverse then emScaleObjects(X1, Y1, 1 / Kx, 1 / Ky) else emScaleObjects(X1, Y1, Kx, Ky); end);
      fixKoef := xyNull;
-     GlobalAccuDraw.CR.IsChecked := False;
      EndTransform;
     end;
    end else inherited Return(Sender);
  // поворот на угол из AccuDraw
   em_ObjectRotate:
    if TComponent(Sender).Tag = 4 then begin
-    fixAngle := GlobalAccuDraw.Angle;
+    fixAngle := accAngle;
     if fixAngle <> xyNull then begin
      if (X1 = ZNull) and (Objects.Count = 1) and (TObject(Objects[0]) is TPointDot) then begin
       X1 := TPointDot(Objects[0]).XDot;
@@ -1423,11 +1422,9 @@ begin
       exit;
      end;
      emRotateCopyObjects(X1, Y1, fixAngle * Pi / 180);
-     GlobalAccuDraw.CA.IsChecked := False;
      fixAngle := xyNull;
      EndTransform;
     end;
-    GlobalAccuDraw.useLevels := False;
    end else inherited Return(Sender);
  else
   inherited Return(Sender);

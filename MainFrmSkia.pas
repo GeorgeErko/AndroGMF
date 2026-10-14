@@ -63,6 +63,9 @@ type
     FLastDestW: Single;
     FLastDestH: Single;
     FLastAbsScale: Single;
+   // левый верхний угол SkPainter на форме при прошлом пересчете ActiveRect
+    FPainterPos: TPointF;
+    FPainterPosValid: Boolean;
     FLastMiddleDownTick: UInt64;
     FLastMiddleDownPos: TPointF;
     PanActive: Boolean;
@@ -111,6 +114,7 @@ type
     procedure SettingsFrameClose(Sender: TObject);
     procedure PlaceSettingsFrame;
     procedure UpdateScaleLabel;
+    procedure ResizeActiveRect;
   protected
     procedure Loaded; override;
     procedure SetSelectorParams; virtual;
@@ -304,8 +308,6 @@ begin
 end;
 
 procedure TMainFormSkia.SkPainterResize(Sender: TObject);
-var
-  R: TogsRect;
 begin
  if (FSettingsFrame <> nil) and FSettingsFrame.Visible then PlaceSettingsFrame;
   if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) then
@@ -320,17 +322,39 @@ begin
   FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
   FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
 
-  R := TogsRect.Create;
-  try
-    R.Assign(Selector.ActiveRect);
-    Selector.ActiveRect := R;
-  finally
-    R.Free;
-  end;
-
-  Selector.UpdateRects(False);
+  ResizeActiveRect;
   if SkPainter <> nil then
     SkPainter.Redraw;
+end;
+
+// размер или положение окна карты изменились (открыта/закрыта боковая панель,
+// изменен размер формы): масштаб сохраняется, меняется видимая область
+// (ActiveRect) - по новому размеру; сдвиг окна карты на форме учитывается,
+// и изображение на экране остается на месте. Первый раз (масштаба еще нет) -
+// прежняя область вписывается в окно
+procedure TMainFormSkia.ResizeActiveRect;
+var R: TogsRect;
+    S: Double;
+    P: TPointF;
+begin
+ S := Selector.GetScale;
+ P := SkPainter.LocalToAbsolute(PointF(0, 0));
+ R := TogsRect.Create;
+ try
+  R.Assign(Selector.ActiveRect);
+  if (S > 0) and FPainterPosValid and (FDrawerSkia.Width > 0) and (FDrawerSkia.Height > 0) then begin
+   R.XMin := R.XMin + (P.X - FPainterPos.X) * LastCanvasScale / S;
+   R.YMin := R.YMin + (P.Y - FPainterPos.Y) * LastCanvasScale / S;
+   R.XMax := R.XMin + FDrawerSkia.Width / S;
+   R.YMax := R.YMin + FDrawerSkia.Height / S;
+  end;
+  Selector.ActiveRect := R;
+ finally
+  R.Free;
+ end;
+ FPainterPos := P;
+ FPainterPosValid := True;
+ Selector.UpdateRects(False);
 end;
 
 function TMainFormSkia.ExportSceneToPdf(const AFileName: string): string;
@@ -1786,7 +1810,6 @@ var
   Paint: ISkPaint;
   DstRect: TRectF;
   T0, Dt: UInt64;
-  RAct: TogsRect;
   WorldRect: TRectF;
   PrevWorld: Boolean;
   M: TMatrix;
@@ -1848,14 +1871,7 @@ begin
         FDrawerSkia.Width := Round(ADest.Width * LastCanvasScale);
         FDrawerSkia.Height := Round(ADest.Height * LastCanvasScale);
 
-        RAct := TogsRect.Create;
-        try
-          RAct.Assign(Selector.ActiveRect);
-          Selector.ActiveRect := RAct;
-        finally
-          RAct.Free;
-        end;
-        Selector.UpdateRects(False);
+        ResizeActiveRect;
         InvalidateOverlayAll;
       end;
     if ACanvas <> nil then ACanvas.Clear(TAlphaColors.White);

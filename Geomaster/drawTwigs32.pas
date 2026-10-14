@@ -34,6 +34,7 @@ type
    Twigs: PCollection;
    Name: String;
    addAngle: Double;
+   OwnsParent: Boolean; // ParentTwig создан для направляющих - освобождается здесь
   //
    Constructor Create(Twig_: TTwig; Name_: String; addAngle_: Double = Pi/2);
    Destructor Destroy; override;
@@ -63,6 +64,10 @@ type
    Destructor Destroy; override;
    Procedure UpdateTwigs;
    Procedure Add(Tw: TTwig; Nm: String);
+  // направляющие через точку (X, Y): для каждого угла - прямая под этим углом и
+  // перпендикуляр к ней (угол - как addAngle: направление (cos, -sin));
+  // такие же уже есть - не добавляются
+   Procedure AddPointGuides(X, Y: Double; const Angles: array of Double; Nm: String);
    Procedure Pack(Nm: String);
    Procedure Delete(Tw: TTwig);
    Function GetNearestTwig(X, Y: Double; var a, b, Dist: Double; P: PCollection): TTwig;
@@ -286,6 +291,14 @@ begin
  end;
 end;
 
+// перо рисуемого контура (живой слой, Difference): цвет через SkLiveColor,
+// толщина 2 или пунктир 1 - по настройке psWidthPath; одно для всех видов
+function SkPathPen(const Canvas: ISkCanvas; Color: TAlphaColor): ISkPaint;
+begin
+ if TForm2(GTwgForm).Settings.psWidthPath then Result := SkPen(Canvas, SkLiveColor(Color), 2, False) else
+  Result := SkPen(Canvas, SkLiveColor(Color), 1, True);
+end;
+
 procedure SkDrawLineClipped(const Canvas: ISkCanvas; X1, Y1, X2, Y2: Double; const Paint: ISkPaint);
 var R: TRectF;
     XMin, YMin, XMax, YMax, Dx, Dy, T0, T1: Double;
@@ -444,7 +457,7 @@ var Paint: ISkPaint;
     TempDot: Boolean;
 begin
  if (Canvas = nil) or (Twig.Coord.Count = 0) then exit;
- if TForm2(GTwgForm).Settings.psWidthPath then Paint := SkPen(Canvas, SkLiveColor(Color), 2, False) else Paint := SkPen(Canvas, SkLiveColor(Color), 1, True);
+ Paint := SkPathPen(Canvas, Color);
 // у сплайна положение мыши - временная последняя точка (как в старом Draw)
  TempDot := (Twig is TTwigSpline) and (mX <> xyNull);
  if TempDot then begin
@@ -658,7 +671,7 @@ var Paint: ISkPaint;
     D: TDot;
 begin
  if (Canvas = nil) or (Twig.Coord.Count = 0) then exit;
- Paint := SkPen(Canvas, Color, 1, True);
+ Paint := SkPathPen(Canvas, Color);
 // пока вторая точка не задана - линия, иначе дуга
  if EqualPoints(TTwigArc(Twig).A, TTwigArc(Twig).B) then begin
   D := Twig[Twig.Coord.Count - 1];
@@ -771,7 +784,7 @@ procedure TTwigPathArc2.Draw(const Canvas: ISkCanvas);
 var Paint: ISkPaint;
 begin
  if (Canvas = nil) or (Twig.Coord.Count = 0) then exit;
- Paint := SkPen(Canvas, Color, 1, True);
+ Paint := SkPathPen(Canvas, Color);
 // хорда, пока не задана третья точка, затем дуга
  if (prevTwig = nil) and (CondArc < 2) then
   Canvas.DrawLine(X1, Y1, X2, Y2, Paint)
@@ -859,7 +872,7 @@ begin
   exit;
  end;
  if Canvas = nil then exit;
- SkDrawTwig(Canvas, Twig, SkPen(Canvas, Color, 1, True));
+ SkDrawTwig(Canvas, Twig, SkPathPen(Canvas, Color));
 end;
 
 procedure TTwigPathRect.UpdateGeometry;
@@ -1021,6 +1034,7 @@ end;
 destructor TOrthoTwig.Destroy;
 begin
  ParentTwig.OnDestroy:=nil;
+ If OwnsParent then ParentTwig.Free;
  Twigs.Free;
 end;
 
@@ -1175,6 +1189,36 @@ begin
 // Writeln('ortho3');
  Twig[Twigs.Count-1].UpdateTwig;
 // Writeln('ortho4');
+end;
+
+procedure TOrthoTwigs.AddPointGuides(X, Y: Double; const Angles: array of Double; Nm: String);
+var I, J: Integer;
+    A, B: Double;
+    Found: Boolean;
+    Tw: TTwig;
+    OT: TOrthoTwig;
+begin
+ For J:=0 to High(Angles) do begin
+ // пара «прямая + перпендикуляр» повторяется через Pi/2
+  A:=Angles[J]-Floor(Angles[J]/(Pi/2))*(Pi/2);
+  Found:=False;
+  For I:=0 to Twigs.Count-1 do begin
+   OT:=Twigs[I];
+   If not OT.OwnsParent or (OT.ParentTwig.Coord.Count<>1) then continue;
+   If not EqualAnyPoints(OT.ParentTwig[0].XDot,OT.ParentTwig[0].YDot,X,Y) then continue;
+   B:=OT.addAngle-Floor(OT.addAngle/(Pi/2))*(Pi/2);
+   If (Abs(A-B)<1E-6) or (Abs(Abs(A-B)-Pi/2)<1E-6) then begin Found:=True;break;end;
+  end;
+  If Found then continue;
+  Tw:=TTwig.Create(GSelector, 0);
+  Tw.Insert(TDot.Create(X,Y,0));
+  Tw.Closed:=1;
+  Tw.SetMinMax;
+  OT:=TOrthoTwig.Create(Tw,Nm,Angles[J]);
+  OT.OwnsParent:=True;
+  Twigs.Insert(OT);
+  OT.UpdateTwig;
+ end;
 end;
 
 procedure TOrthoTwigs.Delete(Tw: TTwig);
@@ -1684,13 +1728,13 @@ var Paint: ISkPaint;
     I: Integer;
 begin
  if (Canvas = nil) or (Twig.Coord.Count = 0) then exit;
- Paint := SkPen(Canvas, Color, 1, True);
+ Paint := SkPathPen(Canvas, Color);
  SkDrawTwig(Canvas, TwigL, Paint);
  SkDrawTwig(Canvas, TwigR, Paint);
  D := Twig[Twig.Coord.Count - 1];
  if mX <> xyNull then Canvas.DrawLine(D.XDot, D.YDot, mX, mY, Paint);
 // заливка (штриховка, прямоугольники) - черным пунктиром
- Paint := SkPen(Canvas, TAlphaColorRec.Black, 1, True);
+ Paint := SkPen(Canvas, SkLiveColor(TAlphaColorRec.Black), 1, True);
  for I := 0 to Rects.Count - 1 do SkDrawTwig(Canvas, TTwig(Rects[I]), Paint);
 end;
 

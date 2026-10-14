@@ -140,7 +140,10 @@ uses
   FrameSettings in 'FrameSettings.pas' {SettingsFrame: TFrame},
   FrameDendro in 'FrameDendro.pas' {FrameDendro: TFrame},
   FrameJSON in 'FrameJSON.pas' {FrameJSON: TFrame},
-  instQuickLayers in 'instQuickLayers.pas' {QuickLayersFrame: TFrame};
+  instQuickLayers in 'instQuickLayers.pas' {QuickLayersFrame: TFrame},
+  instAccuDraw in 'instAccuDraw.pas' {InstAccuDrawFrame: TFrame},
+  VoskSpeech in 'VoskSpeech.pas',
+  WinSpeech in 'WinSpeech.pas';
 
 {$R *.res}
 

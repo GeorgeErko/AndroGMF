@@ -58,6 +58,12 @@ type
   //
    Function emGetDotMarker(var varX, varY: Double; LastPoint: TDot; StvorLine: TStvorLine; out objPoint: TTwgObject; UsePathTwig: Boolean = True; UseGrid: Boolean = True; useSTS: boolean = False): boolean; virtual;
    Function emGetNearestPoint(X, Y: Double): TDot;
+  // основания перпендикуляра к линии под курсором (Index 0, 1...): последняя
+  // точка рисуемого контура; у рисования (TMousePainter) - и точка залипания
+   Function GetPerpendBase(Index: Integer; out X, Y: Double): Boolean; virtual;
+  // неподвижная часть рисуемого примитива для привязки (поставленные точки);
+  // nil - нет (фигура строится от курсора: прямоугольник, окружность и т.п.)
+   Function DrawnFixedTwig: TTwig; virtual;
    Function emInsertPointInTwig(X, Y: Double; LotCol: PCollection; selPoints: TNearestPoints): Integer;
    Function emFilterActiveLot(X, Y: Double): boolean;
   //
@@ -153,26 +159,45 @@ var Dist:Double;XX,YY,XX1,YY1:Double;Twig:TTwig;
     MsNear, MsTwig, MsLink, MsBlk: Double;
     LinkFound: Boolean;
     BlockR: Double;
+// основание перпендикуляра из точки (X,Y) на отрезок P1-P2; из нескольких
+// точек (GetPerpendBase: точка залипания, последняя точка контура) - ближайшее
+// к курсору
 Function PerpendOn(P1,P2:TDot;var XOut,YOut: Double):boolean;
 var X,Y:Double;Tw1,Tw2:TTwig;Angle:Double;
     W:TWorkPere;
+    K:Integer;
+    MinS:Double;
 begin
  Result:=False;
- If mpTwig = nil then exit;
- X:=mpTwig.LastPoint.XDot;Y:=mpTwig.LastPoint.YDot;
+ MinS:=1E300;
+ Angle:=Direct_Angle(P1.XDot,P1.YDot,P2.XDot,P2.YDot);
  Tw1:=TTwig.Create(GSelector, 0);Tw1.Insert(TDot.CreateAsDot(P1));Tw1.Insert(TDot.CreateAsDot(P2));
  Tw1.SetMinMax;
- Angle:=Direct_Angle(P1.XDot,P1.YDot,P2.XDot,P2.YDot);
- Tw2:=TTwig.Create(GSelector, 0);Tw2.Insert(TDot.Create(X-10000*Cos(Angle+Pi/2),Y-10000*sin(Angle+Pi/2),0));Tw2.Insert(TDot.Create(X+10000*Cos(Angle+Pi/2),Y+10000*sin(Angle+Pi/2),0));
- Tw2.SetMinMax;
- Twigs.InitPereParams;
-   try Twigs.newPereTwigs(Tw1,Tw2,False);except ShowMessage('objMouseSelect '+IntToStr(121));end;
-  If Twigs.newPerehlests.Count=1 then begin
-   W:=Twigs.newPerehlests[0];
-   XOut:=W.X;YOut:=W.Y;
-   Result:=True;
+ try
+  K:=0;
+  While GetPerpendBase(K,X,Y) do begin
+   Inc(K);
+   Tw2:=TTwig.Create(GSelector, 0);Tw2.Insert(TDot.Create(X-10000*Cos(Angle+Pi/2),Y-10000*sin(Angle+Pi/2),0));Tw2.Insert(TDot.Create(X+10000*Cos(Angle+Pi/2),Y+10000*sin(Angle+Pi/2),0));
+   Tw2.SetMinMax;
+   Twigs.InitPereParams;
+   try
+    try Twigs.newPereTwigs(Tw1,Tw2,False);except ShowMessage('objMouseSelect '+IntToStr(121));end;
+    If Twigs.newPerehlests.Count=1 then begin
+     W:=Twigs.newPerehlests[0];
+     If Distance(W.X,W.Y,varX,varY)<MinS then begin
+      MinS:=Distance(W.X,W.Y,varX,varY);
+      XOut:=W.X;YOut:=W.Y;
+      Result:=True;
+     end;
+    end;
+   finally
+    Twigs.FreePereParams;
+    Tw2.Free;
+   end;
   end;
- Twigs.FreePereParams;
+ finally
+  Tw1.Free;
+ end;
 end;
 Function GetNearestPointFromLink(P:PCollection;var X,Y:Double):boolean; // возвращает расстояние до ближайшей точки пересечения
 var Tw,Tw2:TTwig;I,J:Integer;
@@ -232,6 +257,14 @@ begin
   end;
 //  Writeln(2);
  end;
+// рисуемый контур (еще не на карте): его отрезки - середина, перпендикуляр,
+// пересечения с объектами карты (окружность и дуга - только направляющие)
+ Twig:=DrawnFixedTwig;
+ If (Twig<>nil) and (Twig.Coord.Count>1) then begin
+  S:=Twig.GetTwigDist(varX,varY,a,b);
+  If XRasst(S)<=Twigs.Settings.psAutoDisst then If P.IndexOf(Twig)=-1 then P.Insert(Twig);
+  If (S<=Ms) then begin Ms:=S;Result:=Twig;aDist:=S;end;
+ end;
 // Writeln('TwigsEnd............');
  If Result<>nil then begin
  // Writeln('Dist=',S:8:2,' ',Ms:8:2,' ',Result.ClassName);
@@ -264,7 +297,8 @@ begin
  TemporaryDot.What:=tdNotUsed;
 try
  try
-    If not Marker.Visible then If (UseGrid)and(GlobalSettings.MarkerView.Checked['mvGrid']) then begin // ищем притяжение по сетке
+   // притяжение к узлам сетки - только если сетка показывается
+    If not Marker.Visible then If (UseGrid)and(Twigs.Settings.gsShowGrid)and(GlobalSettings.MarkerView.Checked['mvGrid']) then begin // ищем притяжение по сетке
      If GridPath.GetNearestPoint(varX,varY) then begin
      // Marker.Color:=Twigs.Settings.gsGridColor;
   {} // Marker.Size:=Marker.OriginalSize;
@@ -418,6 +452,8 @@ try
          Marker.AssignMarker(GlobalSettings.MarkerView.NameOf['mvLine'],GCanvas);
          If UsedOperation then If Settings.psSaveOrthoTwigs then
           OrthoTwigs.DrawLines(GCanvas,LinkTwigs);
+        // точка на линии (и на направляющей) точкой залипания не становится:
+        // залипание - вершина, середина отрезка, пересечение линий/направляющих
         end;
   {}  //If Marker.Color = Marker.Colors[0] then Marker.Size:=Marker.OriginalSize else Marker.Size:=Marker.OriginalSize div 2;
        If UsedOperation then begin
@@ -525,6 +561,19 @@ end;
  end;
 end;
 
+function TMouseSelector.DrawnFixedTwig: TTwig;
+begin
+ Result := nil;
+end;
+
+function TMouseSelector.GetPerpendBase(Index: Integer; out X, Y: Double): Boolean;
+begin
+ Result := (Index = 0) and (mpTwig <> nil) and (mpTwig.LastPoint <> nil);
+ if not Result then exit;
+ X := mpTwig.LastPoint.XDot;
+ Y := mpTwig.LastPoint.YDot;
+end;
+
 function TMouseSelector.emGetNearestPoint(X, Y: Double): TDot;
 var D:TDot;I,N:Integer;D1,D2:Double;MinS,S:Double;
     W:byte;Tw:TTwig;
@@ -554,6 +603,16 @@ begin
   end;                                                
 //  writeln('EndI=',I);
  end;
+// поставленные точки рисуемого примитива (еще не на карте); точка, идущая за
+// мышью, - временная, не учитывается
+ Tw:=DrawnFixedTwig;
+ If Tw<>nil then
+  For I:=0 to Tw.Coord.Count-1 do begin
+   D:=Tw.Coord[I];
+   If (mpTwig<>nil) and (mpTwig.mX<>xyNull) and EqualAnyPoints(D.XDot,D.YDot,mpTwig.mX,mpTwig.mY) then continue;
+   S:=Distance(X,Y,D.XDot,D.YDot);
+   If S<=MinS then begin Result:=D;MinS:=S;objTemporaryTwig:=nil;end;
+  end;
 // WRiteln(MinS,' ',Result<>nil);
  For I:=0 to Twigs.Twigs.AnyCount-1 do begin
   PD:=Twigs.Twigs.AAt(I,W);

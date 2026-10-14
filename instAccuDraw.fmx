@@ -1,0 +1,272 @@
+object InstAccuDrawFrame: TInstAccuDrawFrame
+  Size.Width = 670.000000000000000000
+  Size.Height = 54.000000000000000000
+  Size.PlatformDefault = False
+  object ControlsBox: THorzScrollBox
+    Align = Left
+    Size.Width = 372.000000000000000000
+    Size.Height = 54.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Viewport.Width = 372.000000000000000000
+    Viewport.Height = 54.000000000000000000
+  end
+  object pnlKeys: TLayout
+    Align = Left
+    Margins.Top = 2.000000000000000000
+    Margins.Right = 4.000000000000000000
+    Position.X = 372.000000000000000000
+    Position.Y = 2.000000000000000000
+    Size.Width = 344.000000000000000000
+    Size.Height = 52.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    object btnKeyUndo: TButton
+      Align = Right
+      CanFocus = False
+      Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1102#1102' '#1090#1086#1095#1082#1091' (Z)'
+      Margins.Left = 2.000000000000000000
+      Margins.Bottom = 4.000000000000000000
+      Position.X = 306.000000000000000000
+      Position.Y = 52.000000000000000000
+      Size.Width = 38.000000000000000000
+      Size.Height = 0.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 2
+      Text = #8630
+      TextSettings.Trimming = None
+      OnClick = KeyUndoClick
+    end
+    object LayKeys1: TLayout
+      Align = Top
+      Margins.Bottom = 2.000000000000000000
+      Size.Width = 344.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      object btnKey1: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 2.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = '1'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey2: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 39.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = '2'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey3: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 76.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+        Text = '3'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey4: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 113.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 5
+        Text = '4'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey5: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 150.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 6
+        Text = '5'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey6: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 187.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 7
+        Text = '6'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object Button1: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1102#1102' '#1090#1086#1095#1082#1091' (Z)'
+        Margins.Left = 2.000000000000000000
+        Position.X = 224.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = #8630
+        TextSettings.Trimming = None
+        OnClick = KeyUndoClick
+      end
+      object btnKeySnaps: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1057#1073#1088#1086#1089#1080#1090#1100' '#1087#1088#1080#1074#1103#1079#1082#1080' (X)'
+        Margins.Left = 2.000000000000000000
+        Position.X = 264.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        Text = 'X'
+        TextSettings.Trimming = None
+        OnClick = KeySnapsClick
+      end
+    end
+    object LayKeys2: TLayout
+      Align = Top
+      Margins.Bottom = 2.000000000000000000
+      Position.Y = 26.000000000000000000
+      Size.Width = 344.000000000000000000
+      Size.Height = 24.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      object btnKey7: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 2.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = '7'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey8: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 39.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Text = '8'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey9: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 76.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+        Text = '9'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKey0: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 113.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 5
+        Text = '0'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKeyDot: TButton
+        Align = Left
+        CanFocus = False
+        Margins.Left = 2.000000000000000000
+        Position.X = 150.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 6
+        Text = '.'
+        TextSettings.Trimming = None
+        OnClick = KeyClick
+      end
+      object btnKeyBack: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1080#1081' '#1089#1080#1084#1074#1086#1083
+        Margins.Left = 2.000000000000000000
+        Position.X = 187.000000000000000000
+        Size.Width = 35.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 7
+        Text = #8592
+        TextSettings.Trimming = None
+        OnClick = KeyBackClick
+      end
+      object btnKeyEnter: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
+        Margins.Left = 2.000000000000000000
+        Position.X = 224.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = #9166
+        TextSettings.Trimming = None
+        OnClick = KeyEnterClick
+      end
+      object btnKeyMic: TButton
+        StaysPressed = True
+        Align = Left
+        CanFocus = False
+        Hint = #1043#1086#1083#1086#1089#1086#1074#1086#1081' '#1074#1074#1086#1076': '#1095#1080#1089#1083#1072'; '#171#1074#1074#1086#1076#187', '#171#1085#1072#1079#1072#1076#187', '#171#1089#1073#1088#1086#1089#187', '#171#1089#1090#1077#1088#1077#1090#1100#187
+        Margins.Left = 2.000000000000000000
+        Position.X = 264.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        Text = #55356#57252
+        TextSettings.Trimming = None
+        OnClick = KeyMicClick
+      end
+    end
+  end
+end
