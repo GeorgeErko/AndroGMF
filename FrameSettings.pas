@@ -1,4 +1,4 @@
-unit FrameSettings;
+﻿unit FrameSettings;
 
 // копия панели CPPainter (C:\Geomaster24\MasterForm.pas): страницы Note
 // переключают кнопки Panel333, элементы страниц - установки TwgForm.Settings

@@ -4,18 +4,18 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
   Size.PlatformDefault = False
   object ControlsBox: THorzScrollBox
     Align = Left
-    Size.Width = 372.000000000000000000
+    Size.Width = 327.000000000000000000
     Size.Height = 54.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Viewport.Width = 372.000000000000000000
+    Viewport.Width = 327.000000000000000000
     Viewport.Height = 54.000000000000000000
   end
   object pnlKeys: TLayout
     Align = Left
     Margins.Top = 2.000000000000000000
     Margins.Right = 4.000000000000000000
-    Position.X = 372.000000000000000000
+    Position.X = 327.000000000000000000
     Position.Y = 2.000000000000000000
     Size.Width = 344.000000000000000000
     Size.Height = 52.000000000000000000
@@ -78,7 +78,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 4
+        TabOrder = 5
         Text = '3'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -91,7 +91,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 5
+        TabOrder = 6
         Text = '4'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -104,7 +104,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 6
+        TabOrder = 7
         Text = '5'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -117,7 +117,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 7
+        TabOrder = 8
         Text = '6'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -131,7 +131,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 38.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 2
+        TabOrder = 3
         Text = #8630
         TextSettings.Trimming = None
         OnClick = KeyUndoClick
@@ -145,10 +145,24 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 38.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 3
+        TabOrder = 4
         Text = 'X'
         TextSettings.Trimming = None
         OnClick = KeySnapsClick
+      end
+      object Button3: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
+        Margins.Left = 2.000000000000000000
+        Position.X = 304.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = #9166
+        TextSettings.Trimming = None
+        OnClick = KeyEnterClick
       end
     end
     object LayKeys2: TLayout
@@ -193,7 +207,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 4
+        TabOrder = 5
         Text = '9'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -206,7 +220,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 5
+        TabOrder = 6
         Text = '0'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -219,7 +233,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 6
+        TabOrder = 7
         Text = '.'
         TextSettings.Trimming = None
         OnClick = KeyClick
@@ -228,14 +242,16 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Align = Left
         CanFocus = False
         Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1080#1081' '#1089#1080#1084#1074#1086#1083
+        Images = ImageList1
+        ImageIndex = 0
         Margins.Left = 2.000000000000000000
         Position.X = 187.000000000000000000
         Size.Width = 35.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 7
-        Text = #8592
+        TabOrder = 8
         TextSettings.Trimming = None
+        OnApplyStyleLookup = btnKeyBackApplyStyleLookup
         OnClick = KeyBackClick
       end
       object btnKeyEnter: TButton
@@ -243,11 +259,11 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         CanFocus = False
         Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
         Margins.Left = 2.000000000000000000
-        Position.X = 224.000000000000000000
+        Position.X = 264.000000000000000000
         Size.Width = 38.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 2
+        TabOrder = 3
         Text = #9166
         TextSettings.Trimming = None
         OnClick = KeyEnterClick
@@ -258,15 +274,76 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         CanFocus = False
         Hint = #1043#1086#1083#1086#1089#1086#1074#1086#1081' '#1074#1074#1086#1076': '#1095#1080#1089#1083#1072'; '#171#1074#1074#1086#1076#187', '#171#1085#1072#1079#1072#1076#187', '#171#1089#1073#1088#1086#1089#187', '#171#1089#1090#1077#1088#1077#1090#1100#187
         Margins.Left = 2.000000000000000000
-        Position.X = 264.000000000000000000
+        Position.X = 224.000000000000000000
         Size.Width = 38.000000000000000000
         Size.Height = 24.000000000000000000
         Size.PlatformDefault = False
-        TabOrder = 3
+        TabOrder = 4
         Text = #55356#57252
         TextSettings.Trimming = None
         OnClick = KeyMicClick
       end
+      object Button2: TButton
+        Align = Left
+        CanFocus = False
+        Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
+        Margins.Left = 2.000000000000000000
+        Position.X = 304.000000000000000000
+        Size.Width = 38.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = #9166
+        TextSettings.Trimming = None
+        OnClick = KeyEnterClick
+      end
     end
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000028849444154388DA5924D48D3
+              611CC73FD335E76A6A9A0C1B59199ABD8987C8C002BBF4B24504DD2A3AD4A5F0
+              5497BA54204168978834EB1665D0ADBA0819D2C18AA0173257D9D0D59A56BE6C
+              39F7DFDBF3D661319C75EB7BFC3DDFCF079EE7F9D95894C06CC0F44DF531141B
+              822C60A0C9B5059FC78F6F8DCFB6B85F30687FDF6E42E931F694EFA0BAC8C974
+              2A442C1D219C0811884F51666B64E0C053DB3F05AD2F5ACDEE8A9D6C2E5DC374
+              2A443415219AFA425A25F2E57991E5F9D718C1E33FF25C1140FB70BBD95BDECA
+              EA62175FE36F09CFBDA176593D1DDBFA69F31ECE0BDC4B1CB4AD5D4163779DC9
+              0B023301333CF3824AA308C7DFF12DFE960DCBB773A4FE22A576379525DE823B
+              3B8A8BF05466E81CEC3400F6BE893E3638AB08C75F6389182D9E031C6DE80020
+              628DD21FEECDC3C268123A438DA794071FEF03607FF67D88E6A5492C230A6080
+              E0AF57B4798F00208D4618C5BDF1AB24942038FD212730CAA08CA0CAB9B20006
+              D8F5075E989BC12E925AE27417E704647307B3E949EE7EBE909724659CFEC86D
+              00525A623008A3F9A53208A3B0A6454ED0E46E623E3388BBC4C1CB9F8FD0C0B1
+              860E5CF632AA4A56D219388D341A4B0BD25A91358A7925A8B6798911A2C8BFCA
+              CFE8CF58FE911E4FDEA7E7E33900DA6A0E71A2FE3C519921A925732A435C65B1
+              26042D15ADB96FDCB7DE6773EB467E5816719526A5250F23F7E81C390D4095D3
+              8BA505319921A5257332836DD8C59DB3776DB06013D75DF198759B1C18BB21A9
+              25492DA8736F249818272AA2249524AD257200AEEDEDE1E4C153850280AD5DCD
+              26563686BB7609492D496949562B2C2D90DF0CCB46CAB9E4BF9C87FF1200F43E
+              B9616E3DEDE55374042D406535AB8A6BF16DDECFF533DD7FF5FF3BBF012AD440
+              DAFF35358F0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\Back.bmp'
+          end>
+        Name = 'Back'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'Back'
+          end>
+      end>
+    Left = 244
+    Top = 13
   end
 end

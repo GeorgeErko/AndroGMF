@@ -15,11 +15,11 @@ type
     btnOpen: TCornerButton;
     ImageList1: TImageList;
     PanelPainter: TPanel;
-    Painter: TPaintBox;
     btnPaint: TCornerButton;
     StatusBar: TStatusBar;
     btnPlus: TCornerButton;
     ptnMinus: TCornerButton;
+    Painter: TPaintBox;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);

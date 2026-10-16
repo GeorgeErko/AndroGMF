@@ -171,6 +171,14 @@ type
    Procedure StartOperation(Opr: Integer);
    Procedure EndTransform;
    Procedure Return(Sender: TObject); override;
+  // панель AccuDraw: сдвиг, копирование, вершины - «Длина», «Угол»; поворот -
+  // «Угол»; масштаб - «Коэффициент»; остальные операции - панель скрыта
+   Procedure ShowAccuDraw; override;
+  // длина сдвига (базовая точка - точка назначения, вершина - новое положение)
+  // и линии от точки залипания
+   Function Hint: String; override;
+   Procedure AccuDrawEnter(Sender: TObject); override;
+   Procedure ApplyAccuAngle; override;
    Procedure emMoveObjects(Dx, Dy: Double);
    Procedure emRotateObjects(XX, YY, Angle: Double);
    Procedure emScaleObjects(XX, YY, Kx, Ky: Double);
@@ -195,7 +203,7 @@ uses Math, System.Math.Vectors, System.Generics.Collections, FMX.Forms,
      GBFWUndo, UndoColNew, UpdateMessages, newSelector, newSettings, polygons,
      maths_basic, EMath, FramePropEditor, TextManager, TwgColle,
      newForm0, FrameObjects,
-     ogcDrawerSkia, ogcMarker, objOutline, EcDot2, TwgBitmaps, newProcs, Writer, Selector32;
+     ogcDrawerSkia, ogcMarker, objOutline, EcDot2, TwgBitmaps, newProcs, Writer, Selector32, FMX.StdCtrls;
 
 const
 // отладка: рисовать габариты выделенных объектов (emDrawGabarites)
@@ -288,6 +296,18 @@ begin
  Angle := EMath.Atan2(Y1 - Y2, X1 - X2) + Pi / 2;
  X2 := X1 + L * Cos(Angle);
  Y2 := Y1 - L * Sin(Angle);
+end;
+
+// направление - дирекционный угол A (градусы, «Угол» AccuDraw; как
+// TTwigPath.Move с useDirectAngle), расстояние - L или до курсора
+procedure FixAngleXY(X1, Y1, A, L: Double; var X2, Y2: Double);
+var D, Angle: Double;
+begin
+ if A = xyNull then exit;
+ if L <> xyNull then D := L else D := Distance(X1, Y1, X2, Y2);
+ Angle := A * Pi / 180;
+ X2 := X1 + D * Sin(Angle);
+ Y2 := Y1 - D * Cos(Angle);
 end;
 
 // поворот точки вокруг (XX, YY) - как RotateDots старой программы
@@ -535,6 +555,7 @@ begin
       end;
      OrthoTwigs.UpdateTwigs;
      UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+     ShowAccuDraw;
      X2 := X;
      Y2 := Y;
      UpdateImage;
@@ -550,6 +571,7 @@ begin
     // выделение рамкой
      LOperation := em_GetObjectFrag;
      UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+     ShowAccuDraw;
      fRect.Left := X;
      fRect.Top := Y;
      fRect.Right := X;
@@ -577,6 +599,9 @@ begin
      X2 := Marker.mX;
      Y2 := Marker.mY;
     end;
+   // длина и угол AccuDraw - от исходного положения вершины
+    FixAngleXY(ObjectPoints.XSelect, ObjectPoints.YSelect, accAngle, fixLength, X2, Y2);
+    FixLengthXY(ObjectPoints.XSelect, ObjectPoints.YSelect, fixLength, X2, Y2);
     Undo.StartTransAction;
     fActiveLots.DeleteAll;
     emFilterActiveLot(ObjectPoints.XSelect, ObjectPoints.YSelect);
@@ -597,6 +622,7 @@ begin
     fActiveLots.DeleteAll;
     LOperation := em_GetObject;
     UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+    ShowAccuDraw;
     TimerClose;
     Twigs.ClassBuildII;
     SelectionChanged;
@@ -606,6 +632,7 @@ begin
     emAddSelectedObjects;
     LOperation := em_GetObject;
     UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+    ShowAccuDraw;
     SelectionChanged;
     UpdateImage;
    end;
@@ -633,6 +660,7 @@ begin
      X2 := Marker.mX;
      Y2 := Marker.mY;
     end;
+    FixAngleXY(X1, Y1, accAngle, fixLength, X2, Y2);
     FixLengthXY(X1, Y1, fixLength, X2, Y2);
     if LOperation = em_Copy then begin
      emCopyObjects(X2 - X1, Y2 - Y1);
@@ -775,6 +803,8 @@ begin
      X2 := X;
      Y2 := Y;
     end;
+    FixAngleXY(ObjectPoints.XSelect, ObjectPoints.YSelect, accAngle, fixLength, X2, Y2);
+    FixLengthXY(ObjectPoints.XSelect, ObjectPoints.YSelect, fixLength, X2, Y2);
     UpdateImage;
    end;
   em_Copy, em_ObjectMove:
@@ -794,6 +824,7 @@ begin
      X2 := fixPoint2.mX;
      Y2 := fixPoint2.mY;
     end;
+    FixAngleXY(X1, Y1, accAngle, fixLength, X2, Y2);
     FixLengthXY(X1, Y1, fixLength, X2, Y2);
     UpdateImage;
    end;
@@ -1366,6 +1397,7 @@ begin
  XO := xyNull;
  YO := xyNull;
  UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+ ShowAccuDraw;
  UpdateImage;
 end;
 
@@ -1382,6 +1414,7 @@ begin
  YO := xyNull;
  LOperation := em_GetObject;
  UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+ ShowAccuDraw;
  TimerClose;
  SelectionChanged;
  UpdateImage;
@@ -1429,6 +1462,64 @@ begin
  else
   inherited Return(Sender);
  end;
+end;
+
+function TEditMap.Hint: String;
+var D: Double;
+begin
+ Result := inherited Hint;
+ D := xyNull;
+ case LOperation of
+  em_ObjectMove, em_Copy:
+   if (X1 <> ZNull) and (X2 <> ZNull) then D := Distance(X1, Y1, X2, Y2);
+  em_MoveObjectPoints:
+   if ObjectPoints.selPoints.Count > 0 then D := Distance(ObjectPoints.XSelect, ObjectPoints.YSelect, X2, Y2);
+ end;
+ if D <> xyNull then Result := Result + '  Сдвиг = ' + FloatToStrF(D, ffFixed, 15, 3);
+end;
+
+procedure TEditMap.ShowAccuDraw;
+begin
+ case LOperation of
+  em_ObjectMove, em_Copy, em_MoveObjectPoints: ShowAccuPanel(['Длина', 'Угол'], [TButton, TButton]);
+  em_ObjectRotate: ShowAccuPanel(['Угол'], [TButton]);
+  em_Scale: ShowAccuPanel(['Коэффициент'], [TButton]);
+ else
+  HideAccuPanel;
+ end;
+end;
+
+// Enter: поворот и масштаб - выполнить с введенным значением (Return 4 / 6);
+// сдвиг, копирование, вершины - как щелчок в текущей точке (длина и угол уже
+// учтены в X2, Y2)
+procedure TEditMap.AccuDrawEnter(Sender: TObject);
+var Hook: Boolean;
+begin
+ case LOperation of
+  em_ObjectRotate: AccuReturn(4);
+  em_Scale: AccuReturn(6);
+  em_ObjectMove, em_Copy, em_MoveObjectPoints:
+   if (LOperation = em_MoveObjectPoints) or (X1 <> ZNull) then begin
+    Hook := False;
+    MouseDown(Twigs, TMouseButton.mbLeft, [], X2, Y2, Hook);
+   end;
+ else
+  inherited;
+ end;
+end;
+
+// поворот: введенный угол - сразу в предпросмотр (emRotateAngle); сдвиг -
+// точка назначения по углу без движения мыши
+procedure TEditMap.ApplyAccuAngle;
+begin
+ case LOperation of
+  em_ObjectRotate: fixAngle := accAngle;
+  em_ObjectMove, em_Copy:
+   if X1 <> ZNull then FixAngleXY(X1, Y1, accAngle, fixLength, X2, Y2);
+  em_MoveObjectPoints:
+   FixAngleXY(ObjectPoints.XSelect, ObjectPoints.YSelect, accAngle, fixLength, X2, Y2);
+ end;
+ UpdateImage;
 end;
 
 procedure TEditMap.ResetTwigOpr15;
@@ -1864,6 +1955,7 @@ begin
  end;
  LOperation := em_ObjectMove;
  UpdateMessage.SetOperation(Self.ClassName, IntToStr(LOperation));
+ ShowAccuDraw;
  SelectionChanged;
  UpdateImage;
 end;

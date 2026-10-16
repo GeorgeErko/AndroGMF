@@ -10,18 +10,24 @@ object LayerFrame: TLayerFrame
     TabOrder = 0
     object HeaderBg: TRectangle
       Align = Contents
+      Margins.Top = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
       Sides = []
       Size.Width = 510.000000000000000000
-      Size.Height = 28.000000000000000000
+      Size.Height = 24.000000000000000000
       Size.PlatformDefault = False
     end
     object btnDrop: TButton
       Align = Right
       Images = ImageList1
-      ImageIndex = 1
-      Position.X = 485.000000000000000000
-      Size.Width = 25.000000000000000000
-      Size.Height = 28.000000000000000000
+      ImageIndex = 2
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 4.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 486.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 20.000000000000000000
+      Size.Height = 24.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
       TextSettings.Trimming = None
@@ -200,6 +206,39 @@ object LayerFrame: TLayerFrame
             FileName = 'C:\!GEOMASTER\Office\LIST1.BMP'
           end>
         Name = 'LIST1'
+      end
+      item
+        MultiResBitmap.Width = 12
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 12
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D494844520000000C00000010080600000022619E
+              070000000473424954080808087C0864880000002D494441542891636018FA80
+              1189FD9F04B53404243B09DD5DFF31F5A1AAC3E611244D580DC50AFE13E1C491
+              03007D010803B6DE16AC0000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER24\SaveDown.bmp'
+          end>
+        Name = 'SaveDown'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000003349444154388D6360180534
+              07FFA1182760C4A7F93FAA22AC6A7119F01FDD5A5C8630E171015180622F1002
+              0403711450010000B2740A021334DD010000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\red.bmp'
+          end>
+        Name = 'red'
       end>
     Destination = <
       item
@@ -212,6 +251,19 @@ object LayerFrame: TLayerFrame
         Layers = <
           item
             Name = 'LIST1'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'SaveDown'
+            SourceRect.Right = 12.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'red'
           end>
       end>
     Left = 470

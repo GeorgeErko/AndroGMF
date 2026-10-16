@@ -10,7 +10,7 @@ object MainForm: TMainForm
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop, iPhone, iPad]
   OnCreate = FormCreate
-  DesignerMasterStyle = 3
+  DesignerMasterStyle = 0
   object Panel1: TPanel
     Align = Top
     Size.Width = 910.000000000000000000

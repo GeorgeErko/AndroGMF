@@ -22,6 +22,11 @@ type
   TStylusHoverEvent = procedure(Action: TStylusHoverAction; const P: TPointF) of object;
   TStylusPointEvent = procedure(const P: TPointF) of object;
 
+const
+ // долгое нажатие, когда система значения не дает: мс и точки формы
+  DefLongPressMs = 600;
+  DefLongPressSlop = 10;
+
 var
   StylusTool: TStylusTool = stUnknown; // инструмент последнего касания
   StylusButton: Boolean = False;       // кнопка пера нажата (последнее касание)
@@ -35,12 +40,17 @@ procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEven
 function FingerOnlyPans: Boolean;
 // касание пером с нажатой кнопкой - как правая кнопка мыши
 function StylusRightButton: Boolean;
+// долгое нажатие (правая кнопка): время, мс, и допуск сдвига пальца или пера,
+// точки формы - системные (Android - ViewConfiguration; Windows - время не
+// задается API, по умолчанию 600, допуск - SM_CXDRAG, не меньше 10)
+function LongPressTimeout: Integer;
+function LongPressSlop: Single;
 
 implementation
 
 {$IF DEFINED(ANDROID)}
 uses
-  System.SysUtils, Androidapi.JNIBridge, Androidapi.JNI.GraphicsContentViewText, FMX.Platform.Android;
+  System.SysUtils, Androidapi.JNIBridge, Androidapi.JNI.GraphicsContentViewText, Androidapi.Helpers, FMX.Platform.Android;
 
 const
  // android.view.MotionEvent
@@ -133,6 +143,22 @@ begin
   GHoverButton := False;
   GOnHover(shExit, P);
  end;
+end;
+
+function LongPressTimeout: Integer;
+begin
+ Result := TJViewConfiguration.JavaClass.getLongPressTimeout;
+ if Result <= 0 then Result := DefLongPressMs;
+end;
+
+// пикселы экрана - в точки формы
+function LongPressSlop: Single;
+var S: Single;
+begin
+ S := 1;
+ if (GForm <> nil) and (GForm.Handle <> nil) and (GForm.Handle.Scale > 0) then S := GForm.Handle.Scale;
+ Result := TJViewConfiguration.JavaClass.get(TAndroidHelper.Context).getScaledTouchSlop / S;
+ if Result <= 0 then Result := DefLongPressSlop;
 end;
 
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
@@ -242,6 +268,23 @@ begin
  Result := DefSubclassProc(Wnd, Msg, wParam, lParam);
 end;
 
+// время «нажать и удерживать» Windows через API не получить - по умолчанию
+function LongPressTimeout: Integer;
+begin
+ Result := DefLongPressMs;
+end;
+
+// порог начала перетаскивания (пикселы экрана) - в точки формы; рассчитан на
+// мышь (обычно 4), для пальца мал - не меньше DefLongPressSlop
+function LongPressSlop: Single;
+var S: Single;
+begin
+ S := 1;
+ if (GForm <> nil) and (GForm.Handle <> nil) and (GForm.Handle.Scale > 0) then S := GForm.Handle.Scale;
+ Result := GetSystemMetrics(SM_CXDRAG) / S;
+ if Result < DefLongPressSlop then Result := DefLongPressSlop;
+end;
+
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
 var Wnd: HWND;
     Atom: Word;
@@ -263,6 +306,16 @@ end;
 {$ELSE}
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
 begin
+end;
+
+function LongPressTimeout: Integer;
+begin
+ Result := DefLongPressMs;
+end;
+
+function LongPressSlop: Single;
+begin
+ Result := DefLongPressSlop;
 end;
 {$ENDIF}
 

@@ -61,6 +61,7 @@ type
    fixDistance: Double;
    objTmp: Pointer;
    fixTimer: TTimer;
+   fixTimerX, fixTimerY: Double; // точка, для которой запущен fixTimer
    PathMarker: TPathMarker;
   //
    cirKvant: Integer;
@@ -84,7 +85,14 @@ type
    fParaWidth: Double;
    kvantStyle: Integer;
    FAccuTag: TComponent;
+   FAccuOp: Integer; // операция, для которой показана панель; -1 - не показана
    Procedure ApplyAccuValue;
+  // «Угол» - дирекционный, градусы; действует, только если задан на панели
+   Procedure ApplyAccuAngle; virtual;
+  // панель с элементами для текущей операции: True - показана заново (значения
+  // сброшены), False - уже показана для этой операции
+   Function ShowAccuPanel(const CNames: array of String; const CClass: array of TComponentClass): Boolean;
+   Procedure HideAccuPanel;
    Procedure ClearAccuValue;
   // удаление последней точки рисуемого примитива (Z, кнопка «↶» панели);
   // последняя точка или фигура целиком - примитив снимается
@@ -97,8 +105,8 @@ type
   // проходящих через точку (с перпендикулярами), кроме окружностей и дуг
    Procedure AddSnapGuides(X, Y: Double);
    Procedure AccuClearSnaps(Sender: TObject);
-   Procedure ShowAccuDraw;
-   Procedure AccuDrawEnter(Sender: TObject);
+   Procedure ShowAccuDraw; virtual;
+   Procedure AccuDrawEnter(Sender: TObject); virtual;
    Procedure AccuDrawChange(Sender: TObject);
    Procedure AccuReturn(Tag: Integer);
   //
@@ -157,24 +165,23 @@ uses Math, EcDot, GBFWUndo, UndoColNew, maths_basic, newClassBuilder, newBlock, 
 
 // панель параметров операции рисования (AccuDraw главной формы): элементы по
 // операции, начальные значения (ширина, сторона параллельной линии, число
-// сторон и построение многоугольника); прячется в деструкторе
+// сторон и построение многоугольника); прячется в деструкторе. Операция без
+// параметров - панель прячется
 procedure TMousePainter.ShowAccuDraw;
+var New: Boolean;
 begin
- if AccuDrawPanel = nil then exit;
  case LOperation of
-  sysDrawLine, sysDrawLine2, sysDrawPoint, sysDrawPoly, sysDrawSpline: AccuDrawPanel.Show(['Длина'], [TButton]);
-  sysDrawCircle: AccuDrawPanel.Show(['Длина', 'Радиус'], [TButton, TButton]);
-  sysDrawParaLine: AccuDrawPanel.Show(['Длина', 'Ширина', 'Слева', 'Справа', 'По центру'], [TButton, TButton, TRadioButton, TRadioButton, TRadioButton]);
-  sysDrawKvant: AccuDrawPanel.Show(['Длина', 'Сторон', 'от центра', 'от отрезка'], [TButton, TButton, TRadioButton, TRadioButton]);
-  sysDrawRect: AccuDrawPanel.Show(['Сторона'], [TButton]);
+  sysDrawLine, sysDrawLine2, sysDrawPoint, sysDrawPoly, sysDrawSpline: New := ShowAccuPanel(['Длина', 'Угол'], [TButton, TButton]);
+  sysDrawArc, sysDrawArc2, sysDrawArc3: New := ShowAccuPanel(['Длина'], [TButton]);
+  sysDrawCircle: New := ShowAccuPanel(['Длина', 'Радиус'], [TButton, TButton]);
+  sysDrawParaLine: New := ShowAccuPanel(['Длина', 'Угол', 'Ширина', 'Слева', 'Справа', 'По центру'], [TButton, TButton, TButton, TRadioButton, TRadioButton, TRadioButton]);
+  sysDrawKvant: New := ShowAccuPanel(['Длина', 'Сторон', 'от центра', 'от отрезка'], [TButton, TButton, TRadioButton, TRadioButton]);
+  sysDrawRect: New := ShowAccuPanel(['Сторона'], [TButton]);
  else
+  HideAccuPanel;
   exit;
  end;
- AccuDrawPanel.ShownBy := Self;
- AccuDrawPanel.OnEnter := AccuDrawEnter;
- AccuDrawPanel.OnChange := AccuDrawChange;
- AccuDrawPanel.OnUndoPoint := AccuUndoPoint;
- AccuDrawPanel.OnClearSnaps := AccuClearSnaps;
+ if not New then exit;
  case LOperation of
   sysDrawParaLine: begin
     AccuDrawPanel.Values['Ширина'] := FloatToStr(fParaWidth, TFormatSettings.Invariant);
@@ -190,27 +197,72 @@ begin
     if kvantStyle = 0 then AccuDrawPanel.Values['от центра'] := 'True' else AccuDrawPanel.Values['от отрезка'] := 'True';
    end;
  end;
- WriteIn(['AccuDraw.Show op=', LOperation, ' vis=', AccuDrawPanel.Visible, ' H=', AccuDrawPanel.Height, ' Y=', AccuDrawPanel.Position.Y,
-  ' parent=', AccuDrawPanel.Parent <> nil]);
 end;
 
-// Enter на панели или клавиатуре: точка сразу на заданном расстоянии (Return
-// старой формы AccuDraw), затем значение очищается (ClearAccuValue)
+function TMousePainter.ShowAccuPanel(const CNames: array of String; const CClass: array of TComponentClass): Boolean;
+begin
+ Result := False;
+ if AccuDrawPanel = nil then exit;
+ if (FAccuOp = LOperation) and (AccuDrawPanel.ShownBy = Self) and AccuDrawPanel.Visible then exit;
+ AccuDrawPanel.Show(CNames, CClass);
+ AccuDrawPanel.ShownBy := Self;
+ AccuDrawPanel.OnEnter := AccuDrawEnter;
+ AccuDrawPanel.OnChange := AccuDrawChange;
+ AccuDrawPanel.OnUndoPoint := AccuUndoPoint;
+ AccuDrawPanel.OnClearSnaps := AccuClearSnaps;
+ FAccuOp := LOperation;
+// новая операция - значения прежней не действуют
+ accDistance := xyNull;
+ accAngle := xyNull;
+ accKoef := xyNull;
+ fixLength := xyNull;
+ fixDistance := xyNull;
+ fixAngle := xyNull;
+ Result := True;
+end;
+
+procedure TMousePainter.HideAccuPanel;
+var P: TInstAccuDrawFrame;
+begin
+ P := AccuDrawPanel(False);
+ if (P <> nil) and (P.ShownBy = Self) then P.Hide;
+ FAccuOp := -1;
+// введенное и не выполненное (операция отменена) не переходит в следующую
+ accDistance := xyNull;
+ accAngle := xyNull;
+ accKoef := xyNull;
+ fixLength := xyNull;
+ fixDistance := xyNull;
+ fixAngle := xyNull;
+end;
+
+// Enter на панели или клавиатуре. Длина/радиус/сторона: значение уже действует
+// (AccuDrawChange), точку ставит щелчок - Enter завершает примитив, как правая
+// кнопка (как в старой программе); значение очищается в MouseRightDown
 procedure TMousePainter.AccuDrawEnter(Sender: TObject);
 var N: String;
-    V: Double;
+    V, X, Y: Double;
+    Hook: Boolean;
 begin
  if AccuDrawPanel = nil then exit;
  N := AccuDrawPanel.NameOf(Sender);
+ if (N = 'Длина') or (N = 'Радиус') or (N = 'Сторона') or (N = 'Угол') then begin
+  if mpTwig = nil then exit;
+  X := mpTwig.mX;
+  Y := mpTwig.mY;
+  if (X = xyNull) and (mpTwig.LastPoint <> nil) then begin
+   X := mpTwig.LastPoint.XDot;
+   Y := mpTwig.LastPoint.YDot;
+  end;
+  Hook := False;
+  MouseRightDown(Twigs, TMouseButton.mbRight, [], X, Y, Hook);
+  UpdateImage;
+  exit;
+ end;
  if not AccuDrawPanel.FloatValue(N, V) then begin
   if Trim(AccuDrawPanel.Values[N]) <> '' then MessageError('Задайте число');
   exit;
  end;
- if (N = 'Длина') or (N = 'Радиус') or (N = 'Сторона') then begin
-  accDistance := V;
-  AccuReturn(1);
-  ClearAccuValue;
- end else
  if N = 'Ширина' then begin
   if V <= 0 then exit;
   fParaWidth := V;
@@ -244,6 +296,11 @@ begin
    accDistance := V;
    ApplyAccuValue;
   end else
+  if N = 'Угол' then begin
+   accAngle := V;
+   ApplyAccuAngle;
+  end else
+  if N = 'Коэффициент' then accKoef := V else
   if (N = 'Ширина') and (V <> xyNull) and (V > 0) then begin
    fParaWidth := V;
    GWriteFloat('ParaLine_Width', V);
@@ -329,10 +386,14 @@ begin
  DeleteLastPoint;
 end;
 
-// значение расстояния панели после сброса - длина отрезка (точки залипания нет)
+// значение расстояния панели после сброса - длина отрезка (точки залипания нет).
+// Не TimerClose: его Pack('') удалил бы направляющие самого рисуемого примитива
+// (OrthoTwigs.Add(mpTwig.Twig, '') при первой точке) - привязка к нему пропала бы
 procedure TMousePainter.ClearSnaps;
 begin
- TimerClose;
+ fixTimer.Enabled := False;
+ fixPoint1.markerMoveStyle := 0;
+ OrthoTwigs.HideLines(GCanvas);
  fixPoint1.Remove(GCanvas);
  fixPoint2.Remove(GCanvas);
  fixDistance := xyNull;
@@ -391,15 +452,31 @@ end;
 // отработало - кнопка панели очищается, рисование без фиксации
 procedure TMousePainter.ClearAccuValue;
 var P: TInstAccuDrawFrame;
+    HadAngle: Boolean;
 begin
+ HadAngle := accAngle <> xyNull;
  accDistance := xyNull;
+ accAngle := xyNull;
+ accKoef := xyNull;
  P := AccuDrawPanel(False);
  if (P <> nil) and (P.ShownBy = Self) then begin
   P.Values['Длина'] := '';
   P.Values['Радиус'] := '';
   P.Values['Сторона'] := '';
+  P.Values['Угол'] := '';
+  P.Values['Коэффициент'] := '';
  end;
+ if HadAngle then ApplyAccuAngle;
  ApplyAccuValue;
+end;
+
+// угол не задан - направление по курсору (у рисуемого примитива fixAngle
+// сбрасывается); задан - дирекционный: fixAngle = угол + 180 (как Return 4)
+procedure TMousePainter.ApplyAccuAngle;
+begin
+ if accAngle <> xyNull then fixAngle := accAngle + 180 else fixAngle := xyNull;
+ if mpTwig <> nil then mpTwig.SetAngle(GCanvas, fixAngle, True);
+ UpdateImage;
 end;
 
 procedure TMousePainter.ApplyAccuValue;
@@ -455,6 +532,7 @@ begin
  fParaWidth := GReadFloat('ParaLine_Width', 0.5);
  kvantStyle := GReadInteger('LayerPolygon_Style', 0);
  FAccuTag := TComponent.Create(nil);
+ FAccuOp := -1;
  ShowAccuDraw;
  fixPoint1 := TMarker.Create(GSelector, 0, mtRect, TAlphaColorRec.Blue, 8, 2);
  fixPoint2 := TMarker.Create(GSelector, 0, mtCross, TAlphaColorRec.Blue, 4, 2);
@@ -624,9 +702,11 @@ begin
  Hook:=True;
 // значение панели задано: направление - по точке щелчка (касание пером без
 // предварительного движения), точка - на заданном расстоянии
- If accDistance<>xyNull then
+ If accDistance<>xyNull then begin
   If fixPoint1.Visible and (fixDistance<>xyNull) then UpdateFixedPoints(X,Y) else
   If (mpTwig<>nil) and (fixLength<>xyNull) then mpMoveTwigPath(X,Y);
+ end else
+ If (accAngle<>xyNull) and (mpTwig<>nil) then mpMoveTwigPath(X,Y);
 // Writeln('MouseDown=',X,' ',Y,' ', LOperation);
 {}
   Case LOperation of
@@ -647,11 +727,16 @@ begin
                    // значение панели использовано точкой: расстояние от точки
                    // залипания или длина отрезка от уже поставленной точки
                    // (первая точка линии, центр окружности - еще нет)
-                    AccuUsed:=(accDistance<>xyNull) and ((fixPoint1.Visible and (fixDistance<>xyNull)) or
-                              ((mpTwig<>nil) and (fixLength<>xyNull)));
+                    AccuUsed:=((accDistance<>xyNull) and ((fixPoint1.Visible and (fixDistance<>xyNull)) or
+                              ((mpTwig<>nil) and (fixLength<>xyNull)))) or
+                              // угол задан и отрезок поставлен
+                              ((accAngle<>xyNull) and (mpTwig<>nil));
                     mpUpdateTwigPath(X0,Y0);
-                    If AccuUsed then ClearAccuValue else
-                    If accDistance<>xyNull then ApplyAccuValue;
+                    If AccuUsed then ClearAccuValue else begin
+                     If accDistance<>xyNull then ApplyAccuValue;
+                     // первая точка: примитив создан - угол в него
+                     If accAngle<>xyNull then ApplyAccuAngle;
+                    end;
                     {
                     If B then
                      If (ObjTemporary<>nil) then If (objTemporary is TTwig) then
@@ -676,6 +761,8 @@ begin
                if fixPoint1.Visible then begin
                 X0:=fixPoint2.mX;Y0:=fixPoint2.mY;
                end;// else begin X0:=X;Y0:=Y;end;
+               AccuUsed:=(accDistance<>xyNull) and ((fixPoint1.Visible and (fixDistance<>xyNull)) or
+                         ((mpTwig<>nil) and (fixLength<>xyNull)));
                If mpTwig=nil then mpUpdateTwigPath(X0,Y0) else begin
                  If TTwigPathArc(mpTwig).CondArc<2 then mpUpdateTwigPath(X0,Y0) else begin
                   If mpTwig.Twig is TTwigArc then begin
@@ -685,7 +772,9 @@ begin
                    mpCreatePrim(Form);
                    mpUpdateTwigPath(X0,Y0);
                  end
-               end;  
+               end;
+               If AccuUsed then ClearAccuValue else
+               If accDistance<>xyNull then ApplyAccuValue;
               end;
   end;
 end;
@@ -1586,11 +1675,17 @@ begin
  except ShowMessage('objMouseDraw '+IntToStr(864));fixTimer.Enabled:=False;OrthoTwigs.Pack('fixPoint'); end;
 end;
 
+// таймер уже идет для той же точки - не перезапускается: перо и палец на
+// Android дрожат и шлют MouseMove непрерывно, перезапуск на каждом событии
+// не дал бы таймеру сработать
 procedure TMousePainter.TimerOpen;
 begin
  If not timerNoStarting then begin
-  fixTimer.Enabled:=False;
-  fixTimer.Enabled:=True;
+  If not fixTimer.Enabled or (TemporaryDot.XDot<>fixTimerX) or (TemporaryDot.YDot<>fixTimerY) then begin
+   fixTimer.Enabled:=False;
+   fixTimer.Enabled:=True;
+   fixTimerX:=TemporaryDot.XDot;fixTimerY:=TemporaryDot.YDot;
+  end;
  end else
   fixTimer.Enabled:=False;
  objTmp:=objTemporary;
@@ -1617,9 +1712,22 @@ begin
  for I := 0 to HatchLot.Count - 1 do SkDrawTwig(Canvas, HatchTwig[I], Paint);
 end;
 
+// длина рисуемого и резиновой линии (от последней поставленной точки до
+// курсора); есть точка залипания - и длина линии от нее (fixPoint1-fixPoint2,
+// вдоль направляющей или в любом направлении) - и при рисовании, и в TEditMap
 function TMousePainter.Hint: String;
+var D: TDot;
 begin
- if (mpTwig <> nil) and (mpTwig.Twig <> nil) then Result := ClassName + ' Длина=' + FloatToStrF(mpTwig.Twig.GetLength, ffFixed, 15, 3) else Result := inherited Hint;
+ Result := inherited Hint;
+ if (mpTwig <> nil) and (mpTwig.Twig <> nil) then begin
+  Result := ClassName + ' Длина = ' + FloatToStrF(mpTwig.Twig.GetLength, ffFixed, 15, 3);
+  if (mpTwig.mX <> xyNull) and (mpTwig.Twig.Coord.Count > 0) then begin
+   D := mpTwig.Twig[mpTwig.Twig.Coord.Count - 1];
+   Result := Result + '  Рисуем = ' + FloatToStrF(Distance(D.XDot, D.YDot, mpTwig.mX, mpTwig.mY), ffFixed, 15, 3);
+  end;
+ end;
+ if (fixPoint1 <> nil) and fixPoint1.Visible and (fixPoint2.mX <> xyNull) then
+  Result := Result + '  От точки = ' + FloatToStrF(Distance(fixPoint1.mX, fixPoint1.mY, fixPoint2.mX, fixPoint2.mY), ffFixed, 15, 3);
 end;
 
 function TMousePainter.GetHatchTwig(Index: Integer): TTwig;

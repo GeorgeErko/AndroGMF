@@ -42,6 +42,8 @@ type
     destructor Destroy; override;
    // библиотека загружается (один раз) и есть каталог модели
     function Available: Boolean;
+   // библиотека загружается (модели может не быть - VoskModelExists)
+    function LibraryAvailable: Boolean;
    // слова грамматики (без нее - весь словарь модели); [unk] добавляется
     procedure SetGrammar(const Words: array of String);
    // запуск/остановка распознавания; False - недоступно (LastError)
@@ -72,10 +74,56 @@ const
 
 function VoskLibraryName: String;
 // каталог модели по умолчанию: Windows - vosk-model-small-ru рядом с
-// программой, Android - в каталоге документов приложения
+// программой, Android - в каталоге документов приложения или во внешнем
+// каталоге Android/data/<пакет>/files (копирование по USB)
 function VoskDefaultModelPath: String;
 // библиотека Vosk загружена (позднее связывание; повторная попытка - нет)
 function VoskLoaded: Boolean;
+// модель на месте (каталог с подкаталогом am)
+function VoskModelExists(const Path: String): Boolean;
+// каталог, куда загружается модель: Android - документы приложения, Windows -
+// каталог программы
+function VoskModelBaseDir: String;
+
+const
+// модель для загрузки по требованию (zip с каталогом vosk-model-small-ru-0.22):
+// источники по порядку - копия в релизе GitHub (alphacephei.com с части
+// устройств недоступен), затем сайт Vosk. Архивы одинаковые - докачка
+// продолжается с любого источника
+  VoskModelUrls: array[0..1] of String = (
+   'https://github.com/GeorgeErko/AndroGMF/releases/download/Vosk/vosk-model-small-ru-0.22.zip',
+   'https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip');
+  VoskModelSizeMB = 45;
+
+type
+  TVoskDownloadProgress = reference to procedure(Received, Total: Int64);
+  TVoskDownloadDone = reference to procedure(Ok: Boolean; const Error: String);
+
+// загрузка модели в фоне: zip во временный файл, распаковка в VoskModelBaseDir;
+// события - в главном потоке (OnProgress - при смене процента). Cancel -
+// прервать: после него события не вызываются. Интерфейс со счетчиком ссылок -
+// поток, отложенные события и владелец держат свои ссылки
+  IVoskModelDownload = interface
+  ['{6B0E2F55-2C5D-4E8B-9C4A-31D7A8E5F102}']
+    procedure Cancel;
+    function Canceled: Boolean;
+  end;
+
+  TVoskModelDownload = class(TInterfacedObject, IVoskModelDownload)
+  private
+    FCancel: Boolean;
+    FOnProgress: TVoskDownloadProgress;
+    FOnDone: TVoskDownloadDone;
+    FLastPercent: Integer;
+    FBase: Int64; // уже загружено до текущего запроса (докачка)
+    FTotal: Int64; // полный размер архива; 0 - неизвестен
+    procedure ReceiveData(const Sender: TObject; AContentLength, AReadCount: Int64; var AAbort: Boolean);
+    procedure Run;
+  public
+    procedure Cancel;
+    function Canceled: Boolean;
+    class function Start(OnProgress: TVoskDownloadProgress; OnDone: TVoskDownloadDone): IVoskModelDownload;
+  end;
 // число из слов: целая и дробная части (через «точка»/«запятая»), «минус»;
 // часть из одних цифр («один два») - цифры подряд, иначе - сумма («сто
 // двадцать пять»); не число - ''
@@ -84,12 +132,13 @@ function SpokenToNumber(const Text: String): String;
 implementation
 
 uses
-  System.IOUtils, System.JSON, System.Diagnostics, Writer
+  System.IOUtils, System.JSON, System.Diagnostics, System.Zip, System.Net.HttpClient,
+  System.Net.URLClient, Writer
 {$IFDEF MSWINDOWS}
   , Winapi.Windows, Winapi.MMSystem
 {$ENDIF}
 {$IFDEF ANDROID}
-  , System.Permissions, Androidapi.JNIBridge, Androidapi.JNI.Media, Posix.Stdlib
+  , System.Types, System.Permissions, Androidapi.JNIBridge, Androidapi.JNI.Media, Posix.Stdlib
 {$ENDIF}
   ;
 
@@ -131,19 +180,49 @@ end;
 
 // каталог модели: первый vosk-model*ru* (имя из архива, например
 // vosk-model-small-ru-0.22, переименовывать не нужно); нет - vosk-model-small-ru
-function VoskDefaultModelPath: String;
-var Base: String;
-    Dirs: TArray<String>;
+function VoskModelBaseDir: String;
 begin
 {$IFDEF ANDROID}
- Base := TPath.GetDocumentsPath;
+ Result := TPath.GetDocumentsPath;
 {$ELSE}
- Base := ExtractFilePath(ParamStr(0));
+ Result := ExtractFilePath(ParamStr(0));
 {$ENDIF}
- Result := TPath.Combine(Base, 'vosk-model-small-ru');
- if not TDirectory.Exists(Base) then exit;
- Dirs := TDirectory.GetDirectories(Base, 'vosk-model*ru*');
- if Length(Dirs) > 0 then Result := Dirs[0];
+end;
+
+function VoskModelExists(const Path: String): Boolean;
+begin
+ Result := TDirectory.Exists(TPath.Combine(Path, 'am'));
+end;
+
+// первый vosk-model*ru* в Base с моделью внутри; распакованный архив бывает
+// вложен в одноименную папку - смотрим и на уровень глубже
+function FindModelIn(const Base: String; var Path: String): Boolean;
+var D, S: String;
+begin
+ Result := False;
+ if (Base = '') or not TDirectory.Exists(Base) then exit;
+ for D in TDirectory.GetDirectories(Base, 'vosk-model*ru*') do begin
+  if VoskModelExists(D) then begin
+   Path := D;
+   exit(True);
+  end;
+  for S in TDirectory.GetDirectories(D, 'vosk-model*ru*') do
+   if VoskModelExists(S) then begin
+    Path := S;
+    exit(True);
+   end;
+ end;
+end;
+
+// Android: сначала каталог загрузки (внутренний), затем внешний каталог
+// приложения Android/data/<пакет>/files - туда модель можно скопировать по USB
+function VoskDefaultModelPath: String;
+begin
+ Result := TPath.Combine(VoskModelBaseDir, 'vosk-model-small-ru');
+ if FindModelIn(VoskModelBaseDir, Result) then exit;
+{$IFDEF ANDROID}
+ FindModelIn(TPath.GetPublicPath, Result);
+{$ENDIF}
 end;
 
 // вычисления Kaldi (OpenBLAS/OpenMP) - в одном потоке: иначе библиотека
@@ -258,6 +337,20 @@ begin
   end);
 end;
 
+// для сообщения: ключевые файлы модели, которых нет или они пустые (неполное
+// копирование)
+function ModelMissing(const Path: String): String;
+const Files: array[0..4] of String = ('am/final.mdl', 'conf/model.conf', 'conf/mfcc.conf', 'ivector/final.ie', 'graph/phones/word_boundary.int');
+var N, F: String;
+begin
+ Result := '';
+ for N in Files do begin
+  F := TPath.Combine(Path, N.Replace('/', TPath.DirectorySeparatorChar));
+  if not TFile.Exists(F) or (TFile.GetSize(F) = 0) then Result := Result + sLineBreak + N;
+ end;
+ if Result <> '' then Result := sLineBreak + 'нет файлов:' + Result;
+end;
+
 // модель (один раз на распознаватель) и распознаватель с грамматикой
 function TVoskThread.Prepare: Boolean;
 var SW: TStopwatch;
@@ -273,7 +366,7 @@ begin
   FOwner.FModel := vosk_model_new(PAnsiChar(UTF8Encode(FOwner.FModelPath)));
   WriteIn(['Vosk: модель загружена за ', SW.ElapsedMilliseconds, ' мс']);
   if FOwner.FModel = nil then begin
-   PostError('Модель не загружена: ' + FOwner.FModelPath);
+   PostError('Модель не загружена: ' + FOwner.FModelPath + ModelMissing(FOwner.FModelPath));
    exit;
   end;
  end;
@@ -419,6 +512,12 @@ begin
  inherited;
 end;
 
+function TVoskRecognizer.LibraryAvailable: Boolean;
+begin
+ Result := LoadVosk(FLibraryPath);
+ if not Result then FLastError := VoskLoadError;
+end;
+
 function TVoskRecognizer.Available: Boolean;
 begin
  Result := LoadVosk(FLibraryPath);
@@ -489,6 +588,169 @@ begin
  if Discard then TThread.RemoveQueuedEvents(T);
  if T.FRec <> nil then vosk_recognizer_free(T.FRec);
  T.Free;
+end;
+
+{ TVoskModelDownload }
+
+class function TVoskModelDownload.Start(OnProgress: TVoskDownloadProgress; OnDone: TVoskDownloadDone): IVoskModelDownload;
+var D: TVoskModelDownload;
+    Keep: IVoskModelDownload;
+begin
+ D := TVoskModelDownload.Create;
+ D.FOnProgress := OnProgress;
+ D.FOnDone := OnDone;
+ D.FLastPercent := -1;
+ Keep := D;
+ Result := Keep;
+// ссылка Keep в потоке - объект D жив до конца загрузки
+ TThread.CreateAnonymousThread(
+  procedure
+  begin
+   D.Run;
+   Keep := nil;
+  end).Start;
+end;
+
+procedure TVoskModelDownload.Cancel;
+begin
+ FCancel := True;
+end;
+
+function TVoskModelDownload.Canceled: Boolean;
+begin
+ Result := FCancel;
+end;
+
+// прогресс - от всего архива: FBase (докачка) + текущий запрос
+procedure TVoskModelDownload.ReceiveData(const Sender: TObject; AContentLength, AReadCount: Int64; var AAbort: Boolean);
+var P: Integer;
+    Cb: TVoskDownloadProgress;
+    Keep: IVoskModelDownload;
+    Rcv, Tot: Int64;
+begin
+ AAbort := FCancel;
+ if FCancel or (AContentLength <= 0) then exit;
+ Rcv := FBase + AReadCount;
+ Tot := FBase + AContentLength;
+ FTotal := Tot;
+ P := Rcv * 100 div Tot;
+ if P = FLastPercent then exit;
+ FLastPercent := P;
+ Cb := FOnProgress;
+ Keep := Self;
+ if Assigned(Cb) then
+  TThread.Queue(nil, procedure begin if not Keep.Canceled then Cb(Rcv, Tot); end);
+end;
+
+// поток загрузки: zip - распаковка - событие. Сервер модели медленный, бывают
+// паузы и обрывы (на Android - исключение timeout): таймауты увеличены, после
+// обрыва - докачка с места остановки (Range), до MaxAttempts попыток. Часть
+// каждого запроса пишется в отдельный файл и дописывается к архиву только при
+// ответе 206 (сервер не поддержал Range - 200 - архив заново). Попытка без
+// единого байта или ответ с ошибкой - переход к следующему источнику
+procedure TVoskModelDownload.Run;
+const MaxAttempts = 8;
+var Http: THTTPClient;
+    F, Part: TFileStream;
+    Zip, PartName, Err, Url: String;
+    Ok, Complete, Got: Boolean;
+    Done: TVoskDownloadDone;
+    Resp: IHTTPResponse;
+    Keep: IVoskModelDownload;
+    Attempt, Src: Integer;
+begin
+ Ok := False;
+ Err := '';
+ Zip := TPath.Combine(TPath.GetTempPath, 'vosk-model.zip');
+ PartName := Zip + '.part';
+ try
+  try
+   if TFile.Exists(Zip) then TFile.Delete(Zip);
+   Complete := False;
+   Attempt := 0;
+   Src := 0;
+   while not Complete and not FCancel do begin
+    Inc(Attempt);
+    Url := VoskModelUrls[Src];
+    Got := False;
+    FBase := 0;
+    if TFile.Exists(Zip) then FBase := TFile.GetSize(Zip);
+    Resp := nil;
+    Http := THTTPClient.Create;
+    try
+     Http.ConnectionTimeout := 60000;
+     Http.ResponseTimeout := 300000; // ожидание данных - до 5 минут
+     Http.OnReceiveData := ReceiveData;
+     if FBase > 0 then Http.CustomHeaders['Range'] := 'bytes=' + IntToStr(FBase) + '-';
+     Part := TFileStream.Create(PartName, fmCreate);
+     try
+      try
+       Resp := Http.Get(Url, Part);
+      except
+       on E: Exception do begin
+        WriteIn(['Vosk: загрузка прервана (попытка ', Attempt, ', ', Url, '): ', E.Message]);
+        if Attempt >= MaxAttempts then raise;
+       end;
+      end;
+      Got := Part.Size > 0;
+     // полученное - в архив (обрыв тоже: следующая попытка докачает)
+      if Got and ((Resp = nil) or (Resp.StatusCode = 206) or ((Resp.StatusCode = 200) and (FBase = 0))) then begin
+       if FBase = 0 then F := TFileStream.Create(Zip, fmCreate) else begin
+        F := TFileStream.Create(Zip, fmOpenReadWrite);
+        F.Seek(0, soEnd);
+       end;
+       try
+        Part.Position := 0;
+        F.CopyFrom(Part, Part.Size);
+       finally
+        F.Free;
+       end;
+      end else
+      if Got and (Resp <> nil) and (Resp.StatusCode = 200) then begin
+      // сервер прислал архив целиком - он и есть результат
+       Part.Position := 0;
+       F := TFileStream.Create(Zip, fmCreate);
+       try
+        F.CopyFrom(Part, Part.Size);
+       finally
+        F.Free;
+       end;
+      end;
+     finally
+      Part.Free;
+     end;
+    finally
+     Http.Free;
+    end;
+    if FCancel then exit;
+    if (Resp <> nil) and ((Resp.StatusCode = 200) or (Resp.StatusCode = 206) or (Resp.StatusCode = 416)) then
+     Complete := True // 416 - запрошен диапазон за концом: архив уже целиком
+    else begin
+     if Resp <> nil then begin
+      WriteIn(['Vosk: ', Url, ' ответил ', Resp.StatusCode, ' ', Resp.StatusText]);
+      if Attempt >= MaxAttempts then raise Exception.CreateFmt('сервер ответил %d %s', [Resp.StatusCode, Resp.StatusText]);
+     end;
+     if (Resp <> nil) or not Got then Src := (Src + 1) mod Length(VoskModelUrls);
+     Sleep(2000); // пауза перед докачкой
+    end;
+   end;
+   if FCancel then exit;
+   TZipFile.ExtractZipFile(Zip, VoskModelBaseDir);
+   Ok := VoskModelExists(VoskDefaultModelPath);
+   if not Ok then Err := 'в архиве нет модели';
+  except
+   on E: Exception do Err := E.Message;
+  end;
+ finally
+  if TFile.Exists(Zip) then TFile.Delete(Zip);
+  if TFile.Exists(PartName) then TFile.Delete(PartName);
+  if not FCancel then begin
+   Done := FOnDone;
+   Keep := Self;
+   TThread.Queue(nil, procedure begin if Assigned(Done) and not Keep.Canceled then Done(Ok, Err); end);
+  end;
+  WriteIn(['Vosk: загрузка модели ', Ok, ' ', Err]);
+ end;
 end;
 
 { SpokenToNumber }

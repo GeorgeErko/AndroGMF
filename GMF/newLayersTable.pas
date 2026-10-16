@@ -766,7 +766,7 @@ var Buf:TBufStream;
     PR:TResource;PZ:TPoint_Sign;
     FName:String;
 begin
-//If GrpName<>'' then GrpName:=GrpName_;
+ If GrpName<>'' then GrpName:=LibPath;
  FName:=DelSubStr2(FileName,ExtractFileExt(FileName));
  if PSLib<>nil then PSLib.Free;
  if SSLib<>nil then SSLib.Free;
@@ -945,7 +945,7 @@ begin
  PointGroup:=TGroupCollection.Create(1);
  LineGroup:=TGroupCollection.Create(1);
  SquareGroup:=TGroupCollection.Create(1);
- GrpName := 'topo500';
+// GrpName := 'topo500'; - жесткая привязка к Topo500
  {$IFDEF MSWINDOWS}
   S := MainPath + GrpName + '.grp';
  {$ELSE}

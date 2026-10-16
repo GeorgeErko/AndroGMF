@@ -21,13 +21,13 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 132
+      TabOrder = 135
       OnMouseEnter = StatusButtonEnter
       OnMouseLeave = StatusButtonLeave
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 131
+      TabOrder = 134
       OnMouseEnter = StatusButtonEnter
       OnMouseLeave = StatusButtonLeave
     end

@@ -127,6 +127,7 @@
         <AUP_READ_EXTERNAL_STORAGE>true</AUP_READ_EXTERNAL_STORAGE>
         <AUP_WRITE_EXTERNAL_STORAGE>true</AUP_WRITE_EXTERNAL_STORAGE>
         <AUP_READ_PHONE_STATE>true</AUP_READ_PHONE_STATE>
+        <AUP_RECORD_AUDIO>true</AUP_RECORD_AUDIO>
         <Icon_MainIcon>$(BDS)\bin\delphi_PROJECTICON.ico</Icon_MainIcon>
         <Icns_MainIcns>$(BDS)\bin\delphi_PROJECTICNS.icns</Icns_MainIcns>
         <SanitizedProjectName>testAndro</SanitizedProjectName>
@@ -570,13 +571,13 @@
             <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
-        <DCCReference Include="VoskSpeech.pas"/>
-        <DCCReference Include="WinSpeech.pas"/>
         <DCCReference Include="instAccuDraw.pas">
             <Form>InstAccuDrawFrame</Form>
             <FormType>fmx</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
+        <DCCReference Include="VoskSpeech.pas"/>
+        <DCCReference Include="WinSpeech.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -1109,6 +1110,20 @@
                     <Platform Name="Android64">
                         <RemoteDir>library\lib\arm64-v8a\</RemoteDir>
                         <RemoteName>libsqliteX.so</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Android\libs\arm64-v8a\libvosk.so" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>library\lib\arm64-v8a\</RemoteDir>
+                        <RemoteName>libvosk.so</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Android\libs\arm64-v8a\libvosk.so" Configuration="Release" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>library\lib\arm64-v8a\</RemoteDir>
+                        <RemoteName>libvosk.so</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

@@ -118,7 +118,7 @@ type
 var LayerFrame: TLayerFrame;
 // размер шрифта списка слоев и заголовка (имя активного слоя); высота строк,
 // флажок и цветной квадрат подстраиваются под него (LayerRowHeight)
-    LayerListFontSize: Single = {$IFDEF ANDROID}14{$ELSE}14{$ENDIF};
+    LayerListFontSize: Single = {$IFDEF ANDROID}12{$ELSE}13{$ENDIF};
 
 implementation
 
@@ -454,8 +454,8 @@ begin
   Col := TRectangle.Create(Self);
   Col.Name := 'rectColor';
   Col.Stored := False;
-  Col.Position.X := 24;
-  Col.Position.Y := (H - 10) / 2;
+  Col.Position.X := 23;
+  Col.Position.Y := (H - 10) / 2 - 1;
   Col.Size.Width := 10;
   Col.Size.Height := 10;
   Col.HitTest := False;
@@ -469,7 +469,7 @@ begin
   Nm.Name := 'lblLayerName';
   Nm.Stored := False;
   Nm.Position.X := 38;
-  Nm.Position.Y := 2;
+  Nm.Position.Y := 0;
   Nm.Height := H - 4;
   SetLayerLabelFont(Nm);
 //  Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.WordWrap];
@@ -653,7 +653,7 @@ begin
  Nm.Stored := False;
  Nm.Name := 'lblName';
  Nm.Position.X := 38;
- Nm.Position.Y := 2;
+ Nm.Position.Y := 0;
  Nm.Height := H - 4;
  SetLayerLabelFont(Nm);
  Nm.Width := 400;

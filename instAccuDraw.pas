@@ -22,7 +22,8 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
-  FMX.Layouts, FMX.Controls.Presentation, FMX.TextLayout;
+  FMX.Layouts, FMX.Controls.Presentation, FMX.TextLayout, System.ImageList,
+  FMX.ImgList;
 
 type
   TInstAccuDrawFrame = class(TFrame)
@@ -47,12 +48,16 @@ type
     btnKeyMic: TButton;
     btnKeyEnter: TButton;
     Button1: TButton;
+    Button2: TButton;
+    Button3: TButton;
+    ImageList1: TImageList;
     procedure KeyClick(Sender: TObject);
     procedure KeyBackClick(Sender: TObject);
     procedure KeyEnterClick(Sender: TObject);
     procedure KeyUndoClick(Sender: TObject);
     procedure KeySnapsClick(Sender: TObject);
     procedure KeyMicClick(Sender: TObject);
+    procedure btnKeyBackApplyStyleLookup(Sender: TObject);
   private
     FControls: TDictionary<String, TControl>; // элементы по имени
     FItems: TList<TControl>; // созданные элементы (с метками) - для очистки
@@ -65,6 +70,8 @@ type
   // пользователем; при показе панели распознавание запускается снова;
   // хранится в настройках (AccuDraw_Voice)
     FVoiceOn: Boolean;
+    FDownload: IInterface; // загрузка модели Vosk (IVoskModelDownload); nil - нет
+    procedure DownloadModel(V: TObject);
     procedure SetVoiceOn(Value: Boolean);
     procedure ClearControls;
     procedure ControlClick(Sender: TObject);
@@ -117,7 +124,7 @@ procedure FocusMainForm;
 
 implementation
 
-uses FMX.DialogService, System.Diagnostics, VoskSpeech, WinSpeech, Writer, newProcs;
+uses FMX.DialogService, System.Diagnostics, System.StrUtils, VoskSpeech, WinSpeech, Writer, newProcs;
 
 {$R *.fmx}
 
@@ -175,6 +182,8 @@ end;
 
 destructor TInstAccuDrawFrame.Destroy;
 begin
+ if FDownload <> nil then (FDownload as IVoskModelDownload).Cancel;
+ FDownload := nil;
  VoiceStop;
  FWinSpeech.Free;
  FVosk.Free;
@@ -348,7 +357,7 @@ end;
 
 // слова грамматики: числа и команды
 const
-  VoiceCommands: array[0..3] of String = ('ввод', 'назад', 'сброс', 'стереть');
+  VoiceCommands: array[0..5] of String = ('ввод', 'назад', 'сброс', 'стереть', 'очистить', 'удалить');
 
 function VoiceWords: TArray<String>;
 var I: Integer;
@@ -389,6 +398,15 @@ begin
     V.OnResult := VoiceResult;
     V.OnError := VoiceError;
     FVosk := V;
+   end else
+  // библиотека есть, модели нет - загрузка по требованию (кнопка нажата)
+   if V.LibraryAvailable and not VoskModelExists(V.ModelPath) then begin
+    V.SetGrammar(VoiceWords);
+    V.OnResult := VoiceResult;
+    V.OnError := VoiceError;
+    FVosk := V;
+    DownloadModel(V);
+    exit(True);
    end else begin
     Err := Err + sLineBreak + V.LastError;
     V.Free;
@@ -401,6 +419,15 @@ begin
   Result := TWinSpeechRecognizer(FWinSpeech).Start;
   if not Result then TDialogService.ShowMessage(TWinSpeechRecognizer(FWinSpeech).LastError);
  end else begin
+ // модель еще загружается или загрузка была отменена - ждать / предложить снова
+  if FDownload <> nil then exit(True);
+  if not VoskModelExists(TVoskRecognizer(FVosk).ModelPath) then begin
+   TVoskRecognizer(FVosk).ModelPath := VoskDefaultModelPath;
+   if not VoskModelExists(TVoskRecognizer(FVosk).ModelPath) then begin
+    DownloadModel(FVosk);
+    exit(True);
+   end;
+  end;
   Result := TVoskRecognizer(FVosk).Start;
   if not Result then TDialogService.ShowMessage(TVoskRecognizer(FVosk).LastError);
  end;
@@ -412,6 +439,50 @@ begin
  VoiceStop;
  SetVoiceOn(False);
  TDialogService.ShowMessage('Голосовой ввод: ' + Text);
+end;
+
+// модели нет: вопрос, загрузка в фоне (процент - на кнопке «🎤»), затем запуск
+procedure TInstAccuDrawFrame.DownloadModel(V: TObject);
+var MicText: String;
+begin
+ if FDownload <> nil then exit;
+ MicText := btnKeyMic.Text;
+ TDialogService.MessageDialog('Для голосового ввода нужна модель распознавания речи (около ' +
+  IntToStr(VoskModelSizeMB) + ' МБ). Скачать сейчас?', TMsgDlgType.mtConfirmation,
+  [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbYes, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   if AResult <> mrYes then begin
+    btnKeyMic.IsPressed := False;
+    SetVoiceOn(False);
+    exit;
+   end;
+   btnKeyMic.Text := '0%';
+   FDownload := TVoskModelDownload.Start(
+    procedure(Received, Total: Int64)
+    begin
+     btnKeyMic.Text := IntToStr(Received * 100 div Total) + '%';
+    end,
+    procedure(Ok: Boolean; const Error: String)
+    begin
+     FDownload := nil;
+     btnKeyMic.Text := MicText;
+     if not Ok then begin
+      btnKeyMic.IsPressed := False;
+      SetVoiceOn(False);
+      TDialogService.ShowMessage('Модель не загружена: ' + Error);
+      exit;
+     end;
+     TVoskRecognizer(V).ModelPath := VoskDefaultModelPath;
+    // загружено, пока кнопка нажата - сразу распознавание
+     if btnKeyMic.IsPressed then begin
+      if TVoskRecognizer(V).Start then SetVoiceOn(True) else begin
+       btnKeyMic.IsPressed := False;
+       TDialogService.ShowMessage(TVoskRecognizer(V).LastError);
+      end;
+     end;
+    end);
+  end);
 end;
 
 procedure TInstAccuDrawFrame.VoiceStop;
@@ -437,6 +508,11 @@ begin
    SetVoiceOn(False);
   end;
  end else begin
+  if FDownload <> nil then begin
+   (FDownload as IVoskModelDownload).Cancel;
+   FDownload := nil;
+   btnKeyMic.Text := #$D83C#$DFA4;
+  end;
   VoiceStop;
   SetVoiceOn(False);
  end;
@@ -444,19 +520,28 @@ begin
 end;
 
 // фраза: команда или число - в активную кнопку (как ввод с клавиатуры)
+// команда - первое слово-команда фразы (распознаватель может вернуть ее вместе
+// с другими словами: «стереть стереть», «стереть пять»)
 procedure TInstAccuDrawFrame.VoiceResult(const Text: String);
-var T, N: String;
+var T, N, W, Cmd: String;
 begin
  T := Trim(AnsiLowerCase(Text));
+ WriteIn(['Голос: «', T, '»']);
  if T = '' then exit;
- if T = 'ввод' then DoEnter else
- if T = 'назад' then begin
+ Cmd := '';
+ for W in T.Split([' '], TStringSplitOptions.ExcludeEmpty) do
+  if MatchStr(W, VoiceCommands) then begin
+   Cmd := W;
+   break;
+  end;
+ if Cmd = 'ввод' then DoEnter else
+ if Cmd = 'назад' then begin
   if Assigned(OnUndoPoint) then OnUndoPoint(Self);
  end else
- if T = 'сброс' then begin
+ if Cmd = 'сброс' then begin
   if Assigned(OnClearSnaps) then OnClearSnaps(Self);
  end else
- if T = 'стереть' then begin
+ if (Cmd = 'стереть') or (Cmd = 'очистить') or (Cmd = 'удалить') then begin
   if FActiveEditButton <> nil then begin
    FActiveEditButton.Text := '';
    if Assigned(OnChange) then OnChange(FActiveEditButton);
@@ -491,6 +576,16 @@ begin
  FActiveEditButton.Text := Copy(S, 1, Length(S) - 1);
  FActiveEditButton.IsPressed := True;
  if Assigned(OnChange) then OnChange(FActiveEditButton);
+end;
+
+procedure TInstAccuDrawFrame.btnKeyBackApplyStyleLookup(Sender: TObject);
+var O: TFmxObject;
+begin
+ O := TStyledControl(Sender).FindStyleResource('glyphstyle');
+ if O is TControl then begin
+    TControl(O).Align := TAlignLayout.Center;
+   // TControl(O).Margins.Top := 10;
+ end;
 end;
 
 function TInstAccuDrawFrame.ControlByName(const CName: String): TControl;

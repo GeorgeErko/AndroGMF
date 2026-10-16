@@ -162,6 +162,7 @@ begin
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}
   Application.Initialize;
+  UnfixButtonHeights; // высота кнопок и тулбаров - из формы, не из стиля (AppFonts)
    Application.CreateForm(TMainFormDendro, MainFormDendro);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;

@@ -2,7 +2,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
   ClientWidth = 919
   OnDestroy = FormDestroy
-  DesignerMasterStyle = 3
+  DesignerMasterStyle = 0
   inherited Panel1: TPanel
     Size.Width = 919.000000000000000000
     inherited btnOpen: TCornerButton
@@ -10,7 +10,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 10.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 65.000000000000000000
+      Position.X = 50.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
@@ -19,7 +19,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 5.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 95.000000000000000000
+      Position.X = 80.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
@@ -28,7 +28,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 10.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 160.000000000000000000
+      Position.X = 145.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
@@ -47,7 +47,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 5.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 125.000000000000000000
+      Position.X = 110.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
@@ -61,7 +61,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 15.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 200.000000000000000000
+      Position.X = 185.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Width = 73.000000000000000000
       Size.Height = 27.000000000000000000
@@ -236,7 +236,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StyledSettings = [Family, Size, Style]
       Margins.Left = 10.000000000000000000
       Position.X = 10.000000000000000000
-      Size.Width = 45.000000000000000000
+      Size.Width = 30.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
       TextSettings.FontColor = claDarkred
@@ -317,6 +317,27 @@ inherited MainFormMouseObj: TMainFormMouseObj
   end
   inherited StatusBar: TStatusBar
     Size.Width = 919.000000000000000000
+    inherited ResSpeedBtn59: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited SbShowPoints: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited SbSaveOrthoTwigs: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited sbShowGrid: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited sbShowZnak: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited sbOrthoDraw: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
+    inherited sbShowPlan: TSpeedButton
+      Size.Height = 21.000000000000000000
+    end
     inherited pMas: TLabel
       Position.X = 805.000000000000000000
     end
@@ -331,7 +352,6 @@ inherited MainFormMouseObj: TMainFormMouseObj
     Size.Width = 917.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
-    StyleLookup = 'ToolBarPaintStyle1'
     TabOrder = 21
     object btnToolLine: TSpeedButton
       Tag = 100111
@@ -667,7 +687,9 @@ inherited MainFormMouseObj: TMainFormMouseObj
           Size.Width = 382.000000000000000000
         end
         inherited btnDrop: TButton
-          Position.X = 357.000000000000000000
+          ImageIndex = 3
+          Position.X = 360.000000000000000000
+          Size.Width = 18.000000000000000000
         end
       end
       inherited PopupLayers: TPopup
@@ -745,7 +767,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Position.X = 365.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 48.000000000000000000
+      Size.Height = 46.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup
@@ -771,7 +793,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Position.X = 807.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 48.000000000000000000
+      Size.Height = 46.000000000000000000
       Size.PlatformDefault = False
       TextSettings.Trimming = None
       OnApplyStyleLookup = OZNButtonApplyStyleLookup

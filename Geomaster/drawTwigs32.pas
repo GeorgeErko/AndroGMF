@@ -254,12 +254,35 @@ implementation
 
 uses System.Math.Vectors, EMath, MathS, newSettings, circle_di, WptForm1,
      maths_versia, types_dimano, WPGeo, EcLot, UpdateMessages, UserObject,
-     FMX.Dialogs, SysUtils, newProcs, WpRects, Writer, Selector32;
+     FMX.Dialogs, SysUtils, newProcs, WpRects, Writer, Selector32{$IFDEF ANDROID}, FMX.Platform{$ENDIF};
 
+{$IFDEF ANDROID}
+// коэффициент толщины линий live-слоя на Android (к плотности экрана)
+const AndroidLineKoef: Single = 1.5;
+
+var GPixScale: Single = 0;
+
+// плотность экрана (физических пикселей на логический), один раз
+function PixScale: Single;
+var Svc: IFMXScreenService;
+begin
+ if GPixScale = 0 then begin
+  GPixScale := 1;
+  if TPlatformServices.Current.SupportsPlatformService(IFMXScreenService, Svc) then GPixScale := Max(1, Svc.GetScreenScale);
+ end;
+ Result := GPixScale;
+end;
+{$ENDIF}
+
+// Pix - логические пикселы: на Android с плотностью экрана ~3 линия в 1
+// физический пиксел почти не видна, толщины и штрихи умножаются на плотность
 function SkPixToWorld(const Canvas: ISkCanvas; Pix: Single): Single;
 var M: TMatrix;
     Scale: Single;
 begin
+{$IFDEF ANDROID}
+ Pix := Pix * PixScale * AndroidLineKoef;
+{$ENDIF}
  Result := Pix;
  if Canvas = nil then exit;
  M := Canvas.GetLocalToDeviceAs3x3;
@@ -699,7 +722,13 @@ begin
  except
   B := False;
  end;
- if B then TTwigArc(Twig).ReCreate(XC, YC, X1, Y1, X2, Y2, mX, mY);
+// ReCreate задает только опорные точки; ломаная для отрисовки (ArcCoord) -
+// в Calculate (в старом коде дугу рисовал ArcDraw)
+ if B then try
+  TTwigArc(Twig).ReCreate(XC, YC, X1, Y1, X2, Y2, mX, mY);
+  Twig.Calculate;
+ except
+ end;
 end;
 
 procedure TTwigPathArc.Move(Canvas: TCanvas; X, Y: Double);
@@ -767,9 +796,29 @@ begin
  end;
 end;
 
+// fixLength (значение «Длина» панели AccuDraw): точка - на этом расстоянии от
+// последней поставленной (у дуги по касательной - от начала дуги), мышь
+// задает направление (как в TTwigPath.Move)
 procedure TTwigPathArc2.Move(Canvas: TCanvas; X, Y: Double);
+var AX, AY, Angle: Double;
 begin
  if CondArc = 0 then exit;
+ if fixLength <> xyNull then begin
+  if CondArc = 1 then begin
+   AX := X1; AY := Y1;
+  end else
+  if prevTwig = nil then begin
+   AX := X2; AY := Y2;
+  end else
+  if (prevTwig is TTwigArc) and (xyACB <> nil) then begin
+   AX := xyACB.XDot; AY := xyACB.YDot;
+  end else begin
+   AX := prevTwig.Last.XDot; AY := prevTwig.Last.YDot;
+  end;
+  Angle := Atan2(AY - Y, AX - X) + Pi / 2;
+  X := AX + fixLength * cos(Angle);
+  Y := AY - fixLength * sin(Angle);
+ end;
  if CondArc = 1 then begin
   X2 := X; Y2 := Y;
  end else begin
@@ -809,9 +858,11 @@ begin
   except
    B := False;
   end;
-  if B then begin
+  if B then try
    TTwigArc(Twig).ReCreate(XC, YC, X1, Y1, XR, YR, X2, Y2);
+   Twig.Calculate; // ломаная для отрисовки
    FArcValid := True;
+  except
   end;
   exit;
  end;

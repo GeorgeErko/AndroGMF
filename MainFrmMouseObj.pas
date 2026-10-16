@@ -139,6 +139,17 @@ type
    FInteractionWatchTimer: TTimer;
    FMaximizeChecked: Boolean;
    FQuickHeight: Single; // высота быстрых слоев под панелью знаков
+  // долгое нажатие пальцем или пером (не мышью) - правая кнопка, как в системе
+  // (на Windows системное «нажать и удерживать» отключено в StylusInput):
+  // нажатие придерживается до отпускания (щелчок), сдвига (обычное нажатие) или
+  // срабатывания таймера (правая кнопка, отпускание - тоже правой)
+   FLongTimer: TTimer;
+   FLongPending: Boolean;
+   FLongFired: Boolean;
+   FLongSender: TObject;
+   FLongShift: TShiftState;
+   FLongPos: TPointF;
+   FLongSlop: Single;
    procedure CaptureOverlayInteractionImage;
    procedure SetMouseObject(const Value: TKeyMouseHook);
    procedure EnsureOverlayPainter;
@@ -149,6 +160,9 @@ type
   // пера над экраном - правая кнопка
    procedure StylusHover(Action: TStylusHoverAction; const P: TPointF);
    procedure StylusButtonClick(const P: TPointF);
+   procedure LongPressTimer(Sender: TObject);
+   procedure LongPressFlush;
+   procedure PainterDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
   // быстрые слои: щелчок по слою, «Применить», смена активного слоя
    procedure QuickLayerClick(Sender: TObject);
    procedure QuickLayersApply(Sender: TObject);
@@ -214,6 +228,8 @@ implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap
                     {$IFDEF ANDROID}, Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText{$ENDIF};
 
 {$R *.fmx}
+{$R *.XLgXhdpiTb.fmx ANDROID}
+{$R *.Surface.fmx MSWINDOWS}
 
 // версия сборки: Android - versionName (VerInfo_Keys) и versionCode (номер
 // сборки VerInfo_Build) из манифеста APK; Windows - версия из ресурса exe
@@ -1253,10 +1269,7 @@ end;
 
 procedure TMainFormMouseObj.SkPainterMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-var Hook: Boolean;
-    XPix, YPix, XGeo, YGeo: Double;
 begin
- Hook := False;
 // средняя кнопка (перемещение карты) - всегда форме, в обработчик мыши не попадает
  If Button = TMouseButton.mbMiddle then begin
   inherited;
@@ -1271,14 +1284,61 @@ begin
   Button := TMouseButton.mbRight;
   Shift := Shift - [ssLeft] + [ssRight];
  end;
+// палец или перо: нажатие придерживается (долгое нажатие - правая кнопка)
+ If (Button = TMouseButton.mbLeft) and (MouseObject <> nil) and (StylusTool in [stFinger, stStylus, stEraser]) then begin
+  FLongPending := True;
+  FLongFired := False;
+  FLongSender := Sender;
+  FLongShift := Shift;
+  FLongPos := PointF(X, Y);
+  FLongSlop := LongPressSlop; // системный допуск сдвига
+  if FLongTimer = nil then begin
+   FLongTimer := TTimer.Create(Self);
+   FLongTimer.OnTimer := LongPressTimer;
+  end;
+  FLongTimer.Enabled := False;
+  FLongTimer.Interval := LongPressTimeout; // системное время долгого нажатия
+  FLongTimer.Enabled := True;
+  exit;
+ end;
+ PainterDown(Sender, Button, Shift, X, Y);
+end;
+
+// нажатие - обработчику мыши, не перехвачено - форме (перемещение карты)
+procedure TMainFormMouseObj.PainterDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var Hook: Boolean;
+    XPix, YPix, XGeo, YGeo: Double;
+begin
+ Hook := False;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseDown(TwgForm, Button, Shift, XGeo, YGeo, Hook);
   if not Hook then
-    inherited;
+    inherited SkPainterMouseDown(Sender, Button, Shift, X, Y);
  end else
-  inherited;
+  inherited SkPainterMouseDown(Sender, Button, Shift, X, Y);
+end;
+
+// придержанное нажатие - обычным нажатием (отпускание, сдвиг)
+procedure TMainFormMouseObj.LongPressFlush;
+begin
+ if not FLongPending then exit;
+ FLongPending := False;
+ FLongTimer.Enabled := False;
+ PainterDown(FLongSender, TMouseButton.mbLeft, FLongShift, FLongPos.X, FLongPos.Y);
+end;
+
+// удержание на месте - правая кнопка
+procedure TMainFormMouseObj.LongPressTimer(Sender: TObject);
+begin
+ FLongTimer.Enabled := False;
+ if not FLongPending then exit;
+ FLongPending := False;
+ FLongFired := True;
+ PainterDown(FLongSender, TMouseButton.mbRight, FLongShift - [ssLeft] + [ssRight], FLongPos.X, FLongPos.Y);
+ InvalidateOverlayLive;
+ RepaintLive;
 end;
 
 procedure TMainFormMouseObj.SkPainterMouseMove(Sender: TObject;
@@ -1289,6 +1349,14 @@ var Hook: Boolean;
 begin
  Hook := False;
  MousePos := PointF(X, Y);
+// придержанное нажатие: сдвиг дальше допуска - обычное нажатие, дрожание
+// пальца или пера на месте - пропускается; после правой кнопки (долгое
+// нажатие) движения до отпускания не обрабатываются
+ If FLongPending then begin
+  if (Abs(X - FLongPos.X) <= FLongSlop) and (Abs(Y - FLongPos.Y) <= FLongSlop) then exit;
+  LongPressFlush;
+ end;
+ If FLongFired then exit;
 // карта перемещается (нажато колесо или начато формой) - движение только форме:
 // обработчики мыши перехватывают каждое движение (Hook) и обрывали перемещение
  If IsPanning or (ssMiddle in Shift) or FingerOnlyPans then begin
@@ -1333,7 +1401,10 @@ begin
   RequestOverlayRedraw;
   exit;
  end;
- If StylusRightButton then begin
+// короткое нажатие пальцем или пером - щелчок; после долгого - отпускание правой
+ If FLongPending then LongPressFlush;
+ If StylusRightButton or FLongFired then begin
+  FLongFired := False;
   Button := TMouseButton.mbRight;
   Shift := Shift - [ssLeft] + [ssRight];
  end;

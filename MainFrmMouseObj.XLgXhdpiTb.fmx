@@ -1,0 +1,97 @@
+inherited MainFormMouseObj_XLgXhdpiTb: TMainFormMouseObj_XLgXhdpiTb
+  ClientHeight = 1255
+  ClientWidth = 800
+  DesignerMasterStyle = 3
+  inherited Panel1: TPanel
+    Size.Width = 800.000000000000000000
+    inherited btnClose: TButton
+      Position.X = 780.000000000000000000
+    end
+    inherited Panel2: TPanel
+      Position.X = 690.000000000000000000
+    end
+    inherited Panel3: TPanel
+      Position.X = 617.000000000000000000
+    end
+    inherited pnlView: TPanel
+      Position.X = 501.000000000000000000
+    end
+  end
+  inherited PanelPainter: TPanel
+    Size.Width = 800.000000000000000000
+    Size.Height = 1103.000000000000000000
+    inherited SkPainter: TSkPaintBox
+      Size.Width = 332.000000000000000000
+      Size.Height = 1103.000000000000000000
+    end
+    inherited instPanel: TPanel
+      Position.X = 532.000000000000000000
+      Size.Height = 1103.000000000000000000
+      inherited InstHost: TLayout
+        Size.Height = 970.000000000000000000
+      end
+      inherited SplitterHost2: TSplitter
+        Position.Y = 970.000000000000000000
+      end
+      inherited InstHost2: TLayout
+        Position.Y = 976.000000000000000000
+      end
+    end
+    inherited SplitterHost: TSplitter
+      Position.X = 526.000000000000000000
+      Size.Height = 1103.000000000000000000
+    end
+    inherited SplitterProps: TSplitter
+      Size.Height = 1103.000000000000000000
+    end
+    inherited instProperties: TLayout
+      Size.Height = 1103.000000000000000000
+    end
+  end
+  inherited StatusBar: TStatusBar
+    Position.Y = 1232.000000000000000000
+    Size.Width = 800.000000000000000000
+    inherited pMas: TLabel
+      Position.X = 686.000000000000000000
+    end
+    inherited PanelHint: TLabel
+      Size.Width = 224.000000000000000000
+      TextSettings.Font.StyleExt = {00070000000000000004000000}
+    end
+  end
+  inherited ToolBarPaint: TToolBar
+    Size.Width = 798.000000000000000000
+    inherited btnInstLine: TSpeedButton
+      Position.X = 744.000000000000000000
+    end
+    inherited btnInstPoint: TSpeedButton
+      Position.X = 717.000000000000000000
+    end
+    inherited btnInstBlock: TSpeedButton
+      Position.X = 771.000000000000000000
+    end
+    inherited LayerFrame1: TLayerFrame
+      Position.X = 304.000000000000000000
+      inherited PopupLayers: TPopup
+        inherited PopupLay: TLayout
+          inherited TreeLayers: TTreeView
+            Viewport.Width = 100.000000000000000000
+            Viewport.Height = 100.000000000000000000
+          end
+        end
+      end
+    end
+    inherited btnProperties: TSpeedButton
+      Position.X = 275.000000000000000000
+    end
+    inherited btnBlock: TSpeedButton
+      Position.X = 246.000000000000000000
+    end
+    inherited btnQuickLayers: TSpeedButton
+      Position.X = 688.000000000000000000
+    end
+  end
+  inherited ToolBarOZN: TToolBar
+    Size.Width = 800.000000000000000000
+  end
+end
