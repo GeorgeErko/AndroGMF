@@ -23,7 +23,7 @@ uses
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.Controls.Presentation, FMX.TextLayout, System.ImageList,
-  FMX.ImgList;
+  FMX.ImgList, AppForms;
 
 type
   TInstAccuDrawFrame = class(TFrame)
@@ -57,7 +57,6 @@ type
     procedure KeyUndoClick(Sender: TObject);
     procedure KeySnapsClick(Sender: TObject);
     procedure KeyMicClick(Sender: TObject);
-    procedure btnKeyBackApplyStyleLookup(Sender: TObject);
   private
     FControls: TDictionary<String, TControl>; // элементы по имени
     FItems: TList<TControl>; // созданные элементы (с метками) - для очистки
@@ -576,16 +575,6 @@ begin
  FActiveEditButton.Text := Copy(S, 1, Length(S) - 1);
  FActiveEditButton.IsPressed := True;
  if Assigned(OnChange) then OnChange(FActiveEditButton);
-end;
-
-procedure TInstAccuDrawFrame.btnKeyBackApplyStyleLookup(Sender: TObject);
-var O: TFmxObject;
-begin
- O := TStyledControl(Sender).FindStyleResource('glyphstyle');
- if O is TControl then begin
-    TControl(O).Align := TAlignLayout.Center;
-   // TControl(O).Margins.Top := 10;
- end;
 end;
 
 function TInstAccuDrawFrame.ControlByName(const CName: String): TControl;

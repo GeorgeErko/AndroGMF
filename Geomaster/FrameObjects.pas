@@ -13,7 +13,7 @@ interface
 
 uses System.SysUtils, System.Types, System.UITypes, System.Classes,
      FMX.Types, FMX.Controls, FMX.Forms, FMX.StdCtrls, FMX.Layouts,
-     FMX.ListBox, FMX.Controls.Presentation, objEditMap32;
+     FMX.ListBox, FMX.Controls.Presentation, objEditMap32, AppForms;
 
 type
  TObjectsFrame = class(TFrame)
@@ -50,6 +50,7 @@ implementation
 constructor TObjectsFrame.Create(AOwner: TComponent);
 begin
  inherited;
+ Opaque := False; // только носитель меню (TPopup со своим фоном)
  ObjectsFrame := Self;
 end;
 

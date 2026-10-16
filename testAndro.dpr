@@ -6,7 +6,8 @@ uses
   FMX.Forms,
   FMX.Types,
   FMX.Skia,
-  AppFonts in 'AppFonts.pas',
+  AppUI in 'AppUI.pas',
+  AppForms in 'AppForms.pas',
   FireDAC.FMXUI.Wait,
   circle_di in 'GMF\circle_di.pas',
   Collect in 'GMF\Collect.pas',
@@ -143,6 +144,8 @@ uses
   instQuickLayers in 'instQuickLayers.pas' {QuickLayersFrame: TFrame},
   instAccuDraw in 'instAccuDraw.pas' {InstAccuDrawFrame: TFrame},
   VoskSpeech in 'VoskSpeech.pas',
+  GPSReceiver in 'GPSReceiver.pas',
+  instGPSFrame in 'instGPSFrame.pas' {InstGPSFrame: TFrame},
   WinSpeech in 'WinSpeech.pas';
 
 {$R *.res}
@@ -162,7 +165,7 @@ begin
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}
   Application.Initialize;
-  UnfixButtonHeights; // высота кнопок и тулбаров - из формы, не из стиля (AppFonts)
+  UnfixButtonHeights; // высота кнопок и тулбаров - из формы, не из стиля (AppUI)
    Application.CreateForm(TMainFormDendro, MainFormDendro);
   //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;

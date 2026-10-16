@@ -357,7 +357,8 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="AppFonts.pas"/>
+        <DCCReference Include="AppUI.pas"/>
+        <DCCReference Include="AppForms.pas"/>
         <DCCReference Include="GMF\circle_di.pas"/>
         <DCCReference Include="GMF\Collect.pas"/>
         <DCCReference Include="GMF\dsolve.pas"/>
@@ -577,6 +578,12 @@
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="VoskSpeech.pas"/>
+        <DCCReference Include="GPSReceiver.pas"/>
+        <DCCReference Include="instGPSFrame.pas">
+            <Form>InstGPSFrame</Form>
+            <FormType>fmx</FormType>
+            <DesignClass>TFrame</DesignClass>
+        </DCCReference>
         <DCCReference Include="WinSpeech.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

@@ -9,7 +9,7 @@ uses
   FMX.Controls.Presentation, FMX.ListView.Types, FMX.ListView.Appearances,
   FMX.ListView.Adapters.Base, FMX.ListView, System.IOUtils,
   newProcs, FMX.DialogService, GmfPickTypes, FMX.ListBox, FMX.Edit,
-  System.Generics.Collections;
+  System.Generics.Collections, AppForms;
 
 function GetAppExternalFilesDir: string;
 

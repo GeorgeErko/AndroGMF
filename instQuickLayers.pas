@@ -15,7 +15,7 @@ uses
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.ListBox, FMX.Controls.Presentation,
-  newLayersTable, newResource, System.ImageList, FMX.ImgList;
+  newLayersTable, newResource, System.ImageList, FMX.ImgList, AppForms;
 
 type
   TQuickLayersFrame = class(TFrame)

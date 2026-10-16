@@ -50,7 +50,8 @@ implementation
 
 {$IF DEFINED(ANDROID)}
 uses
-  System.SysUtils, Androidapi.JNIBridge, Androidapi.JNI.GraphicsContentViewText, Androidapi.Helpers, FMX.Platform.Android;
+  System.SysUtils, Androidapi.JNIBridge, Androidapi.JNI.JavaTypes, Androidapi.JNI.GraphicsContentViewText,
+  Androidapi.Helpers, FMX.Platform.Android;
 
 const
  // android.view.MotionEvent
@@ -68,6 +69,23 @@ const
   PEN_BUTTONS = BUTTON_SECONDARY or BUTTON_STYLUS_PRIMARY or BUTTON_STYLUS_SECONDARY;
 
 type
+ // android.view.ViewConfiguration - в JNI-модулях Delphi нет, только нужное
+  JViewConfiguration = interface;
+
+  JViewConfigurationClass = interface(JObjectClass)
+    ['{6DA76568-2A81-4A98-9E12-C95F57F5F4C2}']
+    function get(context: JContext): JViewConfiguration; cdecl;
+    function getLongPressTimeout: Integer; cdecl;
+  end;
+
+  [JavaSignature('android/view/ViewConfiguration')]
+  JViewConfiguration = interface(JObject)
+    ['{392BF1A7-77AE-441C-9D28-647137B588F1}']
+    function getScaledTouchSlop: Integer; cdecl;
+  end;
+
+  TJViewConfiguration = class(TJavaGenericImport<JViewConfigurationClass, JViewConfiguration>) end;
+
   TStylusTouchListener = class(TJavaLocal, JView_OnTouchListener)
   public
     function onTouch(v: JView; event: JMotionEvent): Boolean; cdecl;

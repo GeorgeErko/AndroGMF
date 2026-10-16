@@ -118,6 +118,8 @@ type
   protected
     procedure Loaded; override;
     procedure SetSelectorParams; virtual;
+  // карта - центром в мировую точку (WX, WY), масштаб сохраняется
+    procedure CenterMapOn(WX, WY: Double);
     procedure InvalidateOverlayStatic;
     procedure InvalidateOverlayLive;
     procedure InvalidateOverlayAll;
@@ -355,6 +357,30 @@ begin
  FPainterPos := P;
  FPainterPosValid := True;
  Selector.UpdateRects(False);
+end;
+
+procedure TMainFormSkia.CenterMapOn(WX, WY: Double);
+var R: TogsRect;
+    Dx, Dy: Double;
+begin
+ if (Selector = nil) or (Selector.ActiveRect = nil) or not Selector.ActiveRect.isRect then exit;
+ R := TogsRect.Create;
+ try
+  R.Assign(Selector.ActiveRect);
+  Dx := WX - (R.XMin + R.XMax) / 2;
+  Dy := WY - (R.YMin + R.YMax) / 2;
+  R.XMin := R.XMin + Dx;
+  R.XMax := R.XMax + Dx;
+  R.YMin := R.YMin + Dy;
+  R.YMax := R.YMax + Dy;
+  Selector.ActiveRect := R;
+ finally
+  R.Free;
+ end;
+ Selector.UpdateRects(True);
+ ClearOverlayAllCaches;
+ SceneDirty := True;
+ if SkPainter <> nil then SkPainter.Redraw;
 end;
 
 function TMainFormSkia.ExportSceneToPdf(const AFileName: string): string;

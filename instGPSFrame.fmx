@@ -1,0 +1,79 @@
+object InstGPSFrame: TInstGPSFrame
+  Size.Width = 240.000000000000000000
+  Size.Height = 290.000000000000000000
+  Size.PlatformDefault = False
+  object Bg: TRectangle
+    Align = Contents
+    Fill.Color = xF0FFFFFF
+    Size.Width = 240.000000000000000000
+    Size.Height = 290.000000000000000000
+    Size.PlatformDefault = False
+    Stroke.Color = xFF808080
+    XRadius = 4.000000000000000000
+    YRadius = 4.000000000000000000
+  end
+  object TopLay: TLayout
+    Align = Top
+    Margins.Left = 2.000000000000000000
+    Margins.Top = 2.000000000000000000
+    Margins.Right = 2.000000000000000000
+    Position.X = 2.000000000000000000
+    Position.Y = 2.000000000000000000
+    Size.Width = 236.000000000000000000
+    Size.Height = 26.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object sbStart: TSpeedButton
+      Align = Left
+      StaysPressed = True
+      Hint = #1042#1082#1083#1102#1095#1080#1090#1100' '#1080#1083#1080' '#1074#1099#1082#1083#1102#1095#1080#1090#1100' GPS'
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 2.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 60.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1057#1090#1072#1088#1090
+      TextSettings.Trimming = None
+      OnClick = sbStartClick
+    end
+    object cbFollow: TCheckBox
+      Align = Left
+      Hint = #1050#1072#1088#1090#1072' '#1089#1076#1074#1080#1075#1072#1077#1090#1089#1103' '#1079#1072' '#1087#1086#1083#1086#1078#1077#1085#1080#1077#1084
+      Margins.Left = 4.000000000000000000
+      Position.X = 68.000000000000000000
+      Size.Width = 80.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #1057#1083#1077#1076#1080#1090#1100
+    end
+    object sbCenter: TSpeedButton
+      Align = Right
+      Hint = #1055#1086#1082#1072#1079#1072#1090#1100' '#1087#1086#1083#1086#1078#1077#1085#1080#1077' '#1074' '#1094#1077#1085#1090#1088#1077' '#1082#1072#1088#1090#1099
+      Margins.Left = 2.000000000000000000
+      Margins.Top = 2.000000000000000000
+      Margins.Right = 2.000000000000000000
+      Margins.Bottom = 2.000000000000000000
+      Position.X = 160.000000000000000000
+      Position.Y = 2.000000000000000000
+      Size.Width = 74.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1050' '#1090#1086#1095#1082#1077
+      TextSettings.Trimming = None
+      OnClick = sbCenterClick
+    end
+  end
+  object Rows: TLayout
+    Align = Client
+    HitTest = False
+    Size.Width = 240.000000000000000000
+    Size.Height = 262.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+  end
+end

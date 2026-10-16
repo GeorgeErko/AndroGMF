@@ -19,7 +19,7 @@ uses
   System.Rtti, FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
   FMX.StdCtrls, FMX.Controls.Presentation, FMX.Grid.Style, FMX.Grid,
   FMX.ScrollBox, FMX.ListBox, FMX.Layouts,
-  Collect, WptForm2, EcDot, LBN, textmanager;
+  Collect, WptForm2, EcDot, LBN, textmanager, AppForms;
 
 type
  // результат диалога: OK - значения записаны в атрибуты

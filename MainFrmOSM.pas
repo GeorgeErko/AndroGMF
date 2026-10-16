@@ -8,7 +8,8 @@ uses
      FMX.Controls, FMX.Controls.Presentation, FMX.Dialogs, FMX.Forms,
      FMX.Graphics, FMX.ImgList, FMX.Layouts, FMX.Memo, FMX.Memo.Types,
      FMX.Objects, FMX.ScrollBox, FMX.Skia, FMX.StdCtrls, FMX.Types,
-     InstLayerFrame, MainFrmMouseObj, ProjApi, System.ImageList, System.IOUtils, System.Skia;
+     InstLayerFrame, MainFrmMouseObj, ProjApi, System.ImageList, System.IOUtils, System.Skia,
+     GPSReceiver, instGPSFrame;
 
 type
  TOsmTile = record
@@ -18,6 +19,8 @@ type
 
   TMainFormOSM = class(TMainFormMouseObj)
     lMas: TLabel;
+    cbNAV: TCheckBox;
+    procedure btnGPSClick(Sender: TObject);
     procedure btnDocClick(Sender: TObject);
     procedure btnGPKGBClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
@@ -42,6 +45,13 @@ type
     FOsmFailed: Boolean;
     FOsmLastReqXMin, FOsmLastReqYMin, FOsmLastReqXMax, FOsmLastReqYMax: Double;
     FOsmLastReqValid: Boolean;
+  // GPS (GPSReceiver): приемник, панель состояния (instGPSFrame) поверх карты
+  // по флажку cbNAV, маркер положения и круг точности - в live-слое
+    FGPS: TGPSReceiver;
+    FGPSFrame: TInstGPSFrame;
+    procedure GPSUpdate(Sender: TObject);
+    procedure GPSCenter(Sender: TObject);
+    procedure DrawGPSMarker(const ACanvas: ISkCanvas);
     procedure OsmDisable;
     procedure OsmDownloadFailed;
     procedure OsmReqTimer(Sender: TObject);
@@ -71,6 +81,7 @@ type
     procedure OpenGmfFileSkia(const LocalPath: string); override;
     procedure PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF); override;
     procedure PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF); override;
+    procedure PaintOverlayLive(const ACanvas: ISkCanvas; const Rect: TRectF); override;
     procedure OsmChanged;
     procedure OsmMapLoaded;
   public
@@ -82,7 +93,7 @@ type
 var
   MainFormOSM: TMainFormOSM;
 
-implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader;
+implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader, drawTwigs32;
 
 {$R *.fmx}
 
@@ -122,6 +133,10 @@ end;
 destructor TMainFormOSM.Destroy;
 begin
  FOsmClosing := True;
+ if FGPS <> nil then begin
+  FGPS.OnUpdate := nil;
+  FreeAndNil(FGPS);
+ end;
  Inc(FOsmRequestId);
  if FOsmReqTimer <> nil then
  begin
@@ -799,6 +814,89 @@ begin
   WriteIn(['OSM PaintAfter tiles=', Length(FOsmTileList), ' cached=', FOsmTiles.Count]);
  end;
  DrawOsmTiles(ACanvas, Rect);
+end;
+
+// кнопка GPS: панель состояния в правом верхнем углу карты; приемник
+// создается при первом показе, включается и выключается на панели
+procedure TMainFormOSM.btnGPSClick(Sender: TObject);
+begin
+ if FGPS = nil then begin
+  FGPS := TGPSReceiver.Create;
+  FGPS.OnUpdate := GPSUpdate;
+ end;
+ if FGPSFrame = nil then begin
+  FGPSFrame := TInstGPSFrame.Create(Self);
+  FGPSFrame.Parent := SkPainter;
+  FGPSFrame.Align := TAlignLayout.None;
+  FGPSFrame.Position.X := SkPainter.Width - FGPSFrame.Width - 6;
+  FGPSFrame.Position.Y := 6;
+  FGPSFrame.Anchors := [TAnchorKind.akTop, TAnchorKind.akRight];
+  FGPSFrame.OnCenter := GPSCenter;
+  FGPSFrame.GPS := FGPS;
+ end;
+ FGPSFrame.Visible := cbNAV.IsChecked;
+ if FGPSFrame.Visible then begin
+  FGPSFrame.BringToFront;
+ // показ панели - сразу и приемник (выключается кнопкой «Стоп»)
+  if not FGPS.Active then FGPS.Start;
+  FGPSFrame.UpdateView;
+ end;
+end;
+
+// новое состояние приемника: панель, маркер; «Следить» - положение вышло из
+// средней части окна - карта центрируется
+procedure TMainFormOSM.GPSUpdate(Sender: TObject);
+var WX, WY, W, H: Double;
+    R: TogsRect;
+begin
+ if FGPSFrame <> nil then FGPSFrame.UpdateView;
+ if (FGPSFrame <> nil) and FGPSFrame.Follow and FGPS.WorldXY(WX, WY) and (Selector <> nil) and (Selector.ActiveRect <> nil) then begin
+  R := Selector.ActiveRect;
+  W := (R.XMax - R.XMin) * 0.25;
+  H := (R.YMax - R.YMin) * 0.25;
+  if (WX < R.XMin + W) or (WX > R.XMax - W) or (WY < R.YMin + H) or (WY > R.YMax - H) then CenterMapOn(WX, WY);
+ end;
+ InvalidateOverlayLive;
+ RepaintLive;
+end;
+
+procedure TMainFormOSM.GPSCenter(Sender: TObject);
+var WX, WY: Double;
+begin
+ if (FGPS <> nil) and FGPS.WorldXY(WX, WY) then CenterMapOn(WX, WY);
+end;
+
+procedure TMainFormOSM.PaintOverlayLive(const ACanvas: ISkCanvas; const Rect: TRectF);
+begin
+ inherited;
+ DrawGPSMarker(ACanvas);
+end;
+
+// положение GPS: точка (цвет по решению: RTK fixed - зеленый, float -
+// оранжевый, остальные - синий) и круг точности. Live-слой в мировых
+// координатах, смешивается со сценой (Difference) - цвета через SkLiveColor
+procedure TMainFormOSM.DrawGPSMarker(const ACanvas: ISkCanvas);
+var WX, WY, R: Double;
+    C: TAlphaColor;
+    Paint: ISkPaint;
+    S: TGPSState;
+begin
+ if (ACanvas = nil) or (FGPS = nil) or not FGPS.Active or not FGPS.WorldXY(WX, WY) then exit;
+ S := FGPS.State;
+ case S.FixKind of
+  gkRTKFixed: C := TAlphaColors.Lime;
+  gkRTKFloat: C := TAlphaColors.Orange;
+ else
+  C := $FF1E78FF;
+ end;
+ if not IsNan(S.Accuracy) and (S.Accuracy > 0) then
+  ACanvas.DrawCircle(WX, WY, S.Accuracy, SkPen(ACanvas, SkLiveColor(C), 1, False));
+ R := SkPixToWorld(ACanvas, 6);
+ Paint := TSkPaint.Create;
+ Paint.AntiAlias := True;
+ Paint.Color := SkLiveColor(C);
+ ACanvas.DrawCircle(WX, WY, R, Paint);
+ ACanvas.DrawCircle(WX, WY, R * 1.6, SkPen(ACanvas, SkLiveColor(C), 2, False));
 end;
 
 end.

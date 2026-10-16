@@ -10,7 +10,7 @@ uses System.SysUtils, System.Types, System.UITypes, System.Classes,
      System.Variants, FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms,
      FMX.Dialogs, FMX.StdCtrls, FMX.Controls.Presentation, FMX.TabControl,
      FMX.Edit, FMX.EditBox, FMX.SpinBox, FMX.NumberBox, FMX.ListBox,
-     FMX.Layouts, FMX.Colors, FMX.Objects, System.Skia, FMX.Skia, WPTForm2;
+     FMX.Layouts, FMX.Colors, FMX.Objects, System.Skia, FMX.Skia, WPTForm2, AppForms;
 
 type
   TSettingsFrame = class(TFrame)
@@ -30,6 +30,8 @@ type
    Label8: TLabel;
    CbAuto: TCheckBox;
    SEAuto: TSpinBox;
+   LabelUIScale: TLabel;
+   SEUIScale: TSpinBox;
    GB: TGroupBox;
    CbInsert: TCheckBox;
    CbTwise: TCheckBox;
@@ -170,7 +172,7 @@ type
 
 implementation
 
-uses System.Math, newSettings, newSelector, newProcs, mpMarker, WpTwigs;
+uses System.Math, newSettings, newSelector, newProcs, mpMarker, WpTwigs, AppUI;
 
 {$R *.fmx}
 
@@ -237,6 +239,8 @@ var GS: TGlobalSettings;
     I: Integer;
 begin
  FTwgForm := ATwgForm;
+// масштаб интерфейса - настройка программы, не карты
+ SEUIScale.Value := Round(UI.Scale * 100);
  if FTwgForm = nil then exit;
  LockCheck := True;
  try
@@ -330,6 +334,12 @@ end;
 procedure TSettingsFrame.ApplySettings;
 var GS: TGlobalSettings;
 begin
+// масштаб интерфейса: формы и фреймы применяют размеры сразу
+// (TUIMetricsChangedMessage), шрифт по умолчанию - после перезапуска
+ if not SameValue(UI.Scale, SEUIScale.Value / 100) then begin
+  UI.Scale := SEUIScale.Value / 100;
+  UI.SaveSettings;
+ end;
  if FTwgForm = nil then exit;
  with FTwgForm.Settings do begin
   psOrtho := CbOrtho.IsChecked;

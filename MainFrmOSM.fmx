@@ -2,10 +2,74 @@ inherited MainFormOSM: TMainFormOSM
   Caption = 'MainFormOSM'
   DesignerMasterStyle = 3
   inherited Panel1: TPanel
+    inherited btnOpen: TCornerButton
+      Position.X = 65.000000000000000000
+    end
+    inherited btnLocalOpen: TCornerButton
+      Position.X = 95.000000000000000000
+    end
+    inherited btnPaint: TCornerButton
+      Position.X = 160.000000000000000000
+    end
+    inherited btnPDF: TCornerButton
+      Position.X = 125.000000000000000000
+    end
+    inherited Load: TButton
+      Position.X = 200.000000000000000000
+    end
+    inherited Panel3: TPanel
+      Position.X = 659.000000000000000000
+      Size.Width = 150.000000000000000000
+      inherited cbOSM: TCheckBox
+        TabOrder = 1
+      end
+      object cbNAV: TCheckBox
+        Position.X = 84.000000000000000000
+        Position.Y = 6.000000000000000000
+        Size.Width = 58.000000000000000000
+        Size.Height = 19.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        Text = 'GPS'
+        OnChange = btnGPSClick
+      end
+    end
+    inherited pnlView: TPanel
+      Position.X = 543.000000000000000000
+    end
+    inherited LabelVer: TLabel
+      Size.Width = 45.000000000000000000
+    end
     object lMas: TLabel
       Position.X = 540.000000000000000000
       Position.Y = 6.000000000000000000
       TabOrder = 82
+    end
+  end
+  inherited StatusBar: TStatusBar
+    inherited ResSpeedBtn59: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited SbShowPoints: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited SbSaveOrthoTwigs: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited sbShowGrid: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited sbShowZnak: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited sbOrthoDraw: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited sbShowPlan: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited PanelHint: TLabel
+      TextSettings.Font.StyleExt = {00070000000000000004000000}
     end
   end
   inherited ToolBarPaint: TToolBar
@@ -18,6 +82,12 @@ inherited MainFormOSM: TMainFormOSM
           end
         end
       end
+    end
+    inherited btnBlock: TSpeedButton
+      Size.Height = 48.000000000000000000
+    end
+    inherited btnQuickLayers: TSpeedButton
+      Size.Height = 48.000000000000000000
     end
   end
 end

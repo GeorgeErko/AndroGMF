@@ -18,7 +18,7 @@ interface
 
 uses System.SysUtils, System.Types, System.UITypes, System.Classes,
      System.IOUtils, FMX.Types, FMX.Controls, FMX.Forms, Collect, EcDot,
-     EcLot, WpTwigs, WptForm2, LBN;
+     EcLot, WpTwigs, WptForm2, LBN, AppForms;
 
 const
 // цвета линий ошибок - COLORREF ($00BBGGRR), как свойство 'Цвет' контура

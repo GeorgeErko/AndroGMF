@@ -9,7 +9,7 @@ uses
   FMX.TabControl, FMX.Controls.Presentation,
   WPTForm2, newLayersTable, System.ImageList, FMX.ImgList, FMX.Layouts,
   FMX.ListBox, FMX.ScrollBox, FMX.Skia,
-  Lib, System.Skia, instLayerFrame, newResource;
+  Lib, System.Skia, instLayerFrame, newResource, AppForms;
 
 type
  // запуск операции установки знаков (Opr - код операции objTopo32, Tag кнопки)

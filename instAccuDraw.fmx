@@ -251,7 +251,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.PlatformDefault = False
         TabOrder = 8
         TextSettings.Trimming = None
-        OnApplyStyleLookup = btnKeyBackApplyStyleLookup
+        HelpKeyword = 'ui:center'
         OnClick = KeyBackClick
       end
       object btnKeyEnter: TButton

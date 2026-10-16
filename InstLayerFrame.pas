@@ -8,7 +8,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.Objects, FMX.TreeView,
   newLayersTable, newResource, FMX.Controls.Presentation,
-  MainFrmSkia, newProcs, System.ImageList, FMX.ImgList;
+  MainFrmSkia, newProcs, System.ImageList, FMX.ImgList, AppForms;
 
 type
   TLayerFrame = class(TFrame)
@@ -116,26 +116,24 @@ type
   end;
 
 var LayerFrame: TLayerFrame;
-// размер шрифта списка слоев и заголовка (имя активного слоя); высота строк,
-// флажок и цветной квадрат подстраиваются под него (LayerRowHeight)
-    LayerListFontSize: Single = {$IFDEF ANDROID}12{$ELSE}13{$ENDIF};
 
 implementation
 
-uses Writer;
+uses Writer, AppUI;
 
-// высота строки списка слоев: по шрифту, не меньше 24 (флажок 20 + отступы)
+// размер шрифта списка слоев и заголовка (имя активного слоя) - UI.Metrics.ListFontSize;
+// высота строки - по шрифту, не меньше 24 (флажок 20 + отступы)
 function LayerRowHeight: Single;
 begin
- Result := Round(LayerListFontSize * 1.7);
+ Result := Round(UI.Metrics.ListFontSize * 1.7);
  if Result < 24 then Result := 24;
 end;
 
-// шрифт метки имени слоя - LayerListFontSize (не из стиля)
+// шрифт метки имени слоя - не из стиля
 procedure SetLayerLabelFont(Nm: TLabel);
 begin
  Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.Size];
- Nm.TextSettings.Font.Size := LayerListFontSize;
+ Nm.TextSettings.Font.Size := UI.Metrics.ListFontSize;
 end;
 
 {$R *.fmx}
@@ -267,6 +265,7 @@ end;
 constructor TLayerFrame.Create(AOwner: TComponent);
 begin
  inherited;
+ Opaque := False; // в тулбаре: фон - тулбара
  FLayerToItem := TObjectDictionary<TObject, TTreeViewItem>.Create([]);
  EnsureHeaderControls;
  EnsurePopupResizeGrip;

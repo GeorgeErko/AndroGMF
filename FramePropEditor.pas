@@ -10,7 +10,7 @@ uses
   FMX.Edit,
   FMX.Layouts, FMX.ListBox, FMX.Grid, FMX.Grid.Style, Collect, TwgDraw, System.Rtti,
   EcLot, WpTwigs, newSelector, newProcs, WPTForm2, newProperties, SelectedObjects,
-  DlgRootPropEditor, DlgPropColorEditor, FMX.Controls.Presentation;
+  DlgRootPropEditor, DlgPropColorEditor, FMX.Controls.Presentation, AppForms;
 
 type
   TUpdatePropObject = class(TLot)

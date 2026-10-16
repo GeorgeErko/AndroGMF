@@ -111,7 +111,6 @@ type
     FloatAnimation8: TFloatAnimation;
     SplitterHost2: TSplitter;
     InstHost2: TLayout;
-    procedure OZNButtonApplyStyleLookup(Sender: TObject);
     procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
@@ -224,7 +223,7 @@ implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource
+                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource, AppUI
                     {$IFDEF ANDROID}, Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText{$ENDIF};
 
 {$R *.fmx}
@@ -471,6 +470,7 @@ end;
 procedure TMainFormMouseObj.Loaded;
 begin
   WindowState := TWindowState.wsMaximized;
+// высоты кнопок, тулбаров и строки состояния (AppUI) - в AppForms.TForm.Loaded
   inherited;
   if FInteractionWatchTimer = nil then
   begin
@@ -494,6 +494,7 @@ procedure TMainFormMouseObj.SetTwgForm(const Value: TForm2);
 var LF: TLayerFrame; ilVisible: Boolean;
 begin
 // WriteIn(['================1']);
+WriteIn(['StatusBar H=', StatusBar.Height, ' btn H=', SbShowPoints.Height, ' fixed=', StatusBar.FixedSize.Height]);
  inherited;
  if InstPoints <> nil then InstPoints.ClearTilesAndResources;
  if InstLines <> nil then begin
@@ -983,26 +984,6 @@ begin
  MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
  UpdateEscButton(1);
 {$ENDIF}
-end;
-
-// кнопки панелей ОЗН и ToolBarPaint: картинка в своем размере (ImageListOZN
-// 32x32, ToolImageList 16-18).
-// Размер глифа задавать нельзя: TCustomButton.DoRealign (UpdateGlyphSize)
-// возвращает глифу с Align Center/Left/Top... размер из стиля (Windows - 16).
-// Поэтому глиф - на всю кнопку (Align Client UpdateGlyphSize не трогает), а
-// Stretch = False: рисуется наибольшая картинка списка, что помещается, по центру
-procedure TMainFormMouseObj.OZNButtonApplyStyleLookup(Sender: TObject);
-var G: TFmxObject;
-    B: TSpeedButton;
-begin
- if not (Sender is TSpeedButton) then exit;
- B := TSpeedButton(Sender);
- if not (B.Images is TCustomImageList) or (B.ImageIndex < 0) then exit;
- G := B.FindStyleResource('glyphstyle');
- if G is TGlyph then begin
-  TGlyph(G).Align := TAlignLayout.Client;
-  TGlyph(G).Stretch := False;
- end;
 end;
 
 // плоские кнопки на Windows: стиль Windows 10 Desktop рисует фон кнопки

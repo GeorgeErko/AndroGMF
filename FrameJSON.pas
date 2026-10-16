@@ -16,7 +16,7 @@ interface
 uses System.SysUtils, System.Types, System.UITypes, System.Classes,
      System.IOUtils, System.Generics.Collections, FMX.Types, FMX.Controls,
      FMX.Forms, FMX.Dialogs, Collect, EcDot, EcLot, WpTwigs, WptForm2, LBN,
-     SelectedObjects;
+     SelectedObjects, AppForms;
 
 var
 // имя файла экспорта по умолчанию (GlobalCSV старой программы)

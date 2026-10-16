@@ -7,7 +7,7 @@ uses System.SysUtils, System.Types, System.UITypes, System.Classes, System.Varia
      FMX.Controls.Presentation, FMX.StdCtrls, System.Skia, FMX.Skia,
      FMX.Memo.Types, FMX.ScrollBox, FMX.Memo, System.ImageList, FMX.ImgList,
      FMX.Objects,
-     WptForm2, newSelector, ogcDrawerCanvas, ogcBasic;
+     WptForm2, newSelector, ogcDrawerCanvas, ogcBasic, AppForms;
 
 type
   TMainForm = class(TForm)
