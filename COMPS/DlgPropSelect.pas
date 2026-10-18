@@ -4,8 +4,8 @@
 // программы, кнопка sbAnd редактора свойств): строка «знак + значение» -
 // '=', '<>', '>=', '<=', '>', '<', '%' (содержит) или 'a...b' (диапазон),
 // сравнение строк или чисел, область - выделить заново, среди выделенных или
-// добавить к выделенным. Окно немодальное для вызывающего (ShowModal с
-// процедурой, как требует Android): по OK вызывается OnOk, затем окно
+// добавить к выделенным. Окно немодальное для вызывающего (ShowDialog:
+// Windows - модальное окно, Android - панель поверх главной формы): по OK вызывается OnOk, затем окно
 // освобождается
 
 interface
@@ -64,7 +64,7 @@ begin
  F.cbSelect.Text := '=' + PropValue;
  if TryStrToFloat(StringReplace(Trim(PropValue), ',', '.', []), D, TFormatSettings.Invariant) then F.rbNum.IsChecked := True else
   F.rbStr.IsChecked := True;
- F.ShowModal(
+ ShowDialog(F, // модально: Windows - окно, Android - панель поверх формы
   procedure(ModalResult: TModalResult)
   begin
    try

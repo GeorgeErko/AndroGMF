@@ -8,7 +8,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.ListBox,
   FMX.Skia,
-  DlgRootPropEditor, FMX.Controls.Presentation, System.Skia, FMX.Layouts;
+  DlgRootPropEditor, FMX.Controls.Presentation, System.Skia, FMX.Layouts, AppForms;
 
 type
   TPropFontEditorForm = class(TRootPropEditorForm)
@@ -22,7 +22,8 @@ type
     procedure PreviewDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
     procedure ItemDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
   public
-    function Execute(Row: TPropRow): String;
+   // значение - в Done ('' - отмена, byLayer - «по слою»); показ модальный
+    procedure Execute(Row: TPropRow; const Done: TProc<String>);
   end;
 
 var
@@ -178,9 +179,9 @@ begin
  if SkPreview <> nil then SkPreview.Redraw;
 end;
 
-function TPropFontEditorForm.Execute(Row: TPropRow): String;
+procedure TPropFontEditorForm.Execute(Row: TPropRow; const Done: TProc<String>);
 var Sel: string;
-    Res: TModalResult;
+    Form: TPropFontEditorForm;
 begin
  LoadPosition;
  Sel := '';
@@ -192,26 +193,21 @@ begin
  if (ListBox1 <> nil) and (ListBox1.ItemIndex >= 0) then
   ListBoxChange(ListBox1);
  fResult := '';
- Res := ShowModal;
- if (fResult = byLayer) then
- begin
-  Result := byLayer;
-  Exit;
- end;
- if Res = mrCancel then
- begin
-  fResult := '';
-  Result := '';
- end
- else
- begin
-  if (ListBox1 <> nil) and (ListBox1.ItemIndex >= 0) then
-   fResult := ListBox1.Items[ListBox1.ItemIndex]
-  else
-   fResult := '';
-  Result := fResult;
- end;
- SavePosition;
+ Form := Self;
+ ShowDialog(Self,
+  procedure(Res: TModalResult)
+  var S: String;
+  begin
+   if Form.fResult = byLayer then S := byLayer else begin
+    S := '';
+    if (Res <> mrCancel) and (Form.ListBox1 <> nil) and (Form.ListBox1.ItemIndex >= 0) then
+     S := Form.ListBox1.Items[Form.ListBox1.ItemIndex];
+    Form.fResult := S;
+    Form.SavePosition;
+   end;
+   Form.Release;
+   if Assigned(Done) then Done(S);
+  end);
 end;
 
 end.

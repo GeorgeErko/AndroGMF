@@ -407,7 +407,7 @@ end;
 function GWriteFloat(Name: AnsiString; S: Double): boolean;
 var Ini:TIniFile;
 begin
- Writein(['FExists=', FileExists(MainPath+Slash+etcIniName)]);
+ Writein(['FExists=',MainPath+Slash+etcIniName, FileExists(MainPath+Slash+etcIniName)]);
  Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
   Ini.WriteFloat('Registry',Name,S);
  Ini.Free;

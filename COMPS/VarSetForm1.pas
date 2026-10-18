@@ -408,7 +408,8 @@ end;
 
 procedure TVarSetDlg1.SetHistoryVisible(Value: Boolean);
 begin
- if Value then ClientWidth := Round(HistoryWidth) else ClientWidth := WidthNoHistory;
+// DialogClientWidth: Windows - ширина окна, Android - ширина панели диалога
+ if Value then DialogClientWidth := HistoryWidth else DialogClientWidth := WidthNoHistory;
  if Value then Button5.Text := '< История' else Button5.Text := 'История >';
 end;
 
@@ -419,7 +420,7 @@ end;
 
 procedure TVarSetDlg1.Button5Click(Sender: TObject);
 begin
- SetHistoryVisible(ClientWidth < HistoryWidth);
+ SetHistoryVisible(DialogClientWidth < HistoryWidth);
 end;
 
 procedure TVarSetDlg1.SpeedButton15Click(Sender: TObject);
@@ -483,7 +484,7 @@ var I, J: Integer;
     S: String;
     Lot, LotLawn: TLot;
 begin
- GWriteInteger(AnsiString(Name + '_Width'), Round(ClientWidth));
+ GWriteInteger(AnsiString(Name + '_Width'), Round(DialogClientWidth));
  GWriteInteger(AnsiString(Name + IncKey), Ord(CInc.IsChecked));
  if Grid.RowCount > 0 then GWriteString(AnsiString(Name + '_' + Grid.Cells[0, 0]), AnsiString(Grid.Cells[1, 0]));
 // газон под точкой (слой - в группе с ID 1800) - номер участка

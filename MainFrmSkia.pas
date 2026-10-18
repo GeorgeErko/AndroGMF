@@ -171,7 +171,7 @@ implementation
 
 uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager, System.Diagnostics, System.Math, System.Math.Vectors,
      EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
-     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw
+     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw, AppForms
 {$IFDEF ANDROID}
      , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
@@ -832,7 +832,7 @@ begin
   localOpenForm.BaseDir := GetAppExternalFilesDir;
 {$ENDIF}
   localOpenForm.FCallBack := OpenGmfFileSkia;
-  localOpenForm.Show;
+  ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
 end;
 
 procedure TMainFormSkia.btnPaintClick(Sender: TObject);
@@ -1982,7 +1982,14 @@ begin
 end;
 
 initialization
+// каталог настроек (Registry.ini, GWrite*) и словарей до открытия карты:
+// Android - документы приложения (каталог библиотек APK только для чтения,
+// словари развернуты в assets\internal = документы), Windows - каталог программы
+{$IFDEF ANDROID}
+ newProcs.MainPath := TPath.GetDocumentsPath + '/';
+{$ELSE}
  newProcs.MainPath := TPath.GetLibraryPath;
+{$ENDIF}
 finalization
  FreeAndNil(GFontFiles);
 end.

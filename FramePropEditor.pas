@@ -99,7 +99,8 @@ type
   //
    procedure SetSystemPropertiesValue(Objects: PCollection);
   //
-   function RunPropertyEditorDialog(Row: TPropRow): string;
+  // диалог значения (цвет, шрифт и др.): значение - в Done ('' - отмена)
+   procedure RunPropertyEditorDialog(Row: TPropRow; const Done: TProc<String>);
   // строка свойства под курсором таблицы; nil - нет
    function CurrentRow: TPropRow;
    procedure GridSelChanged(Sender: TObject);
@@ -136,7 +137,8 @@ var PropEditorForm: TPropEditorFrame;
 
 implementation uses TwgColle, newForm0, newResource, Writer, LBN, MainFrm,
                     UndoColNew, userObject, GBFWUndo, DlgPropFontEditor, UpdateMessages,
-                    FMX.DialogService, EcDot, EcDot2, DlgPropAdd, DlgPropSelect, DlgDelProperties;
+                    FMX.DialogService, EcDot, EcDot2, DlgPropAdd, DlgPropSelect,
+                    DlgDelProperties, Selector32;
 
 {$R *.fmx}
 
@@ -829,7 +831,6 @@ end;
 
 procedure TPropEditorFrame.GridCellClick(const Column: TColumn; const Row: Integer);
 var RowObj: TPropRow; CellR: TRectF;
-    NewValue: string;
     P, PAbs: TPointF;
     IconSize: Single;
     RBtn: TRectF;
@@ -907,11 +908,14 @@ begin
   FGrid.Options := FGrid.Options - [TGridOption.Editing];
  // значение из диалога (цвет, шрифт и др.) - выделенным объектам; '' - отмена.
  // Знаки (PointType, LineType, Block) выбираются в панелях знаков
-  NewValue := RunPropertyEditorDialog(RowObj);
-  if (NewValue <> '') and (RowObj.RawName <> '') then begin
-   RowObj.Value := NewValue;
-   SetProperty(RowObj.RawName, NewValue);
-  end;
+  RunPropertyEditorDialog(RowObj,
+   procedure(NewValue: String)
+   begin
+    if (NewValue <> '') and (RowObj.RawName <> '') then begin
+     RowObj.Value := NewValue;
+     SetProperty(RowObj.RawName, NewValue);
+    end;
+   end);
   Exit;
  end;
 //
@@ -1115,15 +1119,14 @@ begin
  end;
 end;
 
-function TPropEditorFrame.RunPropertyEditorDialog(Row: TPropRow): string;
+// формы диалогов освобождаются сами (Release после Done)
+procedure TPropEditorFrame.RunPropertyEditorDialog(Row: TPropRow; const Done: TProc<String>);
 begin
-  Result := '';
   if Row = nil then exit;
  //
   if SameText(Row.TypeName, 'Color') then begin
    PropColorEditorForm := TPropColorEditorForm.Create(MainForm);
-    Result := PropColorEditorForm.Execute(Row);
-   PropColorEditorForm.Free;
+   PropColorEditorForm.Execute(Row, Done);
   end else
   if (SameText(Row.TypeName, 'PointType') or
       SameText(Row.TypeName, 'LineType') or SameText(Row.TypeName, 'Block')) then
@@ -1133,12 +1136,10 @@ begin
   end else
   if SameText(Row.TypeName, 'FontName') then begin
    PropFontEditorForm := TPropFontEditorForm.Create(MainForm);
-    Result := PropFontEditorForm.Execute(Row);
-   PropFontEditorForm.Free;
+   PropFontEditorForm.Execute(Row, Done);
   end else begin
    RootPropEditorForm := TRootPropEditorForm.Create(MainForm);
-    Result := RootPropEditorForm.Execute(Row);
-   RootPropEditorForm.Free;
+   RootPropEditorForm.Execute(Row, Done);
   end;
 end;
 
@@ -1307,6 +1308,11 @@ begin
   Sel.Locked := False;
   Sel.Update;
  end;
+// выделение рисуется в статическом оверлее (TEditMap.DrawTempStatic): его кэш
+// сбрасывается, как в TEditMap.SelectionChanged; UpdateImage без параметров
+// перерисовывает только сцену, и оставалось прежнее выделение
+ if FSelector = nil then exit;
+ if Assigned(FSelector.OnInvalidateOverlayStatic) then FSelector.OnInvalidateOverlayStatic else FSelector.UpdateImage;
 end;
 
 // ИЛИ: к выделенным - объекты с тем же значением свойства

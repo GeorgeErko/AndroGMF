@@ -9,7 +9,7 @@ uses
   FMX.Controls.Presentation, FMX.ListView.Types, FMX.ListView.Appearances,
   FMX.ListView.Adapters.Base, FMX.ListView, System.IOUtils,
   newProcs, FMX.DialogService, GmfPickTypes, FMX.ListBox, FMX.Edit,
-  System.Generics.Collections, AppForms;
+  System.Generics.Collections, AppForms, System.ImageList, FMX.ImgList;
 
 function GetAppExternalFilesDir: string;
 
@@ -22,6 +22,7 @@ type
     btnOpen: TButton;
     btnDelete: TButton;
     lPath: TEdit;
+    ImageList1: TImageList;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure btnOpenClick(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
@@ -127,6 +128,7 @@ begin
    Item.Text := '..';
    Item.TagString := ParentDir;
    Item.Tag := 1;
+   Item.ImageIndex := -1; // путь наверх - без значка
   end;
 
   Dirs := TDirectory.GetDirectories(Dir);
@@ -136,6 +138,7 @@ begin
    Item.Text := ExtractFileName(Dirs[I]);
    Item.TagString := Dirs[I];
    Item.Tag := 2;
+   Item.ImageIndex := 0; // ImageList1: папка
   end;
 
   FileList := TList<string>.Create;
@@ -165,6 +168,8 @@ begin
    Item.Text := ExtractFileName(Files[I]);
    Item.TagString := Files[I];
    Item.Tag := 0;
+  // ImageList1: файл gmf, остальные - без значка
+   if SameText(ExtractFileExt(Files[I]), '.gmf') then Item.ImageIndex := 1 else Item.ImageIndex := -1;
   end;
  finally
   ListView1.EndUpdate;

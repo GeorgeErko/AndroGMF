@@ -34,7 +34,10 @@ type
   public
    procedure LoadPosition;
    procedure SavePosition;
-   function Execute(Row: TPropRow): String;
+  // значение - в Done ('' - отмена, byLayer - «по слою»); показ модальный
+  // (ShowDialog: Windows - окно, Android - панель поверх главной формы),
+  // форма освобождается после Done
+   procedure Execute(Row: TPropRow; const Done: TProc<String>);
   end;
 
 var
@@ -76,12 +79,20 @@ begin
  GWriteInteger(Name + '_Height', Height);
 end;
 
-function TRootPropEditorForm.Execute(Row: TPropRow): String;
-var Res: TModalResult;
+procedure TRootPropEditorForm.Execute(Row: TPropRow; const Done: TProc<String>);
+var Form: TRootPropEditorForm;
 begin
- Res := ShowModal;
- If Res = mrCancel then  Result := '' else
-  Result := fResult;
+ Form := Self;
+ ShowDialog(Self,
+  procedure(Res: TModalResult)
+  var S: String;
+  begin
+   if Form.fResult = byLayer then S := byLayer else
+   if Res = mrCancel then S := '' else
+    S := Form.fResult;
+   Form.Release;
+   if Assigned(Done) then Done(S);
+  end);
 end;
 
 procedure TRootPropEditorForm.Button3Click(Sender: TObject);

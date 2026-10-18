@@ -17,6 +17,11 @@ type
   TMainFormMouseObj = class(TMainFormSkia)
     ToolImageList: TImageList;
     ToolBarPaint: TToolBar;
+   // встроенный фрейм таблицы слоев: по типу поля класс находится при чтении
+   // fmx без RegisterClass(TLayerFrame) - он регистрировал и предков, а предок
+   // AppForms.TFrame одноименен с FMX.Forms.TFrame ('A class named TFrame
+   // already exists')
+    LayerFrame1: TLayerFrame;
     btnToolLine: TSpeedButton;
     btnToolPoint: TSpeedButton;
     btnToolPolyline: TSpeedButton;
@@ -223,7 +228,7 @@ implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource, AppUI
+                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource, AppUI, AppForms
                     {$IFDEF ANDROID}, Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText{$ENDIF};
 
 {$R *.fmx}
@@ -780,7 +785,7 @@ begin
    if LocalPath <> '' then
     ShowMessage(LocalPath);
   end;
- localOpenForm.Show;
+ ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
 end;
 
 procedure TMainFormMouseObj.CaptureOverlayInteractionImage;
@@ -1117,6 +1122,12 @@ var Hook: Boolean;
     K: Word;
 {$ENDIF}
 begin
+// открыт диалог панелью поверх формы (Android): Esc / «Назад» закрывают его,
+// остальные клавиши - элементам диалога, не операциям карты
+ if DialogOpen then begin
+  if not DialogKeyDown(Key, KeyChar) then inherited;
+  exit;
+ end;
 {$IFDEF MOUSE32}
  K := Key;
  if (K = 0) and (KeyChar <> #0) then
@@ -1422,9 +1433,5 @@ begin
   // live overlay is drawn into the sfOverlayLive surface and composed in SkPainterDraw
 end;
 
-initialization
- RegisterClass(TLayerFrame);
-finalization
- UnRegisterClass(TLayerFrame);
 end.
 

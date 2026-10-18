@@ -83,7 +83,7 @@ procedure TVarSetDlg2.StoreResults;
 var I: Integer;
     S: String;
 begin
- GWriteInteger(AnsiString(Name + '_Width'), Round(ClientWidth));
+ GWriteInteger(AnsiString(Name + '_Width'), Round(DialogClientWidth));
  GWriteInteger(AnsiString(Name + IncKey), Ord(CInc.IsChecked));
  if Grid.RowCount > 0 then GWriteString(AnsiString(Name + '_' + Grid.Cells[0, 0]), AnsiString(Grid.Cells[1, 0]));
  FPoint.SetProperty('*Тип (ОГХ)', 'Газоны_МГГТ');

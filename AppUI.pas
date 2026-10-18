@@ -38,6 +38,8 @@ type
     GlyphMargin: Single;       // отступ картинки от края кнопки
     Spacing: Single;           // интервал между элементами
     TouchExpansion: Single;    // расширение зоны касания за видимые границы
+    CheckSize: Single;         // квадратик TCheckBox / кружок TRadioButton (ui:check)
+    TitleHeight: Single;       // заголовок окна диалога на Android (AppForms.ShowDialog)
   end;
 
   TUIMetricsChangedMessage = class(TMessage);
@@ -87,10 +89,16 @@ procedure UnfixFormButtonHeights(Form: TObject);
 // используется; TagString в FMX не публикуется и в fmx не сохраняется) -
 // слова с префиксом 'ui:'
 // (например 'ui:center ui:small'), применяются по порядку поверх группы
-// контейнера. Правила групп - таблица UIRuleTable (константы в начале
+// контейнера; с платформой - только на ней: 'ui:android:font-2',
+// 'ui:win:font-1' (без платформы - везде). Правила групп - таблица UIRuleTable (константы в начале
 // реализации): высота (метрика UI), квадратная кнопка без текста, глиф
 // (по центру, на всю кнопку с отступом GlyphMargin, на всю кнопку без
-// растяжения), шрифт текста (мелкий, обычный). 'ui:skip' - кнопку не трогать.
+// растяжения), шрифт текста (мелкий, обычный, обычный +-N: ui:font-2).
+// 'ui:skip' - кнопку не трогать.
+// Остальные элементы (TEdit, TLabel, TCheckBox и т.п., TListView) - только по
+// пометкам 'ui:' (без групп контейнеров): шрифт; TListView с ui:list - шрифт
+// текста строк и высота строки по шрифту; TCheckBox / TRadioButton с ui:check
+// (ui:android:check) - квадратик (кружок) размером CheckSize профиля.
 // Зона касания всех кнопок расширяется на TouchExpansion.
 // Глиф и текст стиля меняются после каждого применения стиля
 // (OnApplyStyleLookup). У кнопки со своим OnApplyStyleLookup он не заменяется:
@@ -107,6 +115,9 @@ type
                                // ugClient - Align Client без растяжения
     Text: TUIText;
     Skip: Boolean;             // не трогать кнопку
+    FontDelta: Integer;        // шрифт = обычный (FontSize) + FontDelta; 0 - не меняется
+    List: Boolean;             // TListView: шрифт строки и высота строки по шрифту
+    Check: Boolean;            // TCheckBox / TRadioButton: квадратик (кружок) - CheckSize
   end;
 
 // размеры, правила кнопок, снятие закрепленных стилем высот - у всех элементов
@@ -121,7 +132,9 @@ procedure UIApplyButtonStyle(Sender: TObject);
 implementation
 
 uses System.SysUtils, System.Types, System.Math, FMX.Types, FMX.Controls, FMX.Styles, FMX.Forms,
-     FMX.StdCtrls, FMX.Platform, FMX.Graphics, FMX.ImgList, System.IOUtils, System.IniFiles;
+     FMX.StdCtrls, FMX.Platform, FMX.Graphics, FMX.ImgList, System.IOUtils, System.IniFiles,
+     FMX.ListView, FMX.ListView.Appearances, FMX.ListView.Types, System.Generics.Collections,
+     FMX.Styles.Objects, Writer;
 
 const
   Profiles: array[TUIProfile] of TUIMetrics = (
@@ -129,17 +142,17 @@ const
    (FontSize: 12; SmallFontSize: 11; TitleFontSize: 14; ListFontSize: 13;
     ButtonHeight: 22; ToolButtonSize: 26; StatusButtonSize: 21;
     ToolBarHeight: 30; StatusBarHeight: 23; ItemHeight: 20;
-    GlyphMargin: 2; Spacing: 4; TouchExpansion: 0),
+    GlyphMargin: 2; Spacing: 4; TouchExpansion: 0; CheckSize: 16; TitleHeight: 24),
   // перо: размеры Windows, зона касания чуть шире
    (FontSize: 12; SmallFontSize: 11; TitleFontSize: 14; ListFontSize: 12;
     ButtonHeight: 22; ToolButtonSize: 26; StatusButtonSize: 21;
     ToolBarHeight: 30; StatusBarHeight: 23; ItemHeight: 22;
-    GlyphMargin: 2; Spacing: 4; TouchExpansion: 4),
+    GlyphMargin: 2; Spacing: 4; TouchExpansion: 4; CheckSize: 16; TitleHeight: 26),
   // палец: крупнее, зона касания заметно шире видимой кнопки
    (FontSize: 13; SmallFontSize: 12; TitleFontSize: 15; ListFontSize: 14;
     ButtonHeight: 28; ToolButtonSize: 32; StatusButtonSize: 26;
     ToolBarHeight: 36; StatusBarHeight: 28; ItemHeight: 28;
-    GlyphMargin: 3; Spacing: 6; TouchExpansion: 8));
+    GlyphMargin: 3; Spacing: 6; TouchExpansion: 8; CheckSize: 20; TitleHeight: 32));
 
 type
   TUIRuleItem = record
@@ -154,20 +167,26 @@ const
  // контейнеров размеры не меняют (кнопки тулбаров разные: 25x48 с Align,
  // 35x40 в MainFrmDendro, стрелки UpDown 16x20) - размер включается пометкой
  // ui:toolsize / ui:statussize / ui:btn
-  UIRuleTable: array[0..12] of TUIRuleItem = (
-   (Name: 'button'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'tool'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'status'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False)),
-   (Name: 'toolsize'; Rule: (Height: usTool; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'statussize'; Rule: (Height: usStatus; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'center'; Rule: (Height: usKeep; Square: False; Glyph: ugCenter; Text: utKeep; Skip: False)),
-   (Name: 'fill'; Rule: (Height: usKeep; Square: False; Glyph: ugFill; Text: utKeep; Skip: False)),
-   (Name: 'client'; Rule: (Height: usKeep; Square: False; Glyph: ugClient; Text: utKeep; Skip: False)),
-   (Name: 'small'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False)),
-   (Name: 'normal'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utNormal; Skip: False)),
-   (Name: 'square'; Rule: (Height: usKeep; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'btn'; Rule: (Height: usButton; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False)),
-   (Name: 'skip'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: True)));
+  UIRuleTable: array[0..18] of TUIRuleItem = (
+   (Name: 'button'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'tool'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'status'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'toolsize'; Rule: (Height: usTool; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'statussize'; Rule: (Height: usStatus; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'center'; Rule: (Height: usKeep; Square: False; Glyph: ugCenter; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'fill'; Rule: (Height: usKeep; Square: False; Glyph: ugFill; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'client'; Rule: (Height: usKeep; Square: False; Glyph: ugClient; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'small'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'normal'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utNormal; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'square'; Rule: (Height: usKeep; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'btn'; Rule: (Height: usButton; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
+   (Name: 'skip'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: True; FontDelta: 0; List: False; Check: False)),
+   (Name: 'font-2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -2; List: False; Check: False)),
+   (Name: 'font-1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -1; List: False; Check: False)),
+   (Name: 'font+1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 1; List: False; Check: False)),
+   (Name: 'font+2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 2; List: False; Check: False)),
+   (Name: 'list'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: True; Check: False)),
+   (Name: 'check'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: True)));
 
 { TAppUI }
 
@@ -247,6 +266,8 @@ begin
  FMetrics.GlyphMargin := Round(M.GlyphMargin * FScale);
  FMetrics.Spacing := Round(M.Spacing * FScale);
  FMetrics.TouchExpansion := Round(M.TouchExpansion * FScale);
+ FMetrics.CheckSize := Round(M.CheckSize * FScale);
+ FMetrics.TitleHeight := Round(M.TitleHeight * FScale);
 end;
 
 procedure TAppUI.SetProfile(const Value: TUIProfile);
@@ -317,31 +338,235 @@ begin
  if S.Glyph <> ugKeep then R.Glyph := S.Glyph;
  if S.Text <> utKeep then R.Text := S.Text;
  if S.Skip then R.Skip := True;
+ if S.FontDelta <> 0 then R.FontDelta := S.FontDelta;
+ if S.List then R.List := True;
+ if S.Check then R.Check := True;
 end;
 
-function UIButtonRule(Button: TObject): TUIRule;
+// пометка с платформой: 'android:имя' - только на Android, 'win:имя' - только
+// на Windows; без платформы - везде. False - пометка не для этой платформы
+function PlatformRuleName(const Tag: String; out Name: String): Boolean;
+const Platforms: array[0..1] of String = ('android:', 'win:');
+{$IFDEF ANDROID}
+      Current = 'android:';
+{$ELSE}
+      Current = 'win:';
+{$ENDIF}
+var P: String;
+begin
+ Name := Tag;
+ for P in Platforms do
+  if Tag.StartsWith(P, True) then begin
+   Name := Tag.Substring(Length(P));
+   exit(SameText(P, Current));
+  end;
+ Result := True;
+end;
+
+// группа контейнера (только кнопки) и пометки 'ui:' в HelpKeyword
+function UIControlRule(Ctrl: TObject; UseContainer: Boolean): TUIRule;
 var P: TFmxObject;
     Group, W: String;
     S: TUIRule;
 begin
  FillChar(Result, SizeOf(Result), 0);
- if not (Button is TControl) then exit;
- Group := 'button';
- P := TFmxObject(Button).Parent;
- while (P <> nil) and not (P is TCommonCustomForm) do begin
-  if P is TStatusBar then begin
-   Group := 'status';
-   break;
+ if not (Ctrl is TStyledControl) then exit;
+ if UseContainer then begin
+  Group := 'button';
+  P := TFmxObject(Ctrl).Parent;
+  while (P <> nil) and not (P is TCommonCustomForm) do begin
+   if P is TStatusBar then begin
+    Group := 'status';
+    break;
+   end;
+   if P is TToolBar then begin
+    Group := 'tool';
+    break;
+   end;
+   P := P.Parent;
   end;
-  if P is TToolBar then begin
-   Group := 'tool';
-   break;
-  end;
-  P := P.Parent;
+  if FindRule(Group, S) then MergeRule(Result, S);
  end;
- if FindRule(Group, S) then MergeRule(Result, S);
- for W in TControl(Button).HelpKeyword.Split([' ', ',', ';'], TStringSplitOptions.ExcludeEmpty) do
-  if W.StartsWith(UIPrefix, True) and FindRule(W.Substring(Length(UIPrefix)), S) then MergeRule(Result, S);
+ for W in TStyledControl(Ctrl).HelpKeyword.Split([' ', ',', ';'], TStringSplitOptions.ExcludeEmpty) do
+  if W.StartsWith(UIPrefix, True) and PlatformRuleName(W.Substring(Length(UIPrefix)), Group) and FindRule(Group, S) then
+   MergeRule(Result, S);
+end;
+
+function UIButtonRule(Button: TObject): TUIRule;
+begin
+ Result := UIControlRule(Button, True);
+end;
+
+// Базовые размеры элементов: шрифт, полученный от стиля (у TListView - шрифт
+// строки из ресурсов стиля списка), и исходная высота строки списка.
+// Запоминаются один раз, после первого применения стиля: потом размер
+// шрифта задан явно, и стиль его уже не дает. ui:font-N считается от базы
+// (стиль Android крупнее 12), высота строки - пропорционально шрифту.
+// Запись удаляется при уничтожении элемента (FreeNotification)
+type
+  TUIBase = record
+    Font: Single;
+    Row: Single;
+  end;
+
+  TUIBaseStore = class(TComponent)
+  private
+    FItems: TDictionary<TComponent, TUIBase>;
+  protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+    function TryGet(C: TComponent; out B: TUIBase): Boolean;
+    procedure Put(C: TComponent; const B: TUIBase);
+  end;
+
+var
+  GBase: TUIBaseStore;
+
+constructor TUIBaseStore.Create(AOwner: TComponent);
+begin
+ inherited;
+ FItems := TDictionary<TComponent, TUIBase>.Create;
+end;
+
+destructor TUIBaseStore.Destroy;
+var C: TComponent;
+begin
+ for C in FItems.Keys do C.RemoveFreeNotification(Self);
+ FItems.Free;
+ inherited;
+end;
+
+procedure TUIBaseStore.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+ inherited;
+ if (Operation = opRemove) and (FItems <> nil) then FItems.Remove(AComponent);
+end;
+
+function TUIBaseStore.TryGet(C: TComponent; out B: TUIBase): Boolean;
+begin
+ Result := FItems.TryGetValue(C, B);
+end;
+
+procedure TUIBaseStore.Put(C: TComponent; const B: TUIBase);
+begin
+ if not FItems.ContainsKey(C) then C.FreeNotification(Self);
+ FItems.AddOrSetValue(C, B);
+end;
+
+function BaseStore: TUIBaseStore;
+begin
+ if GBase = nil then GBase := TUIBaseStore.Create(nil);
+ Result := GBase;
+end;
+
+type
+  TListViewAccess = class(TListView);
+
+// размер шрифта по правилу от базового Base; False - не меняется.
+// ui:font-N - от шрифта стиля с учетом масштаба; ui:small/normal - метрики UI
+function RuleFontSize(const R: TUIRule; Base: Single; out Size: Single): Boolean;
+begin
+ Result := True;
+ if R.FontDelta <> 0 then Size := Max(Single(6), Single(Round(Base * UI.Scale) + R.FontDelta)) else
+ if R.Text = utSmall then Size := UI.Metrics.SmallFontSize else
+ if R.Text = utNormal then Size := UI.Metrics.FontSize else
+  Result := False;
+end;
+
+// шрифт элемента с TextSettings (кнопка, поле ввода, надпись, флажок...).
+// StyleReady - стиль применен (вызов из OnApplyStyleLookup): только тогда
+// берется база для ui:font-N; до этого шрифт стиля еще не известен
+procedure ApplyTextRule(const Ctrl: TObject; const R: TUIRule; StyleReady: Boolean);
+var TS: ITextSettings;
+    B: TUIBase;
+    Size: Single;
+begin
+ if not Supports(Ctrl, ITextSettings, TS) or not (Ctrl is TComponent) then exit;
+ if (R.FontDelta = 0) and (R.Text = utKeep) then exit;
+ B.Font := 0;
+ if R.FontDelta <> 0 then
+  if not BaseStore.TryGet(TComponent(Ctrl), B) then begin
+   if not StyleReady then exit;
+   B.Font := TS.ResultingTextSettings.Font.Size;
+   if B.Font <= 0 then B.Font := UI.Metrics.FontSize;
+   B.Row := 0;
+   BaseStore.Put(TComponent(Ctrl), B);
+  end;
+ if not RuleFontSize(R, B.Font, Size) then exit;
+ TS.StyledSettings := TS.StyledSettings - [TStyledSetting.Size];
+ TS.TextSettings.Font.Size := Size;
+end;
+
+// TListView (ui:list): шрифт текста строки (подробности - на 1 меньше) и
+// высота строки - пропорционально шрифту от исходных шрифта стиля и высоты
+procedure ApplyListRule(L: TListView; const R: TUIRule; StyleReady: Boolean);
+var B: TUIBase;
+    Size: Single;
+    O: TItemAppearanceObjects;
+    F: TFont;
+begin
+ if not R.List then exit;
+ if not BaseStore.TryGet(L, B) then begin
+  if not StyleReady then exit;
+  F := TListViewAccess(L).GetStyleResources.DefaultTextFont;
+  if F <> nil then B.Font := F.Size else B.Font := 0;
+  if B.Font <= 0 then B.Font := UI.Metrics.FontSize;
+  B.Row := L.ItemAppearance.ItemHeight;
+  BaseStore.Put(L, B);
+ end;
+ if not RuleFontSize(R, B.Font, Size) then Size := Round(B.Font * UI.Scale);
+ O := L.ItemAppearanceObjects.ItemObjects;
+ if O <> nil then begin
+  if O.Text <> nil then O.Text.Font.Size := Size;
+  if O.Detail <> nil then O.Detail.Font.Size := Max(Single(6), Size - 1);
+ end;
+ if B.Row > 0 then L.ItemAppearance.ItemHeight := Max(16, Round(B.Row * Size / B.Font));
+end;
+
+// квадратик флажка (кружок переключателя) в стиле элемента: имен FMX не задает
+// (у стилей Windows и Android разные) - первый объект-картинка стиля
+// (TCustomStyleObject), выровненный влево/вправо или без выравнивания, не
+// шире 48: фон всего элемента выровнен по всей площади и не подходит
+function FindCheckBox(Root: TFmxObject): TControl;
+var I: Integer;
+    C: TFmxObject;
+begin
+ Result := nil;
+ for I := 0 to Root.ChildrenCount - 1 do begin
+  C := Root.Children[I];
+  if (C is TCustomStyleObject) and (TControl(C).Width <= 48) and
+     (TControl(C).Align in [TAlignLayout.None, TAlignLayout.Left, TAlignLayout.Right, TAlignLayout.MostLeft, TAlignLayout.MostRight, TAlignLayout.Center]) then
+   exit(TControl(C));
+  Result := FindCheckBox(C);
+  if Result <> nil then exit;
+ end;
+end;
+
+// ui:check: квадратик (кружок) - CheckSize профиля, по высоте - по центру элемента
+procedure ApplyCheckRule(Ctrl: TStyledControl; const R: TUIRule);
+var Box: TControl;
+    S, M: Single;
+begin
+ if not R.Check or not ((Ctrl is TCheckBox) or (Ctrl is TRadioButton)) then exit;
+ Box := FindCheckBox(Ctrl);
+ if Box = nil then begin
+  WriteIn(['ui:check: в стиле ', Ctrl.ClassName, ' ', Ctrl.Name, ' квадратик не найден']);
+  exit;
+ end;
+ S := UI.Metrics.CheckSize;
+ M := Max(Single(0), (Ctrl.Height - S) / 2);
+ Box.Width := S;
+ if Box.Align = TAlignLayout.None then begin
+  Box.Height := S;
+  Box.Position.Y := M;
+ end else
+ if Box.Align <> TAlignLayout.Center then begin
+  Box.Margins.Top := M;
+  Box.Margins.Bottom := M;
+ end else
+  Box.Height := S;
 end;
 
 procedure UIApplyButtonStyle(Sender: TObject);
@@ -351,7 +576,9 @@ var R: TUIRule;
 begin
  if not (Sender is TCustomButton) then exit;
  R := UIButtonRule(Sender);
- if R.Skip or (R.Glyph = ugKeep) then exit;
+ if R.Skip then exit;
+ ApplyTextRule(Sender, R, True);
+ if R.Glyph = ugKeep then exit;
  G := TCustomButton(Sender).FindStyleResource('glyphstyle');
  if not (G is TGlyph) then exit;
  case R.Glyph of
@@ -386,16 +613,7 @@ begin
   B.Height := H;
   if R.Square and (B.Text = '') then B.Width := H;
  end;
- case R.Text of
-  utSmall: begin
-    B.StyledSettings := B.StyledSettings - [TStyledSetting.Size];
-    B.TextSettings.Font.Size := UI.Metrics.SmallFontSize;
-   end;
-  utNormal: begin
-    B.StyledSettings := B.StyledSettings - [TStyledSetting.Size];
-    B.TextSettings.Font.Size := UI.Metrics.FontSize;
-   end;
- end;
+ ApplyTextRule(B, R, False);
 end;
 
 type
@@ -406,34 +624,55 @@ type
     class procedure ApplyStyleLookup(Sender: TObject);
   end;
 
-// стиль применен: закрепленная стилем высота (AdjustFixedSize, FixedHeight)
-// снимается, выравнивание родителя пересчитывается; у кнопки - глиф по правилу
-class procedure TUIHandler.ApplyStyleLookup(Sender: TObject);
+// StyleReady: вызов из OnApplyStyleLookup (стиль применен) или из обхода
+procedure ApplyStyleRules(Sender: TObject; StyleReady: Boolean);
+var R: TUIRule;
 begin
  if not (Sender is TStyledControl) then exit;
  if TStyledControl(Sender).AdjustType <> TAdjustType.None then begin
   TStyledControlAccess(Sender).SetAdjustType(TAdjustType.None);
   if TControl(Sender).ParentControl <> nil then TControlAccess(TControl(Sender).ParentControl).Realign;
  end;
- UIApplyButtonStyle(Sender);
+ if Sender is TCustomButton then begin
+  if StyleReady then UIApplyButtonStyle(Sender);
+  exit;
+ end;
+ if Pos(UIPrefix, LowerCase(TStyledControl(Sender).HelpKeyword)) = 0 then exit;
+ R := UIControlRule(Sender, False);
+ if R.Skip then exit;
+ ApplyTextRule(Sender, R, StyleReady);
+ if Sender is TListView then ApplyListRule(TListView(Sender), R, StyleReady);
+// объекты стиля есть только после его применения
+ if StyleReady then ApplyCheckRule(TStyledControl(Sender), R);
+end;
+
+// стиль применен: закрепленная стилем высота снимается, выравнивание
+// родителя пересчитывается; глиф и шрифт - по правилу
+class procedure TUIHandler.ApplyStyleLookup(Sender: TObject);
+begin
+ ApplyStyleRules(Sender, True);
 end;
 
 procedure ApplyUIRules(Root: TObject);
 var I: Integer;
     C: TFmxObject;
     R: TUIRule;
+    Hook: Boolean;
 begin
  if not (Root is TFmxObject) then exit;
  for I := 0 to TFmxObject(Root).ChildrenCount - 1 do begin
   C := TFmxObject(Root).Children[I];
-  if (C is TCustomButton) or (C is TToolBar) or (C is TStatusBar) then begin
+  Hook := (C is TCustomButton) or (C is TToolBar) or (C is TStatusBar) or
+          ((C is TStyledControl) and (Pos(UIPrefix, LowerCase(TStyledControl(C).HelpKeyword)) > 0));
+  if Hook then begin
    if C is TCustomButton then begin
     R := UIButtonRule(C);
     if not R.Skip then ApplyButtonRule(TCustomButton(C), R);
    end;
-  // свой обработчик кнопки не заменяется - он вызывает UIApplyButtonStyle сам
+  // свой обработчик элемента не заменяется - он вызывает UIApplyButtonStyle сам
    if not Assigned(TStyledControl(C).OnApplyStyleLookup) then TStyledControl(C).OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
-   TUIHandler.ApplyStyleLookup(C);
+  // повторный вызов (смена масштаба): база уже известна - применяется сразу
+   ApplyStyleRules(C, False);
   end;
   ApplyUIRules(C);
  end;
@@ -489,5 +728,6 @@ initialization
  UI.LoadSettings;
  InstallAppFontService;
 finalization
+ FreeAndNil(GBase);
  FreeAndNil(UI);
 end.

@@ -93,7 +93,7 @@ type
 var
   MainFormOSM: TMainFormOSM;
 
-implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader, drawTwigs32;
+implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader, drawTwigs32, AppForms;
 
 {$R *.fmx}
 
@@ -407,7 +407,7 @@ begin
    end;
    OpenGmfFile(LocalPath);
   end;
- localOpenForm.Show;
+ ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
 end;
 
 procedure TMainFormOSM.BuildOsmView(const LonMin, LatMin, LonMax, LatMax: Double; const Dest: TRectF);

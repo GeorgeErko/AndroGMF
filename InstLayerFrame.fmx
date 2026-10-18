@@ -159,7 +159,7 @@ object LayerFrame: TLayerFrame
           Size.PlatformDefault = False
           TabOrder = 5
           object SizeGrip1: TSizeGrip
-            Align = FitRight
+            Align = Right
             Position.X = 453.000000000000000000
             Size.Width = 7.000000000000000000
             Size.Height = 7.000000000000000000
@@ -239,6 +239,59 @@ object LayerFrame: TLayerFrame
             FileName = 'C:\!GEOMASTER\red.bmp'
           end>
         Name = 'red'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000006149444154388DED92410E80
+              30080407E3C3F9399E34ABB605E2D5BD34A59DCD4230770F1A7277D3FBF60506
+              D8578F15DD1204444064B5A981427A9613185C6D28ACF534C1F3F30A1E1A8C66
+              503698C56E0FF184B3F8207B30035293EE2AFF7AEB0032191F97755A64B80000
+              000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\CheckSilver_krest.bmp'
+          end>
+        Name = 'CheckSilver_krest'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000003B49444154388D6360A01030
+              32303030343434FC274553434303238CCD44AA8DC89A1918181858F049120348
+              76C1A801C3D200060606D293F230030081370999CE2743300000000049454E44
+              AE426082}
+            FileName = 'C:\!GEOMASTER\unCheck1.bmp'
+          end>
+        Name = 'unCheck1'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000005A49444154388DED92C10A00
+              20084357F4E1FBF33A841069A9746D37716FCCA890EC48886459E7FA020340BB
+              2D238A35208E67FA01175807EC6607B61B08B4C2C4F17DEC1382B00ED8CD0E6C
+              37102800DB0109787A935FF94B6B0087291799519ED8D20000000049454E44AE
+              426082}
+            FileName = 'C:\!GEOMASTER\Check1.bmp'
+          end>
+        Name = 'Check1'
       end>
     Destination = <
       item
@@ -264,6 +317,24 @@ object LayerFrame: TLayerFrame
         Layers = <
           item
             Name = 'red'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'CheckSilver_krest'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Check1'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'unCheck1'
           end>
       end>
     Left = 470

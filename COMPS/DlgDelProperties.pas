@@ -4,7 +4,7 @@
 // TDelPropertiesForm старой программы, кнопка sbMinusMinus редактора свойств):
 // список свойств пользователя ('*') выделенных объектов с отметками, «все» -
 // отметить/снять все. По OK вызывается OnOk со списком отмеченных свойств,
-// затем окно освобождается (ShowModal с процедурой, как требует Android)
+// затем окно освобождается (ShowDialog: Windows - модальное окно, Android - панель поверх главной формы)
 
 interface
 
@@ -48,7 +48,7 @@ begin
    if (Pos('*', S) <> 0) and (F.List.Items.IndexOf(S) = -1) then F.List.Items.Add(S);
   end;
  end;
- F.ShowModal(
+ ShowDialog(F, // модально: Windows - окно, Android - панель поверх формы
   procedure(ModalResult: TModalResult)
   var Names: TStrings;
       I: Integer;

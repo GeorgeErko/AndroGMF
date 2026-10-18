@@ -31,7 +31,8 @@ type
   private
    fResult: String;
   public
-   function Execute(Row: TPropRow): String;
+  // значение - в Done ('' - отмена); показ модальный (ShowDialog)
+   procedure Execute(Row: TPropRow; const Done: TProc<String>);
   end;
 
 var
@@ -58,12 +59,18 @@ end;
 
 { TForm1 }
 
-function TForm1.Execute(Row: TPropRow): String;
-var Res: TModalResult;
+procedure TForm1.Execute(Row: TPropRow; const Done: TProc<String>);
+var Form: TForm1;
 begin
- Res := ShowModal;
- If Res = mrCancel then  Result := '' else
- Result := fResult;
+ Form := Self;
+ ShowDialog(Self,
+  procedure(Res: TModalResult)
+  var S: String;
+  begin
+   if Res = mrCancel then S := '' else S := Form.fResult;
+   Form.Release;
+   if Assigned(Done) then Done(S);
+  end);
 end;
 
 end.

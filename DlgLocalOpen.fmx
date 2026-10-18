@@ -2,7 +2,7 @@ object localOpenForm: TlocalOpenForm
   Left = 0
   Top = 0
   BorderStyle = Single
-  Caption = 'Form1'
+  Caption = #1054#1090#1082#1088#1099#1090#1100
   ClientHeight = 505
   ClientWidth = 487
   Position = ScreenCenter
@@ -13,10 +13,11 @@ object localOpenForm: TlocalOpenForm
   OnShow = FormShow
   DesignerMasterStyle = 0
   object ListView1: TListView
-    ItemAppearanceClassName = 'TListItemAppearance'
+    ItemAppearanceClassName = 'TImageListItemAppearance'
     ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
     HeaderAppearanceClassName = 'TListHeaderObjects'
     FooterAppearanceClassName = 'TListHeaderObjects'
+    Images = ImageList1
     ItemSpaces.Top = 10.000000000000000000
     ItemSpaces.Bottom = 10.000000000000000000
     Align = Client
@@ -24,6 +25,8 @@ object localOpenForm: TlocalOpenForm
     Size.Height = 462.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
+    ItemAppearanceObjects.ItemObjects.Accessory.Visible = False
+    HelpKeyword = 'ui:android:font-2 ui:android:list'
     OnItemClick = ListView1ItemClick
   end
   object Panel1: TPanel
@@ -39,6 +42,7 @@ object localOpenForm: TlocalOpenForm
       TabOrder = 1
       Position.X = 10.000000000000000000
       Position.Y = 12.000000000000000000
+      HelpKeyword = 'ui:android:font-2'
       Size.Width = 465.000000000000000000
       Size.Height = 22.000000000000000000
       Size.PlatformDefault = False
@@ -54,6 +58,7 @@ object localOpenForm: TlocalOpenForm
     object btnClose: TButton
       Anchors = [akTop, akRight]
       Default = True
+      HelpKeyword = 'ui:android:font-2'
       ModalResult = 1
       Position.X = 8.000000000000000000
       Position.Y = 16.000000000000000000
@@ -68,6 +73,7 @@ object localOpenForm: TlocalOpenForm
     object btnOpen: TButton
       Anchors = [akTop, akRight]
       Default = True
+      HelpKeyword = 'ui:android:font-2'
       ModalResult = 1
       Position.X = 8.000000000000000000
       Position.Y = 62.000000000000000000
@@ -81,6 +87,7 @@ object localOpenForm: TlocalOpenForm
     end
     object btnDelete: TButton
       Anchors = [akTop, akRight]
+      HelpKeyword = 'ui:android:font-2'
       Position.X = 8.000000000000000000
       Position.Y = 108.000000000000000000
       Size.Width = 109.000000000000000000
@@ -91,5 +98,61 @@ object localOpenForm: TlocalOpenForm
       TextSettings.Trimming = None
       OnClick = btnDeleteClick
     end
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000006549444154388DD551390EC0
+              3008B3FB72F2727720477348094387784121F81000D783DF8724759F24B1411D
+              70F23C4F2E9AA3C0E8BC75F56402C0A7345322001E5533F4869224416638AE39
+              411388909702F726A867F42D9FC32C5FB48408B11B62AEBFE005F321C891B970
+              1D080000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\FOLDER.BMP'
+          end>
+        Name = 'FOLDER'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000AF49444154388D9D93511285
+              2008450F8DFBEEB272DE47562AFA6A6286294C2E7A200382EF661B4044742E29
+              ADCD5C52944BCAAD11166A6301D11CD48CA8716161B183594DDCD777D8D28A6A
+              11A2AFBAB002E0EE77667DE0FE987C5A1C4600279DFFF46A4E0F9178D750B32E
+              4C0C029B6EBC8FDBC70D0340C2A4EB3D71B8BE6B101DEE971850F9A87AC320B7
+              711C18EC28A8B41398CDC1A0650FDDBC2771842631C7B810881753B7123077FF
+              FC4BFF005F5EA649120A6F160000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\MAP.BMP'
+          end>
+        Name = 'MAP'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'FOLDER'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'MAP'
+          end>
+      end>
+    Left = 306
+    Top = 132
   end
 end

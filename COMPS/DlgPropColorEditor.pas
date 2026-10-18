@@ -8,7 +8,7 @@ uses
   System.IOUtils,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.TabControl, FMX.Objects,
-  DlgRootPropEditor, FMX.Controls.Presentation;
+  DlgRootPropEditor, FMX.Controls.Presentation, AppForms;
 
 type
   TPropColorEditorForm = class(TRootPropEditorForm)
@@ -56,7 +56,8 @@ type
 
     procedure TrackChange(Sender: TObject);
   public
-    function Execute(Row: TPropRow): String;
+   // значение - в Done ('' - отмена, byLayer - «по слою»); показ модальный
+    procedure Execute(Row: TPropRow; const Done: TProc<String>);
   end;
 
 var PropColorEditorForm: TPropColorEditorForm;
@@ -300,8 +301,9 @@ begin
  SetSelectedColor(MakeColor(R, G, B, A), False);
 end;
 
-function TPropColorEditorForm.Execute(Row: TPropRow): String;
-var V: Integer; Res: TModalResult;
+procedure TPropColorEditorForm.Execute(Row: TPropRow; const Done: TProc<String>);
+var V: Integer;
+    Form: TPropColorEditorForm;
 begin
  LoadPosition;
  TabControl1.ActiveTab := TabControl1.Tabs[GReadInteger(Name + '_Tab', 0)];
@@ -338,24 +340,20 @@ begin
  if TrackA <> nil then TrackA.OnChange := TrackChange;
 
  fResult := '';
- Res := ShowModal;
- if (fResult = byLayer) then
- begin
-  Result := byLayer;
-  Exit;
- end;
- if Res = mrCancel then
- begin
-  fResult := '';
-  Result := '';
- end
- else
- begin
-  fResult := IntToStr(Integer(FSelectedColor));
-  Result := fResult;
- end;
- SavePosition;
- GWriteInteger(Name + '_Tab', TabControl1.ActiveTab.Index);
+ Form := Self;
+ ShowDialog(Self,
+  procedure(Res: TModalResult)
+  var S: String;
+  begin
+   if Form.fResult = byLayer then S := byLayer else begin
+    if Res = mrCancel then S := '' else S := IntToStr(Integer(Form.FSelectedColor));
+    Form.fResult := S;
+    Form.SavePosition;
+    GWriteInteger(Form.Name + '_Tab', Form.TabControl1.ActiveTab.Index);
+   end;
+   Form.Release;
+   if Assigned(Done) then Done(S);
+  end);
 end;
 
 initialization

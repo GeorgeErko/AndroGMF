@@ -92,6 +92,9 @@ type
     procedure StoreResults; virtual;
    // показ: результат - в Done, затем форма освобождается
     procedure ShowDialog(const Done: TVarSetDone);
+   // диалог на панели поверх главной формы (Android): нажатие приходит сюда,
+   // а не в MouseDown формы - точка для значка «…» запоминается так же
+    procedure HostMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
   public
     Closed: Boolean;
     XDot, YDot, ZDot: Double;
@@ -235,7 +238,8 @@ end;
 procedure TVarSetDlg.ShowDialog(const Done: TVarSetDone);
 begin
  Closed := False;
- ShowModal(
+// модально: Windows - окно, Android - панель поверх главной формы
+ AppForms.ShowDialog(Self,
   procedure(AResult: TModalResult)
   var OK: Boolean;
   begin
@@ -322,7 +326,8 @@ begin
   Key := 0;
   StopEdit;
   Closed := True;
-  ModalResult := mrOk;
+ // EndDialog, не ModalResult: у диалога на панели (Android) ModalResult не закрывает
+  EndDialog(mrOk);
  end;
 end;
 
@@ -332,6 +337,11 @@ procedure TVarSetDlg.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: S
 begin
  FLastMouseDown := PointF(X, Y);
  inherited;
+end;
+
+procedure TVarSetDlg.HostMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ FLastMouseDown := PointF(X, Y);
 end;
 
 procedure TVarSetDlg.GridDrawColumnCell(Sender: TObject; const Canvas: TCanvas; const Column: TColumn;

@@ -115,7 +115,7 @@ begin
   begin
    if LocalPath <> '' then OnPicked(LocalPath);
   end;
- F.Show;
+ ShowDialog(F); // модально: Windows - окно, Android - панель поверх формы
 {$ELSE}
  D := TOpenDialog.Create(nil);
  try

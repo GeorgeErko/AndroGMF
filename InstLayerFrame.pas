@@ -6,7 +6,7 @@ uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
-  FMX.Layouts, FMX.Objects, FMX.TreeView,
+  FMX.Layouts, FMX.Objects, FMX.TreeView, FMX.TextLayout,
   newLayersTable, newResource, FMX.Controls.Presentation,
   MainFrmSkia, newProcs, System.ImageList, FMX.ImgList, AppForms;
 
@@ -55,8 +55,28 @@ type
    // Android: окно списка ставится FMX со сдвигом по Y; поправка измеряется
    // после открытия (CorrectPopupY) и применяется при следующих открытиях
     FPopupYCorr: Single;
+   // высота списка, заданная пользователем (Layers_PopupH); фактическая - не
+   // ниже нижнего края главного окна минус 10 (ListHeight)
+    FListWantH: Single;
+    FListSizing: Boolean; // размер списка ставит программа (не пользователь)
+    FResizeLeft: Single;  // Android: левый край списка на время перетаскивания SizeGrip1 (как окно на Windows)
+   // Android: список - панелью поверх формы точно под btnDrop (TPopup открывается
+   // отдельным окном, и FMX ставит его со сдвигом по Y): подложка на всю форму
+   // (касание мимо списка закрывает его) и панель, на нее переносится PopupLay
+    FListBack: TRectangle;
+    FListPanel: TRectangle;
+    procedure OpenList;
+    procedure CloseList;
+    procedure TraceList(const Step: String);
+    function ListOpen: Boolean;
+    procedure PlaceListPanel;
+    function ListHeight: Single;
+    procedure ListBackMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure PopupLayersClosePopup(Sender: TObject);
     procedure PopupLayersPopup(Sender: TObject);
+   // размер открытого списка изменил пользователь (Windows: SizeGrip1 меняет
+   // окно TPopup средствами системы) - запомнить
+    procedure PopupLayersResize(Sender: TObject);
     procedure CorrectPopupY;
     procedure TreeLayersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 
@@ -93,10 +113,21 @@ type
     function GetLayerFillColor(Layer: TResource): TAlphaColor;
     function GetLayerStrokeColor(Layer: TResource): TAlphaColor;
 
-    procedure ItemVisCheckChange(Sender: TObject);
-    function FindItemVisCheck(const Item: TTreeViewItem): TCheckBox;
-    function FindItemLabel(const Item: TTreeViewItem): TLabel;
-    function FindItemColorRect(const Item: TTreeViewItem): TRectangle;
+   // строка дерева рисуется самим пунктом (ItemPaint: флажок, цвет и имя слоя
+   // по его текущему состоянию); флажок - по координате нажатия (X 2..22)
+    procedure ItemPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+   // строка слоя - одинаково в списке и в заголовке: флажок (картинка
+   // ImageList1 LayerChkImageOff/On или рисованный) с X0+2, квадрат цвета с
+   // X0+24, имя с X0+38 до Right (длинное - с многоточием); по высоте - по
+   // середине полосы Top..Top+H
+    procedure DrawLayerRow(Canvas: TCanvas; L: TResource; X0, Right, Top, H: Single; IsOn: Boolean);
+   // заголовок рисуется как строка списка (активный слой); chkLayer невидим, но
+   // принимает нажатия, квадрат и метка заголовка скрыты
+    procedure HeaderBgPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+   // левый край строки: правее кнопки раскрытия группы (стиль пункта, 'button') -
+   // иначе флажок группы под ней, и нажатие раскрывало/сворачивало группу
+    function ItemContentLeft(Item: TTreeViewItem): Single;
+    procedure ToggleLayerCheck(Layer: TResource);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -115,11 +146,19 @@ type
     property ActiveLayer: TResource read GetActiveLayer write SetActiveLayer;
   end;
 
+const
+ // флажок видимости в строке дерева - картинки ImageList1 (выключен / включен);
+ // картинки нет - флажок рисуется (ItemPaint)
+  LayerChkImageOff = 4;
+  LayerChkImageOn = 5;
+
 var LayerFrame: TLayerFrame;
+// ОПЫТ: True - при открытии списка активный слой в нем не выделяется
+    SkipSelectOnOpen: Boolean = False;
 
 implementation
 
-uses Writer, AppUI;
+uses Writer, AppUI, System.Math;
 
 // размер шрифта списка слоев и заголовка (имя активного слоя) - UI.Metrics.ListFontSize;
 // высота строки - по шрифту, не меньше 24 (флажок 20 + отступы)
@@ -143,6 +182,7 @@ var
  Grip: TSizeGrip;
  C: TComponent;
 begin
+ SizeGrip1.OnMouseUp := PopupGripMouseUp;
  exit;
  if PopupLay = nil then Exit;
  C := FindComponent('PopupSizeGrip');
@@ -172,13 +212,14 @@ begin
  if H < 160 then H := 160;
  PopupLayers.Width := W;
  PopupLayers.Height := H;
+ FListWantH := H;
 end;
 
 procedure TLayerFrame.SavePopupSize;
 begin
  if PopupLayers = nil then Exit;
  GWriteFloat('Layers_PopupW', PopupLayers.Width);
- GWriteFloat('Layers_PopupH', PopupLayers.Height);
+ GWriteFloat('Layers_PopupH', FListWantH);
 end;
 
 procedure TLayerFrame.PopupGripMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -191,7 +232,10 @@ begin
  FPopupResizing := True;
  AbsP := TControl(Sender).LocalToAbsolute(TPointF.Create(X, Y));
  FPopupResizeStartAbs := AbsP;
- FPopupResizeStartSize := TPointF.Create(PopupLayers.Width, PopupLayers.Height);
+ FPopupResizeStartSize := TPointF.Create(PopupLayers.Width, ListHeight);
+{$IFDEF ANDROID}
+ if FListPanel <> nil then FResizeLeft := FListPanel.Position.X;
+{$ENDIF}
 end;
 
 procedure TLayerFrame.PopupGripMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
@@ -213,8 +257,9 @@ begin
  if NewH < 160 then NewH := 160;
  PopupLayers.Width := NewW;
  PopupLayers.Height := NewH;
+ FListWantH := NewH;
 
- if PopupLayers.IsOpen then
+ if ListOpen then
   AlignPopupToDropButton;
 end;
 
@@ -226,10 +271,119 @@ begin
  SavePopupSize;
 end;
 
+function TLayerFrame.ListOpen: Boolean;
+begin
+{$IFDEF ANDROID}
+ Result := FListBack <> nil;
+{$ELSE}
+ Result := (PopupLayers <> nil) and PopupLayers.IsOpen;
+{$ENDIF}
+end;
+
+procedure TLayerFrame.OpenList;
+begin
+{$IFDEF ANDROID}
+ if (FListBack <> nil) or not (Root.GetObject is TCommonCustomForm) then Exit;
+ FListBack := TRectangle.Create(nil);
+ FListBack.Fill.Kind := TBrushKind.None;
+ FListBack.Stroke.Kind := TBrushKind.None;
+ FListBack.HitTest := True;
+ FListBack.OnMouseDown := ListBackMouseDown;
+ FListBack.Align := TAlignLayout.Contents;
+ FListBack.Parent := TCommonCustomForm(Root.GetObject);
+ FListBack.BringToFront;
+ FListPanel := TRectangle.Create(FListBack);
+ FListPanel.Fill.Color := TAlphaColors.White;
+ FListPanel.Stroke.Color := $FF808080;
+ FListPanel.HitTest := True;
+ FListPanel.ClipChildren := True;
+ FListPanel.Parent := FListBack;
+ PlaceListPanel;
+ PopupLay.Parent := FListPanel;
+{$ELSE}
+ PopupLayers.IsOpen := True;
+{$ENDIF}
+end;
+
+// список возвращается в PopupLayers, подложка освобождается позже (закрытие
+// бывает из ее же обработчика нажатия)
+procedure TLayerFrame.CloseList;
+{$IFDEF ANDROID}
+var B: TRectangle;
+{$ENDIF}
+begin
+{$IFDEF ANDROID}
+ if FListBack = nil then Exit;
+ PopupLay.Parent := PopupLayers;
+ B := FListBack;
+ FListBack := nil;
+ FListPanel := nil;
+ B.Parent := nil;
+ TThread.ForceQueue(nil, procedure begin B.Free; end);
+ PopupLayersClosePopup(Self);
+{$ELSE}
+ if PopupLayers <> nil then PopupLayers.IsOpen := False;
+{$ENDIF}
+end;
+
+// высота списка: заданная пользователем, но если нижний край списка доходит до
+// низа главного окна - на 10 выше низа окна (не меньше 100)
+function TLayerFrame.ListHeight: Single;
+var F: TCommonCustomForm;
+    Y: Single;
+begin
+ Result := FListWantH;
+ if Result <= 0 then Result := PopupLayers.Height;
+ if (btnDrop = nil) or not (Root.GetObject is TCommonCustomForm) then Exit;
+ F := TCommonCustomForm(Root.GetObject);
+ Y := btnDrop.LocalToAbsolute(TPointF.Create(0, btnDrop.Height)).Y;
+ if Y + Result >= F.ClientHeight then Result := Max(100, F.ClientHeight - 10 - Y);
+end;
+
+// Android: правый край списка - по правому краю btnDrop, верх - по ее низу
+// (координаты формы); ширина - заданная, высота - ListHeight. При изменении
+// размера (SizeGrip1) правый край на месте - список растет влево и вниз
+procedure TLayerFrame.PlaceListPanel;
+var F: TCommonCustomForm;
+    P: TPointF;
+    X, Y, W, H: Single;
+begin
+ if (FListPanel = nil) or not (Root.GetObject is TCommonCustomForm) then Exit;
+ F := TCommonCustomForm(Root.GetObject);
+ W := PopupLayers.Width;
+ H := ListHeight;
+ P := btnDrop.LocalToAbsolute(TPointF.Create(btnDrop.Width, btnDrop.Height));
+ X := P.X - W;
+// перетаскивание SizeGrip1 - как окно списка на Windows: левый край на месте,
+// правый и нижний - за пальцем; при следующем открытии - снова по btnDrop
+ if FPopupResizing then X := FResizeLeft;
+ Y := P.Y;
+ FListPanel.SetBounds(X, Y, W, H);
+end;
+
+// касание мимо списка (по подложке) - закрыть
+procedure TLayerFrame.ListBackMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+ CloseList;
+end;
+
 procedure TLayerFrame.AlignPopupToDropButton;
 begin
  if PopupLayers = nil then Exit;
  if btnDrop = nil then Exit;
+{$IFDEF ANDROID}
+ if FListPanel <> nil then begin
+  PlaceListPanel;
+  Exit;
+ end;
+{$ENDIF}
+// своя установка высоты - не размер пользователя (PopupLayersResize)
+ FListSizing := True;
+ try
+  PopupLayers.Height := ListHeight;
+ finally
+  FListSizing := False;
+ end;
  PopupLayers.PlacementTarget := btnDrop;
  PopupLayers.Placement := TPlacement.Bottom;
  PopupLayers.VerticalOffset := {$IFDEF ANDROID}FPopupYCorr{$ELSE}0{$ENDIF};
@@ -272,7 +426,21 @@ begin
  LoadPopupSize;
  if PopupLayers <> nil then PopupLayers.OnClosePopup := PopupLayersClosePopup;
  if PopupLayers <> nil then PopupLayers.OnPopup := PopupLayersPopup;
+ if PopupLayers <> nil then PopupLayers.OnResize := PopupLayersResize;
  TreeLayers.OnMouseDown := TreeLayersMouseDown;
+{$IFDEF ANDROID}
+// TSizeGrip меняет размер окна-формы, в которой лежит; список на Android -
+// панель внутри главной формы (окна там не меняют размер) - размер панели
+// меняют обработчики перетаскивания фрейма
+ if SizeGrip1 <> nil then begin
+ // все движения пальца - захвату до отпускания (иначе - только пока палец над
+ // маленьким SizeGrip1)
+  SizeGrip1.AutoCapture := True;
+  SizeGrip1.OnMouseDown := PopupGripMouseDown;
+  SizeGrip1.OnMouseMove := PopupGripMouseMove;
+  SizeGrip1.OnMouseUp := PopupGripMouseUp;
+ end;
+{$ENDIF}
 end;
 
 // popup закрыт полностью: содержимое вернулось во фрейм
@@ -280,10 +448,24 @@ procedure TLayerFrame.PopupLayersClosePopup(Sender: TObject);
 begin
  FPopupShown := False;
  FPopupClosedTick := TThread.GetTickCount64;
+// размер, заданный пользователем, - в настройки (при следующем открытии он же)
+ SavePopupSize;
+end;
+
+procedure TLayerFrame.PopupLayersResize(Sender: TObject);
+begin
+ if FListSizing or not ListOpen then Exit;
+ FListWantH := PopupLayers.Height;
 end;
 
 destructor TLayerFrame.Destroy;
 begin
+{$IFDEF ANDROID}
+ if FListBack <> nil then begin
+  PopupLay.Parent := PopupLayers;
+  FreeAndNil(FListBack);
+ end;
+{$ENDIF}
  FreeAndNil(FLayerToItem);
  inherited;
 end;
@@ -325,7 +507,7 @@ begin
  if FLayerTable.LinearLayers.IndexOf(Layer) = -1 then Exit;
  SetActiveLayer(Layer);
 // открытый список слоев - выделить слой и в нем
- if (PopupLayers <> nil) and PopupLayers.IsOpen and FLayerToItem.TryGetValue(Layer, Item) then begin
+ if (PopupLayers <> nil) and ListOpen and FLayerToItem.TryGetValue(Layer, Item) then begin
   FUpdating := True;
   try
    TreeLayers.Selected := Item;
@@ -477,6 +659,12 @@ begin
   Nm.TextSettings.Trimming := TTextTrimming.Character;
   Nm.Parent := HeaderBg;
  end;
+// заголовок рисуется как строка списка (HeaderBgPaint): флажок невидим, но
+// принимает нажатия; квадрат и метка не показываются
+ Chk.Opacity := 0;
+ Col.Visible := False;
+ Nm.Visible := False;
+ HeaderBg.OnPaint := HeaderBgPaint;
  HeaderLay.OnResize := HeaderLayResize;
  HeaderLayResize(HeaderLay);
 end;
@@ -494,6 +682,9 @@ begin
  W := HeaderLay.Width - btnDrop.Margins.Right - btnDrop.Width - btnDrop.Margins.Left - 5 - Nm.Position.X;
  if W < 0 then W := 0;
  Nm.Width := W;
+// невидимый флажок - по середине заголовка по высоте, как нарисованный
+ if ChkLayerCtrl <> nil then ChkLayerCtrl.Position.Y := (HeaderBg.Height - ChkLayerCtrl.Height) / 2;
+ HeaderBg.Repaint;
 end;
 
 procedure TLayerFrame.SyncHeader;
@@ -531,6 +722,7 @@ begin
   end;
  finally
   FUpdating := False;
+  HeaderBg.Repaint;
  end;
 end;
 
@@ -540,6 +732,7 @@ var
  L: TResource;
  Item: TTreeViewItem;
 begin
+ TraceList('RebuildTree start (FUpdating=' + BoolToStr(FUpdating, True) + ')');
  if FUpdating then Exit;
  FUpdating := True;
  try
@@ -550,7 +743,12 @@ begin
   TreeLayers.BeginUpdate;
   try
    TreeLayers.Selected := nil;
-   while TreeLayers.Count > 0 do TreeLayers.Items[TreeLayers.Count - 1].Free;
+   while TreeLayers.Count > 0 do begin
+   // ОТЛАДКА: Items[] - это Content.Controls[] (TList<TControl>)
+    if TreeLayers.Count - 1 >= TreeLayers.Content.ControlsCount then
+     WriteIn(['LayerList RebuildTree free: index ', TreeLayers.Count - 1, ' >= content ', TreeLayers.Content.ControlsCount]);
+    TreeLayers.Items[TreeLayers.Count - 1].Free;
+   end;
   finally
    TreeLayers.EndUpdate;
   end;
@@ -560,6 +758,10 @@ begin
 
   for I := 0 to FLayerTable.L2Count - 1 do
   begin
+   if I >= FLayerTable.L2Count then begin
+    WriteIn(['LayerList RebuildTree layers: index ', I, ' >= L2Count ', FLayerTable.L2Count]);
+    Break;
+   end;
    L := FLayerTable.LinearLayer[I];
    if L = nil then Continue;
    EnsureItemForLayer(L);
@@ -577,6 +779,7 @@ begin
  finally
   FUpdating := False;
  end;
+ TraceList('RebuildTree end');
 end;
 
 // дерево по модели без перестройки: видимость, цвета и имена слоев, выделен
@@ -585,6 +788,14 @@ procedure TLayerFrame.SyncTree;
 var Item: TTreeViewItem;
 begin
  UpdateTreeChecksFromModel;
+ TraceList('SyncTree: checks done');
+// ОПЫТ: без программного выделения при открытии (поиск «List index out of
+// bounds»: выделение раскрывает группы и прокручивает дерево). Если ошибка
+// пропала - причина в выделении; затем убрать
+ if SkipSelectOnOpen then begin
+  TraceList('SyncTree: select skipped');
+  Exit;
+ end;
  if FUpdating then Exit;
  if (ActiveLayer = nil) or not FLayerToItem.TryGetValue(ActiveLayer, Item) then Exit;
  FUpdating := True;
@@ -593,6 +804,7 @@ begin
  finally
   FUpdating := False;
  end;
+ TraceList('SyncTree: selected ' + IntToStr(Item.GlobalIndex));
 end;
 
 function TLayerFrame.EnsureItemForLayer(Layer: TResource): TTreeViewItem;
@@ -600,9 +812,6 @@ var
  ParentLayer: TResource;
  ParentItem: TTreeViewItem;
  Item: TTreeViewItem;
- Chk: TCheckBox;
- C: TRectangle;
- Nm: TLabel;
  H: Single;
 begin
  if Layer = nil then Exit(nil);
@@ -620,47 +829,11 @@ begin
  H := LayerRowHeight;
  Item.Height := H;
 
- Chk := TCheckBox.Create(Item);
- Chk.Stored := False;
- Chk.Name := 'chkVis';
- Chk.Position.X := 2;
- Chk.Position.Y := (H - 20) / 2;
- Chk.Width := 20;
- Chk.Height := 20;
- Chk.IsChecked := (Layer.Check <> 0);
- Chk.TagObject := Layer;
- Chk.OnChange := ItemVisCheckChange;
-{$IFDEF ANDROID}
-// флажок переключается двойным нажатием (TreeLayersMouseUp), не при прокрутке
- Chk.HitTest := False;
-{$ENDIF}
- Item.AddObject(Chk);
-
- C := TRectangle.Create(Item);
- C.Stored := False;
- C.Name := 'rectColor';
- C.Position.X := 24;
- C.Position.Y := (H - 10) / 2;
- C.Size.Width := 10;
- C.Size.Height := 10;
- C.Fill.Color := GetLayerFillColor(Layer);
- C.Stroke.Color := GetLayerStrokeColor(Layer);
- C.HitTest := False;
- Item.AddObject(C);
-
- Nm := TLabel.Create(Item);
- Nm.Stored := False;
- Nm.Name := 'lblName';
- Nm.Position.X := 38;
- Nm.Position.Y := 0;
- Nm.Height := H - 4;
- SetLayerLabelFont(Nm);
- Nm.Width := 400;
-// Nm.StyledSettings := Nm.StyledSettings - [TStyledSetting.WordWrap];
- Nm.TextSettings.WordWrap := False;
- Nm.Text := GetLayerText(Layer);
- Nm.HitTest := False;
- Item.AddObject(Nm);
+// флажок, цвет и имя слоя рисует сам пункт (OnPaint): дочерних элементов у
+// пункта нет - FMX TTreeView обращался к дочерним элементам пункта по индексу
+// на единицу больше их числа («List index out of bounds» после прокрутки и
+// выбора слоя: 4 при 0..3 с флажком, квадратом и меткой, 2 при 0..1 с одним)
+ Item.OnPaint := ItemPaint;
 
  if ParentItem <> nil then
   Item.Parent := ParentItem
@@ -671,39 +844,11 @@ begin
  Result := Item;
 end;
 
+// строки рисуются по состоянию слоев - достаточно перерисовать
 procedure TLayerFrame.UpdateTreeChecksFromModel;
-var
- Pair: TPair<TObject, TTreeViewItem>;
- L: TResource;
- Chk: TCheckBox;
- Nm: TLabel;
- C: TRectangle;
+var Pair: TPair<TObject, TTreeViewItem>;
 begin
- if FUpdating then Exit;
- FUpdating := True;
- try
-  for Pair in FLayerToItem do
-  begin
-   L := TResource(Pair.Key);
-   Chk := FindItemVisCheck(Pair.Value);
-   if Chk <> nil then
-   begin
-    Chk.TagObject := L;
-    Chk.IsChecked := (L <> nil) and (L.Check <> 0);
-   end;
-   Nm := FindItemLabel(Pair.Value);
-   if Nm <> nil then
-    Nm.Text := GetLayerText(L);
-   C := FindItemColorRect(Pair.Value);
-   if C <> nil then
-   begin
-    C.Fill.Color := GetLayerFillColor(L);
-    C.Stroke.Color := GetLayerStrokeColor(L);
-   end;
-  end;
- finally
-  FUpdating := False;
- end;
+ for Pair in FLayerToItem do Pair.Value.Repaint;
 end;
 
 procedure TLayerFrame.ApplyCheckAll(ACheck: Boolean);
@@ -730,6 +875,15 @@ begin
  SyncHeader;
 end;
 
+// отладка «List index out of bounds» при открытии списка: шаг и состояние дерева
+procedure TLayerFrame.TraceList(const Step: String);
+var Sel: String;
+begin
+ if TreeLayers.Selected <> nil then Sel := IntToStr(TreeLayers.Selected.GlobalIndex) else Sel := '-';
+ WriteIn(['LayerList ', Step, ': count=', TreeLayers.Count, ' global=', TreeLayers.GlobalCount,
+  ' sel=', Sel, ' vpY=', TreeLayers.ViewportPosition.Y, ' content=', TreeLayers.Content.ControlsCount]);
+end;
+
 procedure TLayerFrame.btnDropClick(Sender: TObject);
 begin
  if PopupLayers = nil then Exit;
@@ -738,22 +892,37 @@ begin
 // дерево не перестраивается и popup повторно не открывается
  if FPopupShown then
  begin
-  PopupLayers.IsOpen := False;
+  CloseList;
   Exit;
  end;
 // щелчок по кнопке при открытом списке сам закрыл его (потеря фокуса) - не открываем снова
  if TThread.GetTickCount64 - FPopupClosedTick < 300 then Exit;
 // состав дерева меняется только при смене таблицы слоев (SetLayerTable);
 // перед открытием - только флажки, цвета, имена и выделение активного слоя
- SyncTree;
+ TraceList('open start');
+ try
+  SyncTree;
+ except
+  on E: Exception do begin
+   TraceList('SyncTree error ' + E.Message);
+   raise;
+  end;
+ end;
+ TraceList('after SyncTree');
  AlignPopupToDropButton;
  FPopupShown := True;
  try
-  PopupLayers.IsOpen := True;
+  OpenList;
  except
-  FPopupShown := False;
-  raise;
+  on E: Exception do begin
+   TraceList('OpenList error ' + E.Message);
+   FPopupShown := False;
+   raise;
+  end;
  end;
+ TraceList('after OpenList');
+// ошибка после выхода (выравнивание и отрисовка открытого списка)
+ TThread.ForceQueue(nil, procedure begin TraceList('queued after open'); end);
 end;
 
 procedure TLayerFrame.chkLayerChange(Sender: TObject);
@@ -761,6 +930,7 @@ var
  L: TResource;
  Chk: TCheckBox;
 begin
+ HeaderBg.Repaint;
  if FUpdating then Exit;
  L := ActiveLayer;
  if L = nil then Exit;
@@ -797,7 +967,7 @@ begin
  SetActiveLayer(Layer);
  if Assigned(OnLayerSelected) then OnLayerSelected(Self);
  if (PopupLayers <> nil) and FPopupShown then
-  TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
+  TThread.ForceQueue(nil, procedure begin CloseList; end);
 end;
 
 procedure TLayerFrame.TreeLayersMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -819,7 +989,6 @@ var
  PItem: TPointF;
 {$IFDEF ANDROID}
  Moved: Boolean;
- Chk: TCheckBox;
 {$ENDIF}
 begin
 {$IFDEF ANDROID}
@@ -846,21 +1015,31 @@ begin
   Exit;
  end;
  FTapItem := nil;
- if (PItem.X >= 2) and (PItem.X <= 22) then begin
-  Chk := FindItemVisCheck(Item);
-  if Chk <> nil then Chk.IsChecked := not Chk.IsChecked;
-  Exit;
- end;
-{$ELSE}
- if (PItem.X >= 2) and (PItem.X <= 22) then Exit;
 {$ENDIF}
- TreeLayers.Selected := Item;
-// группа слоев - только раскрыть/свернуть (выбрать группу - кнопкой OK)
- if IsGroupLayer(L) then begin
-  if Item.IsExpanded then Item.Collapse else Item.Expand;
+// флажок видимости (зона X 2..22 правее кнопки раскрытия) - переключить слой
+// (у группы - и вложенные), слой не выбирается
+ if (PItem.X >= ItemContentLeft(Item) + 2) and (PItem.X <= ItemContentLeft(Item) + 22) then begin
+  TThread.ForceQueue(nil, procedure begin ToggleLayerCheck(L); end);
   Exit;
  end;
- SelectLayer(L);
+ TreeLayers.Selected := Item;
+// действия - после выхода из обработки нажатия деревом: выбор слоя (через
+// OnActiveLayerChanged / OnLayerSelected формы) и раскрытие группы меняют
+// элементы, а FMX после обработчика еще перебирает элементы прокрученного
+// дерева - «List index out of bounds» при выборе слоя после прокрутки списка.
+// Пункт - заново по слою: к моменту вызова дерево могло перестроиться
+ TThread.ForceQueue(nil,
+  procedure
+  var It: TTreeViewItem;
+  begin
+  // группа слоев - только раскрыть/свернуть (выбрать группу - кнопкой OK)
+   if IsGroupLayer(L) then begin
+    if FLayerToItem.TryGetValue(L, It) then
+     if It.IsExpanded then It.Collapse else It.Expand;
+    Exit;
+   end;
+   SelectLayer(L);
+  end);
 end;
 
 procedure TLayerFrame.btnAllOnClick(Sender: TObject);
@@ -887,74 +1066,160 @@ begin
  L := nil;
  if TreeLayers.Selected <> nil then L := TResource(TreeLayers.Selected.TagObject);
  if L <> nil then SelectLayer(L);
- TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
+ TThread.ForceQueue(nil, procedure begin CloseList; end);
 end;
 
 procedure TLayerFrame.btnCancelClick(Sender: TObject);
 begin
- TThread.ForceQueue(nil, procedure begin PopupLayers.IsOpen := False; end);
+ TThread.ForceQueue(nil, procedure begin CloseList; end);
 end;
 
-function TLayerFrame.FindItemVisCheck(const Item: TTreeViewItem): TCheckBox;
-var
- I: Integer;
- Obj: TFmxObject;
+// флажок видимости (картинка ImageList1 или рисованный), квадрат цвета слоя,
+// имя слоя - по текущему состоянию слоя (TagObject строки)
+function TLayerFrame.ItemContentLeft(Item: TTreeViewItem): Single;
+var B: TFmxObject;
 begin
- Result := nil;
+ Result := 0;
  if Item = nil then Exit;
- for I := 0 to Item.ChildrenCount - 1 do
- begin
-  Obj := Item.Children[I];
-  if (Obj is TCheckBox) and SameText(Obj.Name, 'chkVis') then
-   Exit(TCheckBox(Obj));
- end;
+ B := Item.FindStyleResource('button');
+ if B is TControl then Result := TControl(B).Position.X + TControl(B).Width;
 end;
 
-function TLayerFrame.FindItemLabel(const Item: TTreeViewItem): TLabel;
-var
- I: Integer;
- Obj: TFmxObject;
+// картинка флажка - в масштабе, вписывающем ее в R, и со сдвигом: середина ее
+// непрозрачной части (сам квадратик, прозрачные поля картинки бывают разными)
+// совпадает с серединой R - то есть с серединой строки по Y
+function CenteredImageRect(B: TBitmap; const R: TRectF): TRectF;
+var D: TBitmapData;
+    X, Y, L, T, Rt, Bt: Integer;
+    K, CX, CY: Single;
 begin
- Result := nil;
- if Item = nil then Exit;
- for I := 0 to Item.ChildrenCount - 1 do
- begin
-  Obj := Item.Children[I];
-  if (Obj is TLabel) and SameText(Obj.Name, 'lblName') then
-   Exit(TLabel(Obj));
- end;
+ K := Min(R.Width / B.Width, R.Height / B.Height);
+ CX := B.Width / 2;
+ CY := B.Height / 2;
+ if B.Map(TMapAccess.Read, D) then
+  try
+   L := B.Width;
+   T := B.Height;
+   Rt := -1;
+   Bt := -1;
+   for Y := 0 to B.Height - 1 do
+    for X := 0 to B.Width - 1 do
+     if TAlphaColorRec(D.GetPixel(X, Y)).A > 16 then begin
+      if X < L then L := X;
+      if X > Rt then Rt := X;
+      if Y < T then T := Y;
+      if Y > Bt then Bt := Y;
+     end;
+   if Rt >= L then begin
+    CX := (L + Rt + 1) / 2;
+    CY := (T + Bt + 1) / 2;
+   end;
+  finally
+   B.Unmap(D);
+  end;
+ Result := TRectF.Create(0, 0, B.Width * K, B.Height * K);
+ Result.Offset(R.CenterPoint.X - CX * K, R.CenterPoint.Y - CY * K);
 end;
 
-function TLayerFrame.FindItemColorRect(const Item: TTreeViewItem): TRectangle;
-var
- I: Integer;
- Obj: TFmxObject;
+procedure TLayerFrame.DrawLayerRow(Canvas: TCanvas; L: TResource; X0, Right, Top, H: Single; IsOn: Boolean);
+var S: Single;
+    R: TRectF;
+    B: TBitmap;
+    Idx: Integer;
+    TL: TTextLayout;
+    Sz: TSizeF;
 begin
- Result := nil;
- if Item = nil then Exit;
- for I := 0 to Item.ChildrenCount - 1 do
- begin
-  Obj := Item.Children[I];
-  if (Obj is TRectangle) and SameText(Obj.Name, 'rectColor') then
-   Exit(TRectangle(Obj));
+// флажок
+ S := 20;
+ R := TRectF.Create(X0 + 2, Top + (H - S) / 2, X0 + 2 + S, Top + (H + S) / 2);
+ if IsOn then Idx := LayerChkImageOn else Idx := LayerChkImageOff;
+ B := nil;
+// картинка - в ее размере, ближайшем к нужному (BestSize): картинку другого
+// размера TImageList не растягивает, а кладет в угол - флажок был выше середины;
+// затем вписывается в квадрат флажка с сохранением пропорций, по центру
+ if (ImageList1 <> nil) and (Idx < ImageList1.Count) then begin
+  Sz := TSizeF.Create(S * Canvas.Scale, S * Canvas.Scale);
+  if ImageList1.BestSize(Idx, Sz) then B := ImageList1.Bitmap(Sz, Idx);
  end;
-end;
-
-procedure TLayerFrame.ItemVisCheckChange(Sender: TObject);
-var
- Chk: TCheckBox;
- L: TResource;
-begin
- if FUpdating then Exit;
- if not (Sender is TCheckBox) then Exit;
- Chk := TCheckBox(Sender);
- L := TResource(Chk.TagObject);
+ if B <> nil then
+  Canvas.DrawBitmap(B, TRectF.Create(0, 0, B.Width, B.Height), CenteredImageRect(B, R), 1)
+ else begin
+  R.Inflate(-3, -3);
+  Canvas.Fill.Kind := TBrushKind.Solid;
+  if IsOn then Canvas.Fill.Color := $FF1E78FF else Canvas.Fill.Color := TAlphaColors.White;
+  Canvas.FillRect(R, 2, 2, AllCorners, 1);
+  Canvas.Stroke.Kind := TBrushKind.Solid;
+  Canvas.Stroke.Color := $FF606060;
+  Canvas.Stroke.Thickness := 1;
+  Canvas.DrawRect(R, 2, 2, AllCorners, 1);
+  if IsOn then begin
+   Canvas.Stroke.Color := TAlphaColors.White;
+   Canvas.Stroke.Thickness := 2;
+   Canvas.DrawLine(TPointF.Create(R.Left + 3, R.CenterPoint.Y), TPointF.Create(R.Left + R.Width * 0.42, R.Bottom - 3), 1);
+   Canvas.DrawLine(TPointF.Create(R.Left + R.Width * 0.42, R.Bottom - 3), TPointF.Create(R.Right - 3, R.Top + 3), 1);
+  end;
+ end;
  if L = nil then Exit;
- if Chk.IsChecked then
-  SetLayerCheckRecursive(L, 1)
- else
-  SetLayerCheckRecursive(L, 0);
+// цвет слоя
+ R := TRectF.Create(X0 + 24, Top + (H - 10) / 2, X0 + 34, Top + (H + 10) / 2);
+ Canvas.Fill.Kind := TBrushKind.Solid;
+ Canvas.Fill.Color := GetLayerFillColor(L);
+ Canvas.FillRect(R, 0, 0, [], 1);
+ Canvas.Stroke.Kind := TBrushKind.Solid;
+ Canvas.Stroke.Color := GetLayerStrokeColor(L);
+ Canvas.Stroke.Thickness := 1;
+ Canvas.DrawRect(R, 0, 0, [], 1);
+// имя слоя: в одну строку, не дальше Right, длинное - с многоточием
+ if Right <= X0 + 38 then Exit;
+ TL := TTextLayoutManager.DefaultTextLayout.Create;
+ try
+  TL.BeginUpdate;
+  try
+   TL.TopLeft := TPointF.Create(X0 + 38, Top);
+   TL.MaxSize := TPointF.Create(Right - X0 - 38, H);
+   TL.Text := GetLayerText(L);
+   TL.Font.Size := UI.Metrics.ListFontSize;
+   TL.Color := TAlphaColors.Black;
+   TL.WordWrap := False;
+   TL.Trimming := TTextTrimming.Character;
+   TL.HorizontalAlign := TTextAlign.Leading;
+   TL.VerticalAlign := TTextAlign.Center;
+  finally
+   TL.EndUpdate;
+  end;
+  TL.RenderLayout(Canvas);
+ finally
+  TL.Free;
+ end;
+end;
 
+procedure TLayerFrame.ItemPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+var L: TResource;
+    Row: TTreeViewItem;
+begin
+ Row := TTreeViewItem(Sender);
+ L := TResource(Row.TagObject);
+ if L = nil then Exit;
+// по высоте - по середине прямоугольника отрисовки пункта (видимая строка)
+ DrawLayerRow(Canvas, L, ItemContentLeft(Row), Row.Width, ARect.Top, ARect.Height, L.Check <> 0);
+end;
+
+// заголовок: строка активного слоя до btnDrop (с отступом 5)
+procedure TLayerFrame.HeaderBgPaint(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+var Chk: TCheckBox;
+    Right: Single;
+begin
+ Chk := ChkLayerCtrl;
+ Right := HeaderBg.AbsoluteToLocal(btnDrop.LocalToAbsolute(TPointF.Zero)).X - 5;
+ if Right > HeaderBg.Width then Right := HeaderBg.Width;
+ DrawLayerRow(Canvas, ActiveLayer, 0, Right, ARect.Top, ARect.Height, (Chk <> nil) and Chk.IsChecked);
+end;
+
+// флажок видимости строки: слой и вложенные - вкл/выкл, строки, заголовок, карта
+procedure TLayerFrame.ToggleLayerCheck(Layer: TResource);
+begin
+ if Layer = nil then Exit;
+ if Layer.Check <> 0 then SetLayerCheckRecursive(Layer, 0) else SetLayerCheckRecursive(Layer, 1);
  UpdateTreeChecksFromModel;
  SyncHeader;
  NotifyLayerVisibilityChanged;

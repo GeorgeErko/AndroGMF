@@ -132,7 +132,7 @@ begin
  localOpenForm.BaseDir := GetAppExternalFilesDir;
 {$ENDIF}
  localOpenForm.FCallBack := OpenGmfFile;
- localOpenForm.Show;
+ ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);

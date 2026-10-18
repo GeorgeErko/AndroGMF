@@ -103,7 +103,7 @@ begin
  end;
 // максимальный номер цветника, окно без истории
  SetLastNumber([28]);
- ClientWidth := FlowerClientWidth;
+ DialogClientWidth := FlowerClientWidth;
  History := TStringList.Create;
  CInc.IsChecked := GReadInteger(AnsiString(Name + IncKey), 0) = 1;
 // атрибуты секции «Цветники_МГГТ»
