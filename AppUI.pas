@@ -97,7 +97,16 @@ procedure UnfixFormButtonHeights(Form: TObject);
 // 'ui:skip' - кнопку не трогать.
 // Остальные элементы (TEdit, TLabel, TCheckBox и т.п., TListView) - только по
 // пометкам 'ui:' (без групп контейнеров): шрифт; TListView с ui:list - шрифт
-// текста строк и высота строки по шрифту; TCheckBox / TRadioButton с ui:check
+// текста строк и высота строки по шрифту; TListBox, TComboBox, TColorComboBox -
+// шрифт их пунктов (TListBoxItem): пункт берет пометку своего списка (у
+// выпадающего - самого TComboBox), правило - при применении стиля к пункту;
+// пункты, добавленные кодом позже, подхватываются при отрисовке списка (у
+// TListBox HelpKeyword в дизайнере не опубликован - задается кодом);
+// высота пунктов - пропорционально шрифту, значки пунктов и их флажки
+// (ShowCheckboxes) - так же; у TComboBox - и высота самого комбо;
+// TColorComboBox с ui:colors16 - только 16 основных цветов (остальные пункты
+// скрыты: цвет комбо - номер пункта, удалять их нельзя);
+// TCheckBox / TRadioButton с ui:check
 // (ui:android:check) - квадратик (кружок) размером CheckSize профиля.
 // Зона касания всех кнопок расширяется на TouchExpansion.
 // Глиф и текст стиля меняются после каждого применения стиля
@@ -105,19 +114,23 @@ procedure UnfixFormButtonHeights(Form: TObject);
 // обработчик кнопки сам вызывает UIApplyButtonStyle(Sender)
 type
   TUISize = (usKeep, usButton, usTool, usStatus);
-  TUIGlyph = (ugKeep, ugCenter, ugFill, ugClient);
+  TUIGlyph = (ugKeep, ugCenter, ugFill, ugClient, ugLeft);
   TUIText = (utKeep, utSmall, utNormal);
 
   TUIRule = record
     Height: TUISize;           // высота - метрика UI
     Square: Boolean;           // без текста: ширина = высоте
     Glyph: TUIGlyph;           // ugFill - Align Client, отступ GlyphMargin, растяжение;
-                               // ugClient - Align Client без растяжения
+                               // ugClient - Align Client без растяжения;
+                               // ugLeft - слева квадратом по высоте кнопки (кнопки с текстом)
     Text: TUIText;
     Skip: Boolean;             // не трогать кнопку
     FontDelta: Integer;        // шрифт = обычный (FontSize) + FontDelta; 0 - не меняется
     List: Boolean;             // TListView: шрифт строки и высота строки по шрифту
     Check: Boolean;            // TCheckBox / TRadioButton: квадратик (кружок) - CheckSize
+    Colors16: Boolean;         // TColorComboBox: только 16 основных цветов
+    MarginSet: Boolean;        // ui:margin=N: отступ глифа N вместо GlyphMargin профиля
+    Margin: Single;
   end;
 
 // размеры, правила кнопок, снятие закрепленных стилем высот - у всех элементов
@@ -134,7 +147,7 @@ implementation
 uses System.SysUtils, System.Types, System.Math, FMX.Types, FMX.Controls, FMX.Styles, FMX.Forms,
      FMX.StdCtrls, FMX.Platform, FMX.Graphics, FMX.ImgList, System.IOUtils, System.IniFiles,
      FMX.ListView, FMX.ListView.Appearances, FMX.ListView.Types, System.Generics.Collections,
-     FMX.Styles.Objects, Writer;
+     FMX.Styles.Objects, FMX.ListBox, FMX.Colors, FMX.Grid, Writer;
 
 const
   Profiles: array[TUIProfile] of TUIMetrics = (
@@ -167,26 +180,30 @@ const
  // контейнеров размеры не меняют (кнопки тулбаров разные: 25x48 с Align,
  // 35x40 в MainFrmDendro, стрелки UpDown 16x20) - размер включается пометкой
  // ui:toolsize / ui:statussize / ui:btn
-  UIRuleTable: array[0..18] of TUIRuleItem = (
-   (Name: 'button'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'tool'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'status'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'toolsize'; Rule: (Height: usTool; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'statussize'; Rule: (Height: usStatus; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'center'; Rule: (Height: usKeep; Square: False; Glyph: ugCenter; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'fill'; Rule: (Height: usKeep; Square: False; Glyph: ugFill; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'client'; Rule: (Height: usKeep; Square: False; Glyph: ugClient; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'small'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'normal'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utNormal; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'square'; Rule: (Height: usKeep; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'btn'; Rule: (Height: usButton; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False)),
-   (Name: 'skip'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: True; FontDelta: 0; List: False; Check: False)),
-   (Name: 'font-2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -2; List: False; Check: False)),
-   (Name: 'font-1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -1; List: False; Check: False)),
-   (Name: 'font+1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 1; List: False; Check: False)),
-   (Name: 'font+2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 2; List: False; Check: False)),
-   (Name: 'list'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: True; Check: False)),
-   (Name: 'check'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: True)));
+  UIRuleTable: array[0..22] of TUIRuleItem = (
+   (Name: 'button'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'tool'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'status'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'toolsize'; Rule: (Height: usTool; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'statussize'; Rule: (Height: usStatus; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'center'; Rule: (Height: usKeep; Square: False; Glyph: ugCenter; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'fill'; Rule: (Height: usKeep; Square: False; Glyph: ugFill; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'client'; Rule: (Height: usKeep; Square: False; Glyph: ugClient; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'left'; Rule: (Height: usKeep; Square: False; Glyph: ugLeft; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'small'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utSmall; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'normal'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utNormal; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'square'; Rule: (Height: usKeep; Square: True; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'btn'; Rule: (Height: usButton; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'skip'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: True; FontDelta: 0; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font-4'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -4; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font-3'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -3; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font-2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -2; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font-1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: -1; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font+1'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 1; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'font+2'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 2; List: False; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'list'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: True; Check: False; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'check'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: True; Colors16: False; MarginSet: False; Margin: 0)),
+   (Name: 'colors16'; Rule: (Height: usKeep; Square: False; Glyph: ugKeep; Text: utKeep; Skip: False; FontDelta: 0; List: False; Check: False; Colors16: True; MarginSet: False; Margin: 0)));
 
 { TAppUI }
 
@@ -341,6 +358,11 @@ begin
  if S.FontDelta <> 0 then R.FontDelta := S.FontDelta;
  if S.List then R.List := True;
  if S.Check then R.Check := True;
+ if S.Colors16 then R.Colors16 := True;
+ if S.MarginSet then begin
+  R.MarginSet := True;
+  R.Margin := S.Margin;
+ end;
 end;
 
 // пометка с платформой: 'android:имя' - только на Android, 'win:имя' - только
@@ -361,6 +383,18 @@ begin
    exit(SameText(P, Current));
   end;
  Result := True;
+end;
+
+// пометка с числом 'margin=N' (отступ глифа); False - не она или число неверно
+function MarginRule(const Name: String; out Rule: TUIRule): Boolean;
+const Key = 'margin=';
+var V: Single;
+begin
+ Result := Name.StartsWith(Key, True) and TryStrToFloat(Name.Substring(Length(Key)), V, TFormatSettings.Invariant);
+ if not Result then exit;
+ FillChar(Rule, SizeOf(Rule), 0);
+ Rule.MarginSet := True;
+ Rule.Margin := Max(Single(0), V);
 end;
 
 // группа контейнера (только кнопки) и пометки 'ui:' в HelpKeyword
@@ -388,7 +422,8 @@ begin
   if FindRule(Group, S) then MergeRule(Result, S);
  end;
  for W in TStyledControl(Ctrl).HelpKeyword.Split([' ', ',', ';'], TStringSplitOptions.ExcludeEmpty) do
-  if W.StartsWith(UIPrefix, True) and PlatformRuleName(W.Substring(Length(UIPrefix)), Group) and FindRule(Group, S) then
+  if W.StartsWith(UIPrefix, True) and PlatformRuleName(W.Substring(Length(UIPrefix)), Group) and
+     (FindRule(Group, S) or MarginRule(Group, S)) then
    MergeRule(Result, S);
 end;
 
@@ -525,15 +560,67 @@ begin
  if B.Row > 0 then L.ItemAppearance.ItemHeight := Max(16, Round(B.Row * Size / B.Font));
 end;
 
-// квадратик флажка (кружок переключателя) в стиле элемента: имен FMX не задает
-// (у стилей Windows и Android разные) - первый объект-картинка стиля
-// (TCustomStyleObject), выровненный влево/вправо или без выравнивания, не
-// шире 48: фон всего элемента выровнен по всей площади и не подходит
-function FindCheckBox(Root: TFmxObject): TControl;
+// дерево стиля элемента в журнал (один раз на класс) - имен квадратика FMX не
+// задает, у стилей Windows и Android они разные
+var
+  GCheckDumped: String;
+
+procedure DumpStyle(O: TFmxObject; const Indent: String);
+var I: Integer;
+    S: String;
+begin
+ S := Indent + O.ClassName + ' "' + O.StyleName + '"';
+ if O is TControl then S := S + Format(' align=%d %.1fx%.1f', [Ord(TControl(O).Align), TControl(O).Width, TControl(O).Height]);
+ WriteIn([S]);
+ for I := 0 to O.ChildrenCount - 1 do DumpStyle(O.Children[I], Indent + '  ');
+end;
+
+// объект класса Cls в стиле, не шире 48 (фон всего элемента не подходит)
+function FindStyleClass(Root: TFmxObject; Cls: TClass): TControl;
 var I: Integer;
     C: TFmxObject;
 begin
  Result := nil;
+ for I := 0 to Root.ChildrenCount - 1 do begin
+  C := Root.Children[I];
+  if (C is Cls) and (TControl(C).Width <= 48) then exit(TControl(C));
+  Result := FindStyleClass(C, Cls);
+  if Result <> nil then exit;
+ end;
+end;
+
+// TStringGrid / TGrid: шрифт ячеек - шрифт таблицы (ApplyTextRule, столбцы
+// берут его от таблицы); заголовки столбцов (TStringColumn и др.) - тот же
+// размер через HeaderSettings; заданная высота строки (RowHeight > 0) -
+// пропорционально шрифту (при 0 таблица считает ее по шрифту сама)
+procedure ApplyGridRule(G: TCustomGrid; const R: TUIRule);
+var B: TUIBase;
+    Size: Single;
+    I: Integer;
+    Col: TColumn;
+begin
+ if not BaseStore.TryGet(G, B) or (B.Font <= 0) or not RuleFontSize(R, B.Font, Size) then exit;
+ if (B.Row = 0) and (G.RowHeight > 0) then begin
+  B.Row := G.RowHeight;
+  BaseStore.Put(G, B);
+ end;
+ if B.Row > 0 then G.RowHeight := Max(Single(12), Single(Round(B.Row * Size / B.Font)));
+ for I := 0 to G.ColumnCount - 1 do begin
+  Col := G.Columns[I];
+  Col.HeaderSettings.StyledSettings := Col.HeaderSettings.StyledSettings - [TStyledSetting.Size];
+  Col.HeaderSettings.TextSettings.Font.Size := Size;
+ end;
+end;
+
+// квадратик флажка (кружок переключателя): объект флажка стиля
+// (TCheckStyleObject), иначе - первый объект-картинка стиля (TCustomStyleObject),
+// выровненный влево/вправо или без выравнивания, не шире 48
+function FindCheckBox(Root: TFmxObject): TControl;
+var I: Integer;
+    C: TFmxObject;
+begin
+ Result := FindStyleClass(Root, TCheckStyleObject);
+ if Result <> nil then exit;
  for I := 0 to Root.ChildrenCount - 1 do begin
   C := Root.Children[I];
   if (C is TCustomStyleObject) and (TControl(C).Width <= 48) and
@@ -544,35 +631,62 @@ begin
  end;
 end;
 
-// ui:check: квадратик (кружок) - CheckSize профиля, по высоте - по центру элемента
+// ui:check: квадратик (кружок) - CheckSize профиля, при уменьшенном шрифте
+// (ui:font-N) - во столько же раз меньше; по центру своего контейнера стиля и
+// по высоте элемента. Квадратик, растянутый по своему контейнеру стиля
+// (Client), - меняется контейнер
+type
+  TControlScaleAccess = class(TControl);
+
 procedure ApplyCheckRule(Ctrl: TStyledControl; const R: TUIRule);
-var Box: TControl;
-    S, M: Single;
+var Box, Par: TControl;
+    S, Size, K, W, H: Single;
+    Info: String;
+    B: TUIBase;
 begin
  if not R.Check or not ((Ctrl is TCheckBox) or (Ctrl is TRadioButton)) then exit;
+ if Pos('|' + Ctrl.ClassName + '|', GCheckDumped) = 0 then begin
+  GCheckDumped := GCheckDumped + '|' + Ctrl.ClassName + '|';
+  WriteIn(['ui:check: стиль ', Ctrl.ClassName, ' ', Ctrl.Name]);
+  DumpStyle(Ctrl, '  ');
+ end;
  Box := FindCheckBox(Ctrl);
  if Box = nil then begin
   WriteIn(['ui:check: в стиле ', Ctrl.ClassName, ' ', Ctrl.Name, ' квадратик не найден']);
   exit;
  end;
+ if (Box.Align in [TAlignLayout.Client, TAlignLayout.Contents, TAlignLayout.Fit]) and (Box.ParentControl <> nil) and
+    not (Box.ParentControl is TStyledControl) and (Box.ParentControl.Width <= 48) then Box := Box.ParentControl;
  S := UI.Metrics.CheckSize;
- M := Max(Single(0), (Ctrl.Height - S) / 2);
- Box.Width := S;
- if Box.Align = TAlignLayout.None then begin
-  Box.Height := S;
-  Box.Position.Y := M;
- end else
- if Box.Align <> TAlignLayout.Center then begin
-  Box.Margins.Top := M;
-  Box.Margins.Bottom := M;
- end else
-  Box.Height := S;
+ if BaseStore.TryGet(Ctrl, B) and (B.Font > 0) and RuleFontSize(R, B.Font, Size) and (Size < B.Font) then
+  S := Max(Single(10), Single(Round(S * Size / B.Font)));
+ Info := Format('%s "%s" align=%d %.1fx%.1f', [Box.ClassName, Box.StyleName, Ord(Box.Align), Box.Width, Box.Height]);
+ if (Box.Width <= 0) or (Box.Height <= 0) then exit;
+// картинка стиля Android рисуется своим размером (размер объекта на нее не
+// влияет) - уменьшается масштаб рисования, размер объекта стиля остается
+// исходным (повторное применение стиля не накапливает уменьшение)
+ K := S / Max(Box.Width, Box.Height);
+ Box.Align := TAlignLayout.None;
+ TControlScaleAccess(Box).Scale.Point := TPointF.Create(K, K);
+// контейнер квадратика (выровнен влево/вправо) сужается - текст ближе
+ Par := Box.ParentControl;
+ if (Par <> nil) and not (Par is TStyledControl) and (Par.Align in [TAlignLayout.Left, TAlignLayout.Right, TAlignLayout.MostLeft, TAlignLayout.MostRight]) then
+  Par.Width := S + 2;
+ if Par <> nil then begin
+  W := Par.Width;
+  H := Par.Height;
+ end else begin
+  W := Box.Width * K;
+  H := Ctrl.Height;
+ end;
+ Box.Position.Point := TPointF.Create((W - Box.Width * K) / 2, (H - Box.Height * K) / 2);
+ WriteIn(['ui:check: ', Ctrl.Name, ' ', Info, Format(' -> scale %.2f (%.1f)', [K, S])]);
 end;
 
 procedure UIApplyButtonStyle(Sender: TObject);
 var R: TUIRule;
     G: TFmxObject;
-    M: Single;
+    M, S: Single;
 begin
  if not (Sender is TCustomButton) then exit;
  R := UIButtonRule(Sender);
@@ -584,7 +698,7 @@ begin
  case R.Glyph of
   ugCenter: TGlyph(G).Align := TAlignLayout.Center;
   ugFill: begin
-    M := UI.Metrics.GlyphMargin;
+    if R.MarginSet then M := R.Margin else M := UI.Metrics.GlyphMargin;
     TGlyph(G).Align := TAlignLayout.Client;
     TGlyph(G).Margins.Rect := TRectF.Create(M, M, M, M);
     TGlyph(G).Stretch := True;
@@ -592,6 +706,17 @@ begin
   ugClient: begin
     TGlyph(G).Align := TAlignLayout.Client;
     TGlyph(G).Stretch := False;
+    if R.MarginSet then TGlyph(G).Margins.Rect := TRectF.Create(R.Margin, R.Margin, R.Margin, R.Margin);
+   end;
+ // FitLeft, а не Left: размер глифа с Left кнопка сама ограничивает
+ // исходным размером картинки (TCustomButton.UpdateGlyphSize)
+  ugLeft: begin
+    if R.MarginSet then M := R.Margin else M := UI.Metrics.GlyphMargin;
+    S := Max(Single(1), TCustomButton(Sender).Height - 2 * M);
+    TGlyph(G).Align := TAlignLayout.FitLeft;
+    TGlyph(G).Margins.Rect := TRectF.Create(M, M, M, M);
+    TGlyph(G).Size.Size := TSizeF.Create(S, S);
+    TGlyph(G).Stretch := True;
    end;
  end;
 end;
@@ -619,16 +744,160 @@ end;
 type
   TStyledControlAccess = class(TStyledControl);
   TControlAccess = class(TControl);
+  TCustomListBoxAccess = class(TCustomListBox);
 
   TUIHandler = class
     class procedure ApplyStyleLookup(Sender: TObject);
+    class procedure ListPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
   end;
 
-// StyleReady: вызов из OnApplyStyleLookup (стиль применен) или из обхода
+// список с пометкой, которому принадлежит пункт: TListBox или TComboBox (у
+// выпадающего списка комбо - TComboListBox, его владелец - сам комбо); nil - нет
+function ItemListOwner(Item: TListBoxItem): TStyledControl;
+var P: TFmxObject;
+begin
+ Result := nil;
+ P := Item.Parent;
+ while (P <> nil) and not (P is TCustomListBox) do P := P.Parent;
+ if P = nil then Exit;
+ if (TCustomListBox(P).Owner is TCustomComboBox) then Result := TCustomComboBox(TCustomListBox(P).Owner) else
+ if TCustomListBox(P).Parent is TCustomComboBox then Result := TCustomComboBox(TCustomListBox(P).Parent) else
+  Result := TCustomListBox(P);
+end;
+
+procedure ApplyStyleRules(Sender: TObject; StyleReady: Boolean); forward;
+
+// ui:colors16: пункт TColorComboBox - один из 16 основных цветов (имя пункта -
+// имя цвета; синонимы Cyan, Magenta, Grey не показываются)
+function IsColor16Item(It: TListBoxItem): Boolean;
+const Names: array[0..15] of String = ('Black', 'Maroon', 'Green', 'Olive', 'Navy', 'Purple', 'Teal', 'Gray',
+       'Silver', 'Red', 'Lime', 'Yellow', 'Blue', 'Fuchsia', 'Aqua', 'White');
+var N, S: String;
+begin
+ N := It.Text;
+ if N.StartsWith('cla', True) then N := N.Substring(3);
+ for S in Names do
+  if SameText(S, N) then exit(True);
+ Result := False;
+end;
+
+// объект стиля пункта (значок, флажок): размер - от исходного (стиль пункта
+// применяется повторно с теми же объектами - иначе уменьшение копится).
+// Исходные ширина и высота хранятся в базе объекта (Font - ширина, Row - высота)
+procedure ScaleStyleObject(C: TControl; K: Single; ScaleHeight: Boolean);
+var B: TUIBase;
+begin
+ if not BaseStore.TryGet(C, B) then begin
+  B.Font := C.Width;
+  B.Row := C.Height;
+  BaseStore.Put(C, B);
+ end;
+ C.Width := Round(B.Font * K);
+ if ScaleHeight then C.Height := Round(B.Row * K);
+end;
+
+// пункт списка: шрифт по правилу списка, высота пункта - пропорционально
+// шрифту (база - высота до правила; при ItemHeight списка - он), значок
+// 'icon' и флажок 'check' (ShowCheckboxes) - так же; пункт выпадающего списка
+// TComboBox - и высота самого комбо. Объекты стиля - только после применения
+// стиля (StyleReady), размер - от их исходного (ScaleStyleObject)
+procedure ApplyItemRule(It: TListBoxItem; Owner: TStyledControl; const R: TUIRule; StyleReady: Boolean);
+var B, OB: TUIBase;
+    Size, K: Single;
+    P: TFmxObject;
+    O: TFmxObject;
+begin
+ if R.Colors16 and (Owner is TCustomColorComboBox) then It.Visible := IsColor16Item(It);
+ ApplyTextRule(It, R, StyleReady);
+ if not BaseStore.TryGet(It, B) or (B.Font <= 0) or not RuleFontSize(R, B.Font, Size) then exit;
+ K := Size / B.Font;
+ if B.Row = 0 then begin
+  B.Row := It.Height;
+  BaseStore.Put(It, B);
+ end;
+ if B.Row > 0 then It.Height := Max(Single(12), Single(Round(B.Row * K)));
+ P := It.Parent;
+ while (P <> nil) and not (P is TCustomListBox) do P := P.Parent;
+ if (P <> nil) and (TCustomListBoxAccess(P).ItemHeight > 0) then begin
+  if not BaseStore.TryGet(TCustomListBox(P), OB) then begin
+   OB.Font := B.Font;
+   OB.Row := TCustomListBoxAccess(P).ItemHeight;
+   BaseStore.Put(TCustomListBox(P), OB);
+  end;
+  TCustomListBoxAccess(P).ItemHeight := Max(Single(12), Single(Round(OB.Row * Size / OB.Font)));
+ end;
+ if Owner is TCustomComboBox then begin
+  if not BaseStore.TryGet(Owner, OB) then begin
+   OB.Font := B.Font;
+   OB.Row := Owner.Height;
+   BaseStore.Put(Owner, OB);
+  end;
+  Owner.Height := Max(Single(16), Single(Round(OB.Row * Size / OB.Font)));
+ end;
+ if not StyleReady then exit;
+ O := It.FindStyleResource('icon');
+ if O is TControl then ScaleStyleObject(TControl(O), K, True);
+// флажок пункта - отдельный TCheckBox со своим стилем: квадратик по ui:check
+ O := It.FindStyleResource('check');
+ if O is TCheckBox then begin
+  ScaleStyleObject(TControl(O), K, False);
+  TCheckBox(O).HelpKeyword := 'ui:check';
+  TCheckBox(O).OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
+  if TStyledControlAccess(O).ResourceLink <> nil then ApplyStyleRules(O, True);
+ end;
+end;
+
+// пункты списка (или выпадающего списка комбо): обработчик применения стиля
+// (если не занят) и правило сразу (база шрифта известна - после стиля)
+procedure HookListItems(List: TFmxObject);
+var I, N: Integer;
+    It: TListBoxItem;
+    B: TUIBase;
+begin
+ if List is TCustomComboBox then N := TCustomComboBox(List).Count else
+ if List is TCustomListBox then N := TCustomListBox(List).Count else Exit;
+ for I := 0 to N - 1 do begin
+  if List is TCustomComboBox then It := TCustomComboBox(List).ListItems[I] else It := TCustomListBox(List).ListItems[I];
+  if It = nil then Continue;
+  if not Assigned(It.OnApplyStyleLookup) then begin
+   It.OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
+   ApplyStyleRules(It, TStyledControlAccess(It).ResourceLink <> nil);
+  end else
+ // свой обработчик пункта (TColorComboBox - цвет): правило один раз, когда
+ // стиль пункта применен (база еще не запомнена)
+  if not BaseStore.TryGet(It, B) and (TStyledControlAccess(It).ResourceLink <> nil) then ApplyStyleRules(It, True);
+ end;
+end;
+
+// отрисовка списка с пометкой: пункты, добавленные после загрузки формы
+class procedure TUIHandler.ListPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+begin
+ HookListItems(TFmxObject(Sender));
+end;
+
+// список или комбо с пометкой: пункты и подхват новых (отрисовка самого
+// элемента и выпадающего списка комбо)
+procedure HookList(C: TStyledControl);
+begin
+ HookListItems(C);
+ if not Assigned(C.OnPainting) then C.OnPainting := TUIHandler.ListPainting;
+ if (C is TCustomComboBox) and (TCustomComboBox(C).ListBox <> nil) and not Assigned(TCustomComboBox(C).ListBox.OnPainting) then
+  TCustomComboBox(C).ListBox.OnPainting := TUIHandler.ListPainting;
+end;
+
+// StyleReady: вызов из OnApplyStyleLookup (стиль применен) или из обхода.
+// Стиль мог быть применен и до обхода (обработчик еще не стоял - правило
+// глифа и шрифта не выполнялось): объекты стиля уже есть - то же, что StyleReady.
+// Только на Android: на Windows прежнее поведение
 procedure ApplyStyleRules(Sender: TObject; StyleReady: Boolean);
 var R: TUIRule;
+    C: TStyledControl;
+    I: Integer;
 begin
  if not (Sender is TStyledControl) then exit;
+{$IFDEF ANDROID}
+ if TStyledControlAccess(Sender).ResourceLink <> nil then StyleReady := True;
+{$ENDIF}
  if TStyledControl(Sender).AdjustType <> TAdjustType.None then begin
   TStyledControlAccess(Sender).SetAdjustType(TAdjustType.None);
   if TControl(Sender).ParentControl <> nil then TControlAccess(TControl(Sender).ParentControl).Realign;
@@ -637,11 +906,26 @@ begin
   if StyleReady then UIApplyButtonStyle(Sender);
   exit;
  end;
+// пункт списка: правило его списка (у пункта своей пометки нет)
+ if Sender is TListBoxItem then begin
+  C := ItemListOwner(TListBoxItem(Sender));
+  if C = nil then exit;
+  R := UIControlRule(C, False);
+  if not R.Skip then ApplyItemRule(TListBoxItem(Sender), C, R, StyleReady);
+  exit;
+ end;
  if Pos(UIPrefix, LowerCase(TStyledControl(Sender).HelpKeyword)) = 0 then exit;
  R := UIControlRule(Sender, False);
  if R.Skip then exit;
  ApplyTextRule(Sender, R, StyleReady);
  if Sender is TListView then ApplyListRule(TListView(Sender), R, StyleReady);
+ if Sender is TCustomGrid then ApplyGridRule(TCustomGrid(Sender), R);
+// ui:colors16: скрытые пункты не рисуются, их стиль не применяется - видимость
+// задается здесь, а не при подхвате пунктов
+ if R.Colors16 and (Sender is TCustomColorComboBox) then
+  for I := 0 to TCustomColorComboBox(Sender).Count - 1 do
+   if TCustomColorComboBox(Sender).ListItems[I] <> nil then
+    TCustomColorComboBox(Sender).ListItems[I].Visible := IsColor16Item(TCustomColorComboBox(Sender).ListItems[I]);
 // объекты стиля есть только после его применения
  if StyleReady then ApplyCheckRule(TStyledControl(Sender), R);
 end;
@@ -673,6 +957,8 @@ begin
    if not Assigned(TStyledControl(C).OnApplyStyleLookup) then TStyledControl(C).OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
   // повторный вызов (смена масштаба): база уже известна - применяется сразу
    ApplyStyleRules(C, False);
+  // список, комбо: шрифт - у пунктов
+   if (C is TCustomListBox) or (C is TCustomComboBox) then HookList(TStyledControl(C));
   end;
   ApplyUIRules(C);
  end;

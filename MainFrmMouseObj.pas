@@ -97,18 +97,6 @@ type
     UpDown2Down: TButton;
     SpeedButton6: TSpeedButton;
     sbCancel: TSpeedButton;
-  // операции ЗН (бывшая pOprZN) и актуализация (pActual) старой программы;
-  // обработка - TMainFormDendro.DendroButtonClick
-    sbOrderProperties: TSpeedButton;
-    sbAutoDT: TSpeedButton;
-    sbAutoZN: TSpeedButton;
-    sbFLKZN: TSpeedButton;
-    sbAttrZN: TSpeedButton;
-    sbFindZN: TSpeedButton;
-    sbExportCSV: TSpeedButton;
-    sSpeedButton36: TSpeedButton;
-    sbStatDelete: TSpeedButton;
-    sbStatRestore: TSpeedButton;
     LabelVer: TLabel;
     btnBlock: TSpeedButton;
     FloatAnimation7: TFloatAnimation;
@@ -116,6 +104,19 @@ type
     FloatAnimation8: TFloatAnimation;
     SplitterHost2: TSplitter;
     InstHost2: TLayout;
+    Layout1: TLayout;
+    Layout2: TLayout;
+    sbOrderProperties: TSpeedButton;
+    sbFLKZN: TSpeedButton;
+    sbFindZN: TSpeedButton;
+    sbExportCSV: TSpeedButton;
+    sSpeedButton36: TSpeedButton;
+    Layout3: TLayout;
+    sbAutoDT: TSpeedButton;
+    sbAutoZN: TSpeedButton;
+    sbAttrZN: TSpeedButton;
+    sbStatDelete: TSpeedButton;
+    sbStatRestore: TSpeedButton;
     procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);

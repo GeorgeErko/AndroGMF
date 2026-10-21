@@ -18,6 +18,7 @@ object MainForm: TMainForm
     Size.PlatformDefault = False
     TabOrder = 1
     object btnOpen: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 0
       Position.X = 8.000000000000000000
@@ -33,6 +34,7 @@ object MainForm: TMainForm
       OnClick = btnOpenClick
     end
     object btnLocalOpen: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 2
       Position.X = 44.000000000000000000
@@ -48,6 +50,7 @@ object MainForm: TMainForm
       OnClick = btnLocalOpenClick
     end
     object btnPaint: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 1
       Position.X = 816.000000000000000000
@@ -63,6 +66,7 @@ object MainForm: TMainForm
       OnClick = btnPaintClick
     end
     object btnPlus: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Tag = 1
       Images = ImageList1
       ImageIndex = 3
@@ -80,6 +84,7 @@ object MainForm: TMainForm
       OnClick = btnPlusClick
     end
     object ptnMinus: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Tag = -1
       Images = ImageList1
       ImageIndex = 4

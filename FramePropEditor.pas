@@ -55,12 +55,11 @@ type
    FColName: TStringColumn;
    FColValue: TStringColumn;
    FRows: TObjectList<TPropRow>;
+  // точка последнего нажатия на форме (FormMouseDown), абсолютная
    FLastMouseDown: TPointF;
-   FSuppressEdit: Boolean;
    FPickCombo: TComboBox;
    FPickComboRow: Integer;
-   FValueEdit: TEdit;
-   FValueEditRow: Integer;
+   FGridEditRow: Integer;  // строка, правящаяся редактором таблицы; -1 - нет
    FAligningCols: Boolean;
   //
    Objects: TSelectedObjects;
@@ -80,17 +79,13 @@ type
    procedure AlignColumns;
    procedure FrameResize(Sender: TObject);
    procedure ColumnResize(Sender: TObject);
-   procedure AdjustInplaceEditor;
-   procedure EnsureValueEdit;
-   procedure HideValueEdit(const Commit: Boolean);
-   procedure ShowValueEdit(const Row: Integer);
-   procedure ValueEditExit(Sender: TObject);
-   procedure ValueEditKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
+  // правка значения редактором самой таблицы (как в VarSetForm)
+   procedure StartGridEdit(const Row: Integer);
+   procedure GridEditingDone(Sender: TObject; const ACol, ARow: Integer);
    procedure PickComboChange(Sender: TObject);
    procedure PickComboClosePopup(Sender: TObject);
    procedure HidePickCombo;
  //
-   procedure GridMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
    procedure GridGetValue(Sender: TObject; const Col, Row: Integer; var Value: TValue);
    procedure GridSetValue(Sender: TObject; const Col, Row: Integer; const Value: TValue);
    procedure GridCellClick(const Column: TColumn; const Row: Integer);
@@ -111,6 +106,10 @@ type
   // свойства объектов изменены: строки заново, курсор - на свойство PropName
    procedure RefreshObjects(const PropName: String; OldRow: Integer);
    procedure MoveProperty(const PropName: String; Tag: Integer);
+  protected
+  // нажатие на форме (как MouseDown в VarSetForm): OnMouseDown сетки не
+  // вызывается - нажатие получает ее представление
+   procedure FormMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
   public
    OnActivateSignInstrument: TNotifyEvent;
    ActivePropRow: TPropRow;
@@ -142,6 +141,11 @@ implementation uses TwgColle, newForm0, newResource, Writer, LBN, MainFrm,
 
 {$R *.fmx}
 
+const
+ // шрифт таблицы свойств на Android: ячейки (и редактор значения), заголовки
+ // столбцов; на Windows - шрифт стиля
+  PropGridFontSize = 12;
+
 { TPropEditorFrame }
 
 constructor TPropEditorFrame.Create(AOwner: TComponent);
@@ -159,12 +163,12 @@ begin
  FPickCombo.Stored := False;
  FPickCombo.Visible := False;
  FPickComboRow := -1;
- FValueEditRow := -1;
+ FGridEditRow := -1;
  FPickCombo.OnChange := PickComboChange;
  FPickCombo.OnClosePopup := PickComboClosePopup;
  OnResize := FrameResize;
  EnsureGrid;
- EnsureValueEdit;
+ WatchFormMouse := True;
  FGrid.ReadOnly := True;
  FGrid.Options := FGrid.Options - [TGridOption.Editing] - [TGridOption.AlwaysShowEditor];
  if sbSelectByLayer <> nil then sbSelectByLayer.IsPressed := GReadInteger(Name + '_SelectByLayer', 0) = 1;
@@ -197,12 +201,16 @@ begin
 // FGrid.Options := FGrid.Options - [TGridOption.Editing];
  FGrid.RowCount := 0;
  FGrid.Stored := False;
- FGrid.OnMouseDown := GridMouseDown;
  FGrid.OnGetValue := GridGetValue;
  FGrid.OnSetValue := GridSetValue;
  FGrid.OnCellClick := GridCellClick;
  FGrid.OnDrawColumnCell := GridDrawColumnCell;
  FGrid.OnSelChanged := GridSelChanged;
+ FGrid.OnEditingDone := GridEditingDone;
+// текст ячеек рисует только GridDrawColumnCell: в ячейке, оставшейся с
+// значением после правки (выход из редактора без изменений не вызывает
+// OnEditingDone), текст не двоится
+ FGrid.DefaultDrawing := False;
  //
  FColName := TStringColumn.Create(FGrid);
  FColName.Parent := FGrid;
@@ -216,6 +224,14 @@ begin
  FColValue.Header := 'Значение';
  FColValue.ReadOnly := False;
  FColValue.OnResize := ColumnResize;
+{$IFDEF ANDROID}
+ FGrid.StyledSettings := FGrid.StyledSettings - [TStyledSetting.Size];
+ FGrid.TextSettings.Font.Size := PropGridFontSize;
+ FColName.HeaderSettings.StyledSettings := FColName.HeaderSettings.StyledSettings - [TStyledSetting.Size];
+ FColName.HeaderSettings.TextSettings.Font.Size := PropGridFontSize;
+ FColValue.HeaderSettings.StyledSettings := FColValue.HeaderSettings.StyledSettings - [TStyledSetting.Size];
+ FColValue.HeaderSettings.TextSettings.Font.Size := PropGridFontSize;
+{$ENDIF}
  AlignColumns;
 end;
 
@@ -279,144 +295,11 @@ end;
 procedure TPropEditorFrame.FrameResize(Sender: TObject);
 begin
  AlignColumns;
- HideValueEdit(False);
 end;
 
 procedure TPropEditorFrame.ColumnResize(Sender: TObject);
 begin
  AlignColumns;
- HideValueEdit(False);
-end;
-
-procedure TPropEditorFrame.EnsureValueEdit;
-begin
- if FValueEdit <> nil then Exit;
- FValueEdit := TEdit.Create(Self);
- FValueEdit.Parent := Self;
- FValueEdit.Stored := False;
- FValueEdit.Visible := False;
- FValueEdit.OnExit := ValueEditExit;
- FValueEdit.OnKeyDown := ValueEditKeyDown;
-end;
-
-procedure TPropEditorFrame.HideValueEdit(const Commit: Boolean);
-var PropName, NewValue: string;
-begin
- if (FValueEdit = nil) or (not FValueEdit.Visible) then Exit;
- if Commit and (FValueEditRow >= 0) and (FValueEditRow < FRows.Count) and (FRows[FValueEditRow] <> nil) then
- begin
-  if not FRows[FValueEditRow].IsSystem then
-  begin
-   NewValue := FValueEdit.Text;
-   if FRows[FValueEditRow].Value <> NewValue then
-   begin
-    FRows[FValueEditRow].Value := NewValue;
-    PropName := FRows[FValueEditRow].RawName;
-    if PropName <> '' then
-     SetProperty(PropName, NewValue);
-   end;
-  end;
- end;
- FValueEdit.Visible := False;
-end;
-
-procedure TPropEditorFrame.ShowValueEdit(const Row: Integer);
-var DataRow, BtnW: Integer;
-    CellR: TRectF;
-    RAbs: TRectF;
-    W: Single;
-    P, PAbs: TPointF;
-    ACol, ARow: Integer;
-begin
- EnsureValueEdit;
- if (FGrid = nil) or (FValueEdit = nil) then Exit;
- if (Row < 0) or (Row >= FGrid.RowCount) then Exit;
- DataRow := Row;
- if (DataRow < 0) or (DataRow >= FRows.Count) then Exit;
- if (FRows[DataRow] = nil) or FRows[DataRow].IsSystem then Exit;
-
- HidePickCombo;
- if not FGrid.CellByPoint(FLastMouseDown.X, FLastMouseDown.Y, ACol, ARow) then exit;
- CellR := FGrid.CellRect(1, Row);
- BtnW := 0;
- if ((FRows[DataRow].PickList <> nil) and (FRows[DataRow].PickList.Count > 0)) or IsPointerType(FRows[DataRow].TypeName) then
-  BtnW := 18;
-// WriteIn([CellR.Height, CellR.Top + CellR.Height,FLastMouseDown.Y, FGrid.VScrollBar.Position.Y]);
- P := PointF(CellR.Left, FLastMouseDown.Y - (CellR.Height / 2) + 1);
- // (ARow - FGrid.TopRow) * CellR.Height + CellR.Height);//FLastMouseDown.Y - (CellR.Height / 2) + 1);
- PAbs := FGrid.LocalToAbsolute(P);
- P := Self.AbsoluteToLocal(PAbs);
-
- FValueEditRow := DataRow;
- FValueEdit.Text := FRows[DataRow].Value;
- FValueEdit.Position.X := P.X + 1;
- FValueEdit.Position.Y := P.Y + 1;
- FValueEdit.Width := CellR.Width - BtnW - 2;
- FValueEdit.Height := CellR.Height - 2;
- FValueEdit.Visible := True;
- FValueEdit.BringToFront;
- try
-  FValueEdit.SetFocus;
-  FValueEdit.SelectAll;
- except
- end;
-end;
-
-procedure TPropEditorFrame.ValueEditExit(Sender: TObject);
-begin
- HideValueEdit(True);
-end;
-
-procedure TPropEditorFrame.ValueEditKeyDown(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
-begin
- if Key = vkReturn then
- begin
-  Key := 0;
-  HideValueEdit(True);
- end;
- if Key = vkEscape then
- begin
-  Key := 0;
-  HideValueEdit(False);
- end;
-end;
-
-procedure TPropEditorFrame.AdjustInplaceEditor;
-var CellR: TRectF;
-    Obj: TFmxObject;
-    Ctrl: TControl;
-    I: Integer;
-    W: Single;
-begin
- if FGrid = nil then Exit;
- if FGrid.Col <> 1 then Exit;
- if (FGrid.Row < 0) or (FGrid.Row >= FGrid.RowCount) then Exit;
- CellR := FGrid.CellRect(1, FGrid.Row);
- W := CellR.Width - 18;
- if W < 10 then Exit;
-
- Ctrl := nil;
- try
-  Obj := FGrid.FindStyleResource('editor');
-  if (Obj <> nil) and (Obj is TControl) then
-   Ctrl := TControl(Obj);
- except
- end;
-
- if Ctrl = nil then
-  for I := 0 to FGrid.ChildrenCount - 1 do
-   if (FGrid.Children[I] <> nil) and (FGrid.Children[I] is TEdit) and TEdit(FGrid.Children[I]).Visible then
-   begin
-    Ctrl := TControl(FGrid.Children[I]);
-    Break;
-   end;
-
- if Ctrl = nil then Exit;
- try
-  Ctrl.Position.X := CellR.Left + 1;
-  Ctrl.Width := W - 2;
- except
- end;
 end;
 
 procedure TPropEditorFrame.ClearRows;
@@ -786,14 +669,8 @@ begin
            SameText(TypeName, 'ImageFile');
 end;
 
-procedure TPropEditorFrame.GridMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+procedure TPropEditorFrame.FormMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
- If FSuppressEdit then begin
-  FSuppressEdit := False;
-  If FGrid <> nil then
-   FGrid.Options := FGrid.Options + [TGridOption.Editing];
- end;
- //
  FLastMouseDown := PointF(X, Y);
 end;
 
@@ -829,11 +706,13 @@ begin
  end;
 end;
 
+// щелчок по значку справа в ячейке значения - список справочника или диалог,
+// иначе - правка значения. CellRect - в координатах содержимого сетки (как в
+// TVarSetDlg.GridCellClick)
 procedure TPropEditorFrame.GridCellClick(const Column: TColumn; const Row: Integer);
 var RowObj: TPropRow; CellR: TRectF;
-    P, PAbs: TPointF;
+    P: TPointF;
     IconSize: Single;
-    RBtn: TRectF;
     DataRow: Integer;
     Pt: TPointF;
 begin
@@ -847,17 +726,11 @@ begin
  ActivePropRow := RowObj;
  UpdateLockButton;
 //
- Pt := FLastMouseDown;
- if (Pt.X = 0) and (Pt.Y = 0) then
-  Pt := FGrid.AbsoluteToLocal(Screen.MousePos);
-  //
-  CellR := FGrid.CellRect(Column.Index, Row);
-  IconSize := 18;
-  RBtn := GetIconRectInValueCell(CellR, 0, IconSize);
-
+ Pt := FGrid.Content.AbsoluteToLocal(FLastMouseDown);
+ CellR := FGrid.CellRect(Column.Index, Row);
+ IconSize := 18;
  if (Pt.X >= (CellR.Right - IconSize)) then
  begin
-  HideValueEdit(False);
   if (RowObj.PickList <> nil) and (RowObj.PickList.Count > 0) then
   begin
    if FPickCombo = nil then Exit;
@@ -876,9 +749,8 @@ begin
    FPickComboRow := DataRow;
    FPickCombo.ItemIndex := FPickCombo.Items.IndexOf(RowObj.Value);
    FPickCombo.Position.X := 0;
-   P := PointF(CellR.Left, FLastMouseDown.Y - (CellR.Height / 2) + 1);
-   PAbs := FGrid.LocalToAbsolute(P);
-   P := Self.AbsoluteToLocal(PAbs);
+  // по высоте - у ячейки строки
+   P := Self.AbsoluteToLocal(FGrid.Content.LocalToAbsolute(PointF(0, CellR.Top)));
    FPickCombo.Position.Y := P.Y;
    FPickCombo.Width := Self.Width;
    FPickCombo.Height := CellR.Height - 2;
@@ -904,7 +776,6 @@ begin
    FGrid.EditorMode := False;
   except
   end;
-  FSuppressEdit := True;
   FGrid.Options := FGrid.Options - [TGridOption.Editing];
  // значение из диалога (цвет, шрифт и др.) - выделенным объектам; '' - отмена.
  // Знаки (PointType, LineType, Block) выбираются в панелях знаков
@@ -920,7 +791,45 @@ begin
  end;
 //
  HidePickCombo;
- ShowValueEdit(Row);
+ StartGridEdit(Row);
+end;
+
+// значение кладется в ячейку только на время правки: ячейки рисует
+// GridDrawColumnCell, а TStringGrid берет текст редактора из Cells. Новое
+// значение - в GridSetValue (OnSetValue вызывается при записи редактора)
+procedure TPropEditorFrame.StartGridEdit(const Row: Integer);
+begin
+ if (FGrid = nil) or (Row < 0) or (Row >= FRows.Count) or (Row >= FGrid.RowCount) then exit;
+ if (FRows[Row] = nil) or FRows[Row].IsSystem then exit;
+ FGridEditRow := Row;
+ FGrid.Cells[1, Row] := FRows[Row].Value;
+ FGrid.ReadOnly := False;
+ FGrid.Options := FGrid.Options + [TGridOption.Editing];
+ FGrid.Col := 1;
+ FGrid.Row := Row;
+ FGrid.EditorMode := True;
+end;
+
+// правка закончена (или отменена): ячейка снова пустая, таблица - только для
+// чтения; после выхода из обработчика - редактор таблицы еще закрывается.
+// Начата правка другой строки (переход на ячейку: GridSelChanged, затем
+// StartGridEdit) - ячейка прежней очищается, правка новой не прерывается
+procedure TPropEditorFrame.GridEditingDone(Sender: TObject; const ACol, ARow: Integer);
+var Row: Integer;
+begin
+ Row := FGridEditRow;
+ if Row < 0 then exit;
+ TThread.ForceQueue(nil, procedure
+ begin
+  if FGrid = nil then exit;
+  if Row < FGrid.RowCount then FGrid.Cells[1, Row] := '';
+  if FGridEditRow = Row then begin
+   FGridEditRow := -1;
+   FGrid.ReadOnly := True;
+   FGrid.Options := FGrid.Options - [TGridOption.Editing];
+  end;
+  FGrid.Repaint;
+ end);
 end;
 
 procedure TPropEditorFrame.GridDrawColumnCell(Sender: TObject; const Canvas: TCanvas; const Column: TColumn;
@@ -964,6 +873,9 @@ begin
   R.Left := R.Left + 6;
   If (Column.Index = 1) and ((RowObj.PickList <> nil) and (RowObj.PickList.Count > 0) or IsPointerType(RowObj.TypeName)) then
    R.Right := R.Right - 18;
+{$IFDEF ANDROID}
+  Canvas.Font.Size := PropGridFontSize;
+{$ENDIF}
   Canvas.FillText(R, S, False, 1, [], TTextAlign.Leading, TTextAlign.Center);
 
   if (Column.Index = 1) and ((RowObj.PickList <> nil) and (RowObj.PickList.Count > 0) or IsPointerType(RowObj.TypeName)) then
@@ -1197,8 +1109,11 @@ begin
  Result := FRows[FGrid.Row];
 end;
 
+// переход на другую ячейку: правка прежней закончена (выход из редактора
+// без изменений OnEditingDone не вызывает)
 procedure TPropEditorFrame.GridSelChanged(Sender: TObject);
 begin
+ if (FGridEditRow >= 0) and ((FGrid.Row <> FGridEditRow) or (FGrid.Col <> 1)) then GridEditingDone(FGrid, 1, FGridEditRow);
  UpdateLockButton;
 end;
 

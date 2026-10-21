@@ -20,27 +20,27 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 2
     end
     inherited btnPlus: TCornerButton
-      TabOrder = 34
+      TabOrder = 37
     end
     inherited ptnMinus: TCornerButton
-      TabOrder = 33
+      TabOrder = 36
     end
     inherited btnPDF: TCornerButton
       CanFocus = False
       Position.X = 170.000000000000000000
-      TabOrder = 32
+      TabOrder = 35
     end
     inherited btnClose: TButton
       Position.X = 1211.000000000000000000
-      TabOrder = 71
+      TabOrder = 74
     end
     inherited Load: TButton
       CanFocus = False
       Position.X = 245.000000000000000000
-      TabOrder = 69
+      TabOrder = 73
     end
     inherited btnDoc: TButton
-      TabOrder = 79
+      TabOrder = 80
     end
     inherited Panel2: TPanel
       Position.X = 1121.000000000000000000
@@ -50,29 +50,30 @@ inherited MainFormDendro: TMainFormDendro
       end
     end
     inherited Panel3: TPanel
-      Position.X = 1048.000000000000000000
+      Position.X = 971.000000000000000000
       TabOrder = 86
       inherited cbOSM: TCheckBox
         CanFocus = False
       end
     end
     inherited btnGPKGB: TButton
-      TabOrder = 78
+      TabOrder = 79
     end
     inherited pnlView: TPanel
-      Position.X = 932.000000000000000000
-      TabOrder = 114
+      Position.X = 855.000000000000000000
+      TabOrder = 116
     end
     inherited LabelVer: TLabel
       Size.Width = 30.000000000000000000
-      TabOrder = 141
+      TabOrder = 144
     end
     inherited lMas: TLabel
-      TabOrder = 113
+      TabOrder = 118
     end
     object btnSave: TCornerButton
       Align = Left
       CanFocus = False
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 10
       Margins.Left = 5.000000000000000000
@@ -95,6 +96,7 @@ inherited MainFormDendro: TMainFormDendro
     object btnSaveAs: TCornerButton
       Align = Left
       CanFocus = False
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 12
       Margins.Left = 5.000000000000000000
@@ -117,37 +119,37 @@ inherited MainFormDendro: TMainFormDendro
   end
   inherited PanelPainter: TPanel
     Size.Width = 1231.000000000000000000
-    Size.Height = 401.000000000000000000
+    Size.Height = 393.000000000000000000
     inherited Painter: TPaintBox
       Size.Width = 762.000000000000000000
       Size.Height = 395.000000000000000000
     end
     inherited SkPainter: TSkPaintBox
       Size.Width = 763.000000000000000000
-      Size.Height = 401.000000000000000000
+      Size.Height = 393.000000000000000000
     end
     inherited instPanel: TPanel
       Position.X = 963.000000000000000000
-      Size.Height = 401.000000000000000000
+      Size.Height = 393.000000000000000000
       inherited InstHost: TLayout
-        Size.Height = 268.000000000000000000
+        Size.Height = 260.000000000000000000
       end
       inherited SplitterHost2: TSplitter
-        Position.Y = 268.000000000000000000
+        Position.Y = 260.000000000000000000
       end
       inherited InstHost2: TLayout
-        Position.Y = 274.000000000000000000
+        Position.Y = 266.000000000000000000
       end
     end
     inherited SplitterHost: TSplitter
       Position.X = 957.000000000000000000
-      Size.Height = 401.000000000000000000
+      Size.Height = 393.000000000000000000
     end
     inherited SplitterProps: TSplitter
-      Size.Height = 401.000000000000000000
+      Size.Height = 393.000000000000000000
     end
     inherited instProperties: TLayout
-      Size.Height = 401.000000000000000000
+      Size.Height = 393.000000000000000000
     end
   end
   inherited StatusBar: TStatusBar
@@ -334,126 +336,99 @@ inherited MainFormDendro: TMainFormDendro
   inherited ToolBarOZN: TToolBar
     Position.Y = 73.000000000000000000
     Size.Width = 1231.000000000000000000
-    Size.Height = 40.000000000000000000
     inherited sbSetD: TSpeedButton
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbSetE: TSpeedButton
       Position.X = 41.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbSetK: TSpeedButton
       Position.X = 76.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited cbOnlyAttr: TCheckBox
       Margins.Left = 8.000000000000000000
       Position.X = 119.000000000000000000
       Size.Width = 20.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbGD: TSpeedButton
       Position.X = 139.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
     end
     inherited sbSetG: TSpeedButton
       Position.X = 174.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbGI: TSpeedButton
       Position.X = 209.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
     end
     inherited sbGC: TSpeedButton
       Position.X = 244.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
     end
     inherited sbGR: TSpeedButton
       Position.X = 279.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
     end
     inherited sbNum: TSpeedButton
       Position.X = 314.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbNumUCH: TSpeedButton
       Position.X = 349.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbNumUchDropDown: TSpeedButton
       Position.X = 384.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited dnrPerp: TSpeedButton
       Enabled = False
       Position.X = 412.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited dnrZas: TSpeedButton
       Enabled = False
       Position.X = 447.000000000000000000
       Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sbP2P: TSpeedButton
       Position.X = 482.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sSpeedButton40: TSpeedButton
       Position.X = 507.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited sSpeedButton39: TSpeedButton
       Position.X = 532.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited UpDown1: TLayout
       Position.X = 559.000000000000000000
-      Size.Height = 40.000000000000000000
-      inherited UpDown1Down: TButton
-        Position.Y = 15.000000000000000000
-      end
     end
     inherited sSpeedButton42: TSpeedButton
       Margins.Left = 4.000000000000000000
       Position.X = 581.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 40.000000000000000000
       ShowHint = False
     end
     inherited UpDown2: TLayout
       Position.X = 608.000000000000000000
-      Size.Height = 40.000000000000000000
-      inherited UpDown2Down: TButton
-        Position.Y = 15.000000000000000000
-      end
     end
     inherited SpeedButton6: TSpeedButton
       ShowHint = False
@@ -464,62 +439,8 @@ inherited MainFormDendro: TMainFormDendro
       ShowHint = False
       Visible = False
     end
-    inherited sbOrderProperties: TSpeedButton
-      Margins.Left = 10.000000000000000000
-      Position.X = 636.000000000000000000
-      Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbAutoDT: TSpeedButton
-      Position.X = 671.000000000000000000
-      Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbAutoZN: TSpeedButton
-      Position.X = 706.000000000000000000
-      Size.Width = 35.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbFLKZN: TSpeedButton
-      Position.X = 741.000000000000000000
-      Size.Width = 55.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbAttrZN: TSpeedButton
-      Position.X = 796.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbFindZN: TSpeedButton
-      Position.X = 876.000000000000000000
-      Size.Width = 55.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbExportCSV: TSpeedButton
-      Position.X = 931.000000000000000000
-      Size.Width = 56.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sSpeedButton36: TSpeedButton
-      Position.X = 987.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbStatDelete: TSpeedButton
-      Position.X = 1067.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
-    end
-    inherited sbStatRestore: TSpeedButton
-      Position.X = 1095.000000000000000000
-      Size.Height = 40.000000000000000000
-      ShowHint = False
+    inherited Layout1: TLayout
+      Position.X = 626.000000000000000000
     end
   end
   inherited ImageList1: TImageList

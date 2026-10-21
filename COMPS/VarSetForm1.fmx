@@ -30,6 +30,7 @@ inherited VarSetDlg1: TVarSetDlg1
     Visible = False
   end
   object Button5: TButton
+    HelpKeyword = 'ui:android:font-4'
     Position.X = 487.000000000000000000
     Position.Y = 90.000000000000000000
     Size.Width = 75.000000000000000000
@@ -58,6 +59,7 @@ inherited VarSetDlg1: TVarSetDlg1
     OnClick = sbLastNumberClick
   end
   object hGrid: TStringGrid
+    HelpKeyword = 'ui:android:font-4'
     CanFocus = True
     ClipChildren = True
     Position.X = 588.000000000000000000
@@ -97,6 +99,7 @@ inherited VarSetDlg1: TVarSetDlg1
     end
   end
   object cbNotHistory: TCheckBox
+    HelpKeyword = 'ui:android:font-2 ui:android:check'
     Position.X = 594.000000000000000000
     Position.Y = 326.000000000000000000
     Size.Width = 160.000000000000000000

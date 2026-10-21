@@ -32,6 +32,7 @@ inherited MainFormSkia: TMainFormSkia
       OnMouseLeave = StatusButtonLeave
     end
     object btnPDF: TCornerButton
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 5
       Position.X = 79.000000000000000000
@@ -49,6 +50,7 @@ inherited MainFormSkia: TMainFormSkia
       OnMouseLeave = StatusButtonLeave
     end
     object btnClose: TButton
+      HelpKeyword = 'ui:android:font-4'
       Align = Right
       Images = ImageList1
       ImageIndex = 6
@@ -92,6 +94,7 @@ inherited MainFormSkia: TMainFormSkia
   inherited StatusBar: TStatusBar
     Size.Width = 875.000000000000000000
     object PanelXY: TLabel
+      HelpKeyword = 'ui:android:font-4'
       Align = Left
       Margins.Left = 4.000000000000000000
       Margins.Right = 4.000000000000000000
@@ -246,6 +249,7 @@ inherited MainFormSkia: TMainFormSkia
       OnMouseLeave = StatusButtonLeave
     end
     object pMas: TLabel
+      HelpKeyword = 'ui:android:font-4'
       Align = Right
       Margins.Left = 4.000000000000000000
       Margins.Right = 4.000000000000000000
@@ -257,6 +261,7 @@ inherited MainFormSkia: TMainFormSkia
       TabOrder = 2
     end
     object PanelHint: TLabel
+      HelpKeyword = 'ui:android:font-4'
       Align = Client
       StyledSettings = [Family, Size, FontColor]
       Margins.Left = 4.000000000000000000

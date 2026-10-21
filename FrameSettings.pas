@@ -181,6 +181,10 @@ const MarkerCols = 3;
 constructor TSettingsFrame.Create(AOwner: TComponent);
 begin
  inherited Create(AOwner);
+// у TListBox HelpKeyword в дизайнере не опубликован - пометка кодом; правила
+// AppUI заново (в Loaded фрейма они уже прошли без нее)
+ lbMarkerNames.HelpKeyword := 'ui:android:font-4';
+ ApplyUIRules(Self);
  FMarkerIndex := -1;
  ShowPage(GReadInteger('SettingsFrame_NotePage', 0));
 end;

@@ -1,10 +1,10 @@
 inherited MainFormMouseObj: TMainFormMouseObj
   Caption = 'MainFormSkia1'
-  ClientWidth = 919
+  ClientWidth = 1298
   OnDestroy = FormDestroy
   DesignerMasterStyle = 0
   inherited Panel1: TPanel
-    Size.Width = 919.000000000000000000
+    Size.Width = 1298.000000000000000000
     inherited btnOpen: TCornerButton
       Align = Left
       Margins.Left = 10.000000000000000000
@@ -53,11 +53,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     inherited btnClose: TButton
       Align = MostRight
-      Position.X = 899.000000000000000000
+      Position.X = 1278.000000000000000000
       TabOrder = 75
     end
     object Load: TButton
       Align = Left
+      HelpKeyword = 'ui:android:font-4'
       Margins.Left = 15.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
@@ -74,6 +75,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       OnMouseLeave = StatusButtonLeave
     end
     object btnDoc: TButton
+      HelpKeyword = 'ui:android:font-4'
       Position.X = 377.000000000000000000
       Position.Y = 8.000000000000000000
       Size.Width = 83.000000000000000000
@@ -89,13 +91,14 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object Panel2: TPanel
       Align = Right
-      Position.X = 809.000000000000000000
+      Position.X = 1188.000000000000000000
       Size.Width = 90.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 91
       object btnEsc: TButton
         Anchors = [akTop, akRight]
+        HelpKeyword = 'ui:android:font-4'
         Images = imgEsc
         ImageIndex = 0
         Position.X = 9.000000000000000000
@@ -113,12 +116,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object Panel3: TPanel
       Align = Right
-      Position.X = 736.000000000000000000
+      Position.X = 1115.000000000000000000
       Size.Width = 73.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 92
       object cbOSM: TCheckBox
+        HelpKeyword = 'ui:android:font-2 ui:android:check'
         Position.X = 9.000000000000000000
         Position.Y = 6.000000000000000000
         Size.Width = 58.000000000000000000
@@ -130,6 +134,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       end
     end
     object btnGPKGB: TButton
+      HelpKeyword = 'ui:android:font-4'
       Position.X = 295.000000000000000000
       Position.Y = 8.000000000000000000
       Size.Width = 77.000000000000000000
@@ -145,7 +150,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object pnlView: TPanel
       Align = Right
-      Position.X = 620.000000000000000000
+      Position.X = 999.000000000000000000
       Size.Width = 116.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
@@ -234,6 +239,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Left
       AutoSize = True
       StyledSettings = [Family, Size, Style]
+      HelpKeyword = 'ui:android:font-4'
       Margins.Left = 10.000000000000000000
       Position.X = 10.000000000000000000
       Size.Width = 30.000000000000000000
@@ -246,12 +252,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
   end
   inherited PanelPainter: TPanel
-    Size.Width = 919.000000000000000000
+    Size.Width = 1298.000000000000000000
     Size.Height = 387.000000000000000000
     inherited SkPainter: TSkPaintBox
       Margins.Left = -1.000000000000000000
       Padding.Left = -1.000000000000000000
-      Size.Width = 451.000000000000000000
+      Size.Width = 830.000000000000000000
       Size.Height = 387.000000000000000000
       inherited Popup1: TPopup
         StyleLookup = 'Popup1Style1'
@@ -259,7 +265,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object instPanel: TPanel
       Align = Right
-      Position.X = 651.000000000000000000
+      Position.X = 1030.000000000000000000
       Size.Width = 268.000000000000000000
       Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
@@ -293,7 +299,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Right
       Cursor = crHSplit
       MinSize = 20.000000000000000000
-      Position.X = 645.000000000000000000
+      Position.X = 1024.000000000000000000
       Size.Width = 6.000000000000000000
       Size.Height = 387.000000000000000000
       Size.PlatformDefault = False
@@ -316,7 +322,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
   end
   inherited StatusBar: TStatusBar
-    Size.Width = 919.000000000000000000
+    Size.Width = 1298.000000000000000000
     inherited ResSpeedBtn59: TSpeedButton
       Size.Height = 21.000000000000000000
     end
@@ -339,17 +345,17 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Height = 21.000000000000000000
     end
     inherited pMas: TLabel
-      Position.X = 805.000000000000000000
+      Position.X = 1184.000000000000000000
     end
     inherited PanelHint: TLabel
-      Size.Width = 343.000000000000000000
+      Size.Width = 722.000000000000000000
       TextSettings.Font.StyleExt = {00070000000000000004000000}
     end
   end
   object ToolBarPaint: TToolBar [3]
     Margins.Right = 2.000000000000000000
     Position.Y = 33.000000000000000000
-    Size.Width = 917.000000000000000000
+    Size.Width = 1296.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 21
@@ -358,7 +364,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 0
       Margins.Left = 6.000000000000000000
@@ -378,7 +384,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 10
       Margins.Left = 1.000000000000000000
@@ -398,7 +404,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 1
       Margins.Left = 1.000000000000000000
@@ -418,7 +424,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 9
       Margins.Left = 1.000000000000000000
@@ -438,7 +444,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 6
       Margins.Left = 1.000000000000000000
@@ -458,7 +464,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 5
       Margins.Left = 1.000000000000000000
@@ -478,7 +484,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 7
       Margins.Left = 1.000000000000000000
@@ -498,7 +504,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 8
       Margins.Left = 1.000000000000000000
@@ -518,7 +524,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 2
       Margins.Left = 1.000000000000000000
@@ -538,7 +544,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 3
       Margins.Left = 1.000000000000000000
@@ -558,7 +564,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 4
       Margins.Left = 1.000000000000000000
@@ -578,7 +584,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 11
       Margins.Left = 1.000000000000000000
@@ -603,11 +609,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Tag = 1
       StaysPressed = True
       Align = Right
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 13
       Margins.Right = 2.000000000000000000
-      Position.X = 863.000000000000000000
+      Position.X = 1242.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -626,12 +632,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnInstPoint: TSpeedButton
       StaysPressed = True
       Align = Right
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 12
       Margins.Left = 2.000000000000000000
       Margins.Right = 2.000000000000000000
-      Position.X = 836.000000000000000000
+      Position.X = 1215.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -651,11 +657,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Tag = 2
       StaysPressed = True
       Align = Right
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 14
       Margins.Right = 2.000000000000000000
-      Position.X = 890.000000000000000000
+      Position.X = 1269.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -674,7 +680,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     inline LayerFrame1: TLayerFrame
       Align = Right
       Margins.Right = 2.000000000000000000
-      Position.X = 423.000000000000000000
+      Position.X = 802.000000000000000000
       Size.Width = 382.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -710,7 +716,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Left
       GroupName = 'PaintTools'
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 16
       Margins.Left = 6.000000000000000000
@@ -735,11 +741,11 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Tag = 500
       StaysPressed = True
       Align = Right
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 17
       Margins.Right = 4.000000000000000000
-      Position.X = 394.000000000000000000
+      Position.X = 773.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -760,12 +766,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
       StaysPressed = True
       Align = Right
       Enabled = False
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Images = ToolImageList
       ImageIndex = 18
       Margins.Top = 2.000000000000000000
       Margins.Right = 4.000000000000000000
-      Position.X = 365.000000000000000000
+      Position.X = 744.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 46.000000000000000000
@@ -785,13 +791,13 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object btnQuickLayers: TSpeedButton
       StaysPressed = True
       Align = Right
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=7'
       Hint = #1041#1099#1089#1090#1088#1099#1077' '#1089#1083#1086#1080
       Images = ToolImageList
       ImageIndex = 19
       Margins.Top = 2.000000000000000000
       Margins.Right = 2.000000000000000000
-      Position.X = 807.000000000000000000
+      Position.X = 1186.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 25.000000000000000000
       Size.Height = 46.000000000000000000
@@ -811,14 +817,14 @@ inherited MainFormMouseObj: TMainFormMouseObj
   end
   object ToolBarOZN: TToolBar [4]
     Position.Y = 81.000000000000000000
-    Size.Width = 919.000000000000000000
+    Size.Width = 1298.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 27
     object sbSetD: TSpeedButton
       Tag = 10
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=5'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1083#1080#1089#1090#1074#1077#1085#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072
       Images = ImageListOZN
       ImageIndex = 0
@@ -838,7 +844,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbSetE: TSpeedButton
       Tag = 11
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=5'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1093#1074#1086#1081#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072
       Images = ImageListOZN
       ImageIndex = 1
@@ -857,7 +863,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbSetK: TSpeedButton
       Tag = 12
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=5'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1086#1076#1080#1085#1086#1095#1085#1086#1075#1086' '#1082#1091#1089#1090#1072#1088#1085#1080#1082#1072
       Images = ImageListOZN
       ImageIndex = 2
@@ -875,20 +881,21 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object cbOnlyAttr: TCheckBox
       Align = Left
+      HelpKeyword = 'ui:android:font-2 ui:android:check'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1090#1086#1083#1100#1082#1086' '#1090#1086#1095#1077#1095#1085#1086#1075#1086' '#1086#1073#1086#1079#1085#1072#1095#1077#1085#1080#1103' ('#1073#1077#1079' '#1088#1080#1089#1086#1074#1072#1085#1080#1103' '#1087#1088#1080#1084#1080#1090#1080#1074#1072')'
       Margins.Left = 4.000000000000000000
       Position.X = 130.000000000000000000
       Size.Width = 24.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 2
+      TabOrder = 3
       ParentShowHint = False
       ShowHint = True
     end
     object sbGD: TSpeedButton
       Tag = 1
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Images = ImageListOZN
       ImageIndex = 3
       Position.X = 154.000000000000000000
@@ -903,7 +910,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object sbSetG: TSpeedButton
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1075#1088#1091#1087#1087#1099' '#1082#1091#1089#1090#1072#1088#1085#1080#1082#1086#1074'/'#1076#1077#1088#1077#1074#1100#1077#1074', '#1078#1080#1074#1086#1081' '#1080#1079#1075#1086#1088#1086#1076#1080
       Images = ImageListOZN
       ImageIndex = 4
@@ -922,7 +929,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbGI: TSpeedButton
       Tag = 2
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Images = ImageListOZN
       ImageIndex = 5
       Position.X = 234.000000000000000000
@@ -938,7 +945,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbGC: TSpeedButton
       Tag = 3
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Images = ImageListOZN
       ImageIndex = 6
       Position.X = 274.000000000000000000
@@ -954,7 +961,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbGR: TSpeedButton
       Tag = 4
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Images = ImageListOZN
       ImageIndex = 7
       Position.X = 314.000000000000000000
@@ -970,7 +977,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbNum: TSpeedButton
       Tag = 10
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1048#1079#1084#1077#1085#1077#1085#1080#1077'/'#1091#1089#1090#1072#1085#1086#1074#1082#1072' '#1085#1091#1084#1077#1088#1072#1094#1080#1080' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1086#1075#1086' '#1076#1077#1088#1077#1074#1072'/'#1082#1091#1089#1090#1072#1088#1085#1080#1082#1072'/'#1075 +
         #1088#1091#1087#1087#1099
@@ -991,7 +998,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbNumUCH: TSpeedButton
       Tag = 14
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1059#1089#1090#1072#1085#1072#1074#1083#1080#1074#1072#1077#1084' '#1085#1086#1084#1077#1088' '#1075#1072#1079#1086#1085#1072' '#1076#1083#1103' '#1074#1077#1076#1086#1084#1086#1089#1090#1080' ('#1076#1083#1103' '#1086#1073#1098#1077#1082#1090#1086#1074' 1-2 '#1082#1072#1090#1077#1075 +
         #1086#1088#1080#1081' - '#8470' '#1091#1095#1072#1089#1090#1082#1072')'
@@ -1012,7 +1019,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbNumUchDropDown: TSpeedButton
       Tag = 14
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=5'
       Hint = 
         #1059#1089#1090#1072#1085#1072#1074#1083#1080#1074#1072#1077#1084' '#1085#1086#1084#1077#1088' '#1075#1072#1079#1086#1085#1072' '#1076#1083#1103' '#1074#1077#1076#1086#1084#1086#1089#1090#1080' ('#1076#1083#1103' '#1086#1073#1098#1077#1082#1090#1086#1074' 1-2 '#1082#1072#1090#1077#1075 +
         #1086#1088#1080#1081' - '#8470' '#1091#1095#1072#1089#1090#1082#1072')'
@@ -1032,7 +1039,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object dnrPerp: TSpeedButton
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1047#1053' '#1084#1077#1090#1086#1076#1086#1084' '#1087#1077#1088#1087#1077#1085#1076#1080#1082#1091#1083#1103#1088#1086#1074
       Images = ImageListOZN
       ImageIndex = 11
@@ -1050,7 +1057,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object dnrZas: TSpeedButton
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = #1059#1089#1090#1085#1072#1086#1074#1082#1072' '#1047#1053' '#1084#1077#1090#1086#1076#1086#1084' '#1086#1073#1088#1072#1090#1085#1086#1081' '#1079#1072#1089#1077#1095#1082#1080
       Images = ImageListOZN
       ImageIndex = 12
@@ -1069,7 +1076,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sbP2P: TSpeedButton
       Tag = 101
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
         #1079#1099#1074#1072#1077#1090#1089#1103' '#1076#1074#1077' '#1090#1086#1095#1082#1080')'
@@ -1090,7 +1097,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sSpeedButton40: TSpeedButton
       Tag = 102
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1087#1086#1083 +
         #1091#1072#1072#1074#1090#1086#1084#1072#1090')'
@@ -1111,7 +1118,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sSpeedButton39: TSpeedButton
       Tag = 103
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
         #1079#1099#1074#1072#1077#1090#1089#1103' '#1086#1076#1085#1072' '#1090#1086#1095#1082#1072' '#1080' '#1074#1099#1073#1080#1088#1072#1077#1090#1089#1103' '#1085#1072#1087#1088#1072#1074#1083#1077#1085#1080#1077' '#1074' '#1091#1082#1072#1079#1072#1085#1085#1086#1084' '#1088#1072#1076#1080#1091#1089#1077 +
@@ -1138,7 +1145,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 16.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 1
+      TabOrder = 2
       object UpDown1Up: TButton
         Tag = 1
         Align = Top
@@ -1162,6 +1169,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Tag = -1
         Align = Bottom
         StyledSettings = [Family, Style, FontColor]
+        HelpKeyword = 'ui:android:font-4'
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1088#1091#1095#1085#1099#1093' '#1084#1077#1090#1086#1076#1086#1074
         Margins.Bottom = 5.000000000000000000
         Position.Y = 23.000000000000000000
@@ -1181,7 +1189,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     object sSpeedButton42: TSpeedButton
       Tag = 104
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
       Hint = 
         #1055#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1077' '#1074#1099#1073#1088#1072#1085#1085'juj '#1047#1053' '#1082' '#1091#1082#1072#1079#1072#1085#1085#1086#1084#1091' '#1090#1086#1087#1086#1075#1088#1072#1092#1080#1095#1077#1089#1082#1086#1084#1091' '#1047#1053' ('#1091#1082#1072 +
         #1079#1099#1074#1072#1077#1090#1089#1103' '#1086#1076#1085#1072' '#1090#1086#1095#1082#1072' '#1080' '#1074#1099#1073#1080#1088#1072#1077#1090#1089#1103' '#1085#1072#1087#1088#1072#1074#1083#1077#1085#1080#1077' '#1074' '#1091#1082#1072#1079#1072#1085#1085#1086#1084' '#1088#1072#1076#1080#1091#1089#1077 +
@@ -1232,6 +1240,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Tag = -1
         Align = Bottom
         StyledSettings = [Family, Style, FontColor]
+        HelpKeyword = 'ui:android:font-4'
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1103
         Margins.Bottom = 5.000000000000000000
         Position.Y = 23.000000000000000000
@@ -1250,7 +1259,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object SpeedButton6: TSpeedButton
       Align = Left
-      HelpKeyword = 'ui:client'
+      HelpKeyword = 'ui:client ui:android:fill ui:android:margin=1'
       Hint = #1054#1090#1082#1072#1090
       Images = ImageListOZN
       ImageIndex = 17
@@ -1283,185 +1292,224 @@ inherited MainFormMouseObj: TMainFormMouseObj
       OnMouseLeave = StatusButtonLeave
       OnPainting = FlatButtonPainting
     end
-    object sbOrderProperties: TSpeedButton
+    object Layout1: TLayout
       Align = Left
-      HelpKeyword = 'ui:client'
-      Hint = #1057#1086#1088#1090#1080#1088#1086#1074#1082#1072' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1047#1053' '#1087#1086' '#1089#1087#1088#1072#1074#1086#1095#1085#1080#1082#1091' Names.txt'
-      Images = ImageListOZN
-      ImageIndex = 18
       Position.X = 762.000000000000000000
-      Size.Width = 28.000000000000000000
+      Size.Width = 555.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbAutoDT: TSpeedButton
-      Align = Left
-      HelpKeyword = 'ui:client'
-      Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1044#1058
-      Images = ImageListOZN
-      ImageIndex = 19
-      Position.X = 790.000000000000000000
-      Size.Width = 28.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbAutoZN: TSpeedButton
-      Align = Left
-      HelpKeyword = 'ui:client'
-      Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1047#1053
-      Images = ImageListOZN
-      ImageIndex = 20
-      Position.X = 818.000000000000000000
-      Size.Width = 28.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbFLKZN: TSpeedButton
-      Align = Left
-      Hint = #1060#1051#1050' '#1076#1083#1103' '#1047#1053
-      Images = ImageListOZN
-      ImageIndex = 21
-      Position.X = 846.000000000000000000
-      Size.Width = 80.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      Text = #1060#1051#1050
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbAttrZN: TSpeedButton
-      Align = Left
-      Hint = #1055#1088#1086#1074#1077#1088#1082#1072' '#1085#1072' '#1089#1086#1086#1090#1074#1077#1090#1089#1090#1074#1080#1077' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1074' '#1075#1088#1091#1087#1087#1072#1093' '#1047#1053
-      Images = ImageListOZN
-      ImageIndex = 22
-      Position.X = 926.000000000000000000
-      Size.Width = 80.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      Text = #1040#1090#1088#1080#1073#1091#1090#1099
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbFindZN: TSpeedButton
-      Align = Left
-      Hint = #1055#1086#1080#1089#1082': '#1088#1072#1089#1090#1077#1085#1080#1103' '#1073#1077#1079' '#1075#1072#1079#1086#1085#1086#1074', '#1076#1091#1073#1083#1080#1082#1072#1090#1099' '#1088#1072#1089#1090#1077#1085#1080#1081
-      Images = ImageListOZN
-      ImageIndex = 23
-      Position.X = 1006.000000000000000000
-      Size.Width = 80.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      Text = #1055#1086#1080#1089#1082
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbExportCSV: TSpeedButton
-      Align = Left
-      Hint = #1048#1084#1087#1086#1088#1090'/'#1101#1082#1089#1087#1086#1088#1090' '#1087#1077#1088#1077#1095#1077#1090#1082#1080', '#1101#1082#1089#1087#1086#1088#1090' '#1092#1086#1090#1086#1092#1080#1082#1089#1072#1094#1080#1080' '#1080' '#1090#1088#1077#1082#1072' (CSV)'
-      Images = ImageListOZN
-      ImageIndex = 24
-      Position.X = 1086.000000000000000000
-      Size.Width = 80.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      Text = 'CSV'
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sSpeedButton36: TSpeedButton
-      Align = Left
-      Hint = #1040#1090#1088#1080#1073#1091#1090#1099' '#1075#1072#1079#1086#1085#1086#1074' '#1080#1079' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1047#1053
-      Images = ImageListOZN
-      ImageIndex = 25
-      Position.X = 1166.000000000000000000
-      Size.Width = 80.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      Text = #1040#1090#1088#1080#1073#1091#1090#1099
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbStatDelete: TSpeedButton
-      Align = Left
-      HelpKeyword = 'ui:client'
-      Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
-      Images = ImageListOZN
-      ImageIndex = 26
-      Position.X = 1246.000000000000000000
-      Size.Width = 28.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
-    end
-    object sbStatRestore: TSpeedButton
-      Align = Left
-      HelpKeyword = 'ui:client'
-      Hint = #1057#1085#1103#1090#1080#1077' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
-      Images = ImageListOZN
-      ImageIndex = 27
-      Position.X = 1274.000000000000000000
-      Size.Width = 28.000000000000000000
-      Size.Height = 48.000000000000000000
-      Size.PlatformDefault = False
-      ParentShowHint = False
-      ShowHint = True
-      TextSettings.Trimming = None
-      OnClick = ToolButtonClick
-      OnMouseEnter = StatusButtonEnter
-      OnMouseLeave = StatusButtonLeave
-      OnPainting = FlatButtonPainting
+      TabOrder = 1
+      object Layout2: TLayout
+        Align = MostTop
+        Margins.Left = 15.000000000000000000
+        Position.X = 15.000000000000000000
+        Size.Width = 540.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object sbOrderProperties: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
+          HelpType = htKeyword
+          Hint = #1057#1086#1088#1090#1080#1088#1086#1074#1082#1072' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1047#1053' '#1087#1086' '#1089#1087#1088#1072#1074#1086#1095#1085#1080#1082#1091' Names.txt'
+          Images = ImageListOZN
+          ImageIndex = 18
+          Size.Width = 24.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbFLKZN: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:android:left ui:android:margin=2 ui:android:font-2'
+          Hint = #1060#1051#1050' '#1076#1083#1103' '#1047#1053
+          Images = ImageListOZN
+          ImageIndex = 21
+          Margins.Left = 35.000000000000000000
+          Position.X = 59.000000000000000000
+          Size.Width = 57.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          Text = #1060#1051#1050
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbFindZN: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:android:left ui:android:margin=2 ui:android:font-2'
+          Hint = #1055#1086#1080#1089#1082': '#1088#1072#1089#1090#1077#1085#1080#1103' '#1073#1077#1079' '#1075#1072#1079#1086#1085#1086#1074', '#1076#1091#1073#1083#1080#1082#1072#1090#1099' '#1088#1072#1089#1090#1077#1085#1080#1081
+          Images = ImageListOZN
+          ImageIndex = 23
+          Margins.Left = 18.000000000000000000
+          Position.X = 134.000000000000000000
+          Size.Width = 62.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          Text = #1055#1086#1080#1089#1082
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbExportCSV: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:android:left ui:android:margin=2 ui:android:font-2'
+          Hint = #1048#1084#1087#1086#1088#1090'/'#1101#1082#1089#1087#1086#1088#1090' '#1087#1077#1088#1077#1095#1077#1090#1082#1080', '#1101#1082#1089#1087#1086#1088#1090' '#1092#1086#1090#1086#1092#1080#1082#1089#1072#1094#1080#1080' '#1080' '#1090#1088#1077#1082#1072' (CSV)'
+          Images = ImageListOZN
+          ImageIndex = 24
+          Margins.Left = 17.000000000000000000
+          Position.X = 213.000000000000000000
+          Size.Width = 56.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          Text = 'CSV'
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sSpeedButton36: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:android:left ui:android:margin=2 ui:android:font-2'
+          Hint = #1040#1090#1088#1080#1073#1091#1090#1099' '#1075#1072#1079#1086#1085#1086#1074' '#1080#1079' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1047#1053
+          Images = ImageListOZN
+          ImageIndex = 25
+          Position.X = 269.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          Text = #1040#1090#1088#1080#1073#1091#1090#1099
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+      end
+      object Layout3: TLayout
+        Align = MostTop
+        Margins.Left = 15.000000000000000000
+        Position.X = 15.000000000000000000
+        Position.Y = 24.000000000000000000
+        Size.Width = 540.000000000000000000
+        Size.Height = 24.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        object sbAutoDT: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
+          HelpType = htKeyword
+          Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1044#1058
+          Images = ImageListOZN
+          ImageIndex = 19
+          Size.Width = 24.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbAutoZN: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:client ui:android:fill ui:android:margin=3'
+          HelpType = htKeyword
+          Hint = #1040#1074#1090#1086#1084#1072#1090#1080#1079#1072#1094#1080#1103' '#1047#1053
+          Images = ImageListOZN
+          ImageIndex = 20
+          Margins.Left = 3.000000000000000000
+          Position.X = 27.000000000000000000
+          Size.Width = 24.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbAttrZN: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:android:left ui:android:margin=2 ui:android:font-2'
+          Hint = #1055#1088#1086#1074#1077#1088#1082#1072' '#1085#1072' '#1089#1086#1086#1090#1074#1077#1090#1089#1090#1074#1080#1077' '#1072#1090#1088#1080#1073#1091#1090#1086#1074' '#1074' '#1075#1088#1091#1087#1087#1072#1093' '#1047#1053
+          Images = ImageListOZN
+          ImageIndex = 22
+          Margins.Left = 12.000000000000000000
+          Position.X = 63.000000000000000000
+          Size.Width = 80.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          Text = #1040#1090#1088#1080#1073#1091#1090#1099
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbStatDelete: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:client ui:android:fill ui:android:margin=1'
+          Hint = #1059#1089#1090#1072#1085#1086#1074#1082#1072' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+          Images = ImageListOZN
+          ImageIndex = 26
+          Margins.Left = 70.000000000000000000
+          Position.X = 213.000000000000000000
+          Size.Width = 20.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+        object sbStatRestore: TSpeedButton
+          Align = Left
+          HelpKeyword = 'ui:client ui:android:fill ui:android:margin=1'
+          Hint = #1057#1085#1103#1090#1080#1077' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
+          Images = ImageListOZN
+          ImageIndex = 27
+          Position.X = 233.000000000000000000
+          Size.Width = 24.000000000000000000
+          Size.Height = 24.000000000000000000
+          Size.PlatformDefault = False
+          ParentShowHint = False
+          ShowHint = True
+          TextSettings.Trimming = None
+          OnClick = ToolButtonClick
+          OnMouseEnter = StatusButtonEnter
+          OnMouseLeave = StatusButtonLeave
+          OnPainting = FlatButtonPainting
+        end
+      end
     end
   end
   inherited ImageList1: TImageList

@@ -62,7 +62,8 @@ type
    // нужна точка нажатия (VarSetDlg - значок «…»), переопределяет
     procedure HostMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); virtual;
   public
-   // нажатие на форме при открытом на ней диалоге-панели - и диалогу (HostMouseDown)
+   // нажатие на форме при открытом на ней диалоге-панели - и диалогу
+   // (HostMouseDown); фреймам формы с WatchFormMouse - FormMouseDown
     procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
    // закрыть диалог с результатом - вместо ModalResult := R: у формы на панели
    // (Android) установка ModalResult ее не закрывает
@@ -80,13 +81,20 @@ type
     FUIMessageId: Integer;
     FOpaque: Boolean;
     FBackground: TRectangle;
+    FWatchFormMouse: Boolean;
     procedure UIMetricsChanged(const Sender: TObject; const M: TMessage);
     procedure SetOpaque(const Value: Boolean);
     procedure UpdateBackground;
+    procedure SetWatchFormMouse(const Value: Boolean);
   protected
     procedure Loaded; override;
    // размеры и фон UI - элементам фрейма
     procedure ApplyUI; virtual;
+   // нажатие на форме, где лежит фрейм (при WatchFormMouse): MouseDown
+   // элементов фрейма вызывается не всегда (у TStringGrid нажатие получает
+   // представление сетки). Координаты - формы (= абсолютные элементов фрейма)
+    procedure FormMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); virtual;
+    property WatchFormMouse: Boolean read FWatchFormMouse write SetWatchFormMouse;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -157,6 +165,8 @@ type
   end;
 
 var GDialogs: TList<TDialogHost>;
+   // фреймы, получающие нажатия своей формы (TFrame.WatchFormMouse)
+    GMouseFrames: TList<TFrame>;
 
 function DialogStack: TList<TDialogHost>;
 begin
@@ -465,11 +475,15 @@ end;
 
 procedure TForm.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 var H: TDialogHost;
+    F: TFrame;
 begin
  if DialogOpen then begin
   H := GDialogs.Last;
   if (H.FHostForm = Self) and (H.FDialog <> Self) then H.FDialog.HostMouseDown(Button, Shift, X, Y);
  end;
+ if GMouseFrames <> nil then
+  for F in GMouseFrames.ToArray do
+   if (F.Root <> nil) and (F.Root.GetObject = Self) then F.FormMouseDown(Button, Shift, X, Y);
  inherited;
 end;
 
@@ -494,8 +508,24 @@ end;
 
 destructor TFrame.Destroy;
 begin
+ WatchFormMouse := False;
  TMessageManager.DefaultManager.Unsubscribe(TUIMetricsChangedMessage, FUIMessageId);
  inherited;
+end;
+
+procedure TFrame.SetWatchFormMouse(const Value: Boolean);
+begin
+ if FWatchFormMouse = Value then exit;
+ FWatchFormMouse := Value;
+ if Value then begin
+  if GMouseFrames = nil then GMouseFrames := TList<TFrame>.Create;
+  GMouseFrames.Add(Self);
+ end else
+ if GMouseFrames <> nil then GMouseFrames.Remove(Self);
+end;
+
+procedure TFrame.FormMouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
 end;
 
 procedure TFrame.Loaded;
@@ -547,4 +577,5 @@ end;
 initialization
 finalization
  FreeAndNil(GDialogs);
+ FreeAndNil(GMouseFrames);
 end.
