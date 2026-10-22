@@ -135,6 +135,7 @@ type
     procedure btnQuickLayersClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
+   FNoDefaultMouse: Integer;
    FPropEditor: TPropEditorFrame;
    FOverlayPainter: TSkPaintBox;
    FOverlayInteractionImage: ISkImage;
@@ -157,6 +158,10 @@ type
    FLongSlop: Single;
    procedure CaptureOverlayInteractionImage;
    procedure SetMouseObject(const Value: TKeyMouseHook);
+  // обработчик мыши по умолчанию (MouseObject := nil): выделение и
+  // редактирование TEditMap, кнопка btnSelect нажата. Нет карты, закрытие
+  // формы или FNoDefaultMouse > 0 (смена карты) - остается nil
+   procedure SetDefaultMouseObject;
    procedure EnsureOverlayPainter;
    procedure OverlayDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
    procedure DrawOverlay(const ACanvas: ISkCanvas; const ADest: TRectF);
@@ -489,10 +494,17 @@ begin
   end;
 end;
 
+// обработчик прежней карты освобождается без обработчика по умолчанию: тот
+// ссылался бы на карту, которую заменяет загрузка
 procedure TMainFormMouseObj.OpenGmfFileSkia(const LocalPath: string);
 begin
-  MouseObject := nil;
-  inherited;
+  Inc(FNoDefaultMouse);
+  try
+    MouseObject := nil;
+    inherited;
+  finally
+    Dec(FNoDefaultMouse);
+  end;
   MouseObject := nil;
 end;
 
@@ -560,7 +572,8 @@ begin
    MouseObject := nil
  else begin
   Selector.LOperation := TSpeedButton(Sender).Tag;
-  MouseObject := nil;
+ // прежний обработчик освобождается при присваивании нового (nil дал бы
+ // обработчик по умолчанию и нажал бы btnSelect)
   Op := TSpeedButton(Sender).Tag;
   if Op = em_GetObject then
 {$IFDEF MOUSE32}
@@ -573,8 +586,11 @@ begin
   else
   if (Sender = btnPan) or (Sender = btnFrag) then
 {$IFDEF MOUSE32}
-  // TMouseView еще не перенесен: пан - средней кнопкой
-   exit
+  // TMouseView еще не перенесен: пан - средней кнопкой; обработчик - по умолчанию
+   begin
+    MouseObject := nil;
+    exit;
+   end
 {$ELSE}
    MouseObject := TMouseView.Create(TwgForm, nil)
 {$ENDIF}
@@ -921,9 +937,25 @@ procedure TMainFormMouseObj.SetMouseObject(const Value: TKeyMouseHook);
 begin
  If MouseObject <> nil then MouseObject.Free;
  FMouseObject := Value;
+ if Value = nil then SetDefaultMouseObject;
  InvalidateOverlayAll;
  if SkPainter <> nil then
    SkPainter.Redraw;
+end;
+
+procedure TMainFormMouseObj.SetDefaultMouseObject;
+begin
+{$IFDEF MOUSE32}
+ if (FNoDefaultMouse > 0) or (csDestroying in ComponentState) or (Selector = nil) or (TwgForm = nil) then exit;
+ Selector.LOperation := em_GetObject;
+ FMouseObject := TEditMap.Create(TwgForm, nil);
+ FMouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ FMouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ FMouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ FMouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ if btnSelect <> nil then btnSelect.IsPressed := True;
+{$ENDIF}
 end;
 
 procedure TMainFormMouseObj.SetSelectorParams;
@@ -951,6 +983,7 @@ procedure TMainFormMouseObj.btnEscClick(Sender: TObject);
 var I: Integer;
 begin
  For I := 0 to ComponentCount - 1 do
+ If Components[I] <> btnProperties then
   If Components[I] is TSpeedButton then
    If (TSpeedButton(Components[I]).Tag > 0) and (TSpeedButton(Components[I]).isPressed) then
     begin
@@ -981,7 +1014,6 @@ begin
   if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
  TopoZnakNum := InstPoints.SelectedZnakNum;
  Selector.LOperation := Opr;
- MouseObject := nil;
  MouseObject := TMouseTopo.Create(TwgForm, nil);
  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
  MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
@@ -1027,7 +1059,6 @@ begin
  for I := 0 to ComponentCount - 1 do
   if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
  Selector.LOperation := Opr;
- MouseObject := nil;
  MouseObject := TMouseTopology.Create(TwgForm, nil);
  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
  MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
@@ -1054,7 +1085,6 @@ begin
  for I := 0 to ComponentCount - 1 do
   if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
  Selector.LOperation := Opr;
- MouseObject := nil;
  MouseObject := TMouseHotSpot.Create(TwgForm, nil);
  TMouseHotSpot(MouseObject).Block := TGeoBlock(B);
  MouseObject.OnAddPrim := UpdateMessage.AddPrim;

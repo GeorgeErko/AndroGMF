@@ -123,7 +123,7 @@ procedure FocusMainForm;
 
 implementation
 
-uses FMX.DialogService, System.Diagnostics, System.StrUtils, VoskSpeech, WinSpeech, Writer, newProcs;
+uses FMX.DialogService, System.Diagnostics, System.StrUtils, VoskSpeech, WinSpeech, Writer, newProcs, AppUI;
 
 {$R *.fmx}
 
@@ -243,6 +243,7 @@ begin
    L.Text := CNames[I];
    L.TextSettings.WordWrap := False;
    Place(L, TextWidth(L, CNames[I]) + 4);
+   UISetRule(L, 'ui:android:font-3');
   end;
   C := TControl(CClass[I].Create(Self));
   C.CanFocus := False;

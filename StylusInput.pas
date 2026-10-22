@@ -28,9 +28,20 @@ const
   DefLongPressSlop = 10;
 
 var
+ // Android: до первого касания инструмент не известен - по умолчанию перо
+ // (палец сразу только перемещает и масштабирует карту); касание задает
+ // настоящий инструмент
+{$IFDEF ANDROID}
+  StylusTool: TStylusTool = stStylus;  // инструмент последнего касания
+{$ELSE}
   StylusTool: TStylusTool = stUnknown; // инструмент последнего касания
+{$ENDIF}
   StylusButton: Boolean = False;       // кнопка пера нажата (последнее касание)
+{$IFDEF ANDROID}
+  StylusDetected: Boolean = True;      // перо использовалось в этом сеансе
+{$ELSE}
   StylusDetected: Boolean = False;     // перо использовалось в этом сеансе
+{$ENDIF}
  // после первого касания или наведения пера палец только перемещает и
  // масштабирует карту (команды - только пером)
   StylusFingerPans: Boolean = True;

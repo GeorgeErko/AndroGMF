@@ -801,6 +801,13 @@ begin
     finally
       Stream.Free;
     end;
+   // карта прочитана: дубликат успешно открытого файла рядом, расширение .gm2
+    if (TwgForm <> nil) and SameText(ExtractFileExt(LocalPath), '.gmf') then
+      try
+        TFile.Copy(LocalPath, ChangeFileExt(LocalPath, '.gm2'), True);
+      except
+        on E: Exception do WriteIn(['Копия .gm2 не создана: ', E.Message]);
+      end;
 
     InitSkPainterInput;
     SkPainterResize(SkPainter);
@@ -1733,6 +1740,7 @@ end;
 procedure TMainFormSkia.SkPainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
 var
   StepRatio: Single;
+  PivotLocal: TPointF;
   PivotPix: TPointF;
   PivotGeo: TPointF;
 begin
@@ -1778,7 +1786,10 @@ begin
   end;
   LastZoomDistance := EventInfo.Distance;
 
-  PivotPix := PointF(EventInfo.Location.X * LastCanvasScale, EventInfo.Location.Y * LastCanvasScale);
+ // точка жеста - в координатах формы: переводится в координаты окна карты
+ // (панель слева - instProperties - сдвигает SkPainter вправо)
+  PivotLocal := SkPainter.AbsoluteToLocal(EventInfo.Location);
+  PivotPix := PointF(PivotLocal.X * LastCanvasScale, PivotLocal.Y * LastCanvasScale);
   PivotGeo := PointF(Selector.XGeo(Round(PivotPix.X)), Selector.YGeo(Round(PivotPix.Y)));
   Selector.Scale(PivotGeo.X, PivotGeo.Y, StepRatio);
   ClearOverlayAllCaches;

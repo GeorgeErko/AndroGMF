@@ -6,7 +6,7 @@ object InstPointsFrame: TInstPointsFrame
   object TC: TTabControl
     Align = Client
     Size.Width = 384.000000000000000000
-    Size.Height = 385.000000000000000000
+    Size.Height = 377.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     TabPosition = PlatformDefault
@@ -14,7 +14,7 @@ object InstPointsFrame: TInstPointsFrame
   object Panel1: TPanel
     Align = Top
     Size.Width = 384.000000000000000000
-    Size.Height = 17.000000000000000000
+    Size.Height = 25.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
     object btnTabs: TButton
@@ -24,7 +24,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 362.000000000000000000
       Size.Width = 22.000000000000000000
-      Size.Height = 17.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 4
       Text = '<'
@@ -39,7 +39,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 281.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 17.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 3
       TextSettings.Trimming = None
@@ -53,7 +53,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 254.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 17.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
       TextSettings.Trimming = None
@@ -67,7 +67,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 308.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 17.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
       TextSettings.Trimming = None
@@ -81,7 +81,7 @@ object InstPointsFrame: TInstPointsFrame
       Margins.Left = 2.000000000000000000
       Position.X = 335.000000000000000000
       Size.Width = 25.000000000000000000
-      Size.Height = 17.000000000000000000
+      Size.Height = 25.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 1
       TextSettings.Trimming = None
@@ -89,8 +89,13 @@ object InstPointsFrame: TInstPointsFrame
     end
     object Label1: TLabel
       Align = Left
-      Margins.Left = 10.000000000000000000
-      Position.X = 10.000000000000000000
+      HelpKeyword = 'ui:android:font-4'
+      HelpType = htKeyword
+      Margins.Left = 5.000000000000000000
+      Position.X = 5.000000000000000000
+      Size.Width = 118.000000000000000000
+      Size.Height = 25.000000000000000000
+      Size.PlatformDefault = False
       Text = #1058#1086#1095#1077#1095#1085#1099#1077
       TabOrder = 5
     end
@@ -112,6 +117,7 @@ object InstPointsFrame: TInstPointsFrame
     Viewport.Height = 174.000000000000000000
   end
   object CB: TComboBox
+    HelpKeyword = 'ui:android:font-4'
     Position.X = 12.000000000000000000
     Position.Y = 279.000000000000000000
     Size.Width = 359.000000000000000000
@@ -135,7 +141,7 @@ object InstPointsFrame: TInstPointsFrame
   end
   object pnlTools: TLayout
     Align = Top
-    Position.Y = 17.000000000000000000
+    Position.Y = 25.000000000000000000
     Size.Width = 384.000000000000000000
     Size.Height = 24.000000000000000000
     Size.PlatformDefault = False
@@ -211,6 +217,7 @@ object InstPointsFrame: TInstPointsFrame
       end
       object cbActivate: TCheckBox
         Align = Left
+        HelpKeyword = 'ui:android:font-2'
         Margins.Left = 6.000000000000000000
         Position.X = 135.000000000000000000
         Size.Width = 210.000000000000000000

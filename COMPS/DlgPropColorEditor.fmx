@@ -117,6 +117,7 @@ inherited PropColorEditorForm: TPropColorEditorForm
       Stroke.Kind = None
     end
     object LabR: TLabel
+      HelpKeyword = 'ui:android:font-2'
       Position.X = 14.000000000000000000
       Position.Y = 161.000000000000000000
       Text = 'R:'
@@ -133,6 +134,7 @@ inherited PropColorEditorForm: TPropColorEditorForm
       TabOrder = 0
     end
     object LabG: TLabel
+      HelpKeyword = 'ui:android:font-2'
       Position.X = 14.000000000000000000
       Position.Y = 194.000000000000000000
       Text = 'G:'
@@ -149,6 +151,7 @@ inherited PropColorEditorForm: TPropColorEditorForm
       TabOrder = 1
     end
     object LabB: TLabel
+      HelpKeyword = 'ui:android:font-2'
       Position.X = 14.000000000000000000
       Position.Y = 232.000000000000000000
       Text = 'B:'
@@ -165,6 +168,7 @@ inherited PropColorEditorForm: TPropColorEditorForm
       TabOrder = 2
     end
     object LabA: TLabel
+      HelpKeyword = 'ui:android:font-2'
       Position.X = 14.000000000000000000
       Position.Y = 268.000000000000000000
       Text = 'A:'
@@ -182,6 +186,7 @@ inherited PropColorEditorForm: TPropColorEditorForm
       Value = 255.000000000000000000
     end
     object Label1: TLabel
+      HelpKeyword = 'ui:android:font-2'
       Align = Top
       Margins.Left = 10.000000000000000000
       Margins.Top = 5.000000000000000000

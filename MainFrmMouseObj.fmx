@@ -1142,7 +1142,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Position.X = 628.000000000000000000
-      Size.Width = 16.000000000000000000
+      Size.Width = 20.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 2
@@ -1153,7 +1153,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1088#1091#1095#1085#1099#1093' '#1084#1077#1090#1086#1076#1086#1074
         Margins.Top = 5.000000000000000000
         Position.Y = 5.000000000000000000
-        Size.Width = 16.000000000000000000
+        Size.Width = 20.000000000000000000
         Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
@@ -1173,7 +1173,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1088#1091#1095#1085#1099#1093' '#1084#1077#1090#1086#1076#1086#1074
         Margins.Bottom = 5.000000000000000000
         Position.Y = 23.000000000000000000
-        Size.Width = 16.000000000000000000
+        Size.Width = 20.000000000000000000
         Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
@@ -1196,7 +1196,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         ')'
       Images = ImageListOZN
       ImageIndex = 16
-      Position.X = 646.000000000000000000
+      Position.X = 650.000000000000000000
       Size.Width = 28.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -1212,8 +1212,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Left
       Margins.Left = 2.000000000000000000
       Margins.Right = 2.000000000000000000
-      Position.X = 676.000000000000000000
-      Size.Width = 16.000000000000000000
+      Position.X = 680.000000000000000000
+      Size.Width = 20.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
       TabOrder = 0
@@ -1224,7 +1224,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1103
         Margins.Top = 5.000000000000000000
         Position.Y = 5.000000000000000000
-        Size.Width = 16.000000000000000000
+        Size.Width = 20.000000000000000000
         Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 0
@@ -1244,7 +1244,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Hint = #1056#1072#1076#1080#1091#1089' '#1087#1086#1080#1089#1082#1072' '#1076#1083#1103' '#1072#1074#1090#1086#1087#1088#1080#1090#1103#1075#1080#1074#1072#1085#1080#1103
         Margins.Bottom = 5.000000000000000000
         Position.Y = 23.000000000000000000
-        Size.Width = 16.000000000000000000
+        Size.Width = 20.000000000000000000
         Size.Height = 20.000000000000000000
         Size.PlatformDefault = False
         TabOrder = 1
@@ -1263,7 +1263,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Hint = #1054#1090#1082#1072#1090
       Images = ImageListOZN
       ImageIndex = 17
-      Position.X = 694.000000000000000000
+      Position.X = 702.000000000000000000
       Size.Width = 28.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -1279,7 +1279,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Align = Left
       HelpKeyword = 'ui:client'
       Hint = #1054#1090#1084#1077#1085#1072' '#1090#1077#1082#1091#1097#1077#1081' '#1086#1087#1077#1088#1072#1094#1080#1080
-      Position.X = 722.000000000000000000
+      Position.X = 730.000000000000000000
       Size.Width = 40.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False
@@ -1294,7 +1294,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
     end
     object Layout1: TLayout
       Align = Left
-      Position.X = 762.000000000000000000
+      Position.X = 770.000000000000000000
       Size.Width = 555.000000000000000000
       Size.Height = 48.000000000000000000
       Size.PlatformDefault = False

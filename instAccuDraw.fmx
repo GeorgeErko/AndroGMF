@@ -22,6 +22,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
     Size.PlatformDefault = False
     TabOrder = 1
     object btnKeyUndo: TButton
+      HelpKeyword = 'ui:android:font-1'
       Align = Right
       CanFocus = False
       Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1102#1102' '#1090#1086#1095#1082#1091' (Z)'
@@ -45,6 +46,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
       Size.PlatformDefault = False
       TabOrder = 0
       object btnKey1: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -58,6 +60,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey2: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -71,6 +74,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey3: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -84,6 +88,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey4: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -97,6 +102,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey5: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -110,6 +116,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey6: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -123,6 +130,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object Button1: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1102#1102' '#1090#1086#1095#1082#1091' (Z)'
@@ -137,6 +145,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyUndoClick
       end
       object btnKeySnaps: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Hint = #1057#1073#1088#1086#1089#1080#1090#1100' '#1087#1088#1080#1074#1103#1079#1082#1080' (X)'
@@ -151,6 +160,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeySnapsClick
       end
       object Button3: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
@@ -174,6 +184,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
       Size.PlatformDefault = False
       TabOrder = 1
       object btnKey7: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -187,6 +198,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey8: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -200,6 +212,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey9: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -213,6 +226,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKey0: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -226,6 +240,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyClick
       end
       object btnKeyDot: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Margins.Left = 2.000000000000000000
@@ -241,6 +256,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
       object btnKeyBack: TButton
         Align = Left
         CanFocus = False
+        HelpKeyword = 'ui:center ui:android:font-1'
         Hint = #1059#1076#1072#1083#1080#1090#1100' '#1087#1086#1089#1083#1077#1076#1085#1080#1081' '#1089#1080#1084#1074#1086#1083
         Images = ImageList1
         ImageIndex = 0
@@ -251,10 +267,10 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         Size.PlatformDefault = False
         TabOrder = 8
         TextSettings.Trimming = None
-        HelpKeyword = 'ui:center'
         OnClick = KeyBackClick
       end
       object btnKeyEnter: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077
@@ -269,6 +285,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyEnterClick
       end
       object btnKeyMic: TButton
+        HelpKeyword = 'ui:android:font-1'
         StaysPressed = True
         Align = Left
         CanFocus = False
@@ -284,6 +301,7 @@ object InstAccuDrawFrame: TInstAccuDrawFrame
         OnClick = KeyMicClick
       end
       object Button2: TButton
+        HelpKeyword = 'ui:android:font-1'
         Align = Left
         CanFocus = False
         Hint = #1055#1088#1080#1084#1077#1085#1080#1090#1100' '#1079#1085#1072#1095#1077#1085#1080#1077

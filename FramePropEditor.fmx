@@ -11,9 +11,11 @@ object PropEditorFrame: TPropEditorFrame
     TabOrder = 1
     object sbOr: TSpeedButton
       Align = Left
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1042#1099#1076#1077#1083#1080#1090#1100' '#1086#1073#1098#1077#1082#1090#1099' '#1089' '#1090#1072#1082#1080#1084' '#1078#1077' '#1079#1085#1072#1095#1077#1085#1080#1077#1084' '#1089#1074#1086#1081#1089#1090#1074#1072' ('#1083#1086#1075#1080#1082#1072' '#1048#1051#1048')'
       Images = ImageListPanel
       ImageIndex = 0
+      Margins.Right = 3.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -24,10 +26,12 @@ object PropEditorFrame: TPropEditorFrame
     end
     object sbAnd: TSpeedButton
       Align = Left
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1042#1099#1076#1077#1083#1080#1090#1100' '#1086#1073#1098#1077#1082#1090#1099' '#1087#1086' '#1091#1089#1083#1086#1074#1080#1102' '#1085#1072' '#1079#1085#1072#1095#1077#1085#1080#1077' '#1089#1074#1086#1081#1089#1090#1074#1072' ('#1083#1086#1075#1080#1082#1072' '#1048')'
       Images = ImageListPanel
       ImageIndex = 1
-      Position.X = 26.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 29.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -39,10 +43,12 @@ object PropEditorFrame: TPropEditorFrame
     object sbSelectByLayer: TSpeedButton
       StaysPressed = True
       Align = Left
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1042#1099#1076#1077#1083#1103#1090#1100' '#1090#1086#1083#1100#1082#1086' '#1086#1073#1098#1077#1082#1090#1099' '#1089#1083#1086#1103' '#1086#1073#1088#1072#1079#1094#1072
       Images = ImageListPanel
       ImageIndex = 2
-      Position.X = 52.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 58.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -53,10 +59,12 @@ object PropEditorFrame: TPropEditorFrame
     object sbAllSelect: TSpeedButton
       StaysPressed = True
       Align = Left
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1042#1099#1076#1077#1083#1103#1090#1100' '#1086#1073#1098#1077#1082#1090#1099' '#1074#1089#1077#1093' '#1074#1080#1076#1086#1074' ('#1082#1086#1085#1090#1091#1088#1099', '#1090#1086#1095#1082#1080', '#1090#1077#1082#1089#1090#1099')'
       Images = ImageListPanel
       ImageIndex = 3
-      Position.X = 78.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 87.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -67,10 +75,12 @@ object PropEditorFrame: TPropEditorFrame
     object sbLock: TSpeedButton
       Align = Left
       Enabled = False
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1041#1083#1086#1082#1080#1088#1086#1074#1082#1072' '#1079#1072#1084#1077#1085#1099' '#1089#1074#1086#1081#1089#1090#1074#1072' '#1087#1088#1080' '#1072#1074#1090#1086#1084#1072#1090#1080#1079#1080#1088#1086#1074#1072#1085#1085#1099#1093' '#1088#1072#1089#1095#1077#1090#1072#1093
       Images = ImageListPanel
       ImageIndex = 10
-      Position.X = 104.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 116.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -81,10 +91,12 @@ object PropEditorFrame: TPropEditorFrame
     end
     object sbMinus: TSpeedButton
       Align = Right
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1059#1076#1072#1083#1077#1085#1080#1077' '#1074#1099#1076#1077#1083#1077#1085#1085#1086#1075#1086' '#1089#1074#1086#1081#1089#1090#1074#1072
       Images = ImageListPanel
       ImageIndex = 4
-      Position.X = 186.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 171.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -95,10 +107,12 @@ object PropEditorFrame: TPropEditorFrame
     end
     object sbMinusMinus: TSpeedButton
       Align = Right
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1059#1076#1072#1083#1077#1085#1080#1077' '#1075#1088#1091#1087#1087#1099' '#1089#1074#1086#1081#1089#1090#1074
       Images = ImageListPanel
       ImageIndex = 5
-      Position.X = 212.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 200.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -110,10 +124,12 @@ object PropEditorFrame: TPropEditorFrame
     object sbUp: TSpeedButton
       Tag = 1
       Align = Right
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1057#1074#1086#1081#1089#1090#1074#1086' '#1074#1074#1077#1088#1093
       Images = ImageListPanel
       ImageIndex = 6
-      Position.X = 238.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 229.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -125,10 +141,12 @@ object PropEditorFrame: TPropEditorFrame
     object sbDown: TSpeedButton
       Tag = 2
       Align = Right
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1057#1074#1086#1081#1089#1090#1074#1086' '#1074#1085#1080#1079
       Images = ImageListPanel
       ImageIndex = 7
-      Position.X = 264.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 258.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False
@@ -139,10 +157,12 @@ object PropEditorFrame: TPropEditorFrame
     end
     object sbAddProp: TSpeedButton
       Align = Right
+      HelpKeyword = 'ui:android:fill ui:android:margin=4'
       Hint = #1044#1086#1073#1072#1074#1083#1077#1085#1080#1077' '#1089#1074#1086#1081#1089#1090#1074' '#1080#1079' '#1089#1087#1088#1072#1074#1086#1095#1085#1080#1082#1072
       Images = ImageListPanel
       ImageIndex = 8
-      Position.X = 290.000000000000000000
+      Margins.Right = 3.000000000000000000
+      Position.X = 287.000000000000000000
       Size.Width = 26.000000000000000000
       Size.Height = 26.000000000000000000
       Size.PlatformDefault = False

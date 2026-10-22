@@ -137,7 +137,7 @@ var PropEditorForm: TPropEditorFrame;
 implementation uses TwgColle, newForm0, newResource, Writer, LBN, MainFrm,
                     UndoColNew, userObject, GBFWUndo, DlgPropFontEditor, UpdateMessages,
                     FMX.DialogService, EcDot, EcDot2, DlgPropAdd, DlgPropSelect,
-                    DlgDelProperties, Selector32;
+                    DlgDelProperties, Selector32, AppUI;
 
 {$R *.fmx}
 
@@ -580,6 +580,7 @@ begin
   FResetBtn.Text := 'Сбросить все на «по слою»';
   FResetBtn.Hint := 'Свойства новых объектов по умолчанию - по слою';
   FResetBtn.OnClick := ResetBtnClick;
+  UISetRule(FResetBtn, 'ui:android:font-2');
  end;
  FResetBtn.Visible := True;
  SetEnumProperties(FSelector, FDefaults);

@@ -18,6 +18,7 @@ object LayerFrame: TLayerFrame
       Size.PlatformDefault = False
     end
     object btnDrop: TButton
+      HelpKeyword = 'ui:android:font-4'
       Align = Right
       Images = ImageList1
       ImageIndex = 2
@@ -72,6 +73,7 @@ object LayerFrame: TLayerFrame
         Size.PlatformDefault = False
         TabOrder = 1
         object btnAllOn: TButton
+          HelpKeyword = 'ui:android:font-4'
           Align = Left
           Margins.Left = 5.000000000000000000
           Margins.Top = 5.000000000000000000
@@ -88,6 +90,7 @@ object LayerFrame: TLayerFrame
           OnClick = btnAllOnClick
         end
         object btnAllOff: TButton
+          HelpKeyword = 'ui:android:font-4'
           Align = Left
           Margins.Left = 5.000000000000000000
           Margins.Top = 5.000000000000000000
@@ -104,6 +107,7 @@ object LayerFrame: TLayerFrame
           OnClick = btnAllOffClick
         end
         object btnInvert: TButton
+          HelpKeyword = 'ui:android:font-4'
           Align = Left
           Margins.Left = 5.000000000000000000
           Margins.Top = 5.000000000000000000
@@ -120,6 +124,7 @@ object LayerFrame: TLayerFrame
           OnClick = btnInvertClick
         end
         object btnCancel: TButton
+          HelpKeyword = 'ui:android:font-4'
           Align = Right
           Margins.Left = 5.000000000000000000
           Margins.Top = 5.000000000000000000
@@ -136,6 +141,7 @@ object LayerFrame: TLayerFrame
           OnClick = btnCancelClick
         end
         object btnOk: TButton
+          HelpKeyword = 'ui:android:font-4'
           Align = Right
           Margins.Left = 5.000000000000000000
           Margins.Top = 5.000000000000000000

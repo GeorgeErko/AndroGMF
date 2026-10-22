@@ -21,11 +21,15 @@ uses System.SysUtils, System.Classes, Collect, WPTForm2;
 
 // возвращает число ошибок; Log (если задан) - строки отчета
 function RunStreamSelfTest(Form: TForm2; Log: TStrings = nil): Integer;
+// сохранение карты с проверкой: сначала RunStreamSelfTest; без ошибок - запись
+// в FileName (.gmf), затем копия успешно сохраненного файла с расширением
+// .gm3. Log - отчет проверки и итог сохранения. True - сохранено
+function SaveGmfChecked(Form: TForm2; const FileName: string; Log: TStrings): Boolean;
 
 implementation
 
 uses
-  System.Generics.Collections, newConsts, newForm0, WPTForm0, Writer, ObjBlockList, newBlock, newResource;
+  System.Generics.Collections, System.IOUtils, newConsts, newForm0, WPTForm0, Writer, ObjBlockList, newBlock, newResource;
 
 const
   MaxDetails = 30; // подробно - первые ошибки
@@ -240,6 +244,61 @@ begin
   newConsts.Version := SaveVersion;
   newResource.ClassVersion := SaveClassVersion;
   Stat.Free;
+ end;
+end;
+
+function SaveGmfChecked(Form: TForm2; const FileName: string; Log: TStrings): Boolean;
+var Buf: TBufStream;
+    Errors: Integer;
+    CopyName, TmpName: string;
+procedure Report(const S: string);
+begin
+ WriteIn([S]);
+ if Log <> nil then Log.Add(S);
+end;
+begin
+ Result := False;
+ if Form = nil then exit;
+ Errors := RunStreamSelfTest(Form, Log);
+ if Errors > 0 then begin
+  Report(Format('Файл не сохранен: при проверке ошибок %d', [Errors]));
+  exit;
+ end;
+// запись - во временный файл рядом; .gmf заменяется только после успешной
+// записи (сбой на середине не портит прежний файл)
+ TmpName := FileName + '.tmp';
+ try
+  Buf := TBufStream.InitFileStream(TmpName, fmCreate);
+  try
+   Form.About.ClassName := 'VCLASS\' + ExtractFileName(Form.About.ClassName);
+   Buf.Put(Form);
+  finally
+   Buf.Free;
+  end;
+  if TFile.Exists(FileName) then TFile.Delete(FileName);
+  TFile.Move(TmpName, FileName);
+ except
+  on E: Exception do begin
+   Report('Ошибка сохранения ' + FileName + ': ' + E.Message);
+  // прежний файл на месте - временный не нужен; удален, а замена не удалась -
+  // записанная карта остается во временном
+   try
+    if TFile.Exists(TmpName) then
+     if TFile.Exists(FileName) then TFile.Delete(TmpName) else Report('Карта записана в ' + TmpName);
+   except
+   end;
+   exit;
+  end;
+ end;
+ Report('Сохранено: ' + FileName);
+ Result := True;
+// дубликат успешно сохраненного файла
+ CopyName := ChangeFileExt(FileName, '.gm3');
+ try
+  TFile.Copy(FileName, CopyName, True);
+  Report('Копия: ' + CopyName);
+ except
+  on E: Exception do Report('Ошибка копии ' + CopyName + ': ' + E.Message);
  end;
 end;
 

@@ -126,7 +126,7 @@ var
  GTileFillPaint: ISkPaint;
 
 implementation uses newProcs, newSelector, ogcDrawerSkia, FMX.Platform, Writer,
-                    FramePropEditor, EcDot, EcDot2, TwgDraw, System.Generics.Collections;
+                    FramePropEditor, EcDot, EcDot2, TwgDraw, System.Generics.Collections, AppUI;
 
 {$R *.fmx}
 
@@ -554,6 +554,8 @@ begin
  if TilesLay <> nil then TilesLay.Parent := nil;
 
  if LB <> nil then LB.Items.Clear;
+// у TListBox HelpKeyword не опубликован - пометка кодом
+ if LB <> nil then UISetRule(LB, 'ui:android:font-4');
 
  if TC <> nil then TC.OnChange := nil;
  For I := TC.TabCount - 1 downto 0 do TC.Delete(I);
@@ -565,6 +567,7 @@ begin
   Tab := TC.Add;
   Tab.Text := Group[I].Name;
   Tab.Visible := False;
+  UISetRule(Tab, 'ui:android:font-2');
  end;
  If TC.TabCount = 0 then Exit;
  TC.TabIndex := 0;

@@ -137,6 +137,9 @@ type
 // Root (форма, фрейм, панель); повторный вызов - по новым размерам UI.
 // Вызов - в Loaded формы/фрейма (AppForms) и после создания элементов кодом
 procedure ApplyUIRules(Root: TObject);
+// элемент, созданный кодом (или без опубликованного HelpKeyword - TListBox):
+// пометки Tags ('ui:android:font-2 ...') и его правила, как при обходе формы
+procedure UISetRule(Ctrl: TObject; const Tags: String);
 // правило кнопки: группа контейнера и пометки 'ui:' в HelpKeyword
 function UIButtonRule(Button: TObject): TUIRule;
 // глиф и текст стиля кнопки по ее правилу (для своих OnApplyStyleLookup)
@@ -937,31 +940,43 @@ begin
  ApplyStyleRules(Sender, True);
 end;
 
+// правила одного элемента (без дочерних)
+procedure ApplyControlRules(C: TFmxObject);
+var R: TUIRule;
+    Hook: Boolean;
+begin
+ Hook := (C is TCustomButton) or (C is TToolBar) or (C is TStatusBar) or
+         ((C is TStyledControl) and (Pos(UIPrefix, LowerCase(TStyledControl(C).HelpKeyword)) > 0));
+ if not Hook then exit;
+ if C is TCustomButton then begin
+  R := UIButtonRule(C);
+  if not R.Skip then ApplyButtonRule(TCustomButton(C), R);
+ end;
+// свой обработчик элемента не заменяется - он вызывает UIApplyButtonStyle сам
+ if not Assigned(TStyledControl(C).OnApplyStyleLookup) then TStyledControl(C).OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
+// повторный вызов (смена масштаба): база уже известна - применяется сразу
+ ApplyStyleRules(C, False);
+// список, комбо: шрифт - у пунктов
+ if (C is TCustomListBox) or (C is TCustomComboBox) then HookList(TStyledControl(C));
+end;
+
 procedure ApplyUIRules(Root: TObject);
 var I: Integer;
     C: TFmxObject;
-    R: TUIRule;
-    Hook: Boolean;
 begin
  if not (Root is TFmxObject) then exit;
  for I := 0 to TFmxObject(Root).ChildrenCount - 1 do begin
   C := TFmxObject(Root).Children[I];
-  Hook := (C is TCustomButton) or (C is TToolBar) or (C is TStatusBar) or
-          ((C is TStyledControl) and (Pos(UIPrefix, LowerCase(TStyledControl(C).HelpKeyword)) > 0));
-  if Hook then begin
-   if C is TCustomButton then begin
-    R := UIButtonRule(C);
-    if not R.Skip then ApplyButtonRule(TCustomButton(C), R);
-   end;
-  // свой обработчик элемента не заменяется - он вызывает UIApplyButtonStyle сам
-   if not Assigned(TStyledControl(C).OnApplyStyleLookup) then TStyledControl(C).OnApplyStyleLookup := TUIHandler.ApplyStyleLookup;
-  // повторный вызов (смена масштаба): база уже известна - применяется сразу
-   ApplyStyleRules(C, False);
-  // список, комбо: шрифт - у пунктов
-   if (C is TCustomListBox) or (C is TCustomComboBox) then HookList(TStyledControl(C));
-  end;
+  ApplyControlRules(C);
   ApplyUIRules(C);
  end;
+end;
+
+procedure UISetRule(Ctrl: TObject; const Tags: String);
+begin
+ if not (Ctrl is TStyledControl) then exit;
+ TStyledControl(Ctrl).HelpKeyword := Tags;
+ ApplyControlRules(TStyledControl(Ctrl));
 end;
 
 { шрифт по умолчанию }

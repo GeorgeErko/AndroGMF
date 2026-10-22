@@ -1,11 +1,11 @@
 object QuickLayersFrame: TQuickLayersFrame
-  Size.Width = 268.000000000000000000
-  Size.Height = 127.000000000000000000
+  Size.Width = 385.000000000000000000
+  Size.Height = 214.000000000000000000
   Size.PlatformDefault = False
   object List: TListBox
     Align = Client
-    Size.Width = 268.000000000000000000
-    Size.Height = 103.000000000000000000
+    Size.Width = 385.000000000000000000
+    Size.Height = 190.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     DisableFocusEffect = True
@@ -13,13 +13,13 @@ object QuickLayersFrame: TQuickLayersFrame
     DefaultItemStyles.GroupHeaderStyle = ''
     DefaultItemStyles.GroupFooterStyle = ''
     OnItemClick = ListItemClick
-    Viewport.Width = 264.000000000000000000
-    Viewport.Height = 99.000000000000000000
+    Viewport.Width = 381.000000000000000000
+    Viewport.Height = 186.000000000000000000
   end
   object ButtonsLay: TLayout
     Align = Bottom
-    Position.Y = 103.000000000000000000
-    Size.Width = 268.000000000000000000
+    Position.Y = 190.000000000000000000
+    Size.Width = 385.000000000000000000
     Size.Height = 24.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1
@@ -34,7 +34,7 @@ object QuickLayersFrame: TQuickLayersFrame
       Margins.Bottom = 2.000000000000000000
       Position.X = 2.000000000000000000
       Position.Y = 2.000000000000000000
-      Size.Width = 84.000000000000000000
+      Size.Width = 105.000000000000000000
       Size.Height = 20.000000000000000000
       Size.PlatformDefault = False
       Text = #1055#1088#1080#1084#1077#1085#1080#1090#1100
@@ -50,9 +50,9 @@ object QuickLayersFrame: TQuickLayersFrame
       Margins.Top = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Margins.Bottom = 2.000000000000000000
-      Position.X = 192.000000000000000000
+      Position.X = 279.000000000000000000
       Position.Y = 2.000000000000000000
-      Size.Width = 74.000000000000000000
+      Size.Width = 104.000000000000000000
       Size.Height = 20.000000000000000000
       Size.PlatformDefault = False
       Text = #1059#1076#1072#1083#1080#1090#1100
@@ -68,9 +68,9 @@ object QuickLayersFrame: TQuickLayersFrame
       Margins.Top = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Margins.Bottom = 2.000000000000000000
-      Position.X = 106.000000000000000000
+      Position.X = 171.000000000000000000
       Position.Y = 2.000000000000000000
-      Size.Width = 82.000000000000000000
+      Size.Width = 104.000000000000000000
       Size.Height = 20.000000000000000000
       Size.PlatformDefault = False
       Text = #1044#1086#1073#1072#1074#1080#1090#1100

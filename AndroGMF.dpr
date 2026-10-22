@@ -1,4 +1,4 @@
-﻿program testAndro;
+﻿program AndroGMF;
 
 uses
   System.SysUtils,

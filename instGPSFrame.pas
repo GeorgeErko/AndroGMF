@@ -41,6 +41,8 @@ type
 
 implementation
 
+uses AppUI;
+
 {$R *.fmx}
 
 const
@@ -80,6 +82,7 @@ begin
   N.TextSettings.FontColor := TAlphaColors.Dimgray;
   N.TextSettings.WordWrap := False;
   N.HitTest := False;
+  UISetRule(N, 'ui:android:font-2');
   FValues[I] := TLabel.Create(Self);
   FValues[I].Parent := L;
   FValues[I].Align := TAlignLayout.Client;
@@ -87,6 +90,7 @@ begin
   FValues[I].TextSettings.Trimming := TTextTrimming.Character;
   FValues[I].HitTest := False;
   FValues[I].Text := '-';
+  UISetRule(FValues[I], 'ui:android:font-2');
  end;
 end;
 

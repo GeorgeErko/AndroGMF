@@ -1,14 +1,14 @@
 object InstGPSFrame: TInstGPSFrame
-  Size.Width = 240.000000000000000000
+  Size.Width = 321.000000000000000000
   Size.Height = 290.000000000000000000
   Size.PlatformDefault = False
   object Bg: TRectangle
     Align = Contents
     Fill.Color = xF0FFFFFF
-    Size.Width = 240.000000000000000000
+    Size.Width = 321.000000000000000000
     Size.Height = 290.000000000000000000
     Size.PlatformDefault = False
-    Stroke.Color = xFF808080
+    Stroke.Color = claGray
     XRadius = 4.000000000000000000
     YRadius = 4.000000000000000000
   end
@@ -19,13 +19,13 @@ object InstGPSFrame: TInstGPSFrame
     Margins.Right = 2.000000000000000000
     Position.X = 2.000000000000000000
     Position.Y = 2.000000000000000000
-    Size.Width = 236.000000000000000000
+    Size.Width = 317.000000000000000000
     Size.Height = 26.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
     object sbStart: TSpeedButton
-      Align = Left
       StaysPressed = True
+      Align = Left
       Hint = #1042#1082#1083#1102#1095#1080#1090#1100' '#1080#1083#1080' '#1074#1099#1082#1083#1102#1095#1080#1090#1100' GPS'
       Margins.Left = 2.000000000000000000
       Margins.Top = 2.000000000000000000
@@ -42,6 +42,7 @@ object InstGPSFrame: TInstGPSFrame
     end
     object cbFollow: TCheckBox
       Align = Left
+      HelpKeyword = 'ui:android:font-2 ui:android:check'
       Hint = #1050#1072#1088#1090#1072' '#1089#1076#1074#1080#1075#1072#1077#1090#1089#1103' '#1079#1072' '#1087#1086#1083#1086#1078#1077#1085#1080#1077#1084
       Margins.Left = 4.000000000000000000
       Position.X = 68.000000000000000000
@@ -58,7 +59,7 @@ object InstGPSFrame: TInstGPSFrame
       Margins.Top = 2.000000000000000000
       Margins.Right = 2.000000000000000000
       Margins.Bottom = 2.000000000000000000
-      Position.X = 160.000000000000000000
+      Position.X = 241.000000000000000000
       Position.Y = 2.000000000000000000
       Size.Width = 74.000000000000000000
       Size.Height = 22.000000000000000000
@@ -70,8 +71,7 @@ object InstGPSFrame: TInstGPSFrame
   end
   object Rows: TLayout
     Align = Client
-    HitTest = False
-    Size.Width = 240.000000000000000000
+    Size.Width = 321.000000000000000000
     Size.Height = 262.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 1

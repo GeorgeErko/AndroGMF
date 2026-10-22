@@ -35,7 +35,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   MainFrmOSM, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   InstLayerFrame, FMX.Ani, FMX.Layouts, FMX.Skia, FMX.Objects,
-  FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo, FMX.Menus,
+  FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo, FMX.Menus, FMX.ListBox,
   SelectedObjects, FrameDendro, FrameJSON;
 
 const
@@ -56,6 +56,7 @@ type
     FFrameDendro: TFrameDendro;
     FFrameJSON: TFrameJSON;
     FButtonMenu: TPopupMenu; // выпадающее меню кнопки (sbFindZN, sbExportCSV, sSpeedButton36)
+    FMenuShade: TRectangle;  // Android: подложка меню кнопки-панели (нажатие мимо - закрыть)
    // Tag - вид насаждения (10, 11, 12, 14), Mode - режим диалога атрибутов
    // (TMouseTopo.VarSetForm1: 0 - TVarSetDlg, 1 - форма по виду, >1 - код газона)
     procedure DendroSetZnak(Sender: TObject; Tag: Integer; Mode: Byte);
@@ -89,6 +90,11 @@ type
     procedure DendroChanged(Sender: TObject);
     procedure ShowButtonMenu(Btn: TControl; const Items: array of String; const Tags: array of Integer);
     procedure ButtonMenuClick(Sender: TObject);
+   // Android: меню кнопки - панель в форме под кнопкой
+    procedure ShowButtonMenuPanel(Btn: TControl; const Items: array of String; const Tags: array of Integer);
+    procedure CloseButtonMenuPanel;
+    procedure MenuShadeClick(Sender: TObject);
+    procedure MenuPanelItemClick(const Sender: TCustomListBox; const Item: TListBoxItem);
     procedure OrderProperties;
     procedure AutoProps;
     procedure ImportTrees;
@@ -122,15 +128,18 @@ begin
  RunStreamSelfTest(TwgForm)
 end;
 
+// сохранение с проверкой записи/чтения (StreamSelfTest): .gmf и копия .gm3;
+// отчет проверки и итог - сообщением (и при успехе, и при ошибке)
 procedure TMainFormDendro.btnSaveClick(Sender: TObject);
-var Buf:TBufStream;S:String;
+var Log: TStringList;
 begin
- Buf:=TBufStream.InitFileStream(TwgForm.About.Path+'\'+'29svTest.gmf',fmCreate);
+ if TwgForm = nil then exit;
+ Log := TStringList.Create;
  try
-  TwgForm.About.ClassName := 'VCLASS\' + ExtractFileName(TwgForm.About.ClassName);
-  Buf.Put(TwgForm);
+  SaveGmfChecked(TwgForm, TPath.Combine(String(TwgForm.About.Path), String(TwgForm.About.MyName)), Log);
+  ShowMessage(Log.Text);
  finally
-  Buf.Free;
+  Log.Free;
  end;
 end;
 
@@ -258,7 +267,6 @@ begin
  for I := 0 to ComponentCount - 1 do
   if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
  Selector.LOperation := Lo_TextZnak;
- MouseObject := nil;
  MouseObject := TDataZnkSet.Create(TwgForm, nil);
  TDataZnkSet(MouseObject).VarSetForm1 := 1;
  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
@@ -446,7 +454,6 @@ begin
   if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
  //if Tag = 2 then Selector.LOperation := sysDrawLine else Selector.LOperation := sysDrawPoly;
  Selector.LOperation := sysDrawLine;
- MouseObject := nil;
  MouseObject := TMousePainter.Create(TwgForm, nil);
  MouseObject.OnAddPrim := UpdateMessage.AddPrim;
  MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
@@ -539,6 +546,10 @@ var I: Integer;
     MI: TMenuItem;
     P: TPointF;
 begin
+{$IFDEF ANDROID}
+ ShowButtonMenuPanel(Btn, Items, Tags);
+ exit;
+{$ENDIF}
  FreeAndNil(FButtonMenu);
  FButtonMenu := TPopupMenu.Create(Self);
  FButtonMenu.Parent := Self;
@@ -552,6 +563,87 @@ begin
  end;
  P := Btn.LocalToScreen(PointF(0, Btn.Height));
  FButtonMenu.Popup(P.X, P.Y);
+end;
+
+// TPopupMenu на Android - отдельное окно, его позиция по экранным координатам
+// смещается (как у TPopup списка слоев), и меню оказывалось не под кнопкой.
+// Панель - в самой форме, поверх прозрачной подложки на всю форму; пункт - как
+// TMenuItem (Tag < 0 - недоступен, 0 - разделитель)
+procedure TMainFormDendro.ShowButtonMenuPanel(Btn: TControl; const Items: array of String; const Tags: array of Integer);
+const RowH = 36;
+      SepH = 7;
+var I: Integer;
+    Panel: TRectangle;
+    LB: TListBox;
+    It: TListBoxItem;
+    P: TPointF;
+    W, H: Single;
+begin
+ CloseButtonMenuPanel;
+ FMenuShade := TRectangle.Create(Self);
+ FMenuShade.Stored := False;
+ FMenuShade.Parent := Self;
+ FMenuShade.Align := TAlignLayout.Contents;
+ FMenuShade.Fill.Kind := TBrushKind.None;
+ FMenuShade.Stroke.Kind := TBrushKind.None;
+ FMenuShade.HitTest := True;
+ FMenuShade.OnClick := MenuShadeClick;
+ Panel := TRectangle.Create(FMenuShade);
+ Panel.Parent := FMenuShade;
+ Panel.Fill.Color := TAlphaColors.White;
+ Panel.Stroke.Color := TAlphaColors.Gray;
+ Panel.Padding.Rect := TRectF.Create(1, 1, 1, 1);
+ LB := TListBox.Create(Panel);
+ LB.Parent := Panel;
+ LB.Align := TAlignLayout.Client;
+ LB.ShowScrollBars := False;
+ LB.OnItemClick := MenuPanelItemClick;
+ H := 2;
+ for I := 0 to High(Items) do begin
+  It := TListBoxItem.Create(LB);
+  It.Parent := LB;
+  It.Tag := Tags[I];
+  if Tags[I] = 0 then begin
+   It.Height := SepH;
+   It.Enabled := False;
+  end else begin
+   It.Text := Items[I];
+   It.Height := RowH;
+   It.Enabled := Tags[I] > 0;
+  end;
+  H := H + It.Height;
+ end;
+ W := Btn.Width;
+ if W < 220 then W := 220;
+ if W > ClientWidth then W := ClientWidth;
+ P := Btn.LocalToAbsolute(PointF(0, Btn.Height));
+ if P.X + W > ClientWidth then P.X := ClientWidth - W;
+ if P.X < 0 then P.X := 0;
+// снизу не помещается - над кнопкой
+ if P.Y + H > ClientHeight then begin
+  P.Y := Btn.LocalToAbsolute(PointF(0, 0)).Y - H;
+  if P.Y < 0 then P.Y := 0;
+ end;
+ Panel.SetBounds(P.X, P.Y, W, H);
+ FMenuShade.BringToFront;
+end;
+
+// закрытие - после обработчика нажатия: подложка и пункт еще в событии
+procedure TMainFormDendro.CloseButtonMenuPanel;
+begin
+ FreeAndNil(FMenuShade);
+end;
+
+procedure TMainFormDendro.MenuShadeClick(Sender: TObject);
+begin
+ TThread.ForceQueue(nil, procedure begin CloseButtonMenuPanel; end);
+end;
+
+procedure TMainFormDendro.MenuPanelItemClick(const Sender: TCustomListBox; const Item: TListBoxItem);
+begin
+ if (Item = nil) or (Item.Tag <= 0) then exit;
+ TThread.ForceQueue(nil, procedure begin CloseButtonMenuPanel; end);
+ ButtonMenuClick(Item);
 end;
 
 procedure TMainFormDendro.ButtonMenuClick(Sender: TObject);

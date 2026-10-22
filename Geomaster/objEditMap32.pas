@@ -934,14 +934,20 @@ begin
  Canvas.DrawRect(R, SkPen(Canvas, TAlphaColorRec.White, 1, fRect.Right <= fRect.Left));
 end;
 
+// вершины выделенных объектов - белые квадраты с окантовкой цветом точек
+// выделения (gsSelectPointColor, по умолчанию черный): видны и на темной, и на
+// светлой карте
 procedure TEditMap.emDrawSelectedObjects(const Canvas: ISkCanvas);
-var FillPaint, LinePaint: ISkPaint;
+var FillPaint, BorderPaint, LinePaint: ISkPaint;
     RPix: Single;
 procedure DrawVertex(X, Y: Double);
 var R: Single;
+    Q: TRectF;
 begin
  R := SkPixToWorld(Canvas, RPix);
- Canvas.DrawRect(TRectF.Create(X - R, Y - R, X + R, Y + R), FillPaint);
+ Q := TRectF.Create(X - R, Y - R, X + R, Y + R);
+ Canvas.DrawRect(Q, FillPaint);
+ Canvas.DrawRect(Q, BorderPaint);
 end;
 procedure DrawList(List: TSelectedObjects);
 var I, J: Integer;
@@ -972,7 +978,8 @@ begin
  if Canvas = nil then exit;
  FillPaint := TSkPaint.Create;
  FillPaint.AntiAlias := True;
- FillPaint.Color := WinColor(GlobalSettings.Settings.gsSelectPointColor);
+ FillPaint.Color := TAlphaColorRec.White;
+ BorderPaint := SkPen(Canvas, WinColor(GlobalSettings.Settings.gsSelectPointColor), 1, False);
  RPix := Max(2, GlobalSettings.Settings.gsPointSize / 1);
 // линия выделенного контура
  LinePaint := SkPen(Canvas, WinColor(GlobalSettings.Settings.gsSelectColor), 2, False);

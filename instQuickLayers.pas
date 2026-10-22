@@ -50,7 +50,7 @@ type
 
 implementation
 
-uses FMX.DialogService;
+uses FMX.DialogService, AppUI;
 
 {$R *.fmx}
 
@@ -58,6 +58,8 @@ constructor TQuickLayersFrame.Create(AOwner: TComponent);
 begin
  inherited;
  FLayers := TList<TResource>.Create;
+// у TListBox HelpKeyword не опубликован - пометка кодом
+ UISetRule(List, 'ui:android:font-4');
 end;
 
 destructor TQuickLayersFrame.Destroy;
