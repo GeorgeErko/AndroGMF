@@ -18,7 +18,7 @@ procedure DrawGeoLine(Drawer: TogsDrawer; GL: TGeoLine; ogsLine: PCollection;
                       Ko: Single; LineWidth: Single; Dx: Single; Selected: Boolean; Color: Integer);
 
 implementation uses Lib, newProcs, Polygons, ogcMathUtils, Writer, types_dimano,
-                    newSettings;
+                    newSettings, System.UITypes;
 
 { Локальные проуедуры модуля --------------------------------------------- }
 
@@ -536,6 +536,12 @@ begin
   end;
   // LWK:=KO1*GMS; // установка коэффициента для толщины линии
   ZnakDrawMode:=0;
+ // знаки в составной линии - цветом линии (Lines3.DrawGeoLine старой
+ // программы: R:=GetRValue(Color)...); Drawer.R/G/B передаются в Znak.Draw32.
+ // Цвет без альфы (COLORREF) переводится в TAlphaColor
+  Drawer.R := TAlphaColorRec(ColorRefToAlpha(Color)).R;
+  Drawer.G := TAlphaColorRec(ColorRefToAlpha(Color)).G;
+  Drawer.B := TAlphaColorRec(ColorRefToAlpha(Color)).B;
  //
   If LWK = 0 then Exit;
  //If BlockGlobalWidth then begin LWK:=0;LWK1:=0;end;

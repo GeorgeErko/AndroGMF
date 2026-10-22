@@ -148,6 +148,9 @@ type
   // кнопки строки состояния - по установкам открытого файла
     procedure SyncStatusButtons;
     procedure OpenGmfFileSkia(const LocalPath: string); virtual;
+   // карта выбрана на устройстве или скачана из облака: копия в папку
+   // исполнителя (DlgGlobalSave.CopyMapToUserFolder) и открытие
+    procedure OpenPickedMap(const LocalPath: string);
    // карта перемещается мышью (нажата кнопка над картой, перемещение начато)
     property IsPanning: Boolean read PanActive;
   public
@@ -171,7 +174,7 @@ implementation
 
 uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager, System.Diagnostics, System.Math, System.Math.Vectors,
      EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
-     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw, AppForms
+     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw, AppForms, HatchLot, newBlock, DlgGlobalSave
 {$IFDEF ANDROID}
      , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
@@ -633,6 +636,36 @@ begin
  if Result then GFontFiles.Add(F);
 end;
 
+// дуги дыр штриховки (THatchLot.Zeros) карты и ее блоков - заново, с числом
+// точек дуги из настроек карты. При чтении они строятся с текущим
+// Quants_For_Arcs, а настройки карты читаются после блоков (TForm.Load:
+// Twigs с блоками, затем Settings); без пересчета блок, перечитанный позже
+// (проверка перед сохранением), отличался бы от загруженного
+procedure RecalcHatchArcs(Form: TForm2);
+procedure Recalc(F: TForm2);
+var I, J: Integer;
+    L: TObject;
+begin
+ if (F = nil) or (F.Twigs = nil) then exit;
+ for I := 0 to F.Twigs.LotsCount - 1 do begin
+  L := TObject(F.Twigs.LAt(I));
+  if L is THatchLot then
+   for J := 0 to THatchLot(L).Zeros.Count - 1 do THatchLot(L).Zero[J].Calculate;
+ end;
+end;
+var I: Integer;
+    B: TObject;
+begin
+ if (Form = nil) or (Form.Settings = nil) or (Form.Settings.psArcCount <= 0) then exit;
+ Quants_For_Arcs := Form.Settings.psArcCount;
+ Recalc(Form);
+ if Form.Twigs.BlockList = nil then exit;
+ for I := 0 to Form.Twigs.BlockList.Count - 1 do begin
+  B := TObject(Form.Twigs.BlockList[I]);
+  if B is TGeoBlock then Recalc(TGeoBlock(B).TwgForm);
+ end;
+end;
+
 procedure TMainFormSkia.OpenGmfFileSkia(const LocalPath: string);
 var
   Stream: TBufStream;
@@ -781,6 +814,7 @@ begin
           PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
         end;
       end;
+      RecalcHatchArcs(TwgForm);
       localSetGabarites;
       if SkPainter <> nil then
         LastCanvasScale := SkPainter.AbsoluteScale.X
@@ -823,10 +857,28 @@ begin
   end;
 end;
 
+// окно сохранения - после закрытия окна выбора (облако вызывает ACallback до
+// своего закрытия)
+procedure TMainFormSkia.OpenPickedMap(const LocalPath: string);
+var Src: string;
+begin
+ if LocalPath = '' then exit;
+ Src := LocalPath;
+ TThread.ForceQueue(nil,
+  procedure
+  begin
+   CopyMapToUserFolder(Src,
+    procedure(Path: string)
+    begin
+     if Path <> '' then OpenGmfFileSkia(Path);
+    end);
+  end);
+end;
+
 procedure TMainFormSkia.btnOpenClickSkia(Sender: TObject);
 begin
  {$IFDEF ANDROID}
- PickGmfFile(OpenGmfFile);
+ PickGmfFile(OpenPickedMap);
 {$ELSE}
  PickGmfFileWin64;
 {$ENDIF}

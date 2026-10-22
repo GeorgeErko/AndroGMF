@@ -10,16 +10,17 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 10.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 50.000000000000000000
+      Position.X = 85.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
+      TabOrder = 4
     end
     inherited btnLocalOpen: TCornerButton
       Align = Left
       Margins.Left = 5.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 80.000000000000000000
+      Position.X = 115.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
@@ -28,18 +29,18 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 10.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 145.000000000000000000
+      Position.X = 180.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
     inherited btnPlus: TCornerButton
       Position.Y = 4.000000000000000000
-      TabOrder = 19
+      TabOrder = 20
       Visible = False
     end
     inherited ptnMinus: TCornerButton
       Position.Y = 4.000000000000000000
-      TabOrder = 18
+      TabOrder = 19
       Visible = False
     end
     inherited btnPDF: TCornerButton
@@ -47,14 +48,14 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 5.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 110.000000000000000000
+      Position.X = 145.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Height = 27.000000000000000000
     end
     inherited btnClose: TButton
       Align = MostRight
       Position.X = 1278.000000000000000000
-      TabOrder = 75
+      TabOrder = 76
     end
     object Load: TButton
       Align = Left
@@ -62,12 +63,12 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Margins.Left = 15.000000000000000000
       Margins.Top = 3.000000000000000000
       Margins.Bottom = 3.000000000000000000
-      Position.X = 185.000000000000000000
+      Position.X = 220.000000000000000000
       Position.Y = 3.000000000000000000
       Size.Width = 73.000000000000000000
       Size.Height = 27.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 38
+      TabOrder = 39
       Text = 'Load'
       TextSettings.Trimming = None
       OnClick = LoadClick
@@ -81,7 +82,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 83.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 77
+      TabOrder = 78
       Text = 'btnDoc'
       TextSettings.Trimming = None
       Visible = False
@@ -95,7 +96,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 90.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 91
+      TabOrder = 92
       object btnEsc: TButton
         Anchors = [akTop, akRight]
         HelpKeyword = 'ui:android:font-4'
@@ -120,7 +121,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 73.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 92
+      TabOrder = 93
       object cbOSM: TCheckBox
         HelpKeyword = 'ui:android:font-2 ui:android:check'
         Position.X = 9.000000000000000000
@@ -140,7 +141,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 77.000000000000000000
       Size.Height = 21.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 76
+      TabOrder = 77
       Text = 'btnGPKGB'
       TextSettings.Trimming = None
       Visible = False
@@ -154,7 +155,7 @@ inherited MainFormMouseObj: TMainFormMouseObj
       Size.Width = 116.000000000000000000
       Size.Height = 33.000000000000000000
       Size.PlatformDefault = False
-      TabOrder = 95
+      TabOrder = 96
       object btnPlus1: TCornerButton
         Tag = 1
         Enabled = False
@@ -248,7 +249,30 @@ inherited MainFormMouseObj: TMainFormMouseObj
       TextSettings.FontColor = claDarkred
       TextSettings.WordWrap = False
       Text = 'gmfv:'
-      TabOrder = 122
+      TabOrder = 123
+    end
+    object btnCloud: TCornerButton
+      Align = Left
+      CanFocus = False
+      HelpKeyword = 'ui:android:font-4'
+      Images = ImageList1
+      ImageIndex = 10
+      Margins.Left = 10.000000000000000000
+      Margins.Top = 3.000000000000000000
+      Margins.Bottom = 3.000000000000000000
+      Position.X = 50.000000000000000000
+      Position.Y = 3.000000000000000000
+      Sides = [Top, Left, Bottom, Right]
+      Size.Width = 25.000000000000000000
+      Size.Height = 27.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 3
+      TextSettings.Trimming = None
+      XRadius = 3.000000000000000000
+      YRadius = 3.000000000000000000
+      OnClick = btnCloudClick
+      OnMouseEnter = StatusButtonEnter
+      OnMouseLeave = StatusButtonLeave
     end
   end
   inherited PanelPainter: TPanel
@@ -1497,7 +1521,8 @@ inherited MainFormMouseObj: TMainFormMouseObj
           Hint = #1057#1085#1103#1090#1080#1077' '#1087#1088#1080#1079#1085#1072#1082#1072' '#1091#1076#1072#1083#1077#1085#1080#1103' '#1076#1083#1103' '#1074#1099#1073#1088#1072#1085#1085#1099#1093' '#1090#1086#1095#1077#1095#1085#1099#1093' '#1086#1073#1098#1077#1082#1090#1086#1074
           Images = ImageListOZN
           ImageIndex = 27
-          Position.X = 233.000000000000000000
+          Margins.Left = 4.000000000000000000
+          Position.X = 237.000000000000000000
           Size.Width = 24.000000000000000000
           Size.Height = 24.000000000000000000
           Size.PlatformDefault = False
@@ -1774,6 +1799,43 @@ inherited MainFormMouseObj: TMainFormMouseObj
             FileName = 'C:\!GEOMASTER\Office\'#1055#1088#1103#1084#1086#1091#1075#1086#1083#1100#1085#1080#1082'.bmp'
           end>
         Name = #1055#1088#1103#1084#1086#1091#1075#1086#1083#1100#1085#1080#1082
+      end
+      item
+        MultiResBitmap.Height = 25
+        MultiResBitmap.Width = 24
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap = <
+          item
+            Width = 24
+            Height = 25
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000180000001908060000002B2BEE
+              5D0000000473424954080808087C0864880000029B494441544889AD954D6EDC
+              461085BFEA9F21C5956201B989D656728958402EA103E80ABA41360182C857D1
+              4AD001B4F126401019D0624476B3ABB2E08F871ECE44B2F30082335DD5F5AAAB
+              5E1765BBDD1A80433001310010EF7006C581575019D74530339C0D6BBB3EC01C
+              A338A8E206C708C53033149B7F176C20F48ED3D353EABAA6AA2AEABAE6FDCF3F
+              E19C1B8875F02D183AEE43874C032B706EE00D21707E7ECEC3C3032F2F2F6C6E
+              9F00481FDEE1BDC77B4F4A09114155D742E14484E971CECD1B9D735C5C5C7073
+              73C376BB9D83036C6E9FF07FFC4D4A89AAAA086135CFA1A46DDBDAF42784408C
+              911823A51454959412F1CF7F0E06C89767545545D775945216B6AAAABE94C87B
+              4F8C9194D27C5C8FEC6D5A83AA2222ABB62022C418F1DE13424055A93E7EFECF
+              A013CC8602F47D4F8C11555D24E5420838E7E8BA8EFCDB27CCD633CE9767A40F
+              EFF6D637B74FA494F0DE737777478C91CD6633DB05B09CF3D13A03E8AF3F0EEA
+              FAFDAF833EDD2F3F2C4A1D421854341DF3185EE3537DFC3CF763EA893BD49CEF
+              85632430B3A33AFE16A82AC5062586BEEFF1DE934779BE45415F235F9EF1F8F8
+              C8F5F5F59792A694ACEF7B131113116B9A667E4E4E4EAC691A4B295929C5002B
+              395B5DD70BBFA6692CC6682262575757D6759DB5EDD6CCCC82AAA2AAB46D8B17
+              4101078BF76E8373293C3F3FCF5375F7ADAA98D9E83FCEB369A399D18F81A6B1
+              B53EBE3838D8D6E08E19A74BF835A65BFFDD04D3F5AFEB7A411A63E4FEFEFEE0
+              FC592479CC2822F47D3FD7189827EDB4FE268210C2F0251B87959931896022E9
+              FB7E2F788C11E71C2242DBB60B82B9442202BDEE656566E49C29A5907326E7FC
+              AACC574FA00EBC08E2FD7E73CC10C0793FF8EE64276A07BBB990695555AFCEEC
+              3076A941EC2DE7FD061C95E9FF817F0121CD8044E8DCC28F0000000049454E44
+              AE426082}
+            FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\Cloud.png'
+          end>
+        Name = 'Cloud'
       end>
     Destination = <
       item
@@ -1834,6 +1896,14 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Layers = <
           item
             Name = 'HAND3'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Cloud'
+            SourceRect.Right = 24.000000000000000000
+            SourceRect.Bottom = 25.000000000000000000
           end>
       end>
     Left = 124

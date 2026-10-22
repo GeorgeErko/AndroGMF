@@ -103,8 +103,9 @@ type
   end;
 
 const
- // подложка модального диалога на Android (прозрачная - только перехват касаний)
-  DialogShade: TAlphaColor = $00000000;
+ // затемнение фона под модальным диалогом на Android, если тема его не дает
+ // (android:backgroundDimAmount темы Material - 0.6)
+  DialogDimDefault: Single = 0.6;
  // окно диалога на Android: рамка, скругление углов, тень на подложке
  // (полупрозрачная, со сдвигом вправо-вниз)
   DialogBorderColor: TAlphaColor = $FF000000;
@@ -127,9 +128,41 @@ function DialogOpen: Boolean;
 // (mrCancel), True - клавиша обработана; остальные клавиши - элементам диалога,
 // не операциям карты (проверять DialogOpen)
 function DialogKeyDown(var Key: Word; var KeyChar: WideChar): Boolean;
+// подложка модального диалога на Android: черная с прозрачностью затемнения
+// фона стандартных окон Android (android:backgroundDimAmount текущей темы,
+// иначе DialogDimDefault); перехватывает касания
+function DialogShade: TAlphaColor;
 
 implementation uses System.Math, System.Generics.Collections, FMX.StdCtrls, AppUI,
-                    FMX.Graphics, FMX.Layouts;
+                    FMX.Graphics, FMX.Layouts
+{$IFDEF ANDROID}
+                    , Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText, Androidapi.JNI.Util
+{$ENDIF};
+
+const
+  AttrBackgroundDimAmount = $01010032; // android.R.attr.backgroundDimAmount
+
+var
+  GDialogDim: Single = -1; // затемнение из темы (-1 - еще не прочитано)
+
+function DialogShade: TAlphaColor;
+{$IFDEF ANDROID}
+var TV: JTypedValue;
+{$ENDIF}
+begin
+ if GDialogDim < 0 then begin
+  GDialogDim := DialogDimDefault;
+ {$IFDEF ANDROID}
+  try
+   TV := TJTypedValue.JavaClass.init;
+   if TAndroidHelper.Context.getTheme.resolveAttribute(AttrBackgroundDimAmount, TV, True) then GDialogDim := TV.getFloat;
+  except
+  end;
+ {$ENDIF}
+  GDialogDim := EnsureRange(GDialogDim, 0, 1);
+ end;
+ Result := TAlphaColor(Round(GDialogDim * 255) shl 24); // черный, альфа - затемнение
+end;
 
 type
   TButtonSave = record

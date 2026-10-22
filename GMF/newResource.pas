@@ -319,6 +319,9 @@ Type
    {}
      Procedure CreateProperties;
      Procedure FreeProperties;
+    // очистка Childs: номера дочерних слоев из файла (TExt, еще не замененные
+    // слоями) освобождаются, ссылки на слои - нет (слои принадлежат таблице)
+     Procedure ClearChilds;
   end;
 { ��� ��� (������ � �������)
 var BortODH:TListByName;
@@ -584,6 +587,7 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
     FW:=2;
     Opaque:=Opaq;
     Childs:=PCollection.Create(1);
+    Resources:=PCollection.Create(1);
     ColorK:=0;
     LineWidth:=-1;
     propDicts:='��� ����='+RecString+#13#10+'������='+#13#10;
@@ -715,6 +719,8 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
      propDicts:='��� ����='+RecString+#13#10+'������='+#13#10;
     end;
     Flag:=False;
+   // подслои: в старых версиях классификатора (ClassVersion<14) их нет
+    If Resources=nil then Resources:=PCollection.Create(1);
 //    WriteIn(['TResource.LoadEnd=', Stream.Position]);
    end;
 
@@ -925,11 +931,24 @@ implementation uses newProperties, TwgColle, LConvEncoding, Writer;
   //  DisposeStr(RecString);
   // If FName<>nil then
   //  DisposeStr(FName);
-    Childs.DeleteAll;
-    Childs.Free;
+    If Childs<>nil then begin
+     ClearChilds;
+     Childs.Free;
+    end;
     if Symbology<>nil then Symbology.Free;
     FreeProperties;
-    Resources.DeleteAll;Resources.Free;
+   // подслои принадлежат слою (TLayerTable.DeleteSubLayer тоже освобождает
+   // подслой); раньше - DeleteAll, и подслои не освобождались вместе с таблицей
+    If Resources<>nil then Resources.Free;
+    inherited Destroy;
+   end;
+  Procedure TResource.ClearChilds;
+   var I:Integer;
+   begin
+    If Childs=nil then exit;
+    For I:=Childs.Count-1 downto 0 do
+     If TObject(Childs[I]) is TExt then Childs.AtFree(I);
+    Childs.DeleteAll;
    end;
 function TResource.GetColor: Integer;
 begin

@@ -4,6 +4,9 @@ inherited MainFormMouseObj_XLgXhdpiTb: TMainFormMouseObj_XLgXhdpiTb
   DesignerMasterStyle = 3
   inherited Panel1: TPanel
     Size.Width = 800.000000000000000000
+    inherited btnOpen: TCornerButton
+      Position.X = 50.000000000000000000
+    end
     inherited btnClose: TButton
       Position.X = 780.000000000000000000
     end
@@ -15,6 +18,9 @@ inherited MainFormMouseObj_XLgXhdpiTb: TMainFormMouseObj_XLgXhdpiTb
     end
     inherited pnlView: TPanel
       Position.X = 501.000000000000000000
+    end
+    inherited btnCloud: TCornerButton
+      Position.X = 85.000000000000000000
     end
   end
   inherited PanelPainter: TPanel
@@ -115,16 +121,16 @@ inherited MainFormMouseObj_XLgXhdpiTb: TMainFormMouseObj_XLgXhdpiTb
       Position.X = 1183.000000000000000000
     end
     inherited sSpeedButton42: TSpeedButton
-      Position.X = 1201.000000000000000000
+      Position.X = 1205.000000000000000000
     end
     inherited UpDown2: TLayout
-      Position.X = 1231.000000000000000000
+      Position.X = 1235.000000000000000000
     end
     inherited SpeedButton6: TSpeedButton
-      Position.X = 1249.000000000000000000
+      Position.X = 1257.000000000000000000
     end
     inherited sbCancel: TSpeedButton
-      Position.X = 1277.000000000000000000
+      Position.X = 1285.000000000000000000
     end
     inherited Layout1: TLayout
       Position.X = 434.000000000000000000

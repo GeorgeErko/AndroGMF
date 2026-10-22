@@ -29,7 +29,8 @@ function SaveGmfChecked(Form: TForm2; const FileName: string; Log: TStrings): Bo
 implementation
 
 uses
-  System.Generics.Collections, System.IOUtils, newConsts, newForm0, WPTForm0, Writer, ObjBlockList, newBlock, newResource;
+  System.Generics.Collections, System.IOUtils, System.Math, newConsts, newForm0, WPTForm0, Writer, ObjBlockList, newBlock, newResource,
+  ECLot, WpTwigs, TwgColle;
 
 const
   MaxDetails = 30; // подробно - первые ошибки
@@ -46,6 +47,7 @@ function RunStreamSelfTest(Form: TForm2; Log: TStrings): Integer;
 var
   Stat: TDictionary<string, TPair<Integer, Integer>>; // класс -> (проверено, ошибок)
   Details: Integer;
+  Notes: Integer; // блоки, нормализованные при чтении (не ошибка)
   SaveVersion, SaveClassVersion: Integer;
 procedure Report(const S: string);
 begin
@@ -98,11 +100,106 @@ begin
  with Trace[Best] do
   Result := Format('%s (глубина %d, Store с %d по %d, байт %d от начала объекта)', [Cls, Depth, StartPos, EndPos, Ofs - StartPos]);
 end;
+// размер записи объекта (Put в поток в памяти); -1 - исключение
+function PutSize(Form: TForm2; Obj: TTwgObject): Int64;
+var B: TBufStream;
+begin
+ B := TBufStream.Create;
+ try
+  B.Selector := Form.Selector;
+  try
+   B.Put(Obj);
+   Result := B.Position;
+  except
+   Result := -1;
+  end;
+ finally
+  B.Free;
+ end;
+end;
+// все записанные объекты, внутри которых лежит смещение Ofs, - от внешнего к
+// вложенному: 'TGeoBlock > TForm2 > ... > TDot'
+function Chain(const Trace: TList<TTraceRec>; Ofs: Int64): string;
+var K, D, Best: Integer;
+begin
+ Result := '';
+ for D := 0 to 30 do begin
+  Best := -1;
+  for K := 0 to Trace.Count - 1 do
+   if (Trace[K].Depth = D) and (Trace[K].StartPos <= Ofs) and (Ofs < Trace[K].EndPos) then Best := K;
+  if Best < 0 then continue;
+  if Result <> '' then Result := Result + ' > ';
+  Result := Result + Trace[Best].Cls;
+ end;
+end;
+// номера ветвей контура и число точек каждой ветви: '-2(5) 1(2) ...'
+function LotTwigs(Form: TForm2; Lot: TLot): string;
+var K, N: Integer;
+    Tw: TTwig;
+begin
+ Result := '';
+ for K := 0 to Lot.Coord.Count - 1 do begin
+  N := TLong(Lot.Coord[K]).Num;
+  Tw := nil;
+  if (Abs(N) > 0) and (Abs(N) < Form.Twigs.TwigsCount) then Tw := TTwig(Form.Twigs.TAt(Abs(N)));
+  if Tw <> nil then Result := Result + Format('%d(%d) ', [N, Tw.Coord.Count]) else Result := Result + Format('%d(?) ', [N]);
+ end;
+end;
+// блок после записи и чтения отличается размером: что изменилось во вложенной
+// карте блока - число ветвей, контуров, объектов; контуры с другим числом
+// ветвей (Load перестраивает контуры - SetFromTwig) и ветви с другим числом точек
+procedure BlockDiff(B1, B2: TGeoBlock);
+var F1, F2: TForm2;
+    K, Shown: Integer;
+    L1, L2: TLot;
+begin
+ F1 := B1.TwgForm;
+ F2 := B2.TwgForm;
+ if (F1 = nil) or (F2 = nil) then exit;
+ Report(Format('       блок "%s": ветвей %d/%d, контуров %d/%d, объектов %d/%d', [B1.Name,
+  F1.Twigs.TwigsCount, F2.Twigs.TwigsCount, F1.Twigs.LotsCount, F2.Twigs.LotsCount, F1.Twigs.AnyCount, F2.Twigs.AnyCount]));
+ Shown := 0;
+ for K := 0 to Min(F1.Twigs.LotsCount, F2.Twigs.LotsCount) - 1 do begin
+  L1 := TLot(F1.Twigs.LAt(K));
+  L2 := TLot(F2.Twigs.LAt(K));
+  if L1.Coord.Count = L2.Coord.Count then continue;
+  Inc(Shown);
+  if Shown > 5 then break;
+  Report(Format('       контур #%d (TypeLot %d): ветвей %d -> %d', [K, L1.TypeLot, L1.Coord.Count, L2.Coord.Count]));
+  Report('         до:    ' + LotTwigs(F1, L1));
+  Report('         после: ' + LotTwigs(F2, L2));
+ end;
+ Shown := 0;
+ for K := 1 to Min(F1.Twigs.TwigsCount, F2.Twigs.TwigsCount) - 1 do
+  if TTwig(F1.Twigs.TAt(K)).Coord.Count <> TTwig(F2.Twigs.TAt(K)).Coord.Count then begin
+   Inc(Shown);
+   if Shown > 5 then break;
+   Report(Format('       ветвь #%d: точек %d -> %d, Closed %d', [K, TTwig(F1.Twigs.TAt(K)).Coord.Count,
+    TTwig(F2.Twigs.TAt(K)).Coord.Count, TTwig(F1.Twigs.TAt(K)).Closed]));
+  end;
+// размер записи ветвей и контуров: какие объекты блока изменились при чтении
+ Shown := 0;
+ for K := 1 to Min(F1.Twigs.TwigsCount, F2.Twigs.TwigsCount) - 1 do
+  if PutSize(F1, TTwgObject(F1.Twigs.TAt(K))) <> PutSize(F2, TTwgObject(F2.Twigs.TAt(K))) then begin
+   Inc(Shown);
+   if Shown > 5 then break;
+   Report(Format('       ветвь #%d %s: запись %d -> %d байт, точек %d, ArcView %d/%d', [K, TTwig(F1.Twigs.TAt(K)).ClassName,
+    PutSize(F1, TTwgObject(F1.Twigs.TAt(K))), PutSize(F2, TTwgObject(F2.Twigs.TAt(K))), TTwig(F1.Twigs.TAt(K)).Coord.Count,
+    TTwig(F1.Twigs.TAt(K)).ArcView, TTwig(F2.Twigs.TAt(K)).ArcView]));
+  end;
+ Shown := 0;
+ for K := 0 to Min(F1.Twigs.LotsCount, F2.Twigs.LotsCount) - 1 do
+  if PutSize(F1, TTwgObject(F1.Twigs.LAt(K))) <> PutSize(F2, TTwgObject(F2.Twigs.LAt(K))) then begin
+   Inc(Shown);
+   if Shown > 5 then break;
+   Report(Format('       контур #%d: запись %d -> %d байт', [K, PutSize(F1, TTwgObject(F1.Twigs.LAt(K))), PutSize(F2, TTwgObject(F2.Twigs.LAt(K)))]));
+  end;
+end;
 procedure TestObject(Obj: TTwgObject; const Where: string);
-var B1, B2: TBufStream;
-    Obj2: TTwgObject;
+var B1, B2, B3: TBufStream;
+    Obj2, Obj3: TTwgObject;
     W, R: Int64;
-    A1, A2: TBytes;
+    A1, A2, A3: TBytes;
     Cls: string;
     I: Integer;
     T1, T2: TList<TTraceRec>;
@@ -111,9 +208,11 @@ begin
  Cls := Obj.ClassName;
  B1 := TBufStream.Create;
  B2 := TBufStream.Create;
+ B3 := nil;
  T1 := TList<TTraceRec>.Create;
  T2 := TList<TTraceRec>.Create;
  Obj2 := nil;
+ Obj3 := nil;
 // отметка записанных объектов (для поиска места расхождения)
  PutTrace :=
   procedure(Stream: TBufStream; O: TTwgObject; StartPos, EndPos: Int64; Depth: Integer)
@@ -150,10 +249,34 @@ begin
   end;
   A1 := StreamBytes(B1);
   A2 := StreamBytes(B2);
- // блок: Load перестраивает контуры (TLot.SetFromTwig - другое начало и
- // направление обхода тех же ветвей), повторная запись отличается номерами -
- // только размер
-  if (Obj is TGeoBlock) and (Length(A1) = Length(A2)) then begin
+ // блок: Load нормализует вложенную карту - перестраивает контуры
+ // (TLot.SetFromTwig: другое начало и направление обхода, лишние ветви
+ // выбрасываются) и пересчитывает дуги дыр штриховки (TTwigARC.ArcCreate -
+ // число точек по текущему Quants_For_Arcs). Проверяется, что нормализованный
+ // блок записывается и читается без изменений: третья запись = второй (по
+ // размеру - контуры могут снова начаться с другой ветви)
+  if Obj is TGeoBlock then begin
+   if Length(A1) <> Length(A2) then begin
+    B2.Position := 0;
+    try
+     Obj3 := B2.Get;
+     B3 := TBufStream.Create;
+     B3.Selector := Form.Selector;
+     B3.Put(Obj3);
+     A3 := StreamBytes(B3);
+    except
+     on E: Exception do begin Count(Cls, True); Fail(Format('%s %s: третье чтение/запись - %s', [Cls, Where, E.Message])); exit; end;
+    end;
+    if Length(A3) <> Length(A2) then begin
+     Count(Cls, True);
+     Fail(Format('%s %s: нормализованный блок записывается по-разному (%d/%d байт)', [Cls, Where, Length(A2), Length(A3)]));
+     if Details <= MaxDetails then BlockDiff(TGeoBlock(Obj2), TGeoBlock(Obj3));
+     exit;
+    end;
+    Inc(Notes);
+    if Notes <= MaxDetails then
+     Report(Format('  блок %s "%s" нормализован при чтении: %d -> %d байт', [Where, TGeoBlock(Obj).Name, Length(A1), Length(A2)]));
+   end;
    Count(Cls, False);
    exit;
   end;
@@ -167,6 +290,7 @@ begin
     Report('       в записи 2: ' + Innermost(T2, I));
     Report('       байты 1: ' + HexAround(A1, I));
     Report('       байты 2: ' + HexAround(A2, I));
+    Report('       цепочка: ' + Chain(T1, I));
    end;
    exit;
   end;
@@ -174,6 +298,8 @@ begin
  finally
   PutTrace := nil;
   try Obj2.Free; except end;
+  try Obj3.Free; except end;
+  B3.Free;
   B1.Free;
   B2.Free;
   T1.Free;
@@ -215,6 +341,7 @@ var I: Integer;
 begin
  Result := 0;
  Details := 0;
+ Notes := 0;
  if (Form = nil) or (Form.Twigs = nil) then exit;
  Stat := TDictionary<string, TPair<Integer, Integer>>.Create;
 // Load проверяет версию формата: при чтении - текущая (как у только что записанного)
@@ -231,7 +358,7 @@ begin
    for I := 0 to LotsCount - 1 do TestObject(LAt(I), 'контур #' + IntToStr(I));
    for I := 0 to AnyCount - 1 do TestObject(AAt(I, W), 'объект #' + IntToStr(I) + ' (тип ' + IntToStr(W) + ')');
    if BlockList <> nil then
-   for I := 0 to BlockList.Count - 1 do TestObject(BlockList[I], 'блок #' + IntToStr(I));
+   for I := 0 to BlockList.Count - 1 do TestObject(BlockList[I], 'блок #' + {TGeoBlock(BlockList[I]).Name} IntToStr(I) + ' из: ' +IntToStr(BlockList.Count) );
   end;
   TestObject(Form.LayerTable, 'таблица слоев');
   TestObject(Form.FontColEx, 'шрифты карты');

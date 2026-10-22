@@ -88,6 +88,7 @@ type
     function SelectedObjects: TSelectedObjects;
    // карта изменена: пересборка классов, сцена заново
     procedure DendroChanged(Sender: TObject);
+    procedure SaveMapTo(AskName: Boolean);
     procedure ShowButtonMenu(Btn: TControl; const Items: array of String; const Tags: array of Integer);
     procedure ButtonMenuClick(Sender: TObject);
    // Android: меню кнопки - панель в форме под кнопкой
@@ -117,30 +118,45 @@ implementation
 
 uses newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2, VarSetForm3
      {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32, objDataZnk32, objEditMap32{$ENDIF}, Collect,
-     StreamSelfTest, System.IOUtils, System.Generics.Collections, System.Generics.Defaults, FMX.DialogService,
+     StreamSelfTest, DlgGlobalSave, System.IOUtils, System.Generics.Collections, System.Generics.Defaults, FMX.DialogService,
      newConsts, newProperties, newResource, newBlock, UserObject, LBN, EcDot, EcLot,
      WpTwigs, FramePropEditor, WpTForm2, EcDot2, TwgDraw;
 
 {$R *.fmx}
 
-procedure TMainFormDendro.btnSaveAsClick(Sender: TObject);
-begin
- RunStreamSelfTest(TwgForm)
-end;
-
-// сохранение с проверкой записи/чтения (StreamSelfTest): .gmf и копия .gm3;
-// отчет проверки и итог - сообщением (и при успехе, и при ошибке)
-procedure TMainFormDendro.btnSaveClick(Sender: TObject);
-var Log: TStringList;
+// сохранение в выбранную пользователем папку (DlgGlobalSave: Android -
+// Download/подпапка, Windows - Документы/подпапка): путь - в About.Path и
+// About.MyName, затем запись с проверкой записи/чтения (StreamSelfTest): .gmf и
+// копия .gm3; отчет проверки и итог - сообщением (и при успехе, и при ошибке).
+// AskName - «Сохранить как» (можно изменить имя файла)
+procedure TMainFormDendro.SaveMapTo(AskName: Boolean);
 begin
  if TwgForm = nil then exit;
- Log := TStringList.Create;
- try
-  SaveGmfChecked(TwgForm, TPath.Combine(String(TwgForm.About.Path), String(TwgForm.About.MyName)), Log);
-  ShowMessage(Log.Text);
- finally
-  Log.Free;
- end;
+ SaveMapPicker(string(TwgForm.About.MyName), AskName,
+  procedure(FullPath: string)
+  var Log: TStringList;
+  begin
+   if (FullPath = '') or (TwgForm = nil) then exit;
+   TwgForm.About.Path := AnsiString(IncludeTrailingPathDelimiter(ExtractFileDir(FullPath)));
+   TwgForm.About.MyName := AnsiString(ExtractFileName(FullPath));
+   Log := TStringList.Create;
+   try
+    SaveGmfChecked(TwgForm, FullPath, Log);
+    ShowMessage(Log.Text);
+   finally
+    Log.Free;
+   end;
+  end);
+end;
+
+procedure TMainFormDendro.btnSaveAsClick(Sender: TObject);
+begin
+ SaveMapTo(True);
+end;
+
+procedure TMainFormDendro.btnSaveClick(Sender: TObject);
+begin
+ SaveMapTo(False);
 end;
 
 

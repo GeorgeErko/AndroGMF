@@ -117,6 +117,7 @@ type
     sbAttrZN: TSpeedButton;
     sbStatDelete: TSpeedButton;
     sbStatRestore: TSpeedButton;
+    btnCloud: TCornerButton;
     procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
@@ -133,6 +134,7 @@ type
     procedure btnPanClick(Sender: TObject);
     procedure btnPlusClick(Sender: TObject);
     procedure btnQuickLayersClick(Sender: TObject);
+    procedure btnCloudClick(Sender: TObject);
   private
    FMouseObject: TKeyMouseHook;
    FNoDefaultMouse: Integer;
@@ -234,7 +236,7 @@ implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
-                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource, AppUI, AppForms
+                    GPKGReader, DlgLocalOpen, FMX.Edit, TwgDraw, EcDot, EcLot, newResource, AppUI, AppForms, DlgGlobalOpen
                     {$IFDEF ANDROID}, Androidapi.Helpers, Androidapi.JNI.GraphicsContentViewText{$ENDIF};
 
 {$R *.fmx}
@@ -786,6 +788,14 @@ procedure TMainFormMouseObj.Button1Click(Sender: TObject);
 begin
 // instHost.Width := instHost.Width +30;
  tsts2DF.Show;
+end;
+
+// карта из облака: общая папка Nextcloud по ссылке (DlgGlobalOpen) - выбор файла
+// в папке, скачивание, копия в папку исполнителя и открытие, как файла с
+// устройства (OpenPickedMap)
+procedure TMainFormMouseObj.btnCloudClick(Sender: TObject);
+begin
+ OpenUrlPicker(OpenPickedMap);
 end;
 
 procedure TMainFormMouseObj.btnDocClick(Sender: TObject);

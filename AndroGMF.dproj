@@ -428,6 +428,14 @@
             <Form>localOpenForm</Form>
             <FormType>fmx</FormType>
         </DCCReference>
+        <DCCReference Include="DlgGlobalOpen.pas">
+            <Form>GlobalOpenForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
+        <DCCReference Include="DlgGlobalSave.pas">
+            <Form>GlobalSaveForm</Form>
+            <FormType>fmx</FormType>
+        </DCCReference>
         <DCCReference Include="MainFrm.pas">
             <Form>MainForm</Form>
             <FormType>fmx</FormType>
@@ -1330,20 +1338,6 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Геоплан500.twg" Configuration="Debug" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Геоплан500.twg</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="WIN\WORKPATH\dicts\Геоплан500.twg" Configuration="Release" Class="File">
-                    <Platform Name="Android64">
-                        <RemoteDir>assets\internal</RemoteDir>
-                        <RemoteName>Геоплан500.twg</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="WIN\WORKPATH\dicts\ODH_2018.grp" Configuration="Debug" Class="File">
                     <Platform Name="Android64">
                         <RemoteDir>assets\internal</RemoteDir>
@@ -1537,6 +1531,20 @@
                     <Platform Name="Android64">
                         <RemoteDir>assets\internal</RemoteDir>
                         <RemoteName>txt_____.ttf</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\Геоплан500.twg" Configuration="Debug" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteName>Геоплан500.twg</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="WIN\WORKPATH\dicts\Геоплан500.twg" Configuration="Release" Class="File">
+                    <Platform Name="Android64">
+                        <RemoteDir>assets\internal</RemoteDir>
+                        <RemoteName>Геоплан500.twg</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>

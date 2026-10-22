@@ -1,0 +1,178 @@
+object GlobalOpenForm: TGlobalOpenForm
+  Left = 0
+  Top = 0
+  BorderStyle = Single
+  Caption = #1054#1090#1082#1088#1099#1090#1100' '#1080#1079' '#1086#1073#1083#1072#1082#1072
+  ClientHeight = 460
+  ClientWidth = 520
+  Position = ScreenCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  DesignerMasterStyle = 0
+  object TopLay: TLayout
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 8.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 8.000000000000000000
+    Size.Width = 504.000000000000000000
+    Size.Height = 26.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    object edUrl: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      Align = Client
+      TabOrder = 0
+      KeyboardType = URL
+      ReturnKeyType = Go
+      HelpKeyword = 'ui:android:font-2'
+      Size.Width = 410.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+    end
+    object btnGo: TButton
+      Align = Right
+      HelpKeyword = 'ui:android:font-2'
+      Margins.Left = 6.000000000000000000
+      Position.X = 416.000000000000000000
+      Size.Width = 88.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #1055#1077#1088#1077#1081#1090#1080
+      TextSettings.Trimming = None
+      OnClick = btnGoClick
+    end
+  end
+  object ListView1: TListView
+    ItemAppearanceClassName = 'TImageListItemAppearance'
+    ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'
+    HeaderAppearanceClassName = 'TListHeaderObjects'
+    FooterAppearanceClassName = 'TListHeaderObjects'
+    Images = ImageList1
+    Align = Client
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 6.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Size.Width = 504.000000000000000000
+    Size.Height = 346.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 1
+    ItemAppearanceObjects.ItemObjects.Accessory.Visible = False
+    HelpKeyword = 'ui:android:font-2 ui:android:list'
+    OnItemClick = ListView1ItemClick
+  end
+  object lStatus: TLabel
+    Align = Bottom
+    HelpKeyword = 'ui:android:font-2'
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 4.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 390.000000000000000000
+    Size.Width = 504.000000000000000000
+    Size.Height = 26.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 2
+  end
+  object Panel1: TPanel
+    Align = Bottom
+    Position.Y = 416.000000000000000000
+    Size.Width = 520.000000000000000000
+    Size.Height = 44.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 3
+    object btnCancel: TButton
+      Align = Right
+      HelpKeyword = 'ui:android:font-2'
+      Margins.Top = 9.000000000000000000
+      Margins.Right = 8.000000000000000000
+      Margins.Bottom = 9.000000000000000000
+      Position.X = 412.000000000000000000
+      Position.Y = 9.000000000000000000
+      Size.Width = 100.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 1
+      Text = #1054#1090#1084#1077#1085#1072
+      TextSettings.Trimming = None
+      OnClick = btnCancelClick
+    end
+    object btnOpen: TButton
+      Align = Right
+      HelpKeyword = 'ui:android:font-2'
+      Margins.Top = 9.000000000000000000
+      Margins.Right = 8.000000000000000000
+      Margins.Bottom = 9.000000000000000000
+      Position.X = 304.000000000000000000
+      Position.Y = 9.000000000000000000
+      Size.Width = 100.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      TabOrder = 0
+      Text = #1054#1090#1082#1088#1099#1090#1100
+      TextSettings.Trimming = None
+      OnClick = btnOpenClick
+    end
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000006549444154388DD551390EC0
+              3008B3FB72F2727720477348094387784121F81000D783DF8724759F24B1411D
+              70F23C4F2E9AA3C0E8BC75F56402C0A7345322001E5533F4869224416638AE39
+              411388909702F726A867F42D9FC32C5FB48408B11B62AEBFE005F321C891B970
+              1D080000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\FOLDER.BMP'
+          end>
+        Name = 'FOLDER'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C086488000000AF49444154388D9D93511285
+              2008450F8DFBEEB272DE47562AFA6A6286294C2E7A200382EF661B4044742E29
+              ADCD5C52944BCAAD11166A6301D11CD48CA8716161B183594DDCD777D8D28A6A
+              11A2AFBAB002E0EE77667DE0FE987C5A1C4600279DFFF46A4E0F9178D750B32E
+              4C0C029B6EBC8FDBC70D0340C2A4EB3D71B8BE6B101DEE971850F9A87AC320B7
+              711C18EC28A8B41398CDC1A0650FDDBC2771842631C7B810881753B7123077FF
+              FC4BFF005F5EA649120A6F160000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\MAP.BMP'
+          end>
+        Name = 'MAP'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'FOLDER'
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'MAP'
+          end>
+      end>
+    Left = 440
+    Top = 120
+  end
+end

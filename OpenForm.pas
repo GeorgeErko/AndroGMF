@@ -11,6 +11,14 @@ uses
 
 procedure PickGmfFile(const ACallback: TPickGmfFileCallback);
 procedure PickGpkgFile(const ACallback: TPickGmfFileCallback);
+// папка для выбранного (скачанного) файла: карта .gmf - личное внешнее
+// хранилище приложения (Android), остальные (.zip и др.) - рабочая папка программы
+function PickedFileDir(const DisplayName: string): string;
+// карта из выбранного (скачанного) файла: .gmf - он сам; .zip (или файл с
+// сигнатурой ZIP) - распаковка в рабочую папку с перезаписью одноименных
+// файлов, карта - первый .gmf архива; '' - карты нет (так же для
+// DlgGlobalOpen)
+function ResolvePickedMap(const PickedLocalPath: string): string;
 
 implementation
 
@@ -29,6 +37,101 @@ uses
   FMX.Platform,
   Androidapi.JNI.GraphicsContentViewText
 {$ENDIF};
+
+// папка для выбранного файла: карты .gmf - в личное внешнее хранилище
+// приложения (Внутреннее хранилище\Android\data\<пакет>\files, видно в
+// проводнике телефона, разрешений не требует); остальные (.zip и др.) - в
+// рабочую папку программы, как раньше
+function PickedFileDir(const DisplayName: string): string;
+{$IFDEF ANDROID}
+var Dir: JFile;
+{$ENDIF}
+begin
+ Result := TPath.GetDocumentsPath;
+{$IFDEF ANDROID}
+ if not SameText(ExtractFileExt(DisplayName), '.gmf') then exit;
+ try
+  Dir := TAndroidHelper.Context.getExternalFilesDir(nil);
+  if Dir <> nil then Result := JStringToString(Dir.getAbsolutePath);
+ except
+ end;
+{$ENDIF}
+end;
+
+// распаковка архива в Dir: одноименный файл сначала удаляется (у него может
+// быть атрибут «только чтение», восстановленный из прежнего архива, - тогда
+// fmCreate в TZipFile.Extract не перезаписал бы его); Gmf - первая карта архива
+procedure ExtractZipOverwrite(const ZipPath, Dir: string; out Gmf: string);
+var Zip: TZipFile;
+    I: Integer;
+    Name, Target: string;
+begin
+ Gmf := '';
+ Zip := TZipFile.Create;
+ try
+  Zip.Open(ZipPath, zmRead);
+  for I := 0 to Zip.FileCount - 1 do begin
+   Name := Zip.FileNames[I];
+  {$IFDEF MSWINDOWS}
+   Name := StringReplace(Name, '/', '\', [rfReplaceAll]);
+  {$ENDIF}
+   Target := TPath.Combine(Dir, Name);
+   if (Name = '') or (Name[Length(Name)] = PathDelim) then continue; // папка
+   if TFile.Exists(Target) then begin
+    try
+     TFile.SetAttributes(Target, []);
+    except
+    end;
+    TFile.Delete(Target);
+   end;
+   Zip.Extract(I, Dir, True);
+   if (Gmf = '') and SameText(ExtractFileExt(Target), '.gmf') then Gmf := Target;
+  end;
+ finally
+  Zip.Free;
+ end;
+end;
+
+function ResolvePickedMap(const PickedLocalPath: string): string;
+var
+  Ext: string;
+  S: TFileStream;
+  Sig: array[0..3] of Byte;
+  IsZip: Boolean;
+begin
+  Result := '';
+  if PickedLocalPath = '' then
+    Exit;
+  Ext := LowerCase(ExtractFileExt(PickedLocalPath));
+  if Ext = '.gmf' then
+  begin
+    Result := PickedLocalPath;
+    Exit;
+  end;
+  IsZip := (Ext = '.zip');
+  if not IsZip then
+  begin
+    try
+      S := TFileStream.Create(PickedLocalPath, fmOpenRead or fmShareDenyNone);
+      try
+        if S.Read(Sig, SizeOf(Sig)) = SizeOf(Sig) then
+          IsZip := (Sig[0] = $50) and (Sig[1] = $4B);
+      finally
+        S.Free;
+      end;
+    except
+      IsZip := False;
+    end;
+  end;
+  if not IsZip then Exit;
+ // архив - в рабочую папку программы (вместе с картой - ее шрифты, словари)
+  try
+    ForceDirectories(TPath.GetDocumentsPath);
+    ExtractZipOverwrite(PickedLocalPath, TPath.GetDocumentsPath, Result);
+  except
+    Result := '';
+  end;
+end;
 
 {$IFDEF ANDROID}
 type
@@ -71,22 +174,6 @@ type
 
 var
   _AndroidGpkgPicker: TAndroidGpkgPicker;
-
-// папка для выбранного файла: карты .gmf - в личное внешнее хранилище
-// приложения (Внутреннее хранилище\Android\data\<пакет>\files, видно в
-// проводнике телефона, разрешений не требует); остальные (.zip и др.) - в
-// рабочую папку программы, как раньше
-function PickedFileDir(const DisplayName: string): string;
-var Dir: JFile;
-begin
- Result := TPath.GetDocumentsPath;
- if not SameText(ExtractFileExt(DisplayName), '.gmf') then exit;
- try
-  Dir := TAndroidHelper.Context.getExternalFilesDir(nil);
-  if Dir <> nil then Result := JStringToString(Dir.getAbsolutePath);
- except
- end;
-end;
 
 class function TAndroidGmfPicker.Instance: TAndroidGmfPicker;
 begin
@@ -279,55 +366,8 @@ begin
 end;
 
 function TAndroidGmfPicker.ResolvePickedLocalPath(const PickedLocalPath: string): string;
-var
-  Ext: string;
-  ZipBaseName: string;
-  ExtractDir: string;
-  Gmfs: TStringDynArray;
-  S: TFileStream;
-  Sig: array[0..3] of Byte;
-  IsZip: Boolean;
 begin
-  Result := '';
-  if PickedLocalPath = '' then
-    Exit;
-  Ext := LowerCase(ExtractFileExt(PickedLocalPath));
-  if Ext = '.gmf' then
-  begin
-    Result := PickedLocalPath;
-    Exit;
-  end;
-  IsZip := (Ext = '.zip');
-  if not IsZip then
-  begin
-    try
-      S := TFileStream.Create(PickedLocalPath, fmOpenRead or fmShareDenyNone);
-      try
-        if S.Read(Sig, SizeOf(Sig)) = SizeOf(Sig) then
-          IsZip := (Sig[0] = $50) and (Sig[1] = $4B);
-      finally
-        S.Free;
-      end;
-    except
-      IsZip := False;
-    end;
-  end;
-  if not IsZip then Exit;
-
-  ZipBaseName := ChangeFileExt(ExtractFileName(PickedLocalPath), '');
-  if ZipBaseName = '' then
-    ZipBaseName := 'import_zip';
- // ExtractDir := TPath.Combine(TPath.GetDocumentsPath, ZipBaseName);
-   ExtractDir := TPath.GetDocumentsPath;
-  try
-    ForceDirectories(ExtractDir);
-    TZipFile.ExtractZipFile(PickedLocalPath, ExtractDir);
-    Gmfs := TDirectory.GetFiles(ExtractDir, '*.gmf', TSearchOption.soAllDirectories);
-    if Length(Gmfs) > 0 then
-      Result := Gmfs[0];
-  except
-    Result := '';
-  end;
+ Result := ResolvePickedMap(PickedLocalPath);
 end;
 
 procedure TAndroidGmfPicker.CopyUriToFile(const Uri: Jnet_Uri; const LocalPath: string);

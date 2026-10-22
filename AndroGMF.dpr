@@ -75,6 +75,8 @@ uses
   ogcMathUtils in 'JSON\ogcMathUtils.pas',
   GMFLTDrawer in 'GMF\GMFLTDrawer.pas',
   DlgLocalOpen in 'DlgLocalOpen.pas' {localOpenForm},
+  DlgGlobalOpen in 'DlgGlobalOpen.pas' {GlobalOpenForm},
+  DlgGlobalSave in 'DlgGlobalSave.pas' {GlobalSaveForm},
   MainFrm in 'MainFrm.pas' {MainForm},
   MainFrmSkia in 'MainFrmSkia.pas' {MainFormSkia},
   ogcDrawerSkia in 'JSON\ogcDrawerSkia.pas',

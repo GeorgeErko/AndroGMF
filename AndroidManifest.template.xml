@@ -28,6 +28,7 @@
         android:largeHeap="%largeHeap%"
         android:persistent="%persistent%"
         android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true"
         android:resizeableActivity="true"
         android:restoreAnyVersion="%restoreAnyVersion%"
         android:theme="%theme%" >

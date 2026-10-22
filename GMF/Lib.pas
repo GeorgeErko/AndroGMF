@@ -77,7 +77,7 @@ end;
  //
    Procedure DrawTo(Geometry: TGeometryEvents);
  //
-   Procedure Draw32(X,Y:Double;Selector: TSelector;MXX,MYY,ko,Ugol:Double;bkColor:Boolean);
+   Procedure Draw32(X,Y:Double;Selector: TSelector;MXX,MYY,ko,Ugol:Double;R,G,B:Byte;bkColor:Boolean);
  end;
 {---------------------------------------------------------}
 
@@ -293,13 +293,24 @@ begin
  MRect_.Insert(XX,YY);MRect_.Insert(XX1,YY1);
 end;
 
+// цвета элементов знака (как TDWG_*.Draw32 старой программы, lib.pas):
+//  знак 'по слою' (BkColor) - линия цветом объекта R,G,B; замкнутая фигура -
+//  та же окантовка, заливка цветом объекта (UseFill) или цветом окна;
+//  знак со своими цветами - линия Color, заливка FillColor элемента.
+// Color и FillColor в файле знаков - Windows COLORREF ($00BBGGRR): в TAlphaColor
+// для Skia - ColorRefToAlpha (иначе красный и синий меняются местами)
+function SignPenColor(Color: Integer; R, G, B: Byte; BkColor: Boolean): Integer;
+begin
+ if BkColor then Result := RgbToCol(R, G, B) else Result := ColorRefToAlpha(Color);
+end;
+
 procedure TDWG_Line.Draw32(X, Y: Double; Selector: TSelector; MXX, MYY, ko,
-  Ugol: Double; bkColor: Boolean);
+  Ugol: Double; R, G, B: Byte; bkColor: Boolean);
 var XX,YY,XX1,YY1:Double;
     Pen: TogsPen;
 begin
 // Canvas.PenWidth:=round(Ko*Mxx*koefLine);
- Pen := Selector.Drawer.SelectPen(TogsPen.Create(Color, Ko*0.1, nil));
+ Pen := Selector.Drawer.SelectPen(TogsPen.Create(SignPenColor(Color, R, G, B, BkColor), Ko*0.1, nil));
  XX:=x+(x_b*ko*cos(Ugol)-y_b*ko*sin(Ugol));
  YY:=y+(x_B*ko*sin(Ugol)+y_b*ko*cos(Ugol));
  XX1:=x+(x_e*ko*cos(Ugol)-y_e*ko*sin(Ugol));
@@ -424,18 +435,18 @@ begin
      if UseFill then
       Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
      else
-      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+      Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(GlobalSettings.Settings.gsWindowColor), nil));
     //
      Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end else begin
-     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+     Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(FillColor), nil));
       Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, Ko * 0.1, nil));
+    Pen := Drawer.SelectPen(TogsPen.Create(SignPenColor(Color, R, G, B, BkColor), Ko * 0.1, nil));
      Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
@@ -528,18 +539,18 @@ begin
      if UseFill then
       Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
      else
-      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+      Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(GlobalSettings.Settings.gsWindowColor), nil));
     //
      Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end else begin
-     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+     Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(FillColor), nil));
       Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*0.1), nil));
+    Pen := Drawer.SelectPen(TogsPen.Create(SignPenColor(Color, R, G, B, BkColor), Ko * 0.1, nil));
     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
@@ -680,18 +691,18 @@ begin
      if UseFill then
       Brush := Drawer.SelectBrush(TogsBrush.Create(RgbToCol(R,G,B), nil))
      else
-      Brush := Drawer.SelectBrush(TogsBrush.Create(GlobalSettings.Settings.gsWindowColor, nil));
+      Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(GlobalSettings.Settings.gsWindowColor), nil));
     //
      Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end else begin
-     Brush := Drawer.SelectBrush(TogsBrush.Create(FillColor, nil));
+     Brush := Drawer.SelectBrush(TogsBrush.Create(ColorRefToAlpha(FillColor), nil));
       Selector.Drawer.DrawPolygon(Col, nil);
      Drawer.DeleteBrush(Drawer.SelectBrush(Brush));
     end;
    end;
    //
-    Pen := Drawer.SelectPen(TogsPen.Create(Color, round(Ko*0.1), nil));
+    Pen := Drawer.SelectPen(TogsPen.Create(SignPenColor(Color, R, G, B, BkColor), Ko * 0.1, nil));
     Selector.Drawer.DrawPolyline(Col, True);
     Drawer.DeletePen(Drawer.SelectPen(Pen));
   end;
@@ -1182,7 +1193,7 @@ for i:=0 to Methodcol.Count-1 do With Selector do begin
 		m_Line:
 			begin
 			 p1:=pp.pt;
-			 if BB then p1.draw32(x,y,Selector,MXX,MYY,ko,Ugol,bkColor);
+			 if BB then p1.draw32(x,y,Selector,MXX,MYY,ko,Ugol,R,G,B,bkColor);
       end else
       if (pp.mt=m_Arc) then
 			begin

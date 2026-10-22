@@ -727,7 +727,7 @@ Constructor TForm1.Load;
    clFile := MainPath + Slash + (About.ClassName);
  //  WriteIn(['clName=', MainPath + Slash +(About.ClassName)]);
    If not MirrorObject then
-    If FileExists(MainPath+ Slash + (About.ClassName)) then
+    If FileExists(MainPath + (About.ClassName)) then
      begin
 {       Version:=6;}
      ClName:=MainPath+(About.ClassName);

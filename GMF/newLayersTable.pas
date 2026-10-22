@@ -528,11 +528,12 @@ begin
  LinearLayers.DeleteAll;
  For I:=0 to Layers.Count-1 do begin
   LinearLayers.Insert(Layers[I]);
-  Layer[I].Childs.DeleteAll;
+ // номера дочерних слоев из файла (TExt) освобождаются (раньше - DeleteAll, утечка)
+  Layer[I].ClearChilds;
   For J:=0 to Layer[I].Resources.Count-1 do begin
    LinearLayers.Insert(Layer[I].Resources[J]);
    TResource(Layer[I].Resources[J]).Parent:=Layer[I];
-   TResource(Layer[I].Resources[J]).Childs.DeleteAll;
+   TResource(Layer[I].Resources[J]).ClearChilds;
   end;
  end;
 end;
@@ -684,7 +685,7 @@ begin
    begin
     PR.Restruct(Table.LinearLayer[I].GetResRec,False);
    end;
-   Table.LinearLayer[I].Childs:=PCollection.Create(1);
+   Table.LinearLayer[I].ClearChilds; // была новая коллекция без освобождения прежней
   end;
  end;
  FillLinearLayers;
