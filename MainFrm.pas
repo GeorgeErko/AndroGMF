@@ -6,7 +6,7 @@ uses System.SysUtils, System.Types, System.UITypes, System.Classes, System.Varia
      FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics, FMX.Dialogs,
      FMX.Controls.Presentation, FMX.StdCtrls, System.Skia, FMX.Skia,
      FMX.Memo.Types, FMX.ScrollBox, FMX.Memo, System.ImageList, FMX.ImgList,
-     FMX.Objects,
+     FMX.Objects, FMX.Layouts,
      WptForm2, newSelector, ogcDrawerCanvas, ogcBasic, AppForms;
 
 type
@@ -20,6 +20,7 @@ type
     btnPlus: TCornerButton;
     ptnMinus: TCornerButton;
     Painter: TPaintBox;
+    pnlLeft: TLayout;
     procedure btnOpenClick(Sender: TObject);
     procedure btnLocalOpenClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -83,7 +84,7 @@ var
 procedure  runFonts;
 
 implementation uses Collect, uExecRegisterClass,
-                    System.IOUtils, Writer, newProcs,
+                    System.IOUtils, Writer, newProcs, DlgGlobalSave,
                     System.Zip,
                     FMX.FontManager,
                     {$IFDEF ANDROID} OpenForm, {$ENDIF}
@@ -129,7 +130,7 @@ procedure TMainForm.btnLocalOpenClick(Sender: TObject);
 begin
  localOpenForm := TlocalOpenForm.Create(Self);
 {$IFDEF ANDROID}
- localOpenForm.BaseDir := GetAppExternalFilesDir;
+ localOpenForm.BaseDir := UserMapsDir; // папка карт исполнителя (Documents/подпапка)
 {$ENDIF}
  localOpenForm.FCallBack := OpenGmfFile;
  ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы

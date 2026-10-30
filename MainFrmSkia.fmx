@@ -21,13 +21,13 @@ inherited MainFormSkia: TMainFormSkia
     end
     inherited btnPlus: TCornerButton
       Position.X = 118.000000000000000000
-      TabOrder = 135
+      TabOrder = 142
       OnMouseEnter = StatusButtonEnter
       OnMouseLeave = StatusButtonLeave
     end
     inherited ptnMinus: TCornerButton
       Position.X = 144.000000000000000000
-      TabOrder = 134
+      TabOrder = 141
       OnMouseEnter = StatusButtonEnter
       OnMouseLeave = StatusButtonLeave
     end
@@ -50,8 +50,8 @@ inherited MainFormSkia: TMainFormSkia
       OnMouseLeave = StatusButtonLeave
     end
     object btnClose: TButton
-      HelpKeyword = 'ui:android:font-4'
       Align = Right
+      HelpKeyword = 'ui:android:font-4'
       Images = ImageList1
       ImageIndex = 6
       Position.X = 855.000000000000000000
@@ -66,14 +66,14 @@ inherited MainFormSkia: TMainFormSkia
     end
   end
   inherited PanelPainter: TPanel
-    Size.Width = 875.000000000000000000
+    Size.Width = 850.000000000000000000
     inherited Painter: TPaintBox
       Visible = False
     end
     object SkPainter: TSkPaintBox
       Align = Client
       HitTest = True
-      Size.Width = 875.000000000000000000
+      Size.Width = 850.000000000000000000
       Size.Height = 483.000000000000000000
       Size.PlatformDefault = False
       object Popup1: TPopup
@@ -94,8 +94,8 @@ inherited MainFormSkia: TMainFormSkia
   inherited StatusBar: TStatusBar
     Size.Width = 875.000000000000000000
     object PanelXY: TLabel
-      HelpKeyword = 'ui:android:font-4'
       Align = Left
+      HelpKeyword = 'ui:android:font-4'
       Margins.Left = 4.000000000000000000
       Margins.Right = 4.000000000000000000
       Position.X = 4.000000000000000000
@@ -249,8 +249,8 @@ inherited MainFormSkia: TMainFormSkia
       OnMouseLeave = StatusButtonLeave
     end
     object pMas: TLabel
-      HelpKeyword = 'ui:android:font-4'
       Align = Right
+      HelpKeyword = 'ui:android:font-4'
       Margins.Left = 4.000000000000000000
       Margins.Right = 4.000000000000000000
       Position.X = 761.000000000000000000
@@ -261,9 +261,9 @@ inherited MainFormSkia: TMainFormSkia
       TabOrder = 2
     end
     object PanelHint: TLabel
-      HelpKeyword = 'ui:android:font-4'
       Align = Client
       StyledSettings = [Family, Size, FontColor]
+      HelpKeyword = 'ui:android:font-4'
       Margins.Left = 4.000000000000000000
       Margins.Right = 4.000000000000000000
       Size.Width = 299.000000000000000000

@@ -69,7 +69,9 @@ type
 
 implementation
 
-uses SelectedObjects, ecLot, ecDot2, Writer, FramePropEditor, objOutline;
+// GMF_READER - сборка читателя GMF (библиотека gmfreader) без форм приложения:
+// FramePropEditor тянет MainFrm и все диалоги
+uses SelectedObjects, ecLot, ecDot2, Writer, {$IFNDEF GMF_READER}FramePropEditor, {$ENDIF}objOutline;
 
 { TCapturePt }
 
@@ -414,7 +416,11 @@ begin
   Writein([TTD(LastCaptureRec.resObject).ClassName]) else
    Writein([nil]);
  if LastCaptureRec.resObject <> nil then begin
+{$IFDEF GMF_READER}
+  if FObjects = nil then FObjects := TSelectedObjects.Create(Self, nil);
+{$ELSE}
   if FObjects = nil then FObjects := TSelectedObjects.Create(Self, PropEditorForm.Update);
+{$ENDIF}
   Index := TSelectedObjects(FObjects).IndexOf(LastCaptureRec.resObject);
   If Index <> -1 then
    TSelectedObjects(FObjects).AtDelete(Index)

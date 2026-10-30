@@ -9,7 +9,7 @@ uses
   FMX.Ani,
   MainFrm, FMX.Memo.Types, System.Skia, System.ImageList, FMX.ImgList,
   FMX.Objects, FMX.Skia, FMX.Controls.Presentation, FMX.ScrollBox, FMX.Memo,
-  ogcBasic, ogcDrawerSkia, newSelector, FrameSettings;
+  ogcBasic, ogcDrawerSkia, newSelector, FrameSettings, StylusInput, WPTForm2;
 
 type
   TMainFormSkia = class(TMainForm)
@@ -55,6 +55,8 @@ type
     FIndicatorDepth: Integer;
     FIndicatorOverlay: TRectangle;
     FIndicator: TAniIndicator;
+    FIndicatorText: FMX.Objects.TText;
+    FMapLoading: Boolean; // карта читается в фоновом потоке: сцена не рисуется
     FOverlayStaticImage: ISkImage;
     FOverlayLiveImage: ISkImage;
     FOverlayStaticDirty: Boolean;
@@ -71,6 +73,7 @@ type
     PanActive: Boolean;
     LastPanPoint: TPointF;
     LastZoomDistance: Single;
+    LastZoomPivot: TPointF; // середина между пальцами (координаты SkPainter) - перемещение двумя пальцами
     ZoomActive: Boolean;
     InteractionActive: Boolean;
     BaseDx, BaseDy, BaseScale: Double;
@@ -82,6 +85,23 @@ type
     FSnapGx, FSnapGy, FSnapDx, FSnapDy, FSnapScale: Double;
     FUnderlayOnly: Boolean; // RedrawUnderlay: следующий кадр - снимок сцены, если вид тот же
     FSceneDirty: Boolean;
+   // точки сегментов (SbShowPoints): вершины по What - 0, 10 (узловые), 20
+   // (твердые); пересобираются, если карта изменилась
+    FSegPoints: array[0..2] of TArray<TPointF>;
+    FSegPointsDirty: Boolean;
+    FSegPointsLots, FSegPointsTwigs, FSegPointsAny: Integer;
+   // готовые примитивы вывода: изображение-атлас с квадратами трех видов точек
+   // и для каждой точки - спрайт и положение (для масштаба FSegScale и
+   // установок FSegKey); выводятся одним DrawAtlas
+    FSegAtlas: ISkImage;
+    FSegXForms: TArray<TSkRotationScaleMatrix>;
+    FSegSprites: TArray<TRectF>;
+    FSegScale: Single;
+    FSegKey: String;
+    FSegXFormsDirty: Boolean;
+    procedure BuildSegmentPoints;
+    procedure BuildSegmentAtlas(DevScale, Scale: Single; const Key: String);
+    procedure DrawSegmentPoints(const C: ISkCanvas);
     procedure SetSceneDirty(AValue: Boolean);
   //
     procedure InitSkPainterInput;
@@ -131,6 +151,8 @@ type
     procedure SkPainterMouseLeave(Sender: TObject);
     procedure SkPainterMouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); virtual;
     procedure SkPainterGesture(Sender: TObject; const EventInfo: TGestureEventInfo; var Handled: Boolean);
+  // Windows: перемещение и масштаб двумя пальцами по касаниям (StylusInput)
+    procedure TouchPinch(Action: TStylusPinchAction; const Center, Delta: TPointF; Ratio: Single);
     procedure SkPainterDblClick(Sender: TObject);
   // рисование перед-после
     procedure PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF); virtual;
@@ -148,6 +170,13 @@ type
   // кнопки строки состояния - по установкам открытого файла
     procedure SyncStatusButtons;
     procedure OpenGmfFileSkia(const LocalPath: string); virtual;
+   // карта прочитана в фоновом потоке (F = nil - ошибка Err): установка на экран
+    procedure FinishOpenGmf(const LocalPath: string; F: TForm2; const Err: string);
+   // карта показана - действия наследников после открытия; NewMap = False -
+   // новая не прочитана, на экране снова прежняя
+    procedure MapOpened(const LocalPath: string; NewMap: Boolean); virtual;
+   // сохраненный фрагмент карты (About.Fragment) - в окно
+    procedure ShowMapFragment;
    // карта выбрана на устройстве или скачана из облака: копия в папку
    // исполнителя (DlgGlobalSave.CopyMapToUserFolder) и открытие
     procedure OpenPickedMap(const LocalPath: string);
@@ -174,11 +203,11 @@ implementation
 
 uses Selector32, Collect, uExecRegisterClass, System.IOUtils, Writer, newProcs, FMX.FontManager, System.Diagnostics, System.Math, System.Math.Vectors,
      EcText, EcDot, EcDot2, EcLot, RPrims, WPTwigs, DlgLocalOpen,
-     WPTForm2, mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw, AppForms, HatchLot, newBlock, DlgGlobalSave
+     mpMarker, objMouse, drawTwigs, UpdateMessages, TwgDraw, AppForms, HatchLot, newBlock, DlgGlobalSave
 {$IFDEF ANDROID}
      , OpenForm, Androidapi.Helpers, Androidapi.JNI.Os, Androidapi.JNI.JavaTypes
 {$ENDIF}
-     , Lib, StylusInput;
+     , Lib, TwgColle;
 
 type
   TBitmapAccess = class(TBitmap);
@@ -214,7 +243,6 @@ begin
 {$ENDIF}
   SkPainter.OnMouseWheel := SkPainterMouseWheel;
   SkPainter.OnGesture := SkPainterGesture;
-  SkPainter.OnDblClick := SkPainterDblClick;
   SkPainter.OnDraw := SkPainterDraw;
   SkPainter.Touch.InteractiveGestures := [TInteractiveGesture.Zoom];
 // флаги GPU выставляются в .dpr до Application.Initialize
@@ -253,6 +281,17 @@ begin
   FIndicator.Align := TAlignLayout.Center;
   FIndicator.Enabled := False;
   FIndicator.Visible := False;
+ // подпись под индикатором
+  FIndicatorText := FMX.Objects.TText.Create(Self);
+  FIndicatorText.Parent := FIndicatorOverlay;
+  FIndicatorText.Align := TAlignLayout.Center;
+  FIndicatorText.Margins.Top := 90;
+  FIndicatorText.Size.Width := 300;
+  FIndicatorText.Size.Height := 30;
+  FIndicatorText.HitTest := False;
+  FIndicatorText.TextSettings.FontColor := TAlphaColors.White;
+  FIndicatorText.TextSettings.Font.Size := 16;
+  FIndicatorText.Text := 'Загрузка карты...';
 end;
 
 procedure TMainFormSkia.StartIndicator;
@@ -295,6 +334,7 @@ procedure TMainFormSkia.SetSceneDirty(AValue: Boolean);
 var I: Integer; Lot: TLot; PD: TPointDot; B: Byte;
 begin
   FSceneDirty := AValue;
+  if AValue then FSegPointsDirty := True;
   if (TwgForm = nil) or (TwgForm.Twigs = nil) then Exit;
   if AValue then
   begin
@@ -315,7 +355,7 @@ end;
 procedure TMainFormSkia.SkPainterResize(Sender: TObject);
 begin
  if (FSettingsFrame <> nil) and FSettingsFrame.Visible then PlaceSettingsFrame;
-  if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) then
+  if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) or FMapLoading then
     Exit;
   if (SkPainter.Width <= 0) or (SkPainter.Height <= 0) then
     Exit;
@@ -668,11 +708,9 @@ end;
 
 procedure TMainFormSkia.OpenGmfFileSkia(const LocalPath: string);
 var
-  Stream: TBufStream;
   Path: String;
-  I: Integer;
-  B: Byte;
-  PP: TPointDot;
+  Src: string;
+  Sel: TSelector;
   procedure RegisterFontsNearGmf(const GmfLocalPath: string);
   var
     Dir: string;
@@ -725,6 +763,86 @@ var
     end;
     WriteIn(['END===']);
   end;
+begin
+  if (LocalPath = '') or FMapLoading then Exit;
+  if FDrawerSkia = nil then
+  begin
+    FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
+    Selector := TSelector.Create(FDrawerSkia);
+   // текущий селектор для модулей, перенесенных из Geomaster (Selector32)
+    SetGSelector(Selector);
+    FDrawerSkia.ogsSelector := Selector;
+    FDrawerSkia.Name := 'DrawerSkia';
+    Selector.Name := 'Selector';
+    UpdateMessage:=TUpdateMessage.Create(nil);
+  end else
+    Selector.Clear;
+ //
+  FDrawerSkia.DebugDrawTextBounds := False;
+ //
+ // Memo1.Lines.Clear;
+  FormCreate(Self);
+ // InitSkPainterInput;
+  {$IFDEF WIN64}
+   GLines := nil;
+   newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
+  {$ELSE}
+ // GLines := Memo1.Lines;
+   newProcs.MainPath := TPath.GetDocumentsPath + '/';
+   WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
+   WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
+  {$ENDIF}
+  RegPrimitives;
+  objectRepaintAccess := False;
+  Path := LocalPath;
+
+  RegisterFontsNearGmf(MainPath);
+  Selector.GNForm := TControl(skPainter);
+  ApplicationMainForm := Self;
+ // прежняя карта (TwgForm) остается до конца чтения: на нее ссылаются фреймы
+ // знаков и слоев; освобождается после установки новой (FinishOpenGmf)
+ // чтение файла (с построением классов Build1 в LoadClassLib) - в фоновом
+ // потоке, индикатор крутится; установка карты на экран - в главном потоке
+  FMapLoading := True;
+  StartIndicator;
+  Src := LocalPath;
+  Sel := Selector;
+  TThread.CreateAnonymousThread(
+   procedure
+   var Stream: TBufStream;
+       F: TForm2;
+       Err: string;
+   begin
+    F := nil;
+    Err := '';
+    try
+     Stream := TBufStream.InitFileStream(Src, fmOpenRead);
+     try
+      Stream.Selector := Sel;
+      F := TForm2(Stream.Get);
+     finally
+      Stream.Free;
+     end;
+    except
+     on E: Exception do Err := E.Message;
+    end;
+    if (F = nil) and (Err = '') then Err := 'файл не прочитан';
+    TThread.Queue(nil,
+     procedure
+     begin
+      FinishOpenGmf(Src, F, Err);
+     end);
+   end).Start;
+end;
+
+procedure TMainFormSkia.FinishOpenGmf(const LocalPath: string; F: TForm2; const Err: string);
+var
+  I: Integer;
+  B: Byte;
+  PP: TPointDot;
+  Old: TForm2;
+  NewMap: Boolean;
+  MapPath: string;
   procedure localSetGabarites;
   var
     I, J: Integer;
@@ -751,92 +869,61 @@ var
     end;
   end;
 begin
-  if LocalPath = '' then Exit;
- // StartIndicator;
+  Old := TwgForm;
+  NewMap := F <> nil;
+  MapPath := LocalPath;
   try
-    if FDrawerSkia = nil then
+    FMapLoading := False;
+    if not NewMap then
     begin
-      FDrawerSkia := TogsDrawerSkia.Create(nil, nil, SkPainter);
-      Selector := TSelector.Create(FDrawerSkia);
-     // текущий селектор для модулей, перенесенных из Geomaster (Selector32)
-      SetGSelector(Selector);
-      FDrawerSkia.ogsSelector := Selector;
-      FDrawerSkia.Name := 'DrawerSkia';
-      Selector.Name := 'Selector';
-      UpdateMessage:=TUpdateMessage.Create(nil);
-    end else
-      Selector.Clear;
-   //
-    FDrawerSkia.DebugDrawTextBounds := False;
-   //
-   // Memo1.Lines.Clear;
-    FormCreate(Self);
-   // InitSkPainterInput;
-    {$IFDEF WIN64}
-     GLines := nil;
-     newProcs.MainPath := TPath.GetLibraryPath {+ 'dicts\'};
-    {$ELSE}
-   // GLines := Memo1.Lines;
-     newProcs.MainPath := TPath.GetDocumentsPath + '/';
-     WriteIn(['OSM CachePath: ', TPath.GetCachePath]);
-     WriteIn(['Path1 ========', MainPath,  FileExists(MainPath), TPath.GetHomePath, TPath.GetLibraryPath, TPath.GetDocumentsPath, TPath.GetCachePath]);
-    {$ENDIF}
-    RegPrimitives;
-    objectRepaintAccess := False;
-    Path := LocalPath;
-
-    RegisterFontsNearGmf(MainPath);
-
-    Stream := TBufStream.InitFileStream(LocalPath, fmOpenRead);
-    Selector.GNForm := TControl(skPainter);
-    ApplicationMainForm := Self;
-    Stream.Selector := Selector;
-    try
-      FreeAndNil(TwgForm);
-     //
-      TwgForm := TForm2(Stream.Get);
-     //
-      TwgForm.About.Path := ExtractFilePath(LocalPath);
-      TwgForm.About.MyName := ExtractFileName(LocalPath);
-     //
-      Selector.GLineCol := TwgForm.MkLib.LSLib;
-      Selector.GSqwearCol := TwgForm.MkLib.SSLib;
-      Selector.GPointCol := TwgForm.MkLib.PSLib;
-      Selector.GFontCollect := TwgForm.Twigs.FontS;
-      Selector.GFontSet := TwgForm.Twigs.FontSet;
-      Selector.GGraphSet := TwgForm.fGraphSet;
-      SetSelectorParams;
-      if TwgForm.FontColEx <> nil then
-      begin
-        for I := 0 to TwgForm.Twigs.AnyCount - 1 do
-        begin
-          PP := TwgForm.Twigs.AAt(I, B);
-          PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
-        end;
-      end;
-      RecalcHatchArcs(TwgForm);
-      localSetGabarites;
-      if SkPainter <> nil then
-        LastCanvasScale := SkPainter.AbsoluteScale.X
-      else
-        LastCanvasScale := 1;
-      if LastCanvasScale <= 0 then
-        LastCanvasScale := 1;
-      if FDrawerSkia <> nil then
-      begin
-        FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
-        FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
-      end;
-
-      Selector.UpdateRects(True);
-      objectRepaintAccess := True;
-      TwgForm.Twigs.BlockList.CreateBitmaps;
-      PLib(TwgForm.MkLib.PSLib).CreateBitmaps;
-    finally
-      Stream.Free;
+      WriteIn(['Карта не открыта: ', Err]);
+      TDialogService.ShowMessage('Карта не открыта: ' + Err);
+     // Selector очищен перед чтением - прежняя карта устанавливается заново
+      if Old = nil then Exit;
+      F := Old;
+      Old := nil;
+      MapPath := F.About.Path + F.About.MyName;
     end;
+    TwgForm := F;
+    Old.Free;
+    TwgForm.About.Path := ExtractFilePath(MapPath);
+    TwgForm.About.MyName := ExtractFileName(MapPath);
+   //
+    Selector.GLineCol := TwgForm.MkLib.LSLib;
+    Selector.GSqwearCol := TwgForm.MkLib.SSLib;
+    Selector.GPointCol := TwgForm.MkLib.PSLib;
+    Selector.GFontCollect := TwgForm.Twigs.FontS;
+    Selector.GFontSet := TwgForm.Twigs.FontSet;
+    Selector.GGraphSet := TwgForm.fGraphSet;
+    SetSelectorParams;
+    if TwgForm.FontColEx <> nil then
+    begin
+      for I := 0 to TwgForm.Twigs.AnyCount - 1 do
+      begin
+        PP := TwgForm.Twigs.AAt(I, B);
+        PP.ResetParams(param_idResetFontView, TwgForm.FontColEx);
+      end;
+    end;
+    RecalcHatchArcs(TwgForm);
+    localSetGabarites;
+    if SkPainter <> nil then
+      LastCanvasScale := SkPainter.AbsoluteScale.X
+    else
+      LastCanvasScale := 1;
+    if LastCanvasScale <= 0 then
+      LastCanvasScale := 1;
+    if FDrawerSkia <> nil then
+    begin
+      FDrawerSkia.Width := Round(SkPainter.Width * LastCanvasScale);
+      FDrawerSkia.Height := Round(SkPainter.Height * LastCanvasScale);
+    end;
+
+    Selector.UpdateRects(True);
+    objectRepaintAccess := True;
+    TwgForm.Twigs.BlockList.CreateBitmaps;
+    PLib(TwgForm.MkLib.PSLib).CreateBitmaps;
    // карта прочитана: дубликат успешно открытого файла рядом, расширение .gm2
-    if (TwgForm <> nil) and SameText(ExtractFileExt(LocalPath), '.gmf') then
+    if NewMap and SameText(ExtractFileExt(LocalPath), '.gmf') then
       try
         TFile.Copy(LocalPath, ChangeFileExt(LocalPath, '.gm2'), True);
       except
@@ -851,10 +938,50 @@ begin
   //  if SkPainter <> nil then
    //   SkPainter.Redraw;
     SkPainterDblClick(nil);
+    if NewMap then ShowMapFragment;
     btnPaintClick(nil);
   finally
-   // StopIndicator;
+    StopIndicator;
   end;
+  if TwgForm <> nil then MapOpened(MapPath, NewMap);
+end;
+
+procedure TMainFormSkia.MapOpened(const LocalPath: string; NewMap: Boolean);
+begin
+end;
+
+// окно - на фрагмент, сохраненный в файле (TForm1.Store: About.Fragment = GRect).
+// Пропорции окна могли измениться: фрагмент целиком, по центру окна. Фрагмента
+// нет или он вне карты - остается вся карта (FitView)
+procedure TMainFormSkia.ShowMapFragment;
+var S: TSect;
+    X1, Y1, X2, Y2, CX, CY, DW, DH, K: Double;
+    R: TogsRect;
+    G: TogsRect;
+begin
+ if (TwgForm = nil) or (Selector = nil) or (FDrawerSkia = nil) then exit;
+ S := TwgForm.About.Fragment;
+ if IsNan(S.Left) or IsNan(S.Right) or IsNan(S.Top) or IsNan(S.Bottom) or
+    IsInfinite(S.Left) or IsInfinite(S.Right) or IsInfinite(S.Top) or IsInfinite(S.Bottom) then exit;
+ X1 := Min(S.Left, S.Right);
+ X2 := Max(S.Left, S.Right);
+ Y1 := Min(S.Top, S.Bottom);
+ Y2 := Max(S.Top, S.Bottom);
+ DW := FDrawerSkia.Width;
+ DH := FDrawerSkia.Height;
+ if (X2 - X1 < 0.001) or (Y2 - Y1 < 0.001) or (DW <= 0) or (DH <= 0) then exit;
+ G := Selector.GlobalRect;
+ if (X2 < G.XMin) or (X1 > G.XMax) or (Y2 < G.YMin) or (Y1 > G.YMax) then exit;
+ K := Max((X2 - X1) / DW, (Y2 - Y1) / DH);
+ CX := (X1 + X2) / 2;
+ CY := (Y1 + Y2) / 2;
+ R := TogsRect.CreateRect(CX - K * DW / 2, CY - K * DH / 2, CX + K * DW / 2, CY + K * DH / 2);
+ try
+  Selector.ActiveRect := R;
+ finally
+  R.Free;
+ end;
+ Selector.UpdateRects;
 end;
 
 // окно сохранения - после закрытия окна выбора (облако вызывает ACallback до
@@ -888,7 +1015,7 @@ procedure TMainFormSkia.btnLocalOpenClickSkia(Sender: TObject);
 begin
   localOpenForm := TlocalOpenForm.Create(Self);
 {$IFDEF ANDROID}
-  localOpenForm.BaseDir := GetAppExternalFilesDir;
+  localOpenForm.BaseDir := UserMapsDir; // папка карт исполнителя (Documents/подпапка)
 {$ENDIF}
   localOpenForm.FCallBack := OpenGmfFileSkia;
   ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
@@ -945,6 +1072,8 @@ end;
 procedure TMainFormSkia.UpdateScene(UpdateSceneMode: TUpdateSceneMode; Obj: TObject);
 begin
  if Obj is TTD then TTD(Obj).Modified := True;
+// примитив добавлен/удален/изменен - точки сегментов собираются заново
+ FSegPointsDirty := True;
  FUnderlayOnly := False;
  if SkPainter <> nil then SkPainter.Redraw;
 end;
@@ -1055,8 +1184,189 @@ begin
  if FStatusSync or (TwgForm = nil) or (Selector = nil) then exit;
  TwgForm.fGraphSet.PointView := Ord(SbShowPoints.IsPressed);
  Selector.GGraphSet.PointView := TwgForm.fGraphSet.PointView;
- SceneDirty := True;
+// точки выводятся поверх сцены (DrawSegmentPoints): картинки контуров не
+// перезаписываются, кадр собирается заново из них
+ FUnderlayOnly := False;
  if SkPainter <> nil then SkPainter.Redraw;
+end;
+
+// точки сегментов (TTwig.ShowPoints и TDot.Draw32 старой программы): вершины
+// ветвей контуров видимых слоев по What - 0 (AllPoint, gsColorDot), 10 -
+// узловые (UslPoint, gsColorUzl), 20 - твердые (TvdPoint, gsColorPoint).
+// Собираются один раз в FSegPoints (мировые координаты), ветвь, общая для
+// нескольких контуров, - один раз; при изменении карты пересобираются
+// (FSegPointsDirty, число контуров и ветвей)
+procedure TMainFormSkia.BuildSegmentPoints;
+var I, K, J, C: Integer;
+    Lot: TLot;
+    Tw: TTwig;
+    D: TDot;
+    Used: TBits;
+    Cnt: array[0..2] of Integer;
+    PD: TPointDot;
+    W: Byte;
+procedure Add(Kind: Integer);
+begin
+ if Cnt[Kind] >= Length(FSegPoints[Kind]) then SetLength(FSegPoints[Kind], Max(256, 2 * Length(FSegPoints[Kind])));
+ FSegPoints[Kind][Cnt[Kind]] := TPointF.Create(D.XDot, D.YDot);
+ Inc(Cnt[Kind]);
+end;
+begin
+ FSegPointsDirty := False;
+ for K := 0 to 2 do begin FSegPoints[K] := nil; Cnt[K] := 0; end;
+ FSegPointsLots := -1;
+ FSegPointsTwigs := -1;
+ FSegPointsAny := -1;
+ if (TwgForm = nil) or (TwgForm.Twigs = nil) then exit;
+ FSegPointsLots := TwgForm.Twigs.LotsCount;
+ FSegPointsTwigs := TwgForm.Twigs.TwigsCount;
+ FSegPointsAny := TwgForm.Twigs.AnyCount;
+ Used := TBits.Create;
+ try
+  Used.Size := TwgForm.Twigs.TwigsCount;
+  for I := 0 to TwgForm.Twigs.LotsCount - 1 do begin
+   Lot := TwgForm.Twigs.LAt(I);
+   if Lot.TypeLot = 254 then continue;
+   if (Lot.ClassHandle <> nil) and (Lot.ClassHandle.Check = 0) then continue;
+   for K := 0 to Lot.Coord.Count - 1 do begin
+    J := Abs(TLong(Lot.Coord[K]).Num);
+    if (J >= Used.Size) or Used[J] then continue;
+    Used[J] := True;
+    Tw := TwgForm.Twigs.TAt(J);
+    if (Tw = nil) or (Tw.Closed = 254) then continue;
+    for C := 0 to Tw.Coord.Count - 1 do begin
+     D := Tw.Coord[C];
+     case D.What of
+      0: Add(0);
+      10: Add(1);
+      20: Add(2);
+     end;
+    end;
+   end;
+  end;
+ finally
+  Used.Free;
+ end;
+// твердые точки - каждый точечный примитив (знаки, блоки, подписи); удаленные
+// и выключенных слоев - нет
+ for I := 0 to TwgForm.Twigs.AnyCount - 1 do begin
+  D := TwgForm.Twigs.AAt(I, W);
+  if W <> TWG_Point then continue;
+  PD := TPointDot(D);
+  if PD.Closed then continue;
+  if (PD.ClassHandle <> nil) and (PD.ClassHandle.Check = 0) then continue;
+  Add(2);
+ end;
+ for K := 0 to 2 do SetLength(FSegPoints[K], Cnt[K]);
+end;
+
+// атлас и положения точек сегментов для текущего масштаба: квадрат вида K -
+// сторона 2 * gsPointSize + 1 px устройства, рамка цветом вида точки и заливка
+// gsFillPointColor при gsFillPointCheck; положения - в мировых координатах,
+// спрайт масштабируется 1 / Scale (пиксел атласа = пиксел устройства).
+// DevScale - пикселей устройства в логическом, Scale - пикселей устройства в
+// мировой единице
+procedure TMainFormSkia.BuildSegmentAtlas(DevScale, Scale: Single; const Key: String);
+var Flags: array[0..2] of Byte;
+    Colors: array[0..2] of TAlphaColor;
+    PointSize, Side, Border, K, I, N: Integer;
+    FillCheck: Boolean;
+    FillColor: TAlphaColor;
+    Surf: ISkSurface;
+    Paint: ISkPaint;
+    R: TRectF;
+    S, Half: Single;
+    P: TPointF;
+begin
+ FSegXFormsDirty := False;
+ FSegScale := Scale;
+ FSegKey := Key;
+ FSegAtlas := nil;
+ FSegXForms := nil;
+ FSegSprites := nil;
+ Flags[0] := Selector.GGraphSet.AllPoint;
+ Flags[1] := Selector.GGraphSet.UslPoint;
+ Flags[2] := Selector.GGraphSet.TvdPoint;
+ PointSize := 4;
+ FillCheck := False;
+ FillColor := TAlphaColors.Black;
+ Colors[0] := TAlphaColors.Blue;
+ Colors[1] := TAlphaColors.Red;
+ Colors[2] := TAlphaColors.Lime;
+ if Selector.GlobalSettings <> nil then with Selector.GlobalSettings.Settings do begin
+  PointSize := gsPointSize;
+  FillCheck := gsFillPointCheck;
+  FillColor := TAlphaColor(gsFillPointColor) or $FF000000;
+  Colors[0] := TAlphaColor(gsColorDot) or $FF000000;
+  Colors[1] := TAlphaColor(gsColorUzl) or $FF000000;
+  Colors[2] := TAlphaColor(gsColorPoint) or $FF000000;
+ end;
+ Border := Max(1, Round(DevScale));
+ Side := 2 * Round(Max(1, PointSize) * DevScale) + 1;
+// атлас: три квадрата в ряд с промежутком 1 px (без наложения при выборке)
+ Surf := TSkSurface.MakeRaster(3 * (Side + 1), Side);
+ if Surf = nil then exit;
+ Surf.Canvas.Clear(TAlphaColors.Null);
+ Paint := TSkPaint.Create;
+ Paint.AntiAlias := False;
+ for K := 0 to 2 do begin
+  R := TRectF.Create(K * (Side + 1), 0, K * (Side + 1) + Side, Side);
+  Paint.Color := Colors[K];
+  Surf.Canvas.DrawRect(R, Paint);
+  R.Inflate(-Border, -Border);
+  Paint.Color := FillColor;
+  if FillCheck then Surf.Canvas.DrawRect(R, Paint) else begin
+   Paint.Blender := TSkBlender.MakeMode(TSkBlendMode.Clear);
+   Surf.Canvas.DrawRect(R, Paint);
+   Paint.Blender := nil;
+  end;
+ end;
+ FSegAtlas := Surf.MakeImageSnapshot;
+// положения всех включенных точек
+ N := 0;
+ for K := 0 to 2 do if Flags[K] = 1 then Inc(N, Length(FSegPoints[K]));
+ SetLength(FSegXForms, N);
+ SetLength(FSegSprites, N);
+ S := 1 / Scale;
+ Half := Side / 2 * S;
+ N := 0;
+ for K := 0 to 2 do begin
+  if Flags[K] <> 1 then continue;
+  R := TRectF.Create(K * (Side + 1), 0, K * (Side + 1) + Side, Side);
+  for I := 0 to High(FSegPoints[K]) do begin
+   P := FSegPoints[K][I];
+   FSegXForms[N] := TSkRotationScaleMatrix.Create(S, 0, P.X - Half, P.Y - Half);
+   FSegSprites[N] := R;
+   Inc(N);
+  end;
+ end;
+end;
+
+// вывод точек сегментов поверх сцены (канва в мировых координатах) одним
+// DrawAtlas готовых примитивов; пересчет - только при изменении карты,
+// масштаба или установок точек, сдвиг карты пересчета не требует; точки
+// выводятся при высоте видимой области не больше FPoints (детализация)
+procedure TMainFormSkia.DrawSegmentPoints(const C: ISkCanvas);
+var M: TMatrix;
+    Scale: Single;
+    Key: String;
+begin
+ if (C = nil) or (TwgForm = nil) or (TwgForm.Twigs = nil) or (Selector = nil) then exit;
+ if Selector.GGraphSet.PointView <> 1 then exit;
+ if (Selector.GGraphSet.FPoints > 0) and (Abs(C.GetLocalClipBounds.Height) > Selector.GGraphSet.FPoints) then exit;
+ M := C.GetLocalToDeviceAs3x3;
+ Scale := Sqrt(Sqr(M.m11) + Sqr(M.m12));
+ if Scale <= 0 then exit;
+ if FSegPointsDirty or (FSegPointsLots <> TwgForm.Twigs.LotsCount) or (FSegPointsTwigs <> TwgForm.Twigs.TwigsCount) or (FSegPointsAny <> TwgForm.Twigs.AnyCount) then begin
+  BuildSegmentPoints;
+  FSegXFormsDirty := True;
+ end;
+ Key := Format('%d %d %d %g', [Selector.GGraphSet.AllPoint, Selector.GGraphSet.UslPoint, Selector.GGraphSet.TvdPoint, LastCanvasScale]);
+ if Selector.GlobalSettings <> nil then with Selector.GlobalSettings.Settings do
+  Key := Key + Format(' %d %d %d %d %d %d', [gsPointSize, Ord(gsFillPointCheck), gsFillPointColor, gsColorDot, gsColorUzl, gsColorPoint]);
+ if FSegXFormsDirty or (FSegAtlas = nil) or (Key <> FSegKey) or (Abs(Scale - FSegScale) > 1E-6 * Scale) then BuildSegmentAtlas(LastCanvasScale, Scale, Key);
+ if (FSegAtlas = nil) or (Length(FSegXForms) = 0) then exit;
+ C.DrawAtlas(FSegAtlas, FSegXForms, FSegSprites, TSkBlendMode.Modulate, TSkSamplingOptions.Create(TSkFilterMode.Nearest, TSkMipmapMode.None));
 end;
 
 procedure TMainFormSkia.SbSaveOrthoTwigsClick(Sender: TObject);
@@ -1202,6 +1512,8 @@ begin
                   else
                   begin
                     Inc(nRecorded);
+                   // контур перезаписан (изменен) - и его точки сегментов
+                    FSegPointsDirty := True;
                     SWRec.Start;
                     FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
                     try
@@ -1415,7 +1727,7 @@ var ViewScale, Tx, Ty: Single;
     LayerPaint: ISkPaint;
     T0, Dt: UInt64;
 begin
- if (ACanvas = nil) or (Selector = nil) or (Selector.GlobalRect = nil) then exit;
+ if (ACanvas = nil) or (Selector = nil) or (Selector.GlobalRect = nil) or FMapLoading then exit;
  if InteractionBitmapActive then exit;
  ViewScale := Single(Selector.GetScale);
  if ViewScale <= 0 then exit;
@@ -1567,22 +1879,13 @@ begin
  Selector.OnInvalidateOverlayStatic := DoInvalidateOverlayStatic;
 end;
 
-// FitView - вся карта в окне. Вызов из кода (Sender = nil, после открытия
-// карты) - всегда. Двойной щелчок (OnDblClick - левая кнопка или касание):
-// на Windows - только пальцем (мышью FitView - двойной щелчок средней кнопкой,
-// SkPainterMouseDown), на Android - только пальцем, не пером
+// FitView - вся карта в окне: только из кода (после открытия карты); двойное
+// нажатие на карте вид не меняет. Мышью - двойной щелчок средней кнопкой
+// (SkPainterMouseDown)
 procedure TMainFormSkia.SkPainterDblClick(Sender: TObject);
 begin
   if Selector = nil then
     Exit;
-  if Sender <> nil then
-  begin
-{$IFDEF ANDROID}
-    if StylusTool in [stStylus, stEraser, stMouse] then Exit;
-{$ELSE}
-    if StylusTool <> stFinger then Exit;
-{$ENDIF}
-  end;
   InteractionActive := False;
   PanActive := False;
   LastZoomDistance := 0;
@@ -1800,6 +2103,11 @@ begin
     Exit;
   if Selector = nil then
     Exit;
+ // Windows: два пальца обрабатывает TouchPinch
+ if StylusPinch then begin
+  Handled := True;
+  exit;
+ end;
   PanActive := False;
   Handled := True;
   InteractionActive := True;
@@ -1818,9 +2126,14 @@ begin
   if (EventInfo.Distance < 2) then
     Exit;
 
+ // точка жеста - в координатах формы: переводится в координаты окна карты
+ // (панель слева - instProperties - сдвигает SkPainter вправо)
+  PivotLocal := SkPainter.AbsoluteToLocal(EventInfo.Location);
+
   if LastZoomDistance = 0 then
   begin
     LastZoomDistance := EventInfo.Distance;
+    LastZoomPivot := PivotLocal;
     Exit;
   end;
 
@@ -1834,13 +2147,14 @@ begin
   if (StepRatio > 1.8) or (StepRatio < (1 / 1.8)) then
   begin
     LastZoomDistance := EventInfo.Distance;
+    LastZoomPivot := PivotLocal;
     Exit;
   end;
   LastZoomDistance := EventInfo.Distance;
 
- // точка жеста - в координатах формы: переводится в координаты окна карты
- // (панель слева - instProperties - сдвигает SkPainter вправо)
-  PivotLocal := SkPainter.AbsoluteToLocal(EventInfo.Location);
+ // перемещение двумя пальцами - на сдвиг середины между пальцами, затем масштаб
+ if Selector.GetScale <> 0 then Selector.Move(-(PivotLocal.X - LastZoomPivot.X) * LastCanvasScale / Selector.GetScale, -(PivotLocal.Y - LastZoomPivot.Y) * LastCanvasScale / Selector.GetScale);
+  LastZoomPivot := PivotLocal;
   PivotPix := PointF(PivotLocal.X * LastCanvasScale, PivotLocal.Y * LastCanvasScale);
   PivotGeo := PointF(Selector.XGeo(Round(PivotPix.X)), Selector.YGeo(Round(PivotPix.Y)));
   Selector.Scale(PivotGeo.X, PivotGeo.Y, StepRatio);
@@ -1848,6 +2162,35 @@ begin
 
   if SkPainter <> nil then
     SkPainter.Redraw;
+end;
+
+// два пальца (Windows): сдвиг середины между пальцами - перемещение карты,
+// изменение расстояния - масштаб вокруг середины; Center, Delta - точки формы
+procedure TMainFormSkia.TouchPinch(Action: TStylusPinchAction; const Center, Delta: TPointF; Ratio: Single);
+var L, PivotPix, PivotGeo: TPointF;
+begin
+ if (FDrawerSkia = nil) or (Selector = nil) or (SkPainter = nil) then exit;
+// конец: полный кадр вместо снимка
+ if Action = spEnd then begin
+  ResetInteractionState;
+  SkPainter.Redraw;
+  exit;
+ end;
+ InteractionActive := True;
+ ZoomActive := True;
+ PanActive := False;
+ if (Action = spBegin) or (Selector.GetScale = 0) then exit;
+ if LastCanvasScale <= 0 then LastCanvasScale := 1;
+ Selector.Move(-Delta.X * LastCanvasScale / Selector.GetScale, -Delta.Y * LastCanvasScale / Selector.GetScale);
+// скачок расстояния (палец сорвался) - без масштаба
+ if (Ratio > 1 / 1.8) and (Ratio < 1.8) and (Abs(Ratio - 1) > 0.0005) then begin
+  L := SkPainter.AbsoluteToLocal(Center);
+  PivotPix := PointF(L.X * LastCanvasScale, L.Y * LastCanvasScale);
+  PivotGeo := PointF(Selector.XGeo(Round(PivotPix.X)), Selector.YGeo(Round(PivotPix.Y)));
+  Selector.Scale(PivotGeo.X, PivotGeo.Y, Ratio);
+ end;
+ ClearOverlayAllCaches;
+ SkPainter.Redraw;
 end;
 
 procedure TMainFormSkia.PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF);
@@ -1924,6 +2267,7 @@ begin
    FDrawerSkia.BeginFrame(C, WorldRect);
    try
     RenderSceneToBackbufferSkia;
+    DrawSegmentPoints(C);
    finally
     FDrawerSkia.EndFrame;
    end;
@@ -1939,7 +2283,7 @@ begin
   Clipped := False;
   try
 //  WriteIn(['SkPainterDraw enter', ' Dirty=', SceneDirty, ' PicNil=', FCachedPicture = nil, ' Cnt=', Iff(FDrawerSkia <> nil, FDrawerSkia.SkiaList.Count, -1), ' Dest=', ADest.Width, 'x', ADest.Height]);
-    if FDrawerSkia = nil then Exit;
+    if (FDrawerSkia = nil) or FMapLoading then Exit;
 // при прямой отрисовке канва - это канва всей формы: ограничиваем ее границами контрола
   ACanvas.Save;
   Clipped := True;

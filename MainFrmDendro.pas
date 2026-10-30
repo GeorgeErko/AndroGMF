@@ -46,13 +46,17 @@ type
   TMainFormDendro = class(TMainFormOSM)
     btnSave: TCornerButton;
     btnSaveAs: TCornerButton;
+    sbTrack: TSpeedButton;
+    ImageListTrack: TImageList;
     procedure btnSaveClick(Sender: TObject);
     procedure btnSaveAsClick(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
   private
     FLawnMenu: TPopupMenu;
     FAttractionMenu: TPopupMenu; // меню автопритягивания (PopUpAttraction)
+    FAttractionPopup: Boolean; // меню показывается - пересоздавать его нельзя
     FGroupTag: Integer; // вид группы, контур которой рисуется
+    FTrackMouse: TObject; // обработчик рисования трека (сравнение с MouseObject)
     FFrameDendro: TFrameDendro;
     FFrameJSON: TFrameJSON;
     FButtonMenu: TPopupMenu; // выпадающее меню кнопки (sbFindZN, sbExportCSV, sSpeedButton36)
@@ -65,10 +69,17 @@ type
    // группы: Tag 0..4 - знак, контур, установка знака по контуру
     procedure DendroGroup(Sender: TObject; Tag: Integer);
     procedure DendroCreateLine(Sender: TObject);
+   // трек (sbTrack): полилиния со знаком 2002, знаки начала 2003 и конца 2004
+    procedure DendroTrack(Sender: TObject);
+    procedure DendroCreateTrack(Sender: TObject);
+    function DendroAddTrackMark(F: TObject; Lot: TObject; D: TObject; Znak: Integer; const Attr, Value: String): Boolean;
     procedure OnlyAttrChange(Sender: TObject);
     procedure SetDendroDialogClass(Tag: Integer);
    // изменение атрибутов знака под курсором (sbNum)
     procedure DendroNum(Sender: TObject);
+   // установка точки методом перпендикуляров (dnrPerp) и обратной засечки
+   // (dnrZas) в слой «Точки пользователя» - TZas32 (objAddZas32)
+    procedure DendroZas(Sender: TObject);
    // притягивание (sbP2P, sSpeedButton40/39/42 - TSkinFormDendro.sbP2PClick):
    // TMouseTopo, операция = Tag кнопки (mp_Point2Point..mp_Point2Point4)
     procedure DendroAttraction(Sender: TObject);
@@ -88,7 +99,10 @@ type
     function SelectedObjects: TSelectedObjects;
    // карта изменена: пересборка классов, сцена заново
     procedure DendroChanged(Sender: TObject);
-    procedure SaveMapTo(AskName: Boolean);
+    procedure SaveMapTo(AskName: Boolean; const AfterSave: TProc = nil);
+    function MapModified: Boolean;
+    procedure ResetMapModified;
+    procedure ConfirmSaveThen(const Next: TProc);
     procedure ShowButtonMenu(Btn: TControl; const Items: array of String; const Tags: array of Integer);
     procedure ButtonMenuClick(Sender: TObject);
    // Android: меню кнопки - панель в форме под кнопкой
@@ -104,11 +118,17 @@ type
     procedure ExportFoto;
     procedure ExportTrack;
   protected
+    FCloseConfirmed: Boolean; // ответ о сохранении перед закрытием получен
+    FOpenConfirmed: Boolean;  // ответ о сохранении перед открытием получен
     function DendroButtonClick(Sender: TObject): Boolean; override;
+    procedure OpenGmfFileSkia(const LocalPath: string); override;
+    procedure MapOpened(const LocalPath: string; NewMap: Boolean); override;
   public
    // режим TABLET: диалог атрибутов TVarSetDlg1 (SetTexts2), иначе - TVarSetDlg
     Tablet: Boolean;
     constructor Create(AOwner: TComponent); override;
+   // несохраненная карта - вопрос о сохранении перед закрытием программы
+    function CloseQuery: Boolean; override;
   end;
 
 var
@@ -116,8 +136,8 @@ var
 
 implementation
 
-uses newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2, VarSetForm3
-     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32, objDataZnk32, objEditMap32{$ENDIF}, Collect,
+uses Lib, Lines2, UndoColNew, GBFWUndo, newClassBuilder, Writer, newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2, VarSetForm3
+     {$IFDEF MOUSE32}, objMouse32, objMouseDraw32, objTopo32, objDataZnk32, objEditMap32, objAddZas32{$ENDIF}, Collect,
      StreamSelfTest, DlgGlobalSave, System.IOUtils, System.Generics.Collections, System.Generics.Defaults, FMX.DialogService,
      newConsts, newProperties, newResource, newBlock, UserObject, LBN, EcDot, EcLot,
      WpTwigs, FramePropEditor, WpTForm2, EcDot2, TwgDraw;
@@ -129,24 +149,110 @@ uses newProcs, newSelector, UpdateMessages, VarSetForm, VarSetForm1, VarSetForm2
 // About.MyName, затем запись с проверкой записи/чтения (StreamSelfTest): .gmf и
 // копия .gm3; отчет проверки и итог - сообщением (и при успехе, и при ошибке).
 // AskName - «Сохранить как» (можно изменить имя файла)
-procedure TMainFormDendro.SaveMapTo(AskName: Boolean);
+// AfterSave - после успешного сохранения (вопрос о сохранении перед закрытием
+// и открытием другой карты): отчет тогда показывается только при ошибке
+procedure TMainFormDendro.SaveMapTo(AskName: Boolean; const AfterSave: TProc = nil);
 begin
  if TwgForm = nil then exit;
  SaveMapPicker(string(TwgForm.About.MyName), AskName,
   procedure(FullPath: string)
   var Log: TStringList;
+      Ok: Boolean;
   begin
    if (FullPath = '') or (TwgForm = nil) then exit;
    TwgForm.About.Path := AnsiString(IncludeTrailingPathDelimiter(ExtractFileDir(FullPath)));
    TwgForm.About.MyName := AnsiString(ExtractFileName(FullPath));
    Log := TStringList.Create;
    try
-    SaveGmfChecked(TwgForm, FullPath, Log);
-    ShowMessage(Log.Text);
+    Ok := SaveGmfChecked(TwgForm, FullPath, Log);
+    if Ok then ResetMapModified;
+    if not Ok or not Assigned(AfterSave) then ShowMessage(Log.Text);
    finally
     Log.Free;
    end;
+   if Ok and Assigned(AfterSave) then AfterSave;
   end);
+end;
+
+// карта изменена: TwgForm.Modified ставят изменение свойств, отменяемые
+// операции (TUndo: Twigs - это форма карты) и редактирование
+function TMainFormDendro.MapModified: Boolean;
+begin
+ Result := (TwgForm <> nil) and TwgForm.Modified;
+end;
+
+// карта открыта или сохранена - изменений нет (TwgForm.Modified хранится и
+// в файле - About.ModifiedObject, поэтому после открытия сбрасывается)
+procedure TMainFormDendro.ResetMapModified;
+begin
+ if TwgForm <> nil then TwgForm.Modified := False;
+end;
+
+// карта изменена - вопрос о сохранении: Да - сохранение (окно папки, как у
+// «Сохранить») и затем Next, Нет - сразу Next, Отмена - ничего
+procedure TMainFormDendro.ConfirmSaveThen(const Next: TProc);
+begin
+ if not MapModified then begin
+  Next;
+  exit;
+ end;
+ TDialogService.MessageDialog('Карта ' + string(TwgForm.About.MyName) + ' изменена. Сохранить изменения?',
+  TMsgDlgType.mtConfirmation, [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo, TMsgDlgBtn.mbCancel], TMsgDlgBtn.mbYes, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   case AResult of
+    mrYes: SaveMapTo(False, Next);
+    mrNo: Next;
+   end;
+  end);
+end;
+
+// закрытие программы: несохраненная карта - вопрос; закрытие - после ответа
+// (диалог на Android не модальный), повторный Close уже без вопроса
+function TMainFormDendro.CloseQuery: Boolean;
+begin
+ Result := inherited CloseQuery;
+ if not Result or FCloseConfirmed or not MapModified then exit;
+ Result := False;
+ ConfirmSaveThen(
+  procedure
+  begin
+   TThread.ForceQueue(nil,
+    procedure
+    begin
+     FCloseConfirmed := True;
+     Close;
+    end);
+  end);
+end;
+
+// открытие другой карты: несохраненная текущая - вопрос; открытая карта -
+// без изменений
+procedure TMainFormDendro.OpenGmfFileSkia(const LocalPath: string);
+var Path: string;
+begin
+ if not FOpenConfirmed and MapModified then begin
+  Path := LocalPath;
+  ConfirmSaveThen(
+   procedure
+   begin
+    FOpenConfirmed := True;
+    try
+     OpenGmfFileSkia(Path);
+    finally
+     FOpenConfirmed := False;
+    end;
+   end);
+  exit;
+ end;
+ inherited;
+end;
+
+// новая карта прочитана (фоновое чтение) - изменений нет
+procedure TMainFormDendro.MapOpened(const LocalPath: string; NewMap: Boolean);
+begin
+ inherited;
+ if NewMap then ResetMapModified;
 end;
 
 procedure TMainFormDendro.btnSaveAsClick(Sender: TObject);
@@ -198,9 +304,10 @@ begin
            (Sender = sbCancel) or
            (Sender = sbOrderProperties) or (Sender = sbAutoDT) or (Sender = sbAutoZN) or (Sender = sbFLKZN) or
            (Sender = sbAttrZN) or (Sender = sbFindZN) or (Sender = sbExportCSV) or (Sender = sSpeedButton36) or
-           (Sender = sbStatDelete) or (Sender = sbStatRestore);
+           (Sender = sbStatDelete) or (Sender = sbStatRestore) or (Sender = sbTrack);
  if not Result then exit;
 // операции ЗН и актуализация
+ if Sender = sbTrack then DendroTrack(Sender) else
  if Sender = sbOrderProperties then OrderProperties else
  if Sender = sbAutoDT then AutoProps else
  if Sender = sbAutoZN then ImportTrees else
@@ -216,6 +323,7 @@ begin
   DendroSetZnak(Sender, TComponent(Sender).Tag, Ord(Tablet)) else
  if Sender = sbNumUchDropDown then LawnMenuPopup else
  if Sender = sbNum then DendroNum(Sender) else
+ if (Sender = dnrPerp) or (Sender = dnrZas) then DendroZas(Sender) else
  if (Sender = sbP2P) or (Sender = sSpeedButton40) or (Sender = sSpeedButton39) or (Sender = sSpeedButton42) then DendroAttraction(Sender) else
  if (Sender = sbSetG) or (Sender = sbGD) or (Sender = sbGI) or (Sender = sbGC) or (Sender = sbGR) then
   DendroGroup(Sender, TComponent(Sender).Tag);
@@ -294,6 +402,38 @@ begin
 {$ENDIF}
 end;
 
+// установка точки методом перпендикуляров и обратной засечки
+// (TSkinFormDendro.dnrPerpClick/dnrZasClick -> TMasterDendro.dnrPerpClick/
+// dnrZasClick): TZas32, операция Lo_Perpend или Lo_InvZas, третий щелчок
+// засечки ставит точку (QuickInvZas); активный слой - «Точки пользователя»,
+// знак новых точек - знак слоя
+procedure TMainFormDendro.DendroZas(Sender: TObject);
+{$IFDEF MOUSE32}
+var I: Integer;
+    Layer: TResource;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then exit;
+ Layer := TwgForm.LayerTable.LayerName['Точки пользователя'];
+ if Layer = nil then begin FMX.Dialogs.ShowMessage('Не найден слой «Точки пользователя»'); exit; end;
+// кнопки инструментов рисования отжимаются
+ for I := 0 to ComponentCount - 1 do
+  if (Components[I] is TSpeedButton) and (TSpeedButton(Components[I]).GroupName = 'PaintTools') then TSpeedButton(Components[I]).IsPressed := False;
+ if Sender = dnrPerp then Selector.LOperation := Lo_Perpend else Selector.LOperation := Lo_InvZas;
+ MouseObject := TZas32.Create(TwgForm, nil);
+ TZas32(MouseObject).QuickInvZas := True;
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ if LayerFrame <> nil then LayerFrame.ActiveLayer := Layer else TwgForm.LayerTable.ActiveLayer := Layer;
+ if PropEditorForm <> nil then PropEditorForm.SetDefaultProperty('Знак', IntToStr(Layer.ZnkInd.SPInd));
+ UpdateEscButton(1);
+{$ENDIF}
+end;
+
 // притягивание: обработчик TMouseTopo с операцией = Tag кнопки (101..104);
 // автопритягивание - пометки деревьев сразу, меню по правой кнопке
 procedure TMainFormDendro.DendroAttraction(Sender: TObject);
@@ -320,8 +460,15 @@ begin
  TThread.ForceQueue(nil,
   procedure
   begin
-   BuildAttractionMenu;
-   FAttractionMenu.Popup(P.X, P.Y);
+  // Popup может крутить свой цикл сообщений: очередь сработает внутри него
+   if FAttractionPopup then exit;
+   FAttractionPopup := True;
+   try
+    BuildAttractionMenu;
+    FAttractionMenu.Popup(P.X, P.Y);
+   finally
+    FAttractionPopup := False;
+   end;
   end);
 end;
 
@@ -519,6 +666,133 @@ begin
 {$ENDIF}
 end;
 
+// трек (sbTrack): рисование как у полилинии (sysDrawLine). Повторное нажатие -
+// выход из операции. Слой - Корректура_фотофиксация (его читает экспорт трека),
+// без такого слоя - активный
+procedure TMainFormDendro.DendroTrack(Sender: TObject);
+{$IFDEF MOUSE32}
+var Layer: TResource;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if (Selector = nil) or (TwgForm = nil) then begin
+  sbTrack.IsPressed := False;
+  exit;
+ end;
+ if (FTrackMouse <> nil) and (TObject(MouseObject) = FTrackMouse) then begin
+  FTrackMouse := nil;
+  sbTrack.IsPressed := False;
+  MouseObject := nil;
+  exit;
+ end;
+ if (SearchLine(TwgForm.MkLib.LSLib, 2002) = -1) or (SearchThis(TwgForm.MkLib.PSLib, 2003) = -1) or (SearchThis(TwgForm.MkLib.PSLib, 2004) = -1) then begin
+  sbTrack.IsPressed := False;
+  FMX.Dialogs.ShowMessage('В библиотеке карты нет знаков трека: линейного 2002 или точечных 2003, 2004');
+  exit;
+ end;
+ sbTrack.IsPressed := True;
+ Selector.LOperation := sysDrawLine;
+ MouseObject := TMousePainter.Create(TwgForm, nil);
+ FTrackMouse := MouseObject;
+ MouseObject.OnAddPrim := UpdateMessage.AddPrim;
+ MouseObject.OnModifiedPrim := UpdateMessage.ModifiedPrim;
+ if LayerFrame <> nil then UpdateMessage.OnSetLayer := LayerFrame.ActivateLayer;
+ MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
+ MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
+ TMousePainter(MouseObject).OnCreateLine2 := DendroCreateTrack;
+ Layer := TwgForm.LayerTable.LayerName['Корректура_фотофиксация'];
+ if Layer <> nil then
+  if LayerFrame <> nil then LayerFrame.ActiveLayer := Layer else TwgForm.LayerTable.ActiveLayer := Layer;
+ UpdateEscButton(1);
+ if PanelHint <> nil then PanelHint.Text := MouseObject.Hint;
+{$ENDIF}
+end;
+
+// знак начала или конца трека в точке D - в слой линии, имя точки - в атрибут
+// Attr знака; False - имя задано, но у знака нет такого атрибута
+function TMainFormDendro.DendroAddTrackMark(F: TObject; Lot: TObject; D: TObject; Znak: Integer; const Attr, Value: String): Boolean;
+var Form: TForm2;
+    PD: TPointDot;
+    I: Integer;
+begin
+ Result := True;
+ Form := TForm2(F);
+ PD := TPointDot.CreateTaheo(TLot(Lot).ClassHandle, -1, '', TDot(D).XDot, TDot(D).YDot, ZNull);
+ PD.Selector := Selector;
+ if not UpdateMessage.AddPrim(PD) then begin
+  PD.Free;
+  exit;
+ end;
+ if PropEditorForm <> nil then PropEditorForm.ApplyDefaults(PD);
+ PD.SetProperty('Знак', AnsiString(IntToStr(Znak)));
+ BuildPoint1(Selector, Form.LayerTable, Form.Twigs, PD);
+ I := SearchThis(Form.MkLib.PSLib, Znak);
+ if (I <> -1) and Lib.TPoint_Sign(Form.MkLib.PSLib[I]).UseFont then PD.CreateTextManager;
+ if Value <> '' then Result := (PD.TextManager <> nil) and PD.TextManager.SetAttrValue(AnsiString(Attr), AnsiString(Value));
+ if PD.TextManager <> nil then BuildPoint1(Selector, Form.LayerTable, Form.Twigs, PD);
+ TUndo(Form.Undo).AddUndoItem(TPrimUndo.Create(Form, LU_AddPrim, 'UndoAddNewPoint...Track'));
+ Form.Twigs.Insert(TWG_Point, PD);
+ TPrimUndo(TUndo(Form.Undo).Last).AddModifiedPrim(PD);
+ Selector.UpdateImage(usmAdd, PD);
+end;
+
+// трек нарисован: линия получает знак 2002, запрашиваются имена точек, в концы
+// линии ставятся знаки 2003 (атрибут Трек_начало) и 2004 (Трек_конец); отказ от
+// ввода - знаки без имен. Выполняется после выхода из обработчика рисования (он
+// вызывает это событие); обработчик остается - можно рисовать следующий трек
+procedure TMainFormDendro.DendroCreateTrack(Sender: TObject);
+{$IFDEF MOUSE32}
+var Lot: TLot;
+    F: TForm2;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if not (Sender is TLot) or (TwgForm = nil) then exit;
+ Lot := TLot(Sender);
+ F := TwgForm;
+ Lot.SetProperty('Тип линии', '2002');
+ Selector.UpdateImage(usmAdd, Lot);
+ TThread.ForceQueue(nil,
+  procedure
+  begin
+   TDialogService.InputQuery('Трек', ['Имя начальной точки', 'Имя конечной точки'], ['', ''],
+    procedure(const AResult: TModalResult; const AValues: array of string)
+    var Undo: TUndo;
+        Tw: TTwig;
+        NameBeg, NameEnd: String;
+        AllSet: Boolean;
+    begin
+     if TwgForm <> F then exit;
+     NameBeg := '';
+     NameEnd := '';
+     if AResult = mrOk then begin
+      NameBeg := Trim(AValues[0]);
+      NameEnd := Trim(AValues[1]);
+     end;
+     AllSet := True;
+     Undo := TUndo(F.Undo);
+     Undo.StartTransAction;
+     try
+      Tw := Lot.GetTwig(F.Twigs, 0);
+      AllSet := DendroAddTrackMark(F, Lot, Tw.Coord[0], 2003, 'Трек_начало', NameBeg);
+      Tw := Lot.GetTwig(F.Twigs, Lot.Coord.Count - 1);
+      AllSet := DendroAddTrackMark(F, Lot, Tw.Coord[Tw.Coord.Count - 1], 2004, 'Трек_конец', NameEnd) and AllSet;
+      Undo.Commit;
+     except
+      on E: Exception do begin
+       WriteIn(['DendroCreateTrack ', E.Message]);
+       Undo.RollBack;
+      end;
+     end;
+     F.ClassBuildII;
+     F.Modified := True;
+     Selector.UpdateImage(usmAdd, Lot);
+     if not AllSet then TDialogService.ShowMessage('У знаков трека 2003, 2004 нет атрибута Трек_начало или Трек_конец: имена не записаны');
+    end);
+  end);
+{$ENDIF}
+end;
+
 { операции ЗН и актуализация }
 
 function TMainFormDendro.DendroFrame: TFrameDendro;
@@ -672,6 +946,9 @@ begin
     DendroChanged(nil);
    end;
   2: begin
+   // обработчик мыши держит ссылки на точки карты (притягивание: Pnts, Marks,
+   // выделение) - текущая операция отменяется до удаления точек
+    if MouseObject <> nil then btnEscClick(btnEsc);
    // удаляемые точки не должны оставаться в выделении
     if SelectedObjects <> nil then SelectedObjects.DeleteAll;
     TwgForm.ClearSelection;

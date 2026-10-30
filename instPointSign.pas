@@ -825,10 +825,14 @@ end;
 
 // номер выбранного знака; -1 - знак не выбран (знак по слою)
 function TInstPointsFrame.SelectedZnakNum: Integer;
+var G: TGroupZnk;
 begin
  Result := -1;
- if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC.TabIndex < 0) then exit;
- Result := CurGroup.Item[CB.ItemIndex].znakNum;
+ if (CB = nil) or (CB.ItemIndex < 0) or (Group = nil) or (TC = nil) or (TC.TabIndex < 0) then exit;
+ G := CurGroup;
+// PCollection.At не проверяет границы
+ if (G = nil) or (CB.ItemIndex >= G.Items.Count) then exit;
+ Result := G.Item[CB.ItemIndex].znakNum;
 end;
 
 // флажок cbActivate («активировать слой при выборе»): выделенные объекты при

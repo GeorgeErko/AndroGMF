@@ -374,7 +374,7 @@ begin
         end;
 
         Dst := RectF(-OffX, -OffY, -OffX + WPix, -OffY + HPix2);
-        TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(Anchor, TextBitmap.Bitmap, Dst, Ugol);
+        TogsDrawerSkia(Drawer).DrawBitmapAlignedPix(Anchor, TextBitmap.Bitmap, Dst, Ugol - FAng * Pi / 180);
         Exit;
       end;
     end;
@@ -389,7 +389,7 @@ VectorText: begin
     S,
     TxtColor,
     HBaseline,
-    Ugol,
+    Ugol - FAng * Pi / 180, // угол знака и свой угол подписи (Ugol1 старой программы)
     XP, YP,
     1,
     fv, False, False);
@@ -835,7 +835,7 @@ begin
  if TightAscentAbs>0.01 then AscentAlign:=TightAscentAbs else AscentAlign:=FontSizePix*Oversample;
  if FTextAlignY<0 then DrawY:=0 else DrawY:=AscentAlign*(1-FTextAlignY);
  R:=TRectF.Create((DrawX+Bounds.Left)/Oversample, (DrawY+Bounds.Top)/Oversample, (DrawX+Bounds.Right)/Oversample, (DrawY+Bounds.Bottom)/Oversample);
- C:=Cos(Angle);S:=Sin(Angle);
+ C:=Cos(Angle-FAng*Pi/180);S:=Sin(Angle-FAng*Pi/180);
  P0:=TransformPoint(PointF(R.Left, R.Top));
  P1:=TransformPoint(PointF(R.Right, R.Top));
  P2:=TransformPoint(PointF(R.Right, R.Bottom));

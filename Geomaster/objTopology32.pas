@@ -7,10 +7,16 @@
 //                          линии - выбрать/снять выбор, правая кнопка -
 //                          перевернуть выбранные линии;
 //  topo_MoveOnTwig (604) - перемещение условного обозначения вдоль линии:
-//                          левая кнопка нажата на линии, движение, отпускание.
+//                          левая кнопка нажата на линии, движение, отпускание;
+//  topo_Perehlest (601)  - перехлесты сегментов (кнопка RbPere1 FlyBti, панель
+//                          pnlLeft): при запуске - поиск в окне (вместо формы
+//                          instPerehlest), щелчок у перехлеста - разорвать
+//                          сегменты (или убрать перехлест из списка), правая
+//                          кнопка - исправить все (нет перехлестов - искать
+//                          снова). Перехлесты рисуются в статическом слое.
 // Обработчики только меняют состояние, выбранные линии рисуются в DrawTemp.
-// Не перенесено: висячие узлы (topo_notLink), перехлесты (topo_Perehlest),
-// мелкие отрезки (topo_minOtr), sbClock (проверка обхода контуров).
+// Не перенесено: висячие узлы (topo_notLink), мелкие отрезки (topo_minOtr),
+// sbClock (проверка обхода контуров).
 
 interface
 
@@ -19,6 +25,7 @@ uses System.Classes, System.SysUtils, System.Types, System.UITypes, System.Skia,
      objMouseDraw32, drawTwigs32, Collect, EcDot, EcLot, WpTwigs, WptForm2;
 
 const
+  topo_Perehlest = 601;
   topo_RotateTwig = 603;
   topo_MoveOnTwig = 604;
 
@@ -30,6 +37,8 @@ type
    MoveTwig: TTwig;             // линия, знак которой перемещается
    X1, Y1: Double;              // точка начала перемещения
    OldZDx: Single;              // смещение знака до перемещения
+   FPere: Boolean;              // операция topo_Perehlest (LOperation к деструктору уже другая)
+   FDialog: Boolean;            // открыт диалог подтверждения - мышь не обрабатывается
   //
    Constructor Create(ATwigs: Pointer; AFreeProc: TFreeProc); override;
    Destructor Destroy; override;
@@ -39,8 +48,17 @@ type
    Procedure MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean); override;
    Procedure MouseMove(Form: TForm2; Shift: TShiftState; X, Y: Double; var Hook: boolean); override;
    Procedure DrawTemp(const Canvas: ISkCanvas; PaintOnImage: Boolean = False); override;
+   Procedure DrawTempStatic(const Canvas: ISkCanvas; PaintOnImage: Boolean = False); override;
+   Function Hint: String; override;
   //
    Function FindTwig(var X, Y: Double): TTwig;
+  // перехлесты
+   Procedure CollectPerehlests;
+   Procedure PereChanged;
+   Procedure PereModified;
+   Procedure EditPerehlest(X, Y: Double);
+   Procedure ModifyPerehlests;
+   Procedure Confirm(const Msg: String; Yes: TProc; No: TProc = nil);
    Procedure RotateTwigs;
    Procedure UpdateTwigs(const Tws: array of TTwig);
    Procedure EndMove(Cancel: Boolean);
@@ -48,7 +66,9 @@ type
 
 implementation
 
-uses GBFWUndo, UndoColNew, newSelector, TwgColle, Writer, Selector32;
+uses FMX.DialogService, GBFWUndo, UndoColNew, newSelector, TwgColle, notLink_, Writer, Selector32;
+
+var GActiveTopology: TMouseTopology; // обработчик жив - для отложенного результата диалога
 
 { TMouseTopology }
 
@@ -56,14 +76,104 @@ constructor TMouseTopology.Create(ATwigs: Pointer; AFreeProc: TFreeProc);
 begin
  inherited;
  ActiveTwigs := TList<TTwig>.Create;
+ GActiveTopology := Self;
+ FPere := LOperation = topo_Perehlest;
+ if FPere then CollectPerehlests;
 end;
 
 destructor TMouseTopology.Destroy;
 begin
+ if GActiveTopology = Self then GActiveTopology := nil;
 // перемещение знака не закончено - вернуть смещение и отменить запись в Undo
  if MoveTwig <> nil then EndMove(True);
  ActiveTwigs.Free;
+ if FPere then begin
+  Twigs.newClearPerehlests;
+  if (Selector <> nil) and Assigned(Selector.OnInvalidateOverlayStatic) then Selector.OnInvalidateOverlayStatic;
+ end;
  inherited;
+end;
+
+// поиск перехлестов в окне (CollectPerehlest старой программы)
+procedure TMouseTopology.CollectPerehlests;
+begin
+ Twigs.newCollectPerehlests;
+ PereChanged;
+end;
+
+// список перехлестов изменился - статический слой пересобирается
+procedure TMouseTopology.PereChanged;
+begin
+ if Assigned(Selector.OnInvalidateOverlayStatic) then Selector.OnInvalidateOverlayStatic;
+ UpdateImage;
+end;
+
+// сегменты разорваны: упаковка (Closed = 254 - разрезанные окружности) и сцена
+procedure TMouseTopology.PereModified;
+begin
+ Twigs.newResetOpr;
+ Twigs.ClassBuildII;
+ Twigs.Pack(nil);
+ Modified;
+ Selector.UpdateImage(usmModify, nil);
+end;
+
+procedure TMouseTopology.Confirm(const Msg: String; Yes: TProc; No: TProc);
+var T: TMouseTopology;
+begin
+ T := Self;
+ FDialog := True;
+ LMouseDown := False;
+ RMouseDown := False;
+ TDialogService.MessageDialog(Msg, TMsgDlgType.mtConfirmation, [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbNo, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   if GActiveTopology <> T then exit;
+   FDialog := False;
+   if AResult = mrYes then Yes else if Assigned(No) then No;
+   PereChanged;
+  end);
+end;
+
+// щелчок у перехлеста: разорвать сегменты или убрать перехлест из списка
+procedure TMouseTopology.EditPerehlest(X, Y: Double);
+var R: Double;
+begin
+ R := Selector.XGeoRasst(TwigTolerancePix(Twigs.Settings.psAutoDisst));
+ if Twigs.newFindPereTwig(X, Y, R) > 0 then
+  Confirm('Разорвать сегменты?',
+   procedure
+   begin
+    Twigs.newEditPerehlests;
+    PereModified;
+   end,
+   procedure
+   begin
+    Twigs.newDeletePerehlest;
+   end)
+ else begin
+ // у перехлеста не осталось сегментов для разрыва
+  Twigs.newDeletePerehlest;
+  PereChanged;
+ end;
+end;
+
+// правая кнопка: исправить все перехлесты; нет перехлестов - искать снова
+procedure TMouseTopology.ModifyPerehlests;
+begin
+ if Twigs.Perehlests.Count = 0 then begin
+  CollectPerehlests;
+  exit;
+ end;
+ Confirm('Исправить ' + IntToStr(Twigs.Perehlests.Count) + ' перехлестов?',
+  procedure
+  var Err: String;
+  begin
+   Err := Twigs.newModifyPerehlests;
+   PereModified;
+   if Err <> '' then TDialogService.ShowMessage(Err);
+   Twigs.newCollectPerehlests;
+  end);
 end;
 
 // линия под курсором (в старой программе - TForm2.FindTwig); дуги не
@@ -169,13 +279,45 @@ begin
  if (HotTwig <> nil) and (MoveTwig = nil) then SkDrawTwig(Canvas, HotTwig, Pen);
 end;
 
+// перехлесты в окне - голубыми кружками (ShowPerehlests старой программы);
+// статический слой накладывается на сцену обычным образом - цвет как есть
+procedure TMouseTopology.DrawTempStatic(const Canvas: ISkCanvas; PaintOnImage: Boolean);
+var I: Integer;
+    W: TWorkPere;
+    Pen: ISkPaint;
+    R: Single;
+    G: TSect;
+begin
+ inherited;
+ if (Canvas = nil) or not FPere then exit;
+ Pen := SkPen(Canvas, TAlphaColorRec.Cyan, 2, False);
+ R := SkPixToWorld(Canvas, 6);
+ G := GRect;
+ for I := 0 to Twigs.Perehlests.Count - 1 do begin
+  W := Twigs.Perehlests[I];
+  if (W.X > G.Left) and (W.X < G.Right) and (W.Y < G.Top) and (W.Y > G.Bottom) then Canvas.DrawCircle(W.X, W.Y, R, Pen);
+ end;
+end;
+
+function TMouseTopology.Hint: String;
+begin
+ if not FPere then begin Result := inherited Hint; exit; end;
+ if Twigs.Perehlests.Count = 0 then Result := 'В данном окне не найдено перехлестов; правая кнопка - искать снова' else
+  Result := 'Перехлестов: ' + IntToStr(Twigs.Perehlests.Count) + '; щелчок у перехлеста - разорвать, правая кнопка - исправить все';
+end;
+
 procedure TMouseTopology.MouseDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 var Tw: TTwig;
 begin
  Hook := True;
+ if FDialog then exit;
  inherited;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
  if not LMouseDown then exit;
+ if FPere then begin
+  EditPerehlest(X, Y);
+  exit;
+ end;
  Tw := FindTwig(X, Y);
  if Tw = nil then exit;
  case LOperation of
@@ -200,9 +342,12 @@ end;
 
 procedure TMouseTopology.MouseMove(Form: TForm2; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
+ Hook := True;
+ if FDialog then exit;
  inherited;
  Hook := True;
  if ShiftPress or ControlPress then begin Hook := False; exit; end;
+ if FPere then exit;
 // знак сдвигается на расстояние вдоль линии от точки нажатия
  if MoveTwig <> nil then begin
   emGetDotMarker(X, Y, nil, Stvor_, objTemporary, False, False);
@@ -218,6 +363,7 @@ end;
 procedure TMouseTopology.MouseUp(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  Hook := True;
+ if FDialog then exit;
  inherited;
  if ShiftPress or ControlPress or (Button = TMouseButton.mbRight) then begin Hook := False; exit; end;
  if MoveTwig <> nil then begin
@@ -229,8 +375,14 @@ end;
 procedure TMouseTopology.MouseRightDown(Form: TForm2; Button: TMouseButton; Shift: TShiftState; X, Y: Double; var Hook: boolean);
 begin
  Hook := True;
+ if FDialog then exit;
  inherited;
  if ShiftPress or ControlPress or (MoveTwig <> nil) then begin Hook := False; exit; end;
+ if FPere then begin
+  RMouseDown := False;
+  ModifyPerehlests;
+  exit;
+ end;
  case LOperation of
   topo_RotateTwig: begin
     RotateTwigs;

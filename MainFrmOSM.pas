@@ -45,6 +45,8 @@ type
     FOsmFailed: Boolean;
     FOsmLastReqXMin, FOsmLastReqYMin, FOsmLastReqXMax, FOsmLastReqYMax: Double;
     FOsmLastReqValid: Boolean;
+  // тайлы, которые сейчас скачиваются (не больше OsmMaxParallel одновременно)
+    FOsmPending: TDictionary<string, Boolean>;
   // GPS (GPSReceiver): приемник, панель состояния (instGPSFrame) поверх карты
   // по флажку cbNAV, маркер положения и круг точности - в live-слое
     FGPS: TGPSReceiver;
@@ -65,7 +67,11 @@ type
     procedure ClearOsmTileCache;
     procedure RequestOsmTilesFromActiveRect;
     procedure PruneOsmTiles;
-    procedure DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64);
+    procedure DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64; const FileName: string);
+   // запуск загрузки недостающих тайлов текущего списка (до OsmMaxParallel)
+    procedure StartOsmDownloads;
+   // тайл есть в текущем списке (нужен для показа)
+    function OsmTileWanted(const Key: string): Boolean;
     function TryGetOsmBboxWgs84FromActiveRect(out LonMin, LatMin, LonMax, LatMax: Double): Boolean;
     procedure BuildOsmView(const LonMin, LatMin, LonMax, LatMax: Double; const Dest: TRectF);
     procedure DrawOsmTiles(const ACanvas: ISkCanvas; const Rect: TRectF);
@@ -78,7 +84,7 @@ type
   protected
     procedure Loaded; override;
     destructor Destroy; override;
-    procedure OpenGmfFileSkia(const LocalPath: string); override;
+    procedure MapOpened(const LocalPath: string; NewMap: Boolean); override;
     procedure PaintBefore(const ACanvas: ISkCanvas; const Rect: TRectF); override;
     procedure PaintAfter(const ACanvas: ISkCanvas; const Rect: TRectF); override;
     procedure PaintOverlayLive(const ACanvas: ISkCanvas; const Rect: TRectF); override;
@@ -93,14 +99,29 @@ type
 var
   MainFormOSM: TMainFormOSM;
 
-implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader, drawTwigs32, AppForms;
+implementation uses ogcBasic, Writer, DlgLocalOpen, OpenForm, GPKGReader, drawTwigs32, AppForms, DlgGlobalSave;
 
 {$R *.fmx}
+
+const
+ // отладка вылета на Android: запись тайлов на диск временно отключена
+ // (чтение уже записанных - по FCachedTiles)
+  OsmWriteTileCache = False;
+ // одновременных загрузок тайлов
+  OsmMaxParallel = 4;
+ // тайлов в памяти (раскодированный тайл 256x256 - 256 КБ)
+{$IFDEF ANDROID}
+  OsmMaxTiles = 120;
+{$ELSE}
+  OsmMaxTiles = 400;
+{$ENDIF}
 
 procedure TMainFormOSM.EnsureOsm;
 begin
  if FOsmTiles = nil then
   FOsmTiles := TDictionary<string, ISkImage>.Create;
+ if FOsmPending = nil then
+  FOsmPending := TDictionary<string, Boolean>.Create;
  if FOsmZoom <= 0 then
   FOsmZoom := 16;
 end;
@@ -145,6 +166,7 @@ begin
   FOsmReqTimer := nil;
  end;
  FOsmTiles.Free;
+ FOsmPending.Free;
  inherited;
 end;
 
@@ -368,7 +390,7 @@ procedure TMainFormOSM.btnLocalOpenClick(Sender: TObject);
 begin
  localOpenForm := TlocalOpenForm.Create(Self);
 {$IFDEF ANDROID}
- localOpenForm.BaseDir := GetAppExternalFilesDir;
+ localOpenForm.BaseDir := UserMapsDir; // папка карт исполнителя (Documents/подпапка)
 {$ENDIF}
  localOpenForm.FCallBack :=
   procedure(const LocalPath: string)
@@ -434,7 +456,50 @@ begin
  OsmChanged
 end;
 
-procedure TMainFormOSM.DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64);
+function TMainFormOSM.OsmTileWanted(const Key: string): Boolean;
+var I: Integer;
+begin
+ Result := False;
+ for I := 0 to Length(FOsmTileList) - 1 do
+  if FOsmTileList[I].Key = Key then exit(True);
+end;
+
+procedure TMainFormOSM.StartOsmDownloads;
+var I, InMem, Started: Integer;
+    Tile: TOsmTile;
+    Keys, K: string;
+begin
+ if FOsmClosing or FOsmFailed then begin
+  WriteIn(['OSM start: closing=', FOsmClosing, ' failed=', FOsmFailed]);
+  exit;
+ end;
+ EnsureOsm;
+ InMem := 0;
+ Started := 0;
+ for I := 0 to Length(FOsmTileList) - 1 do begin
+  Tile := FOsmTileList[I];
+  if FOsmTiles.ContainsKey(Tile.Key) then begin
+   Inc(InMem);
+   continue;
+  end;
+  if FOsmPending.ContainsKey(Tile.Key) then continue;
+  if FOsmPending.Count >= OsmMaxParallel then break;
+  FOsmPending.Add(Tile.Key, True);
+  Inc(Started);
+ // путь кэша - здесь, в главном потоке (TPath.GetCachePath на Android - JNI)
+  DownloadTileAsync(Tile, FOsmRequestId, GetOsmTileCacheFileName(Tile.Z, Tile.X, Tile.Y));
+ end;
+// отладка: тайлов в списке, в памяти, на загрузке (какие), запущено сейчас
+ Keys := '';
+ for K in FOsmPending.Keys do Keys := Keys + K + ' ';
+ WriteIn(['OSM start: list=', Length(FOsmTileList), ' inMem=', InMem, ' pending=', FOsmPending.Count,
+  ' started=', Started, ' [', Keys, ']']);
+end;
+
+// загрузка тайла в фоне: из кэша на диске (FCachedTiles) или с сервера. По
+// окончании (и при ошибке) тайл снимается с загрузки и запускаются следующие;
+// тайл принимается, если он еще есть в текущем списке
+procedure TMainFormOSM.DownloadTileAsync(const Tile: TOsmTile; const RequestId: Int64; const FileName: string);
 begin
  if FOsmClosing then exit;
  WriteIn(['DownloadTileAsync start ', Tile.Key, ' RequestId=', RequestId]);
@@ -445,7 +510,6 @@ begin
       Url: string;
       MS: TMemoryStream;
       Img: ISkImage;
-      FileName: string;
   procedure Fail;
   begin
    TThread.Queue(nil,
@@ -456,13 +520,13 @@ begin
   end;
   begin
    if FOsmClosing then exit;
-  // запрос устарел (вид сдвинут/масштаб изменен) - тайл не нужен
-   if RequestId <> FOsmRequestId then exit;
-   WriteIn(['DownloadTileAsync task start ', Tile.Key]);
    Client := nil;
    MS := nil;
    try
-    FileName := GetOsmTileCacheFileName(Tile.Z, Tile.X, Tile.Y);
+  // задачи не отбрасываются при новом запросе: их не больше OsmMaxParallel,
+  // скачанный тайл остается в памяти и нужен при следующих сдвигах вида
+   WriteIn(['DownloadTileAsync task start ', Tile.Key]);
+   try
     if FCachedTiles then
     begin
      WriteIn(['Tile cache file: ', FileName, ' exists: ', TFile.Exists(FileName)]);
@@ -482,10 +546,9 @@ begin
         procedure
         begin
          if FOsmClosing then exit;
-         if RequestId <> FOsmRequestId then exit;
          EnsureOsm;
          FOsmTiles.AddOrSetValue(Tile.Key, Img);
-         RedrawUnderlay;
+         if OsmTileWanted(Tile.Key) then RedrawUnderlay;
         end);
        exit;
       end;
@@ -494,7 +557,6 @@ begin
      end;
     end;
 
-    if RequestId <> FOsmRequestId then exit;
     Url := Format('https://tile.openstreetmap.org/%d/%d/%d.png', [Tile.Z, Tile.X, Tile.Y]);
     WriteIn(['OSM GET start ', Url]);
     Client := THTTPClient.Create;
@@ -547,10 +609,10 @@ begin
      exit;
     end;
     WriteIn(['OSM decoded ', Url]);
-    if FCachedTiles then
+    if FCachedTiles and OsmWriteTileCache then
     begin
      try
-      EnsureOsmTileCacheDir(Tile.Z, Tile.X);
+      if not TDirectory.Exists(ExtractFileDir(FileName)) then TDirectory.CreateDirectory(ExtractFileDir(FileName));
       MS.SaveToFile(FileName);
      except
      end;
@@ -566,15 +628,17 @@ begin
         WriteIn(['TThread.Queue FOsmClosing true ', Tile.Key]);
         exit;
        end;
-       if RequestId <> FOsmRequestId then
-       begin
-        WriteIn(['TThread.Queue RequestId mismatch ', Tile.Key, ' RequestId=', RequestId, ' FOsmRequestId=', FOsmRequestId]);
-        exit;
-       end;
        WriteIn(['TThread.Queue EnsureOsm ', Tile.Key]);
        EnsureOsm;
        WriteIn(['TThread.Queue AddOrSetValue ', Tile.Key]);
+      // тайл в памяти - всегда (вне текущего вида - для следующих сдвигов;
+      // лишние убирает PruneOsmTiles), перерисовка - только если он виден
        FOsmTiles.AddOrSetValue(Tile.Key, Img);
+       if not OsmTileWanted(Tile.Key) then
+       begin
+        WriteIn(['TThread.Queue tile out of view ', Tile.Key]);
+        exit;
+       end;
        WriteIn(['OSM cached ', Tile.Key, ' SkPainter=', SkPainter <> nil]);
        if SkPainter <> nil then
        begin
@@ -601,12 +665,23 @@ begin
    except on E: Exception do
     WriteIn(['OSM HTTP exception ', E.ClassName, ' ', E.Message]);
    end;
-   WriteIn(['DownloadTileAsync task end ', Tile.Key]);
-   if MS <> nil then
-    MS.Free;
-   if Client <> nil then
-    Client.Free;
-   WriteIn(['EndOfProc==================== ', Tile.Key]);
+   finally
+    WriteIn(['DownloadTileAsync task end ', Tile.Key]);
+    if MS <> nil then
+     MS.Free;
+    if Client <> nil then
+     Client.Free;
+   // тайл снят с загрузки - следующие (форма закрывается - ничего)
+    if not FOsmClosing then
+     TThread.Queue(nil,
+      procedure
+      begin
+       if FOsmClosing then exit;
+       if FOsmPending <> nil then FOsmPending.Remove(Tile.Key);
+       StartOsmDownloads;
+      end);
+    WriteIn(['EndOfProc==================== ', Tile.Key]);
+   end;
   end);
 end;
 
@@ -665,8 +740,10 @@ begin
  if Y0 > Y1 then begin I := Y0; Y0 := Y1; Y1 := I; end;
  X0 := Max(0, X0 - 1);
  Y0 := Max(0, Y0 - 1);
- X1 := X1 + 1;
- Y1 := Y1 + 1;
+// номера тайлов уровня - 0..2^Z-1 (за краем сервер отвечает ошибкой, и OSM
+// выключался)
+ X1 := Min(X1 + 1, (1 shl FOsmZoom) - 1);
+ Y1 := Min(Y1 + 1, (1 shl FOsmZoom) - 1);
  WriteIn(['OSM tiles z=', FOsmZoom, ' x=', X0, '..', X1, ' y=', Y0, '..', Y1]);
  SetLength(FOsmTileList, 0);
  for X := X0 to X1 do
@@ -684,15 +761,15 @@ begin
  FOsmLonMax := LonMax;
  FOsmLatMax := LatMax;
  PruneOsmTiles;
- for I := 0 to Length(FOsmTileList) - 1 do
-  if not FOsmTiles.ContainsKey(FOsmTileList[I].Key) then DownloadTileAsync(FOsmTileList[I], FOsmRequestId);
+// недостающие тайлы - по очереди, не больше OsmMaxParallel загрузок сразу
+ StartOsmDownloads;
  RedrawUnderlay;
 end;
 
 // кэш тайлов в памяти: при переполнении убираются тайлы других уровней,
 // если и этого мало - все, кроме текущего списка
 procedure TMainFormOSM.PruneOsmTiles;
-const MaxTiles = 400;
+const MaxTiles = OsmMaxTiles;
 var Keys: TArray<string>;
     Key, Prefix: string;
     Need: TDictionary<string, Boolean>;
@@ -742,7 +819,7 @@ begin
  end;
 end;
 //
-procedure TMainFormOSM.OpenGmfFileSkia(const LocalPath: string);
+procedure TMainFormOSM.MapOpened(const LocalPath: string; NewMap: Boolean);
 begin
  inherited;
  if (cbOSM <> nil) and cbOSM.IsChecked then

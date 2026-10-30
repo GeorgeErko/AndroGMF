@@ -14,7 +14,10 @@
 // OnClearSnaps: сброс привязок, «🎤» - голосовой ввод (WinSpeech/VoskSpeech):
 // число - в активную кнопку, «ввод», «назад», «сброс», «стереть» - команды.
 // Values[Имя] - значение элемента: TButton - текст, флажок и переключатель -
-// True/False (запись 'True' отмечает)
+// True/False (запись 'True' отмечает), список (TComboBox, перед ним - TLabel,
+// строки - SetItems) - выбранная строка.
+// FullKeyboard - полная клавиатура (буквы русские/латинские, цифры, пробел)
+// под элементами вместо цифровой: ввод текста в активную кнопку
 
 interface
 
@@ -23,7 +26,7 @@ uses
   System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.Controls.Presentation, FMX.TextLayout, System.ImageList,
-  FMX.ImgList, AppForms;
+  FMX.ImgList, FMX.ListBox, AppForms;
 
 type
   TInstAccuDrawFrame = class(TFrame)
@@ -70,6 +73,20 @@ type
   // хранится в настройках (AccuDraw_Voice)
     FVoiceOn: Boolean;
     FDownload: IInterface; // загрузка модели Vosk (IVoskModelDownload); nil - нет
+  // полная клавиатура: клавиши по рядам для русской (False) и латинской (True)
+  // раскладки; создается при первом показе
+    FFullKeys: TLayout;
+    FKeyRows: array[Boolean] of TArray<TArray<TButton>>;
+    FFullKeyboard: Boolean;
+    FLatin: Boolean; // раскладка: латиница
+    FShift: Boolean; // следующая буква - заглавная
+    FBaseHeight: Single; // высота панели без полной клавиатуры
+    procedure SetFullKeyboard(const Value: Boolean);
+    procedure BuildFullKeys;
+    procedure UpdateFullKeys;
+    procedure FullKeysResize(Sender: TObject);
+    procedure FullKeyClick(Sender: TObject);
+    procedure ComboChange(Sender: TObject);
     procedure DownloadModel(V: TObject);
     procedure SetVoiceOn(Value: Boolean);
     procedure ClearControls;
@@ -100,6 +117,8 @@ type
     procedure Show(const CNames: array of String; const CClass: array of TComponentClass);
     procedure Hide;
     function ControlByName(const CName: String): TControl;
+   // строки списка (TComboBox) по имени элемента
+    procedure SetItems(const CName: String; const Items: array of String);
     function NameOf(Ctrl: TObject): String;
    // число из значения элемента (точка или запятая); False - не число
     function FloatValue(const CName: String; out V: Double): Boolean;
@@ -109,6 +128,8 @@ type
     procedure BackChar;
     procedure DoEnter;
     property ActiveEditButton: TButton read FActiveEditButton write SetActiveEditButton;
+   // полная клавиатура вместо цифровой (панель выше на ее высоту)
+    property FullKeyboard: Boolean read FFullKeyboard write SetFullKeyboard;
     property Values[const CName: String]: String read GetValue write SetValue; default;
   end;
 
@@ -169,6 +190,9 @@ const
   ButtonHeight = 24;
   ItemGap = 6;
   ButtonWidth = 80;
+  ComboWidth = 130;
+  FullKeyHeight = {$IFDEF ANDROID}40{$ELSE}30{$ENDIF};
+  FullKeyCols = 12; // ширина ряда в клавишах
 
 constructor TInstAccuDrawFrame.Create(AOwner: TComponent);
 begin
@@ -234,11 +258,13 @@ begin
 end;
 begin
  ClearControls;
+// полную клавиатуру включает показавшая панель операция после Show
+ FullKeyboard := False;
  X := ItemGap;
  First := nil;
  for I := 0 to High(CNames) do begin
   if I > High(CClass) then break;
-  if CClass[I] = TButton then begin
+  if (CClass[I] = TButton) or (CClass[I] = TComboBox) then begin
    L := TLabel.Create(Self);
    L.Text := CNames[I];
    L.TextSettings.WordWrap := False;
@@ -254,10 +280,14 @@ begin
    if First = nil then First := TButton(C);
    Place(C, ButtonWidth, ButtonHeight);
   end else
+  if C is TComboBox then begin
+   Place(C, ComboWidth, ButtonHeight);
+   TComboBox(C).OnChange := ComboChange;
+  end else
   if C is TPresentedTextControl then Place(C, TextWidth(TPresentedTextControl(C), CNames[I]) + 32) else
    Place(C, ButtonWidth);
   if C is TRadioButton then TRadioButton(C).GroupName := 'AccuDraw' + IntToStr(NativeInt(Self));
-  TControlAccess(C).OnClick := ControlClick;
+  if not (C is TComboBox) then TControlAccess(C).OnClick := ControlClick;
   FControls.AddOrSetValue(CNames[I], C);
  end;
  // ширина области элементов - по правому краю последнего элемента
@@ -280,6 +310,7 @@ end;
 
 procedure TInstAccuDrawFrame.Hide;
 begin
+ FullKeyboard := False;
  FActiveEditButton := nil;
  ShownBy := nil;
  OnEnter := nil;
@@ -314,10 +345,18 @@ end;
 
 procedure TInstAccuDrawFrame.ControlClick(Sender: TObject);
 begin
+// с полной клавиатурой (ввод текста) текст не очищается - правка «←»
  if Sender is TButton then begin
   ActiveEditButton := TButton(Sender);
-  TButton(Sender).Text := '';
+  if not FFullKeyboard then TButton(Sender).Text := '';
  end;
+ if Assigned(OnChange) then OnChange(Sender);
+ FocusMainForm;
+end;
+
+// выбрана строка списка
+procedure TInstAccuDrawFrame.ComboChange(Sender: TObject);
+begin
  if Assigned(OnChange) then OnChange(Sender);
  FocusMainForm;
 end;
@@ -583,6 +622,21 @@ begin
  if not FControls.TryGetValue(CName, Result) then Result := nil;
 end;
 
+procedure TInstAccuDrawFrame.SetItems(const CName: String; const Items: array of String);
+var C: TControl;
+    S: String;
+begin
+ C := ControlByName(CName);
+ if not (C is TComboBox) then exit;
+ TComboBox(C).BeginUpdate;
+ try
+  TComboBox(C).Items.Clear;
+  for S in Items do TComboBox(C).Items.Add(S);
+ finally
+  TComboBox(C).EndUpdate;
+ end;
+end;
+
 function TInstAccuDrawFrame.NameOf(Ctrl: TObject): String;
 var P: TPair<String, TControl>;
 begin
@@ -596,12 +650,13 @@ begin
  Result := TryStrToFloat(StringReplace(Trim(GetValue(CName)), ',', '.', []), V, TFormatSettings.Invariant);
 end;
 
-// TButton - текст; флажок, переключатель - 'True' отмечает
+// TButton - текст; флажок, переключатель - 'True' отмечает; список - строка
 procedure TInstAccuDrawFrame.SetValue(const CName, Value: String);
 var C: TControl;
 begin
  C := ControlByName(CName);
  if C = nil then exit;
+ if C is TComboBox then TComboBox(C).ItemIndex := TComboBox(C).Items.IndexOf(Value) else
  if C is TCheckBox then TCheckBox(C).IsChecked := SameText(Value, 'True') else
  if C is TRadioButton then TRadioButton(C).IsChecked := SameText(Value, 'True') else
  if C is TPresentedTextControl then TPresentedTextControl(C).Text := Value;
@@ -613,9 +668,150 @@ begin
  Result := '';
  C := ControlByName(CName);
  if C = nil then exit;
+ if C is TComboBox then begin
+  if TComboBox(C).ItemIndex >= 0 then Result := TComboBox(C).Items[TComboBox(C).ItemIndex];
+ end else
  if C is TCheckBox then Result := BoolToStr(TCheckBox(C).IsChecked, True) else
  if C is TRadioButton then Result := BoolToStr(TRadioButton(C).IsChecked, True) else
  if C is TPresentedTextControl then Result := TPresentedTextControl(C).Text;
+end;
+
+// ряды полной клавиатуры: буквы и знаки; служебные клавиши - по Tag, у букв
+// Tag = 0, символ - в TagString
+const
+  KeyShift = 1;
+  KeyLang = 2;
+  KeySpace = 3;
+  KeyBack = 4;
+  KeyEnter = 5;
+  RusRows: array[0..3] of String = ('1234567890-', 'йцукенгшщзхъ', 'фывапролджэё', 'ячсмитьбю.,');
+  LatRows: array[0..3] of String = ('1234567890-', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm.,');
+
+// клавиши обеих раскладок (видна одна): ряд 0 - цифры и «←», ряд 3 - «⇧» и
+// буквы, ряд 4 - раскладка, пробел, «⏎»
+procedure TInstAccuDrawFrame.BuildFullKeys;
+var Lat: Boolean;
+    R: Integer;
+    Ch: Char;
+    Row: TArray<TButton>;
+function AddKey(const Caption: String; KeyTag: Integer; Units: Single): TButton;
+begin
+ Result := TButton.Create(Self);
+ Result.Parent := FFullKeys;
+ Result.CanFocus := False;
+ Result.Text := Caption;
+ Result.TextSettings.Trimming := TTextTrimming.None;
+ Result.Tag := KeyTag;
+ Result.TagFloat := Units;
+ Result.OnClick := FullKeyClick;
+ UISetRule(Result, 'ui:android:font-1');
+ Row := Row + [Result];
+end;
+begin
+ FFullKeys := TLayout.Create(Self);
+ FFullKeys.Parent := Self;
+ FFullKeys.Align := TAlignLayout.Bottom;
+ FFullKeys.Height := 5 * FullKeyHeight + 4;
+ FFullKeys.Visible := False;
+ FFullKeys.OnResize := FullKeysResize;
+ for Lat := False to True do begin
+  FKeyRows[Lat] := nil;
+  for R := 0 to 4 do begin
+   Row := nil;
+   if R = 3 then AddKey(#$21E7, KeyShift, 1);
+   if R < 4 then
+    for Ch in IfThen(Lat, LatRows[R], RusRows[R]) do AddKey(Ch, 0, 1).TagString := Ch;
+   if R = 0 then AddKey(#$2190, KeyBack, 1);
+   if R = 4 then begin
+    AddKey(IfThen(Lat, 'RU', 'EN'), KeyLang, 2);
+    AddKey('', KeySpace, 7);
+    AddKey(#$23CE, KeyEnter, 3);
+   end;
+   FKeyRows[Lat] := FKeyRows[Lat] + [Row];
+  end;
+ end;
+end;
+
+// видна текущая раскладка, буквы - по Shift
+procedure TInstAccuDrawFrame.UpdateFullKeys;
+var Lat: Boolean;
+    Row: TArray<TButton>;
+    B: TButton;
+begin
+ for Lat := False to True do
+  for Row in FKeyRows[Lat] do
+   for B in Row do begin
+    B.Visible := Lat = FLatin;
+    if B.Tag = 0 then
+     if FShift then B.Text := AnsiUpperCase(B.TagString) else B.Text := B.TagString;
+    if B.Tag = KeyShift then B.IsPressed := FShift;
+   end;
+ FullKeysResize(nil);
+end;
+
+// ряды по ширине панели: клавиша - 1/12 ширины (служебные - TagFloat долей),
+// ряд по центру
+procedure TInstAccuDrawFrame.FullKeysResize(Sender: TObject);
+var Row: TArray<TButton>;
+    B: TButton;
+    W, X, Y, Units: Single;
+begin
+ if FFullKeys = nil then exit;
+ W := (FFullKeys.Width - 4) / FullKeyCols;
+ if W <= 0 then exit;
+ Y := 2;
+ for Row in FKeyRows[FLatin] do begin
+  Units := 0;
+  for B in Row do Units := Units + B.TagFloat;
+  X := 2 + (FullKeyCols - Units) * W / 2;
+  for B in Row do begin
+   B.SetBounds(X + 1, Y + 1, B.TagFloat * W - 2, FullKeyHeight - 2);
+   X := X + B.TagFloat * W;
+  end;
+  Y := Y + FullKeyHeight;
+ end;
+end;
+
+procedure TInstAccuDrawFrame.FullKeyClick(Sender: TObject);
+var B: TButton;
+begin
+ B := TButton(Sender);
+ case B.Tag of
+  KeyShift: begin
+    FShift := not FShift;
+    UpdateFullKeys;
+   end;
+  KeyLang: begin
+    FLatin := not FLatin;
+    FShift := False;
+    UpdateFullKeys;
+   end;
+  KeySpace: AddChar(' ');
+  KeyBack: BackChar;
+  KeyEnter: DoEnter;
+ else
+  if B.Text <> '' then AddChar(B.Text[1]);
+ // заглавная - одна буква
+  if FShift then begin
+   FShift := False;
+   UpdateFullKeys;
+  end;
+ end;
+ FocusMainForm;
+end;
+
+// полная клавиатура - под элементами на всю ширину панели, цифровая скрыта
+procedure TInstAccuDrawFrame.SetFullKeyboard(const Value: Boolean);
+begin
+ if FFullKeyboard = Value then exit;
+ if not FFullKeyboard then FBaseHeight := Height;
+ FFullKeyboard := Value;
+ if Value and (FFullKeys = nil) then BuildFullKeys;
+ if FFullKeys <> nil then FFullKeys.Visible := Value;
+ pnlKeys.Visible := not Value;
+ if Value then Height := FBaseHeight + FFullKeys.Height else Height := FBaseHeight;
+ PlaceAboveStatusBar;
+ if Value then UpdateFullKeys;
 end;
 
 end.

@@ -96,7 +96,8 @@ type
     procedure Clear(AColor: Longint); override;
 
     procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); override;
-    procedure DrawPolyline(Points: TogsCollection; cutRequest: Boolean = True); override;
+  // overload - в GRAPHER\ogcBasic у DrawPolyline две перегрузки (сборка с rewriteGMF)
+    procedure DrawPolyline(Points: TogsCollection; cutRequest: Boolean = True); overload; override;
     procedure DrawPolygon(Points: TogsCollection; polyRect: TogsRect); override;
     procedure DrawPolyPolygon(Polygons: TogsCollection; polyRect: TogsRect); override;
     procedure DrawCircle(XA, YA, Radius: Double); override;
@@ -157,7 +158,7 @@ type
     procedure EndPrimitive; reintroduce;
 
     procedure DrawLine(X, Y, X1, Y1: Double; cutRequest: Boolean = True); override;
-    procedure DrawPolyline(Points: TogsCollection; cutRequest: Boolean = True); override;
+    procedure DrawPolyline(Points: TogsCollection; cutRequest: Boolean = True); overload; override;
     procedure DrawPolygon(Points: TogsCollection; polyRect: TogsRect); override;
 
     procedure DrawTextAlignedPix(const AnchorPix: TPointF; const Text: string;

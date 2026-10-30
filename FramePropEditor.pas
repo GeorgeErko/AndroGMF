@@ -353,7 +353,7 @@ begin
  if FRows[FPickComboRow].Value <> NewValue then
  begin
   FRows[FPickComboRow].Value := NewValue;
-  if not FRows[FPickComboRow].IsSystem then
+  if not FRows[FPickComboRow].IsSystem or FRows[FPickComboRow].IsSystemDisabled then
   begin
    PropName := FRows[FPickComboRow].RawName;
    if PropName <> '' then
@@ -693,7 +693,7 @@ begin
  DataRow := Row;
  If (DataRow < 0) or (DataRow >= FRows.Count) then Exit;
  If Col <> 1 then Exit;
- If (FRows[DataRow] <> nil) and (FRows[DataRow].IsSystem) then Exit;
+ If (FRows[DataRow] <> nil) and FRows[DataRow].IsSystem and not FRows[DataRow].IsSystemDisabled then Exit;
  If (FPickCombo <> nil) and FPickCombo.Visible and (FPickComboRow = DataRow) and (Value.ToString = '') then Exit;
  If (FRows[DataRow] <> nil) and (FRows[DataRow].Value <> '') and (Value.ToString = '') then Exit;
  //
@@ -801,7 +801,8 @@ end;
 procedure TPropEditorFrame.StartGridEdit(const Row: Integer);
 begin
  if (FGrid = nil) or (Row < 0) or (Row >= FRows.Count) or (Row >= FGrid.RowCount) then exit;
- if (FRows[Row] = nil) or FRows[Row].IsSystem then exit;
+// вычисляемые свойства ('#') не правятся; атрибуты знака ('##', серый фон) - правятся
+ if (FRows[Row] = nil) or (FRows[Row].IsSystem and not FRows[Row].IsSystemDisabled) then exit;
  FGridEditRow := Row;
  FGrid.Cells[1, Row] := FRows[Row].Value;
  FGrid.ReadOnly := False;

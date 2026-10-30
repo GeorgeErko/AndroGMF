@@ -2,12 +2,12 @@
 
 // Сохранение карты в папку пользователя: окно TGlobalSaveForm - наследник окна
 // открытия из облака (TGlobalOpenForm), работает с локальными папками.
-// Корень - Android: «Внутреннее хранилище/Download», Windows: «Документы»;
+// Корень - Android: «Внутреннее хранилище/Documents», Windows: «Документы»;
 // пользователь выбирает подпапку корня (можно перейти во вложенные и создать
 // новую), для «Сохранить как» - и имя файла. Выбранная подпапка (путь от
 // корня) хранится в Registry.ini (GlobalSaveFolder) и предлагается при
 // следующем сохранении.
-// Android 11 и новее: в Download программа видит и перезаписывает свои файлы и
+// Android 11 и новее: в Documents программа видит и перезаписывает свои файлы и
 // папки; файлы, положенные туда другими программами или с компьютера, могут
 // быть не видны
 
@@ -26,7 +26,7 @@ type
     lName: TLabel;
     edName: TEdit;
   private
-    FRoot: string;      // корень: Download (Android) или Документы (Windows)
+    FRoot: string;      // корень: Documents (Android) или Документы (Windows)
     FLocalDir: string;  // текущая папка (полный путь)
     FFileName: string;  // имя файла по умолчанию (для «Сохранить»)
     FDone: TProc<string>;
@@ -47,6 +47,10 @@ procedure SaveMapPicker(const FileName: string; AskName: Boolean; const Done: TP
 // отменить. Done - путь открываемой карты: копия, имеющийся файл; окно
 // закрыто без выбора папки - исходный LocalPath; '' - не открывать
 procedure CopyMapToUserFolder(const LocalPath: string; const Done: TProc<string>);
+// папка карт исполнителя для окна открытия: корень (Android - Documents,
+// Windows - Документы) + подпапка последнего сохранения из Registry.ini
+// (если ее нет - корень)
+function UserMapsDir: string;
 
 var
   GlobalSaveForm: TGlobalSaveForm;
@@ -65,11 +69,23 @@ const
 function SaveRoot: string;
 begin
 {$IFDEF ANDROID}
- Result := TPath.GetSharedDownloadsPath;
+ Result := TPath.GetSharedDocumentsPath;
 {$ELSE}
  Result := TPath.GetDocumentsPath;
 {$ENDIF}
  Result := ExcludeTrailingPathDelimiter(Result);
+end;
+
+function UserMapsDir: string;
+var Folder: string;
+begin
+ Result := SaveRoot;
+ try
+  ForceDirectories(Result);
+ except
+ end;
+ Folder := string(GReadString(FolderKey, ''));
+ if (Folder <> '') and TDirectory.Exists(TPath.Combine(Result, Folder)) then Result := TPath.Combine(Result, Folder);
 end;
 
 function WithGmf(const Name: string): string;
@@ -83,7 +99,7 @@ var F: TGlobalSaveForm;
     Dir, Folder: string;
 begin
  if not Assigned(Done) then exit;
- F := TGlobalSaveForm.Create(Application.MainForm);
+ F := TGlobalSaveForm.Create(nil); // без владельца - см. OpenUrlPicker
  F.FDone := Done;
  F.FRoot := SaveRoot;
  F.FFileName := WithGmf(FileName);

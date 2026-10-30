@@ -824,14 +824,20 @@ begin
 // передаем атрибуты
   For I := 0 to TwgForm.Twigs.AnyCount - 1 do begin
    PD := TwgForm.Twigs.AAt(I, B);
-   If PD is TDotText then begin
+   If (PD is TDotText) and (TDotText(PD).Text <> nil) then begin
     DT := PD as TDotText;
 //    (X, Y: Double; FontName: String; txtHeight, txtAngle, txtScale: Double;
 //     txtColor: TColor; Align: byte; Bl, It, Un: Boolean; Text, AttrName: String)
-    Geometry.OnText(Geometry.Obj, DT.XDot - Dx, DT.YDot - Dy,
-                    PChar(DT.Text.fontView.FontName), DT.Text.Height,
-                    DT.Ugol, DT.XKoef, DT.Text.Color, DT.Text.Align, boolean(DT.Text.fontView.Bl), boolean(DT.Text.fontView.It), boolean(DT.Text.fontView.Un),
-                    PChar(DT.Text.Text), PChar(DT.Text.AttrName));
+// строки AnsiString (cp1251) - через String: PChar(AnsiString) передавал байты как UTF-16
+    If DT.Text.fontView <> nil then
+     Geometry.OnText(Geometry.Obj, DT.XDot - Dx, DT.YDot - Dy,
+                     PChar(String(DT.Text.fontView.FontName)), DT.Text.Height,
+                     DT.Ugol, DT.XKoef, DT.Text.Color, DT.Text.Align, boolean(DT.Text.fontView.Bl), boolean(DT.Text.fontView.It), boolean(DT.Text.fontView.Un),
+                     PChar(String(DT.Text.Text)), PChar(String(DT.Text.AttrName)))
+    else
+     Geometry.OnText(Geometry.Obj, DT.XDot - Dx, DT.YDot - Dy, '', DT.Text.Height,
+                     DT.Ugol, DT.XKoef, DT.Text.Color, DT.Text.Align, False, False, False,
+                     PChar(String(DT.Text.Text)), PChar(String(DT.Text.AttrName)));
    end;
   end;
 end;

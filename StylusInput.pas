@@ -21,6 +21,10 @@ type
   TStylusHoverAction = (shEnter, shMove, shExit);
   TStylusHoverEvent = procedure(Action: TStylusHoverAction; const P: TPointF) of object;
   TStylusPointEvent = procedure(const P: TPointF) of object;
+  TStylusPinchAction = (spBegin, spMove, spEnd);
+ // два пальца: Center - середина между ними (точки формы), Delta - ее сдвиг,
+ // Ratio - изменение расстояния между пальцами
+  TStylusPinchEvent = procedure(Action: TStylusPinchAction; const Center, Delta: TPointF; Ratio: Single) of object;
 
 const
  // долгое нажатие, когда система значения не дает: мс и точки формы
@@ -45,12 +49,29 @@ var
  // после первого касания или наведения пера палец только перемещает и
  // масштабирует карту (команды - только пером)
   StylusFingerPans: Boolean = True;
+ // Windows, режим касания (кнопка «Стилус»): ёмкостный стилус (кнопка
+ // включения, зарядка) система не отличает от пальца. True - касание одним
+ // пальцем или стилусом выполняет команды, как мышь; карта - двумя пальцами
+ // (перемещение и масштаб). False - касание перемещает карту, команды - мышью
+ // или пером Windows
+  StylusTouchMode: Boolean = False;
 
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
 // касание пальцем при работе пером: команды не выполняются, только карта
 function FingerOnlyPans: Boolean;
 // касание пером с нажатой кнопкой - как правая кнопка мыши
 function StylusRightButton: Boolean;
+// Windows: касание двумя и более пальцами - от касания вторым пальцем до отрыва
+// всех (одиночное касание, начатое первым пальцем, отменяется)
+function StylusMultiTouch: Boolean;
+// Windows: перемещение и масштаб двумя пальцами по самим касаниям (жест Zoom
+// FMX приходит только при изменении расстояния между пальцами - перемещение
+// рывками); ставить после InstallStylus
+procedure InstallStylusPinch(const OnPinch: TStylusPinchEvent);
+// True - два пальца обрабатывает OnPinch, жест Zoom FMX не нужен
+function StylusPinch: Boolean;
+// Windows: есть сенсорный экран (встроенный или внешний)
+function StylusTouchScreen: Boolean;
 // долгое нажатие (правая кнопка): время, мс, и допуск сдвига пальца или пера,
 // точки формы - системные (Android - ViewConfiguration; Windows - время не
 // задается API, по умолчанию 600, допуск - SM_CXDRAG, не меньше 10)
@@ -204,17 +225,40 @@ begin
  View.setOnTouchListener(GTouchListener);
  View.setOnHoverListener(GHoverListener);
 end;
+
+// Android: команды касанием - только пером, палец всегда перемещает карту
+function StylusMultiTouch: Boolean;
+begin
+ Result := False;
+end;
+
+// Android: два пальца - жест Zoom FMX
+procedure InstallStylusPinch(const OnPinch: TStylusPinchEvent);
+begin
+end;
+
+function StylusPinch: Boolean;
+begin
+ Result := False;
+end;
+
+function StylusTouchScreen: Boolean;
+begin
+ Result := True;
+end;
 {$ELSEIF DEFINED(MSWINDOWS)}
 // Windows (Torex RuggedTablet и др.): перо и касание Windows сама превращает в
 // сообщения мыши, наведение пера - в WM_MOUSEMOVE (OnHover не нужен), касание
 // пером с нажатой кнопкой - в правую кнопку. Окно формы подклассируется:
 // по WM_POINTER* (приходят раньше синтезированных из них сообщений мыши)
 // запоминается инструмент и кнопка пера, щелчок кнопкой пера над экраном -
-// в OnButtonClick; сообщения не перехватываются - их, как и раньше, обрабатывает FMX.
+// в OnButtonClick; касание - инструмент по режиму касания (StylusTouchMode) и
+// число касаний (StylusMultiTouch); сообщения не перехватываются - их, как и раньше,
+// обрабатывает FMX.
 // Системные жесты пера (нажать и удерживать = правая кнопка, флики, круги
 // отклика) для окна отключаются. Указатели (WM_POINTER) - Windows 8 и выше.
 uses
-  System.SysUtils, Winapi.Windows, Winapi.Messages, Winapi.CommCtrl, FMX.Platform.Win;
+  System.SysUtils, Winapi.Windows, Winapi.Messages, FMX.Platform.Win;
 
 const
  // winuser.h: POINTER_INPUT_TYPE
@@ -230,13 +274,24 @@ const
   TABLET_DISABLE_FLICKS = $00010000;
   TABLET_GESTURE_FLAGS = TABLET_DISABLE_PRESSANDHOLD or TABLET_DISABLE_PENTAPFEEDBACK or TABLET_DISABLE_PENBARRELFEEDBACK or TABLET_DISABLE_FLICKS;
   TABLET_PROP = 'MicrosoftTabletPenServiceProperty';
-  STYLUS_SUBCLASS_ID = $5354594C;
 
 var
   GForm: TCommonCustomForm;
   GWnd: HWND;
+  GOldWndProc: Pointer; // оконная процедура FMX (SetWindowSubclass без comctl32 - в FMX ее нет - не работает)
   GOnButtonClick: TStylusPointEvent;
   GHoverButton: Boolean; // кнопка пера была нажата (наведение или касание)
+  GTouchCount: Integer;  // касаний на экране
+  GMultiTouch: Boolean;  // было второе касание - до отрыва всех
+ // два пальца: первые два касания - номера и точки формы; щипок начат - середина
+ // и расстояние прошлого шага
+  GOnPinch: TStylusPinchEvent;
+  GPinchId: array[0..1] of UINT32;
+  GPinchPt: array[0..1] of TPointF;
+  GPinchN: Integer;
+  GPinchActive: Boolean;
+  GPinchCenter: TPointF;
+  GPinchDist: Single;
 
 // пикселы экрана - в координаты формы
 function FormPoint(Wnd: HWND; P: TPoint): TPointF;
@@ -246,6 +301,87 @@ begin
  S := 1;
  if (GForm <> nil) and (GForm.Handle <> nil) and (GForm.Handle.Scale > 0) then S := GForm.Handle.Scale;
  Result := TPointF.Create(P.X / S, P.Y / S);
+end;
+
+procedure PinchEnd;
+begin
+ if GPinchActive and Assigned(GOnPinch) then GOnPinch(spEnd, GPinchCenter, TPointF.Zero, 1);
+ GPinchActive := False;
+end;
+
+// два пальца на экране: начало щипка, затем сдвиг середины и изменение
+// расстояния с прошлого шага (каждое движение любого из пальцев)
+procedure PinchUpdate;
+var C: TPointF;
+    D: Single;
+begin
+ if (GPinchN < 2) or not Assigned(GOnPinch) then exit;
+ C := GPinchPt[0].MidPoint(GPinchPt[1]);
+ D := GPinchPt[0].Distance(GPinchPt[1]);
+ if D < 2 then exit;
+ if not GPinchActive then begin
+  GPinchActive := True;
+  GOnPinch(spBegin, C, TPointF.Zero, 1);
+ end else GOnPinch(spMove, C, C - GPinchCenter, D / GPinchDist);
+ GPinchCenter := C;
+ GPinchDist := D;
+end;
+
+// касание (стилус и палец экран не различает - размер пятна не сообщает):
+// первое касание задает инструмент по режиму касания (StylusTouchMode);
+// второе касание - StylusMultiTouch до отрыва всех; первые два касания - щипок
+procedure TouchMessage(Wnd: HWND; Msg: UINT; wParam: WPARAM);
+var Id: UINT32;
+    Info: POINTER_INFO;
+    P: TPointF;
+    I, K: Integer;
+    Ok: Boolean;
+begin
+ Id := GET_POINTERID_WPARAM(wParam);
+ FillChar(Info, SizeOf(Info), 0);
+ Ok := GetPointerInfo(Id, @Info);
+ if Ok then P := FormPoint(Wnd, Info.ptPixelLocation) else P := TPointF.Zero;
+ K := -1;
+ for I := 0 to GPinchN - 1 do if GPinchId[I] = Id then K := I;
+ case Msg of
+  WM_POINTERDOWN: begin
+  // первое касание - счет заново (отрыв мог потеряться)
+   if IS_POINTER_PRIMARY_WPARAM(wParam) then begin
+    PinchEnd;
+    GPinchN := 0;
+    K := -1;
+    GTouchCount := 0;
+    GMultiTouch := False;
+    StylusButton := False;
+    StylusDetected := True;
+    if StylusTouchMode then StylusTool := stStylus else StylusTool := stFinger;
+   end;
+   Inc(GTouchCount);
+   if GTouchCount >= 2 then GMultiTouch := True;
+   if Ok and (K < 0) and (GPinchN < 2) then begin
+    GPinchId[GPinchN] := Id;
+    GPinchPt[GPinchN] := P;
+    Inc(GPinchN);
+    PinchUpdate;
+   end;
+  end;
+  WM_POINTERUPDATE: if Ok and (K >= 0) then begin
+   GPinchPt[K] := P;
+   PinchUpdate;
+  end;
+  WM_POINTERUP: begin
+   if GTouchCount > 0 then Dec(GTouchCount);
+   if GTouchCount = 0 then GMultiTouch := False;
+   if K >= 0 then begin
+    PinchEnd;
+    if K = 0 then begin
+     GPinchId[0] := GPinchId[1];
+     GPinchPt[0] := GPinchPt[1];
+    end;
+    Dec(GPinchN);
+   end;
+  end;
+ end;
 end;
 
 procedure PointerMessage(Wnd: HWND; Msg: UINT; wParam: WPARAM);
@@ -258,7 +394,7 @@ begin
  Id := GET_POINTERID_WPARAM(wParam);
  if not GetPointerType(Id, @PType) then exit;
  if PType = PTR_TOUCH then begin
-  if Msg = WM_POINTERDOWN then StylusTool := stFinger;
+  TouchMessage(Wnd, Msg, wParam);
   exit;
  end;
  if PType <> PTR_PEN then exit;
@@ -286,7 +422,7 @@ begin
  GHoverButton := Btn;
 end;
 
-function StylusWndProc(Wnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM; uIdSubclass: UINT_PTR; dwRefData: DWORD_PTR): LRESULT; stdcall;
+function StylusWndProc(Wnd: HWND; Msg: UINT; wParam: WPARAM; lParam: LPARAM): LRESULT; stdcall;
 begin
  case Msg of
   WM_POINTERENTER, WM_POINTERDOWN, WM_POINTERUPDATE, WM_POINTERUP, WM_POINTERLEAVE: PointerMessage(Wnd, Msg, wParam);
@@ -294,7 +430,7 @@ begin
   WM_LBUTTONDOWN, WM_RBUTTONDOWN, WM_MBUTTONDOWN: if (DWORD(GetMessageExtraInfo) and SIGNATURE_MASK) <> MI_WP_SIGNATURE then StylusTool := stMouse;
   WM_TABLET_QUERYSYSTEMGESTURESTATUS: exit(TABLET_GESTURE_FLAGS);
  end;
- Result := DefSubclassProc(Wnd, Msg, wParam, lParam);
+ Result := CallWindowProc(GOldWndProc, Wnd, Msg, wParam, lParam);
 end;
 
 // время «нажать и удерживать» Windows через API не получить - по умолчанию
@@ -324,17 +460,60 @@ begin
  if not TOSVersion.Check(6, 2) then exit;
  Wnd := FormToHWND(Form);
  if (Wnd = 0) or (Wnd = GWnd) then exit;
- if GWnd <> 0 then RemoveWindowSubclass(GWnd, @StylusWndProc, STYLUS_SUBCLASS_ID);
+ if (GWnd <> 0) and (GOldWndProc <> nil) and IsWindow(GWnd) then SetWindowLongPtr(GWnd, GWLP_WNDPROC, LONG_PTR(GOldWndProc));
  GWnd := Wnd;
- SetWindowSubclass(Wnd, @StylusWndProc, STYLUS_SUBCLASS_ID, 0);
+ GOldWndProc := Pointer(SetWindowLongPtr(Wnd, GWLP_WNDPROC, LONG_PTR(@StylusWndProc)));
+ if GOldWndProc = nil then begin
+  GWnd := 0;
+  exit;
+ end;
 // Windows 8+: системные жесты пера отключаются свойством окна
  Atom := GlobalAddAtom(TABLET_PROP);
  SetProp(Wnd, TABLET_PROP, THandle(TABLET_GESTURE_FLAGS));
  GlobalDeleteAtom(Atom);
 end;
+
+function StylusMultiTouch: Boolean;
+begin
+ Result := GMultiTouch;
+end;
+
+procedure InstallStylusPinch(const OnPinch: TStylusPinchEvent);
+begin
+ GOnPinch := OnPinch;
+end;
+
+function StylusPinch: Boolean;
+begin
+ Result := (GOldWndProc <> nil) and Assigned(GOnPinch);
+end;
+
+function StylusTouchScreen: Boolean;
+begin
+ Result := (GetSystemMetrics(SM_DIGITIZER) and (NID_INTEGRATED_TOUCH or NID_EXTERNAL_TOUCH)) <> 0;
+end;
 {$ELSE}
 procedure InstallStylus(Form: TCommonCustomForm; const OnHover: TStylusHoverEvent; const OnButtonClick: TStylusPointEvent);
 begin
+end;
+
+function StylusMultiTouch: Boolean;
+begin
+ Result := False;
+end;
+
+procedure InstallStylusPinch(const OnPinch: TStylusPinchEvent);
+begin
+end;
+
+function StylusPinch: Boolean;
+begin
+ Result := False;
+end;
+
+function StylusTouchScreen: Boolean;
+begin
+ Result := False;
 end;
 
 function LongPressTimeout: Integer;

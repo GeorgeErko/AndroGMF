@@ -326,7 +326,7 @@
         <DCC_DebugInformation>0</DCC_DebugInformation>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Android64)'!=''">
-        <VerInfo_Build>4</VerInfo_Build>
+        <VerInfo_Build>6</VerInfo_Build>
         <PF_KeyStore>Keystore\old\geomaster-release.keystore</PF_KeyStore>
         <IncludeAndroid_NotificationAccentColor>false</IncludeAndroid_NotificationAccentColor>
         <PF_KeyStorePass>850847CC5F98079ECF74E53DA45F7BACE44A084E7EB297C397B90FE18E103C82DB0CA39AE3191C25C1B0572EFACEC331BAF736500464228B162345F0E58822DEC90BF31ED507FA8EBFE9AF23071E1D4492563E441DF9</PF_KeyStorePass>
@@ -343,7 +343,7 @@
         <PF_KeyStorePassDebug>850847CC5F98079ECF74E53DA45F7BACE44A084E7EB297C397B90FE18E103C82DB0CA39AE3191C25C1B0572EFACEC331BAF736500464228B162345F0E58822DEC90BF31ED507FA8EBFE9AF23071E1D4492563E441DF9</PF_KeyStorePassDebug>
         <PF_AliasKeyDebug>geomaster_alias</PF_AliasKeyDebug>
         <PF_AliasKeyPassDebug>850847CC5F98079ECF74E53DA45F7BACE44A084E7EB297C397B90FE18E103C82DB0CA39AE3191C25C1B0572EFACEC331BAF736500464228B162345F0E58822DEC90BF31ED507FA8EBFE9AF23071E1D4492563E441DF9</PF_AliasKeyPassDebug>
-        <VerInfo_Keys>package=com.embarcadero.$(MSBuildProjectName);label=$(MSBuildProjectName);versionCode=4;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=;minSdkVersion=23;targetSdkVersion=35</VerInfo_Keys>
+        <VerInfo_Keys>package=com.embarcadero.$(MSBuildProjectName);label=$(MSBuildProjectName);versionCode=6;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=auto;largeHeap=False;theme=TitleBar;hardwareAccelerated=true;apiKey=;minSdkVersion=23;targetSdkVersion=35</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
@@ -545,11 +545,14 @@
         </DCCReference>
         <DCCReference Include="Geomaster\objEditMap32.pas"/>
         <DCCReference Include="Geomaster\objHotSpot32.pas"/>
+        <DCCReference Include="Geomaster\objMouseText32.pas"/>
         <DCCReference Include="Geomaster\objMouse32.pas"/>
         <DCCReference Include="Geomaster\objMouseDraw32.pas"/>
         <DCCReference Include="Geomaster\objMouseSelect32.pas"/>
         <DCCReference Include="Geomaster\objTopo32.pas"/>
         <DCCReference Include="Geomaster\objDataZnk32.pas"/>
+        <DCCReference Include="Geomaster\objAddZas32.pas"/>
+        <DCCReference Include="Geomaster\objSbor32.pas"/>
         <DCCReference Include="Geomaster\objTopology32.pas"/>
         <DCCReference Include="Geomaster\Selector32.pas"/>
         <DCCReference Include="MOUSE\objMouseView.pas"/>

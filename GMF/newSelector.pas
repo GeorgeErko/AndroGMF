@@ -291,6 +291,11 @@ end;
 
 function TSelector.GPRect: TRect;
 begin
+// без контрола (читатель GMF в библиотеке) - область окна рисователя
+ if GNForm = nil then begin
+  if ogsDrawer <> nil then Result := Rect(0, 0, ogsDrawer.Width, ogsDrawer.Height) else Result := Rect(0, 0, 0, 0);
+  exit;
+ end;
  Result := GNForm.BoundsRect.Round;
 end;
 

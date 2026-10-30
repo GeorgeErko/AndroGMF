@@ -100,7 +100,9 @@ type
 
 // FMX.Forms, WptForm2, EcDot, VarSetForm - для диалогов SetTexts/SetTexts2; в начале
 // списка, чтобы не перекрывать идентификаторы следующих модулей
-implementation uses FMX.Forms, WptForm2, EcDot, VarSetForm, Lib, DwgText, newConsts, Writer, LConvEncoding;
+// GMF_READER - сборка читателя GMF (библиотека gmfreader): без диалогов VarSetForm
+implementation uses FMX.Forms, WptForm2, EcDot, {$IFNDEF GMF_READER}VarSetForm, {$ENDIF}Lib, DwgText,
+     newConsts, Writer, LConvEncoding;
 
 { TTextManager }
 
@@ -367,10 +369,13 @@ end;
 
 // диалог атрибутов (TTextManager.SetTexts старой программы)
 procedure TTextManager.SetTexts(MainForm: TObject; X, Y, Z: Double; UseCoord: Boolean; TwgForm_: Pointer; const Done: TTextsDone);
+{$IFNDEF GMF_READER}
 var Dlg: TVarSetDlg;
     SL: TStringList;
     Owner_: TComponent;
+{$ENDIF}
 begin
+{$IFNDEF GMF_READER}
  if MainForm is TComponent then Owner_ := TComponent(MainForm) else Owner_ := Application.MainForm;
  Dlg := TVarSetDlg.Create(Owner_);
  Dlg.UpdateResults := UpdateResults;
@@ -380,15 +385,22 @@ begin
  finally
   SL.Free;
  end;
+{$ENDIF}
+// GMF_READER: читатель GMF не показывает диалогов
 end;
 
 // диалог атрибутов знака точки в форме по режиму (TTextManager.SetTexts2)
 procedure TTextManager.SetTexts2(TwgForm_: Pointer; Point_: Pointer; EditMode: Boolean; Mode: Byte; const Done: TTextsDone);
+{$IFNDEF GMF_READER}
 var Dlg: TVarSetDlg;
+{$ENDIF}
 begin
+{$IFNDEF GMF_READER}
  Dlg := GlobalVarSetDlgClass.Create(Application.MainForm);
  Dlg.UpdateResults := UpdateResults;
  Dlg.Execute(TForm2(TwgForm_), TPointDot(Point_), EditMode, Mode, Done);
+{$ENDIF}
+// GMF_READER: читатель GMF не показывает диалогов
 end;
 
 function TTextManager.InitSL: TStringList;

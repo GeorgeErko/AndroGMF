@@ -247,6 +247,10 @@ type
  function SkPen(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single; Dashed: Boolean): ISkPaint;
  // цвет для live-слоя (смешивается со сценой в режиме Difference): на светлом окне - инвертированный
  function SkLiveColor(Color: TAlphaColor): TAlphaColor;
+// допуск указания (сегмента, перехлеста, маркера) в пикселях устройства:
+// логические пиксели (палец на Android - крупнее) с учетом плотности экрана;
+// psAutoDisst (3 px) на экране с плотностью ~3 - около 1 логического пиксела
+ function TwigTolerancePix(AutoDisst: Integer): Double;
  procedure SkDrawLineClipped(const Canvas: ISkCanvas; X1, Y1, X2, Y2: Double; const Paint: ISkPaint);
  procedure SkDrawTwig(const Canvas: ISkCanvas; Tw: TTwig; const Paint: ISkPaint);
 
@@ -254,7 +258,7 @@ implementation
 
 uses System.Math.Vectors, EMath, MathS, newSettings, circle_di, WptForm1,
      maths_versia, types_dimano, WPGeo, EcLot, UpdateMessages, UserObject,
-     FMX.Dialogs, SysUtils, newProcs, WpRects, Writer, Selector32{$IFDEF ANDROID}, FMX.Platform{$ENDIF};
+     FMX.Dialogs, SysUtils, newProcs, WpRects, Writer, Selector32, FMX.Platform;
 
 {$IFDEF ANDROID}
 // коэффициент толщины линий live-слоя на Android (к плотности экрана)
@@ -297,6 +301,16 @@ begin
  Result := Color;
  if (GSelector <> nil) and (GlobalSettings.Settings.gsWindowColor <> TAlphaColors.Black) then
   Result := $FF000000 or (not Color and $00FFFFFF);
+end;
+
+function TwigTolerancePix(AutoDisst: Integer): Double;
+const Logical = {$IFDEF ANDROID}16{$ELSE}8{$ENDIF};
+var Svc: IFMXScreenService;
+    K: Single;
+begin
+ K := 1;
+ if TPlatformServices.Current.SupportsPlatformService(IFMXScreenService, Svc) and (Svc.GetScreenScale > 1) then K := Svc.GetScreenScale;
+ if AutoDisst > Logical then Result := AutoDisst * K else Result := Logical * K;
 end;
 
 function SkPen(const Canvas: ISkCanvas; Color: TAlphaColor; WidthPix: Single; Dashed: Boolean): ISkPaint;

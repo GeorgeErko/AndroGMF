@@ -1389,7 +1389,9 @@ begin
  end;
  If Pos('##',PropName) = 1 then begin
   If PropValue = byLayer then propValue:='';
-  If Obj = nil then TextManager.SetAttrValue(DelSubStr(propName,'##'),propValue) else
+  If Obj = nil then begin
+   If TextManager<>nil then TextManager.SetAttrValue(DelSubStr(propName,'##'),propValue);
+  end else
   If (Obj is TPointDot) and (TPointDot(Obj).TextManager<>nil) then begin
    If TPointDot(Obj).TextManager.GetAttrParams(DelSubStr(propName,'##'),Angle,W,H) then begin
      TextManager.SetAttrParams(DelSubStr(propName,'##'),Angle,W,H);

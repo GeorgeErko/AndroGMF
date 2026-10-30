@@ -92,7 +92,11 @@ var F: TGlobalOpenForm;
     S: string;
 begin
  if not Assigned(ACallback) then exit;
- F := TGlobalOpenForm.Create(Application.MainForm);
+// без владельца (освобождается сама - caFree): у одного владельца не может быть
+// двух компонентов с одним именем, а окно сохранения (наследник) при загрузке
+// получает сначала имя предка - GlobalOpenForm, пока окно открытия еще не
+// освобождено
+ F := TGlobalOpenForm.Create(nil);
  F.FCallback := ACallback;
  if Url <> '' then S := Url else S := string(GReadString(UrlKey, AnsiString(DefaultCloudUrl)));
  if S = '' then S := DefaultCloudUrl;

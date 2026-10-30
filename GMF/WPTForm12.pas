@@ -54,6 +54,16 @@ Type
   Procedure GetCirclePere(T,T1:TTwigCircle;P:PCollection;InsertPerePoint:Boolean = True);
  //
   Function  newPereTwigs(Twig,Twig1:TTwig;InsertPerePoint:Boolean = True):Boolean;
+ // перехлесты сегментов (WPForm14 старой программы): сбор в видимой области
+ // в Perehlests, поиск у точки, разрыв сегментов в точке перехлеста
+  Procedure newCollectPerehlests;
+  Function  newFindPereTwig(X,Y,R:Double):Integer;
+  Procedure newEditPerehlests(localTransAction:Boolean=False);
+  Function  newModifyPerehlests:String;
+  Procedure newDeletePerehlest;
+  Procedure newClearActiveTwig;
+  Procedure newClearPerehlests;
+  Procedure newResetOpr;
  //
   Procedure ShowPerehlests(DC:hDC);virtual;abstract;
   Procedure ShowNotLink_Up(DC:hDC;Ind:Integer);virtual;abstract;
@@ -111,7 +121,7 @@ Type
 
 implementation uses EcLot, Maths_Basic, newSettings, TwgDraw, newProcs,
                     Polygons, newResource, Util, Types_Dimano, intervals,
-                    circle_di, circle, Writer;
+                    circle_di, circle, Writer, UndoColNew;
 
 { TForm11 }
 
@@ -461,6 +471,219 @@ procedure TForm14.FreePereParams;
 begin
  InterLine.Line1Dot1:=nil; InterLine.Free;
  newPerehlests.Free;
+end;
+
+// перехлесты видимых сегментов (Closed = 1): пересечения, кроме общих концов;
+// у окружностей точки пересечения запоминаются (perePoints) для разрыва
+Procedure TForm14.newCollectPerehlests;
+const C = 0.1;
+var I,J:Integer;Twig,Twig1:TTwig;V:Double;Vis:PCollection;
+begin
+ newClearPerehlests;
+ V:=1/Const_Of_PrecCoord;
+ Vis:=PCollection.Create(1);
+ InitPereParams;
+ CreateViewArc;
+ try
+  For I:=1 to Twigs.TwigsCount-1 do begin
+   Twig:=Twigs.TAt(I);
+   Twig.ParentIndex:=I;
+   Twig.SetMinMax;
+   If (Twig.Closed=1) and Twig.IsVisible(Selector.GRect) then begin
+    Vis.Insert(Twig);
+   // габариты расширяются на точность координат
+    With Twig do begin XMax:=XMax+V;XMin:=XMin-V;YMax:=YMax+V;YMin:=YMin-V;end;
+   end;
+  end;
+  For I:=0 to Vis.Count-1 do begin
+   Twig:=Vis[I];
+   For J:=I+1 to Vis.Count-1 do begin
+    Twig1:=Vis[J];
+    If ((Twig.NotPere<>0) or (Twig1.NotPere<>0)) and not GlobalPerehlests then continue;
+    If (Twig.XMin-C>Twig1.XMax+C) or (Twig1.XMin-C>Twig.XMax+C) or (Twig.YMin-C>Twig1.YMax+C) or (Twig1.YMin-C>Twig.YMax+C) then continue;
+    try newPereTwigs(Twig,Twig1);except on E:Exception do WriteIn(['newCollectPerehlests ',E.Message]);end;
+   end;
+  end;
+ finally
+  FreeViewArc;
+  For I:=0 to Vis.Count-1 do TTwig(Vis[I]).SetMinMax;
+  Vis.DeleteAll;Vis.Free;
+  For I:=0 to newPerehlests.Count-1 do Perehlests.Insert(newPerehlests[I]);
+  newPerehlests.DeleteAll;
+  FreePereParams;
+ end;
+end;
+
+// ближайший к (X,Y) перехлест не дальше R (actPereIndex) и сегменты, которые
+// проходят через него не концом (ActiveTwig): количество сегментов
+Function TForm14.newFindPereTwig(X,Y,R:Double):Integer;
+var Twig:TTwig;I:Integer;X1,Y1,S:Double;W,W1:TWorkPere;DB,DE:TDot;
+begin
+ Result:=0;
+ ActiveTwig.FreeAll;
+ W:=nil;actPereIndex:=-1;
+ For I:=0 to Perehlests.Count-1 do begin
+  W1:=Perehlests[I];
+  S:=Distance(W1.X,W1.Y,X,Y);
+  If S<=R then begin R:=S;actPereIndex:=I;W:=W1;end;
+ end;
+ If W=nil then Exit;
+ For I:=1 to Twigs.TwigsCount-1 do begin
+  Twig:=Twigs.TAt(I);
+  If (Twig.Closed=254) or (Twig.notPere<>0) then continue;
+  If Selector.RealDouble(Twig.GetTwigDist(W.X,W.Y,X1,Y1))<>0 then continue;
+  DB:=Twig.Coord[0];DE:=Twig.Coord[Twig.Coord.Count-1];
+  If not (Selector.EqualAnyPoints(X1,Y1,DB.XDot,DB.YDot) or Selector.EqualAnyPoints(X1,Y1,DE.XDot,DE.YDot)) then ActiveTwig.Insert(TLong.Create(I));
+ end;
+ Result:=ActiveTwig.Count;
+end;
+
+// разрыв сегментов ActiveTwig в точке перехлеста actPereIndex (сегмент - в
+// вершине или во вставленной точке, дуга - TwiseArc, окружность - на дуги по
+// всем ее точкам перехлеста); перехлест удаляется из Perehlests
+Procedure TForm14.newEditPerehlests(localTransAction:Boolean);
+var Twig:TTwig;I:Integer;W:TWorkPere;X1,Y1:Double;Undo_:TUndo;
+Function GetPerePoint:boolean;
+var I:Integer;D:TDot;
+begin
+ Result:=False;
+ If (Twig is TTwigArc) or (Twig is TTwigCircle) then Exit;
+ For I:=1 to Twig.Coord.Count-2 do begin
+  D:=Twig.Coord[I];
+  If Selector.EqualAnyPoints(W.X,W.Y,D.XDot,D.YDot) then begin
+   If not Mode50 then ModifiedTwigsUndo(nil,nil,Twig);
+   TwiseTwig2(W.X,W.Y,Twig,nil);
+   Exit(True);
+  end;
+ end;
+end;
+Procedure InsertPerePoint;
+var Segment,AV,I,J:Integer;LotCol,ArcCol:PCollection;
+begin
+ If (Twig is TTwigCircle) then begin
+  If Twig.Closed=254 then Exit;
+  If TTwigCircle(Twig).perePoints=nil then Exit;
+  If TTwigCircle(Twig).perePoints.Count<2 then Exit;
+  LotCol:=PCollection.Create(1);
+  If not Mode50 then ModifiedTwigsUndo(nil,LotCol,Twig) else
+   For J:=0 to Twigs.LotsCount-1 do If TLot(Twigs.LAt(J)).FindTwigPoint(Twigs,Twig)<>-1 then LotCol.Insert(Twigs.LAt(J));
+  ArcCol:=TTwigCircle(Twig).ModifyPerePoints;
+  For J:=0 to LotCol.Count-1 do TLot(LotCol[J]).DeleteTwig(Twigs,Twig);
+  Twig.Closed:=254;
+  For I:=0 to ArcCol.Count-1 do begin
+   Twigs.Insert(TWG_Twig,ArcCol[I]);
+   TTwigArc(ArcCol[I]).Opr:=15;
+   For J:=0 to LotCol.Count-1 do TLot(LotCol[J]).Insert(Twigs.TwigsCount-1);
+  end;
+  If Settings.psTwiseLot then begin For I:=LotCol.Count-1 downto 0 do TwiseLot(LotCol[I]);end else
+   For J:=0 to LotCol.Count-1 do TLot(LotCol[J]).SetMinMax(Twigs);
+  LotCol.DeleteAll;LotCol.Free;
+  ArcCol.DeleteAll;ArcCol.Free;
+ end else
+ If (Twig is TTwigArc) then begin
+  If Twig.Opr=15 then Exit;
+  LotCol:=PCollection.Create(1);
+  If not Mode50 then ModifiedTwigsUndo(nil,LotCol,Twig);
+  TwiseArc(W.X,W.Y,TTwigArc(Twig));
+  If Settings.psTwiseLot then For I:=LotCol.Count-1 downto 0 do TwiseLot(LotCol[I]);
+  LotCol.DeleteAll;LotCol.Free;
+ end else begin
+  AV:=Twig.ArcView;Twig.ArcView:=0;
+  LotCol:=PCollection.Create(1);
+  try
+   Segment:=Twig.GetSegment(W.X,W.Y);
+   If not Mode50 then ModifiedTwigsUndo(nil,LotCol,Twig);
+   Twig.Coord.AtInsert(Segment,TDot.CreateZ(W.X,W.Y,ZNull,0));
+   TwiseTwig2(W.X,W.Y,Twig,nil);
+   If Settings.psTwiseLot then For I:=LotCol.Count-1 downto 0 do TwiseLot(LotCol[I]);
+  finally Twig.ArcView:=AV;LotCol.DeleteAll;LotCol.Free;end;
+ end;
+end;
+begin
+ Undo_:=Undo;
+ If actPereIndex=-1 then Exit;
+ Modified:=True;
+ W:=Perehlests[actPereIndex];
+ If not localTransAction then Undo_.StartTransAction;
+ try
+  For I:=0 to ActiveTwig.Count-1 do begin
+   Twig:=Twigs.TAt(TLong(ActiveTwig[I]).Num);
+   If Twig.GetTwigDist(W.X,W.Y,X1,Y1)<=0.001 then If not GetPerePoint then InsertPerePoint;
+  end;
+  newDeletePerehlest;
+  If not localTransAction then Undo_.Commit;
+ except
+  on E:Exception do begin
+   WriteIn(['newEditPerehlests ',E.Message]);
+   If not localTransAction then Undo_.RollBack else raise;
+  end;
+ end;
+end;
+
+// разрыв всех перехлестов Perehlests одной транзакцией; ошибка - текст
+Function TForm14.newModifyPerehlests:String;
+var I,J:Integer;W:TWorkPere;Twig:TTwig;DB,DE:TDot;X1,Y1:Double;Undo_:TUndo;
+begin
+ Result:='';
+ Undo_:=Undo;
+ Mode50:=False;
+ Undo_.StartTransAction;
+ try
+  try
+   For J:=Perehlests.Count-1 downto 0 do begin
+    W:=Perehlests[J];actPereIndex:=J;
+    ActiveTwig.FreeAll;
+    For I:=Twigs.TwigsCount-1 downto 1 do begin
+     Twig:=Twigs.TAt(I);
+     If (Twig.Closed=254) or (Twig.notPere<>0) then continue;
+     If Selector.RealDouble(Twig.GetTwigDist(W.X,W.Y,X1,Y1))<>0 then continue;
+     DB:=Twig.Coord[0];DE:=Twig.Coord[Twig.Coord.Count-1];
+     If not (Selector.EqualAnyPoints(X1,Y1,DB.XDot,DB.YDot) or Selector.EqualAnyPoints(X1,Y1,DE.XDot,DE.YDot)) then ActiveTwig.Insert(TLong.Create(I));
+    end;
+    newEditPerehlests(True);
+   end;
+   Undo_.Commit;
+  except
+   on E:Exception do begin
+    If Undo_.TransActionStarted then Undo_.RollBack;
+    newClearActiveTwig;
+    Result:='Операция не завершена из за ошибки '+E.Message;
+   end;
+  end;
+ finally
+  newResetOpr;
+  Modified:=True;
+ end;
+end;
+
+procedure TForm14.newDeletePerehlest;
+begin
+ If actPereIndex=-1 then Exit;
+ newClearActiveTwig;
+ Perehlests.AtFree(actPereIndex);
+ actPereIndex:=-1;
+end;
+
+procedure TForm14.newClearActiveTwig;
+begin
+ ActiveTwig.FreeAll;
+end;
+
+// перехлесты и точки перехлестов окружностей сбрасываются
+procedure TForm14.newClearPerehlests;
+var I:Integer;
+begin
+ newClearActiveTwig;
+ actPereIndex:=-1;
+ Perehlests.FreeAll;
+ For I:=1 to Twigs.TwigsCount-1 do If TObject(Twigs.TAt(I)) is TTwigCircle then TTwigCircle(Twigs.TAt(I)).ClearPerePoints;
+end;
+
+// признак Opr = 15 (дуги разрезанной окружности) снимается
+procedure TForm14.newResetOpr;
+var I:Integer;
+begin
+ For I:=1 to Twigs.TwigsCount-1 do TTwig(Twigs.TAt(I)).Opr:=0;
 end;
 
 { TFormTaheo }

@@ -98,7 +98,9 @@ type
  TEditMap = class(TMousePainter)
   private
    fOnDelete: TNotifyEvent;
+   fOnSelectionChange: TNotifyEvent;
    fonGetObject2: TNotifyEvent;
+   procedure ObjectsUpdate(Sender: TObject);
    function GetActiveLot(Index: Integer): TLot;
    function GetActiveLotCount: Integer;
   public
@@ -156,6 +158,8 @@ type
    Property ActiveLot[Index: Integer]: TLot read GetActiveLot;
    Property ActiveLotCount: Integer read GetActiveLotCount;
    Property OnDelete: TNotifyEvent read fOnDelete write fOnDelete;
+   // выделение изменилось (кнопка удаления на форме)
+   Property OnSelectionChange: TNotifyEvent read fOnSelectionChange write fOnSelectionChange;
    Property onGetObjects2: TNotifyEvent read fonGetObject2 write fonGetObject2;
   //
    Procedure SelectObjectByIndex(LotIndex_, AnyIndex_: Integer);
@@ -395,10 +399,10 @@ begin
  XNapr := ZNull;
  XSt := ZNull;
  if PropEditorForm = nil then begin
-  Objects := TSelectedObjects.Create(Twigs, nil);
+  Objects := TSelectedObjects.Create(Twigs, ObjectsUpdate);
   Objects2 := TSelectedObjects.Create(Twigs, nil);
  end else begin
-  Objects := TSelectedObjects.Create(Twigs, PropEditorForm.Update);
+  Objects := TSelectedObjects.Create(Twigs, ObjectsUpdate);
   Objects2 := TSelectedObjects.Create(Twigs, PropEditorForm.Update);
  end;
  DrawDot := nil;
@@ -481,9 +485,18 @@ begin
  Result := fActiveLots.Count;
 end;
 
+// список выделенных изменился: редактор свойств и форма
+procedure TEditMap.ObjectsUpdate(Sender: TObject);
+begin
+ if PropEditorForm <> nil then PropEditorForm.Update(Sender);
+ if Assigned(fOnSelectionChange) then fOnSelectionChange(Self);
+end;
+
 procedure TEditMap.SelectionChanged;
 begin
  if Assigned(Selector.OnInvalidateOverlayStatic) then Selector.OnInvalidateOverlayStatic else UpdateImage;
+// выбор рамкой при заблокированном списке события Objects не вызывает, если ничего не выбрано
+ if Assigned(fOnSelectionChange) then fOnSelectionChange(Self);
 end;
 
 procedure TEditMap.SceneModified(Obj: TObject);

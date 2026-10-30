@@ -84,6 +84,17 @@ type
     sbNumUchDropDown: TSpeedButton;
     dnrPerp: TSpeedButton;
     dnrZas: TSpeedButton;
+   // панель сборки (FlySbor) в pnlLeft: objSbor32
+    sbSborPoly: TSpeedButton;
+    sbSborAuto: TSpeedButton;
+    sbSborDosbor: TSpeedButton;
+   // pnlLeft: перемещение/масштаб/поворот надписи (objDataZnk32), перехлесты (objTopology32)
+    sbMoveText: TSpeedButton;
+    sbPere: TSpeedButton;
+   // удаление выбранных: видна при TEditMap и непустом выделении
+    sbDel: TSpeedButton;
+    ImageListDel: TImageList;
+    ImageListSbor: TImageList;
     sbP2P: TSpeedButton;
     sSpeedButton40: TSpeedButton;
     sSpeedButton39: TSpeedButton;
@@ -120,6 +131,7 @@ type
     btnCloud: TCornerButton;
     procedure FlatButtonPainting(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure ToolButtonClick(Sender: TObject);
+    procedure sbDelClick(Sender: TObject);
     procedure LoadClick(Sender: TObject);
     procedure btnEscClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -158,12 +170,24 @@ type
    FLongShift: TShiftState;
    FLongPos: TPointF;
    FLongSlop: Single;
+  // касание двумя пальцами (Windows, StylusInput.StylusMultiTouch) - перемещение и
+  // масштаб карты: касание первым пальцем отменяется (FTouchCancelled - до
+  // отпускания); FTouchDown - касание передано обработчику мыши
+   FTouchCancelled: Boolean;
+   FTouchDown: Boolean;
+  // Windows: режим касания (StylusInput.StylusTouchMode) - кнопка справа на ToolBarPaint
+   btnStylus: TSpeedButton;
+   procedure btnStylusClick(Sender: TObject);
+   procedure TouchCancel(X, Y: Single);
+   procedure PainterUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
    procedure CaptureOverlayInteractionImage;
    procedure SetMouseObject(const Value: TKeyMouseHook);
   // обработчик мыши по умолчанию (MouseObject := nil): выделение и
   // редактирование TEditMap, кнопка btnSelect нажата. Нет карты, закрытие
   // формы или FNoDefaultMouse > 0 (смена карты) - остается nil
    procedure SetDefaultMouseObject;
+   procedure UpdateDelButton(Sender: TObject);
+   procedure ConfirmDelete(Sender: TObject);
    procedure EnsureOverlayPainter;
    procedure OverlayDraw(ASender: TObject; const ACanvas: ISkCanvas; const ADest: TRectF; const AOpacity: Single);
    procedure DrawOverlay(const ACanvas: ISkCanvas; const ADest: TRectF);
@@ -220,6 +244,7 @@ type
    procedure LayerSelected(Sender: TObject);
   //
    procedure OpenGmfFileSkia(const LocalPath: string); override;
+   procedure MapOpened(const LocalPath: string; NewMap: Boolean); override;
   public
    procedure KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
    procedure KeyUp(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
@@ -232,7 +257,7 @@ var
   MainFormMouseObj: TMainFormMouseObj;
 
 // MOUSE32 (параметры проекта): обработчики мыши, перенесенные из Geomaster (Geomaster\*32)
-implementation uses {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, newBlock,
+implementation uses FMX.DialogService, {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, objMouseText32, objSbor32, objDataZnk32, newBlock,
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
@@ -338,6 +363,37 @@ begin
  QuickLayers.sbDel.OnMouseLeave := StatusButtonLeave;
  FQuickHeight := GReadFloat(Name + '_InstHost2H', InstHost2.Height);
  btnQuickLayers.IsPressed := GReadInteger(Name + '_QuickLayersVis', 0) = 1;
+{$IFDEF WIN64}
+// режим касания (ёмкостный стилус Windows не отличает от пальца) - кнопка
+// слева на панели, только при сенсорном экране; по умолчанию нажата
+ StylusTouchMode := GReadInteger(Name + '_StylusTouch', 1) = 1;
+ if StylusTouchScreen then begin
+  btnStylus := TSpeedButton.Create(Self);
+  btnStylus.Parent := ToolBarPaint;
+  btnStylus.Align := TAlignLayout.Left;
+  btnStylus.Position.X := -1;
+  btnStylus.Width := 20;
+  btnStylus.Margins.Top := 2;
+  btnStylus.StaysPressed := True;
+  btnStylus.Hint := 'Стилус: касание - команды, карта - двумя пальцами; отжата - касание перемещает карту';
+  btnStylus.OnMouseEnter := StatusButtonEnter;
+  btnStylus.OnMouseLeave := StatusButtonLeave;
+  btnStylus.OnPainting := FlatButtonPainting;
+  with FMX.Objects.TPath.Create(btnStylus) do begin
+   Parent := btnStylus;
+   Align := TAlignLayout.Client;
+   Margins.Rect := TRectF.Create(2, 12, 2, 12);
+   HitTest := False;
+   WrapMode := TPathWrapMode.Fit;
+   Data.Data := 'M17.5,2.5 L21.5,6.5 L8,20 L3,21 L4,16 Z M15,5 L19,9 M4,16 L8,20';
+   Fill.Kind := TBrushKind.None;
+   Stroke.Color := $FF404040;
+   Stroke.Thickness := 1.5;
+  end;
+  btnStylus.IsPressed := StylusTouchMode;
+  btnStylus.OnClick := btnStylusClick;
+ end;
+{$ENDIF}
 //
  InstPoints := TInstPointsFrame.Create(instHost);
  InstLines := TInstLinesFrame.Create(nil);
@@ -381,7 +437,9 @@ begin
 //
  instPanel.OnResize := instPanelResize;
 // перо: слушатели ставятся на вид уже созданной формы
- TThread.ForceQueue(nil, procedure begin InstallStylus(Self, StylusHover, StylusButtonClick); end);
+ TThread.ForceQueue(nil, procedure begin InstallStylus(Self, StylusHover, StylusButtonClick); InstallStylusPinch(TouchPinch); end);
+// Android 11+: доступ ко всем файлам для списка gmf в общих папках - после показа формы
+ TThread.ForceQueue(nil, procedure begin RequestAllFilesAccess; end);
 end;
 
 // перо над экраном - движение мыши без нажатия (резиновые линии, маркер,
@@ -507,6 +565,12 @@ begin
   finally
     Dec(FNoDefaultMouse);
   end;
+end;
+
+// карта прочитана (фоновое чтение): обработчик по умолчанию - для карты на экране
+procedure TMainFormMouseObj.MapOpened(const LocalPath: string; NewMap: Boolean);
+begin
+  inherited;
   MouseObject := nil;
 end;
 
@@ -565,6 +629,9 @@ begin
 // операции, а не элементу, который был в фокусе
  FocusMainForm;
  if Selector = nil then exit;
+// отладка кнопок панели сборки (pnlLeft)
+ if (Sender = sbSborPoly) or (Sender = sbSborAuto) or (Sender = sbSborDosbor) then
+  WriteIn(['SborClick ', TComponent(Sender).Name, ' Tag=', TComponent(Sender).Tag, ' Pressed=', TSpeedButton(Sender).IsPressed, ' Mouse=', MouseObject <> nil]);
  if DendroButtonClick(Sender) then exit;
  if MouseObject <> nil then
   if MouseObject.LOperation = TSpeedButton(Sender).Tag then
@@ -586,6 +653,15 @@ begin
    MouseObject := TMouseSelector.Create(TwgForm, nil)
 {$ENDIF}
   else
+{$IFDEF MOUSE32}
+  // надпись (btnToolText): параметры и ввод текста - на панели AccuDraw
+  if Op = txt_SingleText then MouseObject := TMouseText.Create(TwgForm, nil) else
+ // панель сборки: площадной по сегментам, автосборка, изменение контура
+  if (Op = em_NewPoly) or (Op = em_NewPolyA) or (Op = Lo_AddSegment) then MouseObject := TMouseSbor32.Create(TwgForm, nil) else
+ // pnlLeft: перемещение надписи, перехлесты сегментов
+  if Op = Lo_MoveText then MouseObject := TDataZnkSet.Create(TwgForm, nil) else
+  if Op = topo_Perehlest then MouseObject := TMouseTopology.Create(TwgForm, nil) else
+{$ENDIF}
   if (Sender = btnPan) or (Sender = btnFrag) then
 {$IFDEF MOUSE32}
   // TMouseView еще не перенесен: пан - средней кнопкой; обработчик - по умолчанию
@@ -606,6 +682,8 @@ begin
   MouseObject.OnSetActiveLayer := UpdateMessage.SetActiveLayer;
   MouseObject.OnDeletePrim := UpdateMessage.DeletePrim;
   UpdateEscButton(1);
+ // подсказка операции - сразу, не дожидаясь движения мыши по карте
+  if PanelHint <> nil then PanelHint.Text := MouseObject.Hint;
  end
 end;
 
@@ -642,6 +720,14 @@ procedure TMainFormMouseObj.btnQuickLayersClick(Sender: TObject);
 begin
  UpdateInstPanel;
  if btnQuickLayers.IsPressed and (QuickLayers <> nil) then QuickLayers.UpdateItems;
+end;
+
+// режим касания: нажата - касание выполняет команды (стилус), карта - двумя
+// пальцами; отжата - касание перемещает карту
+procedure TMainFormMouseObj.btnStylusClick(Sender: TObject);
+begin
+ StylusTouchMode := btnStylus.IsPressed;
+ GWriteInteger(Name + '_StylusTouch', Ord(StylusTouchMode));
 end;
 
 // щелчок по быстрому слою: слой - активный в списке слоев
@@ -944,13 +1030,69 @@ begin
 end;
 
 procedure TMainFormMouseObj.SetMouseObject(const Value: TKeyMouseHook);
+var Old: TKeyMouseHook;
 begin
- If MouseObject <> nil then MouseObject.Free;
- FMouseObject := Value;
+// пока прежний обработчик освобождается, отрисовка его не видит
+ Old := FMouseObject;
+ FMouseObject := nil;
+ try
+  Old.Free;
+ finally
+  FMouseObject := Value;
+ end;
  if Value = nil then SetDefaultMouseObject;
+{$IFDEF MOUSE32}
+ if FMouseObject is TEditMap then begin
+  TEditMap(FMouseObject).OnSelectionChange := UpdateDelButton;
+  TEditMap(FMouseObject).OnDelete := ConfirmDelete;
+ end;
+{$ENDIF}
+ UpdateDelButton(nil);
  InvalidateOverlayAll;
  if SkPainter <> nil then
    SkPainter.Redraw;
+end;
+
+// кнопка удаления видна только при TEditMap с выбранными примитивами
+procedure TMainFormMouseObj.UpdateDelButton(Sender: TObject);
+begin
+ if sbDel = nil then exit;
+{$IFDEF MOUSE32}
+ sbDel.Visible := (FMouseObject is TEditMap) and (TEditMap(FMouseObject).Objects.Count > 0);
+{$ELSE}
+ sbDel.Visible := False;
+{$ENDIF}
+end;
+
+// удаление выделенного (кнопка sbDel, клавиша Del, меню) - с подтверждением;
+// пока открыт диалог, обработчик мог смениться
+procedure TMainFormMouseObj.ConfirmDelete(Sender: TObject);
+{$IFDEF MOUSE32}
+var M: TKeyMouseHook;
+{$ENDIF}
+begin
+{$IFDEF MOUSE32}
+ if not (FMouseObject is TEditMap) or (TEditMap(FMouseObject).Objects.Count = 0) then exit;
+ M := FMouseObject;
+ TDialogService.MessageDialog('Удалить выбранные объекты (' + IntToStr(TEditMap(M).Objects.Count) + ')?',
+  TMsgDlgType.mtConfirmation, [TMsgDlgBtn.mbYes, TMsgDlgBtn.mbNo], TMsgDlgBtn.mbNo, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   if (AResult <> mrYes) or (FMouseObject <> M) then exit;
+   TEditMap(M).emDeleteObjects;
+   UpdateDelButton(nil);
+  end);
+{$ENDIF}
+end;
+
+procedure TMainFormMouseObj.sbDelClick(Sender: TObject);
+begin
+ FocusMainForm;
+{$IFDEF MOUSE32}
+ if (FMouseObject is TEditMap) and TEditMap(FMouseObject).CommandEnabled(em_DeleteObjects) then
+  TEditMap(FMouseObject).DoCommand(em_DeleteObjects);
+{$ENDIF}
+ UpdateDelButton(nil);
 end;
 
 procedure TMainFormMouseObj.SetDefaultMouseObject;
@@ -1161,6 +1303,17 @@ procedure TMainFormMouseObj.KeyDown(var Key: Word; var KeyChar: WideChar; Shift:
 {$IFDEF MOUSE32}
 var Hook: Boolean;
     K: Word;
+// полная клавиатура панели параметров (ввод текста): символ, Backspace, Enter -
+// в активную кнопку панели; клавиши букв и цифр без символа не идут операции
+// (буквы - ее команды); Escape и остальные - операции
+function FullKeyboardKey: Boolean;
+begin
+ Result := True;
+ if Key = vkBack then AccuDraw.BackChar else
+ if Key = vkReturn then AccuDraw.DoEnter else
+ if KeyChar >= ' ' then AccuDraw.AddChar(KeyChar) else
+  Result := (KeyChar = #0) and (((Key >= vk0) and (Key <= vkZ)) or ((Key >= vkNumpad0) and (Key <= vkDivide)) or (Key = vkSpace) or (Key >= vkSemicolon));
+end;
 {$ENDIF}
 begin
 // открыт диалог панелью поверх формы (Android): Esc / «Назад» закрывают его,
@@ -1170,6 +1323,12 @@ begin
   exit;
  end;
 {$IFDEF MOUSE32}
+ if (AccuDraw <> nil) and AccuDraw.Visible and AccuDraw.FullKeyboard and not ((Focused <> nil) and ((Focused.GetObject is TCustomEdit) or (Focused.GetObject is TCustomMemo))) then
+  if FullKeyboardKey then begin
+   Key := 0;
+   KeyChar := #0;
+   exit;
+  end;
  K := Key;
  if (K = 0) and (KeyChar <> #0) then
   if CharInSet(KeyChar, ['.', ',']) then K := 190 else
@@ -1303,6 +1462,8 @@ end;
 procedure TMainFormMouseObj.SkPainterMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
+ FTouchCancelled := False;
+ FTouchDown := False;
 // средняя кнопка (перемещение карты) - всегда форме, в обработчик мыши не попадает
  If Button = TMouseButton.mbMiddle then begin
   inherited;
@@ -1344,6 +1505,7 @@ var Hook: Boolean;
 begin
  Hook := False;
  If MouseObject <> nil then begin
+  FTouchDown := StylusTool in [stFinger, stStylus, stEraser];
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
   MouseObject.MouseDown(TwgForm, Button, Shift, XGeo, YGeo, Hook);
@@ -1367,6 +1529,10 @@ procedure TMainFormMouseObj.LongPressTimer(Sender: TObject);
 begin
  FLongTimer.Enabled := False;
  if not FLongPending then exit;
+ if StylusMultiTouch then begin
+  TouchCancel(FLongPos.X, FLongPos.Y);
+  exit;
+ end;
  FLongPending := False;
  FLongFired := True;
  PainterDown(FLongSender, TMouseButton.mbRight, FLongShift - [ssLeft] + [ssRight], FLongPos.X, FLongPos.Y);
@@ -1382,6 +1548,9 @@ var Hook: Boolean;
 begin
  Hook := False;
  MousePos := PointF(X, Y);
+// касание двумя пальцами: карту перемещает и масштабирует жест (SkPainterGesture)
+ If StylusMultiTouch then TouchCancel(X, Y);
+ If FTouchCancelled then exit;
 // придержанное нажатие: сдвиг дальше допуска - обычное нажатие, дрожание
 // пальца или пера на месте - пропускается; после правой кнопки (долгое
 // нажатие) движения до отпускания не обрабатываются
@@ -1424,12 +1593,12 @@ end;
 
 procedure TMainFormMouseObj.SkPainterMouseUp(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Single);
-var Hook: Boolean;
-    XPix, YPix, XGeo, YGeo: Double;
 begin
- Hook := False;
-// средняя кнопка (конец перемещения карты) - всегда форме
- If (Button = TMouseButton.mbMiddle) or FingerOnlyPans then begin
+// средняя кнопка (конец перемещения карты), касание двумя пальцами - форме
+ If StylusMultiTouch then TouchCancel(X, Y);
+ If (Button = TMouseButton.mbMiddle) or FingerOnlyPans or FTouchCancelled then begin
+  FTouchCancelled := False;
+  FTouchDown := False;
   inherited;
   RequestOverlayRedraw;
   exit;
@@ -1441,6 +1610,33 @@ begin
   Button := TMouseButton.mbRight;
   Shift := Shift - [ssLeft] + [ssRight];
  end;
+ FTouchDown := False;
+ PainterUp(Sender, Button, Shift, X, Y);
+end;
+
+// касание вторым пальцем: касание первым отменяется - придержанное нажатие
+// сбрасывается, переданное обработчику мыши - отпускается здесь
+procedure TMainFormMouseObj.TouchCancel(X, Y: Single);
+begin
+ if FTouchCancelled then exit;
+ FTouchCancelled := True;
+ if FLongPending then begin
+  FLongPending := False;
+  FLongTimer.Enabled := False;
+ end else
+ if FTouchDown then begin
+  if FLongFired then PainterUp(SkPainter, TMouseButton.mbRight, [ssRight], X, Y) else PainterUp(SkPainter, TMouseButton.mbLeft, [ssLeft], X, Y);
+ end;
+ FLongFired := False;
+ FTouchDown := False;
+end;
+
+// отпускание - обработчику мыши, не перехвачено - форме
+procedure TMainFormMouseObj.PainterUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var Hook: Boolean;
+    XPix, YPix, XGeo, YGeo: Double;
+begin
+ Hook := False;
  If MouseObject <> nil then begin
   XPix := X * LastCanvasScale; YPix := Y * LastCanvasScale;
   XGeo := Selector.XGeo(Round(XPix)); YGeo := Selector.YGeo(Round(YPix));
@@ -1449,11 +1645,11 @@ begin
  // включенным и обработчик мыши перестал бы получать движения)
   if not Hook or IsPanning then
   begin
-    inherited;
+    inherited SkPainterMouseUp(Sender, Button, Shift, X, Y);
     RequestOverlayRedraw;
   end;
  end else
-  inherited;
+  inherited SkPainterMouseUp(Sender, Button, Shift, X, Y);
 end;
 
 // колесо (масштабирование) - всегда форме, обработчикам мыши не передается

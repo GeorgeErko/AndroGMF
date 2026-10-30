@@ -47,47 +47,47 @@ Type
     ActiveTwig:TSortTextNum;
     ActiveText:TSortTextNum;
     ActiveLotZnak:TSortTextNum;
-
-        Constructor  Create(Count1:Byte);
-         Constructor Load   (Stream :TBufStream);override;
-         Procedure CreateLayersView(Layers:PCollection;Znaks:PCollection = nil;MapInfo:Boolean =False);virtual;
-         Procedure Store  (Stream :TBufStream);override;
-         Function  CreateUndoView:AnsiString;// создает объект на диске для Undo
-         Function  GetUndoMax:AnsiString;// возвращает последний объект Undo
-         Destructor Destroy;override;
-         Procedure StoreMkLib;
-         Procedure Pack(OnModifiedPrim:procModifiedPrim);virtual;abstract;
-	{}
-         Procedure SetCoor(VX,VY:Extended);
-         Procedure RestoreCoords;
-         Procedure SetGabaritesPrivate;
-         Procedure SetGabarites;
-         Procedure LoadClassLib(CreateLayerTable:boolean=False);
-         Procedure StoreClassLib;
-         Procedure ClassBuildII;
-         Procedure ClassBuildIII;
-        {}
-         Function  LotIndex(L:TLot):Integer;
-         Procedure DelLot(L:TLot);
-         Procedure DrawTempTwig;
-         Procedure ClearObject;
-        {}
-        {}
-         Procedure CreateViewArc;
-         Procedure FreeViewArc;
-         Function  MakeLineLot: boolean;
-      	 Function	 MakeLot(PT:TResource):TLot;
-        {}
-         Function  SetLotFromTwigs(LotNum:LongInt):Double;
-         Function  SortSqwear(C:LongInt):LongInt;
-         Procedure SetSqwear;virtual;
-         Procedure SetClearSqwear(Os:AnsiString='');virtual;
-        {}
-         Function  ObjectName:AnsiString;
+  //
+    Constructor  Create(Count1:Byte);
+    Constructor Load   (Stream :TBufStream);override;
+    Procedure CreateLayersView(Layers:PCollection;Znaks:PCollection = nil;MapInfo:Boolean =False);virtual;
+    Procedure Store  (Stream :TBufStream);override;
+    Function  CreateUndoView:AnsiString;// создает объект на диске для Undo
+    Function  GetUndoMax:AnsiString;// возвращает последний объект Undo
+    Destructor Destroy;override;
+    Procedure StoreMkLib;
+    Procedure Pack(OnModifiedPrim:procModifiedPrim);virtual;abstract;
+{}
+    Procedure SetCoor(VX,VY:Extended);
+    Procedure RestoreCoords;
+    Procedure SetGabaritesPrivate;
+    Procedure SetGabarites;
+    Procedure LoadClassLib(CreateLayerTable:boolean=False);
+    Procedure StoreClassLib;
+    Procedure ClassBuildII;
+    Procedure ClassBuildIII;
+   {}
+    Function  LotIndex(L:TLot):Integer;
+    Procedure DelLot(L:TLot);
+    Procedure DrawTempTwig;
+    Procedure ClearObject;
+   {}
+   {}
+    Procedure CreateViewArc;
+    Procedure FreeViewArc;
+    Function  MakeLineLot: boolean;
+    Function	 MakeLot(PT:TResource):TLot;
+   {}
+    Function  SetLotFromTwigs(LotNum:LongInt):Double;
+    Function  SortSqwear(C:LongInt):LongInt;
+    Procedure SetSqwear;virtual;
+    Procedure SetClearSqwear(Os:AnsiString='');virtual;
+   {}
+    Function  ObjectName:AnsiString;
 //         Function GetHandLot:Integer;
       Property Modified:boolean read GetModified write SetModified;
     //
-     Function FindTwigs(X, Y: Double; Col: PCollection; MinDisst: Double =0.001): Integer;
+     Function FindTwigs(X, Y: Double; Col: PCollection; MinDisst: Double = 0.001): Integer;
      Function ModifiedTwig(Twig:TTwig;OnModifiedPrim:procModifiedPrim):boolean;
      Function ModifiedTwigsUndo(TwigCol:PCollection;LotCol:PCollection;Twig:TTwig=nil;UseTwigLots:boolean = false):boolean;
     // Twice

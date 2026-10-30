@@ -12,6 +12,10 @@ uses
   System.Generics.Collections, AppForms, System.ImageList, FMX.ImgList;
 
 function GetAppExternalFilesDir: string;
+// Android 11+: если нет доступа ко всем файлам (MANAGE_EXTERNAL_STORAGE) -
+// сообщение и системный экран "Доступ ко всем файлам" для приложения;
+// без него в общих папках (Documents) видны только файлы, созданные самим приложением
+procedure RequestAllFilesAccess;
 
 type
   TlocalOpenForm = class(TForm)
@@ -57,10 +61,60 @@ implementation
 {$IFDEF ANDROID}
  uses
   Androidapi.Helpers,
-  Androidapi.JNI.JavaTypes;
+  Androidapi.JNIBridge,
+  Androidapi.JNI.JavaTypes,
+  Androidapi.JNI.Os,
+  Androidapi.JNI.Net,
+  Androidapi.JNI.GraphicsContentViewText;
 {$ENDIF}
 
 {$R *.fmx}
+
+{$IFDEF ANDROID}
+type
+// Environment.isExternalStorageManager (API 30) - своим импортом,
+// не зависит от полноты Androidapi.JNI.Os
+  JEnvironmentExClass = interface(JEnvironmentClass)
+    ['{6F1D2C4A-8B3E-4F7A-9C21-5D8E0B4A7F13}']
+    function isExternalStorageManager: Boolean; cdecl;
+  end;
+  [JavaSignature('android/os/Environment')]
+  JEnvironmentEx = interface(JEnvironment)
+    ['{A3C7E5B1-2D4F-4E8A-B6C9-1F0D3E5A7B24}']
+  end;
+  TJEnvironmentEx = class(TJavaGenericImport<JEnvironmentExClass, JEnvironmentEx>) end;
+function HasAllFilesAccess: Boolean;
+begin
+ Result := (TJBuild_VERSION.JavaClass.SDK_INT < 30) or TJEnvironmentEx.JavaClass.isExternalStorageManager;
+end;
+// экран доступа для этого приложения, при отказе - общий список приложений
+procedure OpenAllFilesAccessSettings;
+var Intent: JIntent;
+begin
+ try
+  Intent := TJIntent.JavaClass.init(StringToJString('android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION'));
+  Intent.setData(TJnet_Uri.JavaClass.parse(StringToJString('package:' + JStringToString(TAndroidHelper.Context.getPackageName))));
+  TAndroidHelper.Activity.startActivity(Intent);
+ except
+  Intent := TJIntent.JavaClass.init(StringToJString('android.settings.MANAGE_ALL_FILES_ACCESS_PERMISSION'));
+  TAndroidHelper.Activity.startActivity(Intent);
+ end;
+end;
+{$ENDIF}
+
+procedure RequestAllFilesAccess;
+begin
+{$IFDEF ANDROID}
+ if HasAllFilesAccess then exit;
+ TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+ TDialogService.MessageDialog('Для открытия карт из папок устройства разрешите приложению доступ ко всем файлам.',
+  TMsgDlgType.mtInformation, [TMsgDlgBtn.mbOK, TMsgDlgBtn.mbCancel], TMsgDlgBtn.mbOK, 0,
+  procedure(const AResult: TModalResult)
+  begin
+   if AResult = mrOk then OpenAllFilesAccessSettings;
+  end);
+{$ENDIF}
+end;
 
 function GetAppExternalFilesDir: string;
 {$IFDEF ANDROID}
