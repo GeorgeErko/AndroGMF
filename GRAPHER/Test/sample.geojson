@@ -1,0 +1,66 @@
+{
+  "type": "FeatureCollection",
+  "name": "GRAPHER sample",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [[0, 0], [600, 0], [600, 400], [0, 400], [0, 0]],
+          [[100, 100], [300, 100], [300, 300], [100, 300], [100, 100]]
+        ]
+      },
+      "properties": {
+        "name": "Участок с дыркой",
+        "ogs": { "class": "TgmfPolygon", "fill": "#C8E6C9", "stroke": "#2E7D32" }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [[700, 0], [1100, 0], [1100, 400], [700, 400], [700, 0]],
+            [[750, 50], [1050, 50], [1050, 350], [750, 350], [750, 50]]
+          ],
+          [
+            [[850, 150], [950, 150], [950, 250], [850, 250], [850, 150]]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Остров внутри дырки",
+        "ogs": { "class": "TgmfMultiPolygon", "fill": "#BBDEFB", "stroke": "#1565C0" }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[0, 500], [300, 650], [600, 500], [900, 650], [1100, 500]]
+      },
+      "properties": {
+        "name": "Линия",
+        "ogs": { "class": "TgmfLineString", "color": "#D32F2F", "width": 2, "scale": 1 }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [450, 200] },
+      "properties": { "name": "Точка" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0, 720] },
+      "properties": {
+        "ogs": {
+          "class": "TogsTextString", "text": "GRAPHER: текст шрифтом из Fonts",
+          "font": "FreeSans", "fontStyle": "Regular", "height": 60, "angle": 0,
+          "scale": 1, "align": 65, "color": "#000000"
+        }
+      }
+    }
+  ]
+}
