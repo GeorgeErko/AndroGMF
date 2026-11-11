@@ -8,7 +8,7 @@ uses
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.Dialogs, FMX.StdCtrls,
   FMX.Layouts, FMX.Objects, FMX.TreeView, FMX.TextLayout,
   newLayersTable, newResource, FMX.Controls.Presentation,
-  MainFrmSkia, newProcs, System.ImageList, FMX.ImgList, AppForms;
+  MainFrmSkia, newProcs, System.ImageList, FMX.ImgList, AppForms, WPTForm2;
 
 type
   TLayerFrame = class(TFrame)
@@ -37,6 +37,7 @@ type
     procedure btnCancelClick(Sender: TObject);
   private
     FLayerTable: TLayerTable;
+    FTwgForm: TForm2;
     FUpdating: Boolean;
     FLayerToItem: TObjectDictionary<TObject, TTreeViewItem>;
 
@@ -93,7 +94,7 @@ type
 
     procedure NotifyLayerVisibilityChanged;
 
-    procedure SetLayerCheckRecursive(Layer: TResource; ACheck: Byte);
+    function SetLayerCheckRecursive(Layer: TResource; ACheck: Byte): Boolean;
 
     procedure PopupGripMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
     procedure PopupGripMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Single);
@@ -139,9 +140,12 @@ type
     OnLayerSelected: TNotifyEvent;
    // сменился активный слой (любым способом, в т.ч. программно): быстрые слои
     OnActiveLayerChanged: TNotifyEvent;
+   // перед ClassBuildII после изменения видимости: форма снимает выделение
+   OnBeforeVisibilityClassBuild: TNotifyEvent;
     procedure SelectLayer(Layer: TResource);
     function IsGroupLayer(Layer: TResource): Boolean;
     property LayerTable: TLayerTable read FLayerTable write SetLayerTable;
+    property TwgForm: TForm2 read FTwgForm write FTwgForm;
     procedure SetActiveLayerByName(LayerName: String);
     property ActiveLayer: TResource read GetActiveLayer write SetActiveLayer;
   end;
@@ -852,27 +856,46 @@ begin
 end;
 
 procedure TLayerFrame.ApplyCheckAll(ACheck: Boolean);
+var
+ I: Integer;
+ L: TResource;
+ Changed: Boolean;
 begin
  if FLayerTable = nil then Exit;
+ Changed := False;
+ for I := 0 to FLayerTable.L2Count - 1 do begin
+  L := FLayerTable.LinearLayer[I];
+  if (L <> nil) and (L.Check <> Ord(ACheck)) then begin
+   Changed := True;
+   Break;
+  end;
+ end;
+ if not Changed then Exit;
  FLayerTable.CheckAllLayers(ACheck);
  UpdateTreeChecksFromModel;
  SyncHeader;
+ NotifyLayerVisibilityChanged;
 end;
 
 procedure TLayerFrame.ApplyInvert;
 var
  I: Integer;
  L: TResource;
+ Changed: Boolean;
 begin
  if FLayerTable = nil then Exit;
+ Changed := False;
  for I := 0 to FLayerTable.L2Count - 1 do
  begin
   L := FLayerTable.LinearLayer[I];
   if L = nil then Continue;
   if L.Check = 0 then L.Check := 1 else L.Check := 0;
+  Changed := True;
  end;
+ if not Changed then Exit;
  UpdateTreeChecksFromModel;
  SyncHeader;
+ NotifyLayerVisibilityChanged;
 end;
 
 // отладка «List index out of bounds» при открытии списка: шаг и состояние дерева
@@ -929,6 +952,7 @@ procedure TLayerFrame.chkLayerChange(Sender: TObject);
 var
  L: TResource;
  Chk: TCheckBox;
+ Changed: Boolean;
 begin
  HeaderBg.Repaint;
  if FUpdating then Exit;
@@ -937,13 +961,13 @@ begin
  Chk := ChkLayerCtrl;
  if Chk = nil then Exit;
  if Chk.IsChecked then
-  SetLayerCheckRecursive(L, 1)
+  Changed := SetLayerCheckRecursive(L, 1)
  else
-  SetLayerCheckRecursive(L, 0);
+  Changed := SetLayerCheckRecursive(L, 0);
 
  UpdateTreeChecksFromModel;
  SyncHeader;
- NotifyLayerVisibilityChanged;
+ if Changed then NotifyLayerVisibilityChanged;
 end;
 
 // группа слоев: в списке у ее пункта есть вложенные слои
@@ -1217,27 +1241,35 @@ end;
 
 // флажок видимости строки: слой и вложенные - вкл/выкл, строки, заголовок, карта
 procedure TLayerFrame.ToggleLayerCheck(Layer: TResource);
+var Changed: Boolean;
 begin
  if Layer = nil then Exit;
- if Layer.Check <> 0 then SetLayerCheckRecursive(Layer, 0) else SetLayerCheckRecursive(Layer, 1);
+ if Layer.Check <> 0 then
+  Changed := SetLayerCheckRecursive(Layer, 0)
+ else
+  Changed := SetLayerCheckRecursive(Layer, 1);
  UpdateTreeChecksFromModel;
  SyncHeader;
- NotifyLayerVisibilityChanged;
+ if Changed then NotifyLayerVisibilityChanged;
 end;
 
-procedure TLayerFrame.SetLayerCheckRecursive(Layer: TResource; ACheck: Byte);
+function TLayerFrame.SetLayerCheckRecursive(Layer: TResource; ACheck: Byte): Boolean;
 var
  I: Integer;
  Child: TResource;
 begin
+ Result := False;
  if Layer = nil then Exit;
- Layer.Check := ACheck;
+ if Layer.Check <> ACheck then begin
+  Layer.Check := ACheck;
+  Result := True;
+ end;
  if Layer.Resources = nil then Exit;
  for I := 0 to Layer.Resources.Count - 1 do
  begin
   Child := TResource(Layer.Resources[I]);
-  if Child <> nil then
-   SetLayerCheckRecursive(Child, ACheck);
+  if (Child <> nil) and SetLayerCheckRecursive(Child, ACheck) then
+   Result := True;
  end;
 end;
 
@@ -1246,6 +1278,10 @@ var
  Obj: TFmxObject;
  F: TCommonCustomForm;
 begin
+ if Assigned(OnBeforeVisibilityClassBuild) then
+  OnBeforeVisibilityClassBuild(Self);
+ if FTwgForm <> nil then FTwgForm.ClassBuildII;
+
  F := nil;
  Obj := Self;
  while (Obj <> nil) and (F = nil) do

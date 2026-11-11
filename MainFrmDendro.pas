@@ -749,6 +749,8 @@ begin
 {$IFDEF MOUSE32}
  if not (Sender is TLot) or (TwgForm = nil) then exit;
  Lot := TLot(Sender);
+ Lot.ClassHandle := TwgForm.LayerTable.AddExistSysLayer('Корректура_фотофиксация');
+ Lot.ClassCode := Lot.ClassHandle.ID;
  F := TwgForm;
  Lot.SetProperty('Тип линии', '2002');
  Selector.UpdateImage(usmAdd, Lot);
@@ -767,7 +769,7 @@ begin
      NameEnd := '';
      if AResult = mrOk then begin
       NameBeg := Trim(AValues[0]);
-      NameEnd := Trim(AValues[1]);
+      NameEnd := Trim(AValues[0]);
      end;
      AllSet := True;
      Undo := TUndo(F.Undo);

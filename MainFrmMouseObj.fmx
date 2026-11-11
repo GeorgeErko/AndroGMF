@@ -3826,8 +3826,6 @@ inherited MainFormMouseObj: TMainFormMouseObj
   object ImageListDel: TImageList
     Source = <
       item
-        MultiResBitmap.Height = 16
-        MultiResBitmap.Width = 16
         MultiResBitmap.LoadSize = 0
         MultiResBitmap.TransparentColor = 536870912
         MultiResBitmap = <
@@ -3892,8 +3890,6 @@ inherited MainFormMouseObj: TMainFormMouseObj
         Layers = <
           item
             Name = 'sbDel'
-            SourceRect.Right = 16.000000000000000000
-            SourceRect.Bottom = 16.000000000000000000
           end>
       end>
     Left = 796

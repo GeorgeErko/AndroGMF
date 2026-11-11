@@ -1,7 +1,8 @@
 ﻿unit newLayersTable;
 
 interface uses Collect, FMX.Graphics, EcDot, newProcs, newResource, lib2, Lib, Lines3,
-               Lines2, newConsts, Writer, newSelector, System.IniFiles, ogcBasic;
+               Lines2, newConsts, Writer, newSelector, System.IniFiles, ogcBasic,
+               System.Generics.Collections;
 
 const
  LayerTableGUID = '{08171EB9-30D0-46D3-A342-F8CEE46C8B79}';
@@ -71,7 +72,13 @@ type
    fActivepoint:TPoint_Sign;
    fActiveLine:TGeoLine;
    fActivesymbology: ShortInt;
+   FLayerByID:TDictionary<Int64,TResource>;
+   FLayerIndexDirty:Boolean;
 //    FOnChange: procAddPrim;
+    function LayerIDKey(const ID: Extended): Int64;
+    procedure InvalidateLayerIndex;
+    procedure RebuildLayerIndex;
+    procedure EnsureLayerIndex;
     function GetLayer(Index: Integer): TResource;
     function GetLayerCout: Integer;
     function GetNullLayer: TResource;
@@ -277,6 +284,8 @@ begin
  if MkLib<>nil then MkLib.LayerTable:=Self;
  Layers:=PCollection.Create(1);
  LinearLayers:=PCollection.Create(1);
+ FLayerByID:=TDictionary<Int64,TResource>.Create;
+ FLayerIndexDirty:=True;
  factiveLayer:=nil;
  factiveSymbology:=-1;
 // Writeln('TableCreate');
@@ -284,6 +293,7 @@ end;
 
 destructor TLayerTable.Destroy;
 begin
+ FLayerByID.Free;
  Layers.Free;
  LinearLayers.DeleteAll;LinearLayers.Free;
 end; 
@@ -297,6 +307,8 @@ begin
  Stream.Read(ID,SizeOf(ID));
  Layers:=PCollection(Stream.Get);
  LinearLayers:=PCollection.Create(1);
+ FLayerByID:=TDictionary<Int64,TResource>.Create;
+ FLayerIndexDirty:=True;
  FillLinearLayers;
   If ID=0 then fActiveLayer:=Layers[0] else fActiveLayer:=SearchLayer(ID);
 end;
@@ -314,6 +326,7 @@ end;
 function TLayerTable.CreateLayersView(LayerCol:PCollection): Integer;
 var PR:TResource;I:Integer;
 begin
+ InvalidateLayerIndex;
  Layers.FreeAll;
  //заполняем таблицу слоев из TwgForm.Mklib
  Layers.Insert(TResource.CreateNew);
@@ -343,15 +356,51 @@ begin
 end;
 
 function TLayerTable.SearchLayer(ID: Double): TResource;
-var I:Integer;
+var Key:Int64;
 begin
  Result:=nil;
- For I:=0 to LinearLayers.Count-1 do begin
- // Writeln(Round(Layer[I].ID*100),' ',Round(ID*100),Round(Layer[I].ID*100)=Round(ID*100));
-  If Round(LinearLayer[I].ID*100)=Round(ID*100) then begin
-  Result:=LinearLayer[I];exit;
+ EnsureLayerIndex;
+ Key:=LayerIDKey(ID);
+ if FLayerByID.TryGetValue(Key,Result) then
+  if LayerIDKey(Result.ID)<>Key then begin
+   RebuildLayerIndex;
+   if not FLayerByID.TryGetValue(Key,Result) then Result:=nil;
+  end;
+end;
+
+function TLayerTable.LayerIDKey(const ID: Extended): Int64;
+begin
+ Result:=Round(ID*1000);
+end;
+
+procedure TLayerTable.InvalidateLayerIndex;
+begin
+ FLayerIndexDirty:=True;
+end;
+
+procedure TLayerTable.RebuildLayerIndex;
+var I:Integer;
+    Key:Int64;
+    Layer,Existing:TResource;
+begin
+ FLayerByID.Clear;
+ for I:=0 to LinearLayers.Count-1 do begin
+  Layer:=LinearLayer[I];
+  if Layer=nil then Continue;
+  Key:=LayerIDKey(Layer.ID);
+  if FLayerByID.TryGetValue(Key,Existing) then begin
+   if Existing<>Layer then
+    WriteIn(['LayerTable duplicate ID key=',Key,' ID=',Layer.ID,
+             ' first=',Existing.RecString,' duplicate=',Layer.RecString]);
+  end else
+   FLayerByID.Add(Key,Layer);
  end;
- end;
+ FLayerIndexDirty:=False;
+end;
+
+procedure TLayerTable.EnsureLayerIndex;
+begin
+ if FLayerIndexDirty then RebuildLayerIndex;
 end;
 
 procedure TLayerTable.ShowLayerTable;
@@ -403,6 +452,7 @@ begin
  If Round(PR.ID*100)=0 then SetMaxID(PR.ID);
  Layers.Insert(PR);
  LinearLayers.Insert(PR);
+ InvalidateLayerIndex;
 // If Assigned(OnChange) then OnChange(Self);
 end;
 
@@ -411,6 +461,7 @@ begin
  If Round(PR.ID)=0 then SetMaxID(PR.ID);
  If ActiveLayer.Parent<>nil then ActiveLayer.Parent.InsertLayer(PR) else ActiveLayer.InsertLayer(PR);
  LinearLayers.Insert(PR);
+ InvalidateLayerIndex;
 // If Assigned(OnChange) then OnChange(Self);
 end;
 
@@ -426,6 +477,7 @@ begin
   Layers.Insert(PR);
   LinearLayers.Insert(PR);
  end;
+ InvalidateLayerIndex;
  Result:=PR;
 end;
 
@@ -502,7 +554,9 @@ end;
 procedure TLayerTable.DeleteLayer;
 begin
  If Index<>0 then begin
+  InvalidateLayerIndex;
   Layers.AtFree(Index);
+  FillLinearLayers;
  // If Assigned(OnChange) then OnChange(Self);
  end;
 end;
@@ -525,6 +579,7 @@ end;
 procedure TLayerTable.FillLinearLayers;
 var I,J:Integer;
 begin
+ InvalidateLayerIndex;
  LinearLayers.DeleteAll;
  For I:=0 to Layers.Count-1 do begin
   LinearLayers.Insert(Layers[I]);
@@ -546,6 +601,7 @@ begin
  If PR.Parent<>nil then begin
   Index:=PR.Parent.Resources.IndexOf(PR);
   If Index<>-1 then begin
+   InvalidateLayerIndex;
    PR.Parent.Resources.AtFree(Index);
    FillLinearLayers;
   // If Assigned(OnChange) then OnChange(Self);
@@ -553,7 +609,9 @@ begin
  end else begin
   Index:=Layers.IndexOf(PR);
   If Index<>-1 then begin
+   InvalidateLayerIndex;
    Layers.AtDelete(Index);
+   FillLinearLayers;
   // If Assigned(OnChange) then OnChange(Self);
   end;
  end;
@@ -671,6 +729,7 @@ begin
   Table:=TLayerTable(Buf.Get);
  except Result:=False;Buf.Free;exit;end;
  Buf.Free;
+ if not OnlyColor and not OnlyCheck then InvalidateLayerIndex;
  For I:=0 to Table.LinearLayers.Count-1 do begin
   PR:=LinearLayerName[Table.LinearLayer[I].RecString];
   If PR<>nil then begin
@@ -721,6 +780,7 @@ begin
   Index:=Layers.IndexOf(ActiveLayer);
   If Index = -1 then exit;
   DupLayer:=TResource.CreateRes(ActiveLayer.GetResRec);
+  InvalidateLayerIndex;
   S:=DupLayer.RecString;S:=S+'_дубликат';
   DupLayer.RecString:=PAnsiChar(S);
   SetMaxID(DupLayer.ID);

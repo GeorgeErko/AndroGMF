@@ -64,10 +64,22 @@ inherited MainFormDendro: TMainFormDendro
     inherited pnlView: TPanel
       Position.X = 854.000000000000000000
       TabOrder = 117
+      inherited btnPlus1: TCornerButton
+        Enabled = True
+      end
+      inherited btnMinus1: TCornerButton
+        Enabled = True
+      end
+      inherited btnFrag: TCornerButton
+        Enabled = True
+      end
+      inherited btnPan: TCornerButton
+        Enabled = True
+      end
     end
     inherited LabelVer: TLabel
       Size.Width = 30.000000000000000000
-      TabOrder = 152
+      TabOrder = 157
     end
     inherited btnCloud: TCornerButton
       ImageIndex = 13
@@ -75,7 +87,7 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 1
     end
     inherited lMas: TLabel
-      TabOrder = 151
+      TabOrder = 156
     end
     object btnSave: TCornerButton
       Align = Left

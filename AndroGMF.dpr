@@ -151,7 +151,8 @@ uses
   VoskSpeech in 'VoskSpeech.pas',
   GPSReceiver in 'GPSReceiver.pas',
   instGPSFrame in 'instGPSFrame.pas' {InstGPSFrame: TFrame},
-  WinSpeech in 'WinSpeech.pas';
+  WinSpeech in 'WinSpeech.pas',
+  objMouseView32 in 'Geomaster\objMouseView32.pas';
 
 {$R *.res}
 
@@ -167,12 +168,13 @@ begin
  GlobalUseSkiaRasterWhenAvailable := False;
  GlobalUseVulkan := True;
 {$IFDEF WIN64}
+// FMX не включает автопоказ клавиатуры на современных Windows в режиме DefinedBySystem
+ VKAutoShowMode := TVKAutoShowMode.Always;
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}
   Application.Initialize;
   UnfixButtonHeights; // высота кнопок и тулбаров - из формы, не из стиля (AppUI)
    Application.CreateForm(TMainFormDendro, MainFormDendro);
-  //  Application.CreateForm(OpenForm.TFrame1, OpenForm.Frame1);
   Application.Run;
 end.
 

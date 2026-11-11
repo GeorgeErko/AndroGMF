@@ -596,6 +596,7 @@
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="WinSpeech.pas"/>
+        <DCCReference Include="Geomaster\objMouseView32.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

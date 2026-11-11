@@ -242,6 +242,8 @@ type
    procedure InstBlocksZnakSelected(Sender: TObject);
   // выбран слой в списке слоев - выделенные объекты переносятся в него
    procedure LayerSelected(Sender: TObject);
+   // перед пересборкой классов после изменения видимости слоев
+   procedure LayerVisibilityClassBuild(Sender: TObject);
   //
    procedure OpenGmfFileSkia(const LocalPath: string); override;
    procedure MapOpened(const LocalPath: string; NewMap: Boolean); override;
@@ -257,7 +259,7 @@ var
   MainFormMouseObj: TMainFormMouseObj;
 
 // MOUSE32 (параметры проекта): обработчики мыши, перенесенные из Geomaster (Geomaster\*32)
-implementation uses FMX.DialogService, {$IFDEF MOUSE32}objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, objMouseText32, objSbor32, objDataZnk32, newBlock,
+implementation uses FMX.DialogService, {$IFDEF MOUSE32} objMouseView32, objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, objMouseText32, objSbor32, objDataZnk32, newBlock,
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
@@ -344,6 +346,7 @@ begin
  if LayerFrame <> nil then begin
   LayerFrame.OnLayerSelected := LayerSelected;
   LayerFrame.OnActiveLayerChanged := LayerActiveChanged;
+  LayerFrame.OnBeforeVisibilityClassBuild := LayerVisibilityClassBuild;
  end;
 // быстрые слои (FlyQuickLayers): под панелью знаков, кнопка btnQuickLayers
  AccuDraw := TInstAccuDrawFrame.Create(Self);
@@ -595,11 +598,13 @@ WriteIn(['StatusBar H=', StatusBar.Height, ' btn H=', SbShowPoints.Height, ' fix
  InstLines.OnTool := InstLinesTool;
 //
  LF := FindComponent('LayerFrame1') as TLayerFrame;
- if LF <> nil then
+ if LF <> nil then begin
+  LF.TwgForm := Value;
   if Value <> nil then
    LF.LayerTable := Value.LayerTable
   else
    LF.LayerTable := nil;
+ end;
  if QuickLayers <> nil then
   if Value <> nil then QuickLayers.LayerTable := Value.LayerTable else QuickLayers.LayerTable := nil;
 //
@@ -664,11 +669,7 @@ begin
 {$ENDIF}
   if (Sender = btnPan) or (Sender = btnFrag) then
 {$IFDEF MOUSE32}
-  // TMouseView еще не перенесен: пан - средней кнопкой; обработчик - по умолчанию
-   begin
-    MouseObject := nil;
-    exit;
-   end
+   MouseObject := TMouseView32.Create(TwgForm, nil)
 {$ELSE}
    MouseObject := TMouseView.Create(TwgForm, nil)
 {$ENDIF}
@@ -1281,6 +1282,16 @@ begin
   procedure(Obj: TObject)
   begin
   end);
+end;
+
+// ClassBuildII перевязывает примитивы со слоями; старые ссылки в выделении
+// должны быть сняты до пересборки.
+procedure TMainFormMouseObj.LayerVisibilityClassBuild(Sender: TObject);
+begin
+{$IFDEF MOUSE32}
+ if MouseObject is TEditMap then
+  TEditMap(MouseObject).Objects.DeleteAll;
+{$ENDIF}
 end;
 
 // выбран другой знак: он становится знаком новых точек (в старой программе -
