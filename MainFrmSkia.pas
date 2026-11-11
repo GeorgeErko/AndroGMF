@@ -1443,6 +1443,7 @@ var
   SWDraw, SWRec: TStopwatch;
   VisR: TSect;
   ScalePix, SizePix: Double;
+  LotBounds: TRectF;
   procedure CountLot(L: TLot);
   var K: Integer;
   begin
@@ -1452,6 +1453,17 @@ var
    SizePix := Max(L.XMax - L.XMin, L.YMax - L.YMin) * ScalePix;
    if SizePix < 2 then Inc(nTiny);
    for K := 0 to L.Coord.Count - 1 do Inc(nVerts, L.GetTwig(TwgForm.Twigs, K).Coord.Count);
+  end;
+  function GetLotBounds(L: TLot): TRectF;
+  const MARGIN_PIX = 64;
+  var
+   Margin, Size: Double;
+  begin
+   Size := L.XMax - L.XMin;
+   if L.YMax - L.YMin > Size then Size := L.YMax - L.YMin;
+   Margin := MARGIN_PIX / Selector.GetScale + 0.1 * Size;
+   Result := TRectF.Create(L.XMin - Margin, L.YMin - Margin,
+    L.XMax + Margin, L.YMax + Margin);
   end;
 begin
   Error := 1;
@@ -1514,8 +1526,11 @@ begin
                     Inc(nRecorded);
                    // контур перезаписан (изменен) - и его точки сегментов
                     FSegPointsDirty := True;
+                    Lot.SetMinMax(TwgForm.Twigs);
+                    LotBounds := GetLotBounds(Lot);
                     SWRec.Start;
-                    FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot);
+                    FDrawerSkia.BeginPrimitive(Int64(NativeInt(Lot)), Lot,
+                     LotBounds);
                     try
                     // GGraphSet.ViewZnaks := 0;
                     //Writein(['l.draw32=', 1, i]);
@@ -1524,8 +1539,6 @@ begin
                     finally
                       FDrawerSkia.EndPrimitive;
                     end;
-                    Lot.SetMinMax(TwgForm.Twigs);
-                    SetPrimitiveBounds(Lot);
                     Lot.SkiaDraw(FDrawerSkia.SkCanvas);
                     SWRec.Stop;
                   end;

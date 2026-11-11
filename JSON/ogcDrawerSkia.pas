@@ -125,7 +125,10 @@ type
 
     procedure RedrawAll; override;
 
-    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer = 0);
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD;
+     const ALODIndex: Integer = 0); overload;
+    procedure BeginPrimitive(const AId: Int64; const AUserObject: TTD;
+     const ABoundsWorld: TRectF; const ALODIndex: Integer = 0); overload;
     procedure EndPrimitive;
 
     property UseWorldCoords: Boolean read FUseWorldCoords write FUseWorldCoords;
@@ -347,7 +350,15 @@ begin
   FSkCanvas := nil;
 end;
 
-procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64; const AUserObject: TTD; const ALODIndex: Integer);
+procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64;
+ const AUserObject: TTD; const ALODIndex: Integer);
+begin
+ BeginPrimitive(AId, AUserObject, FDest, ALODIndex);
+end;
+
+procedure TogsDrawerSkia.BeginPrimitive(const AId: Int64;
+ const AUserObject: TTD; const ABoundsWorld: TRectF;
+ const ALODIndex: Integer);
 begin
   if FSkCanvas = nil then
     Exit;
@@ -363,7 +374,7 @@ begin
   FPrimitiveId := AId;
   FPrimitiveLODIndex := ALODIndex;
   FPrimitiveUserObject := AUserObject;
-  FPrimitiveBoundsWorld := FDest;
+  FPrimitiveBoundsWorld := ABoundsWorld;
 
   FPrimitiveRecorder := TSkPictureRecorder.Create;
   FPrimitiveCanvas := FPrimitiveRecorder.BeginRecording(FPrimitiveBoundsWorld);
