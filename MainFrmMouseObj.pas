@@ -178,6 +178,7 @@ type
   // Windows: режим касания (StylusInput.StylusTouchMode) - кнопка справа на ToolBarPaint
    btnStylus: TSpeedButton;
    procedure btnStylusClick(Sender: TObject);
+    procedure UpdateVirtualKeyboardMode;
    procedure TouchCancel(X, Y: Single);
    procedure PainterUp(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Single);
    procedure CaptureOverlayInteractionImage;
@@ -259,7 +260,8 @@ var
   MainFormMouseObj: TMainFormMouseObj;
 
 // MOUSE32 (параметры проекта): обработчики мыши, перенесенные из Geomaster (Geomaster\*32)
-implementation uses FMX.DialogService, {$IFDEF MOUSE32} objMouseView32, objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, objMouseText32, objSbor32, objDataZnk32, newBlock,
+implementation uses FMX.DialogService, FMX.Platform, FMX.VirtualKeyboard,
+                     {$IFDEF MOUSE32} objMouseView32, objMouseSelect32, objMouseDraw32, objEditMap32, FrameObjects, objTopo32, objTopology32, objHotSpot32, objMouseText32, objSbor32, objDataZnk32, newBlock,
                     {$ELSE}objMouseSelect, objMouseDraw, objEditMapCaptureDbg, {$ENDIF}
                     objMouseView, UpdateMessages,
                     Writer, newSelector, LBN, newProcs, tstForm, OpenForm,
@@ -396,6 +398,7 @@ begin
   btnStylus.IsPressed := StylusTouchMode;
   btnStylus.OnClick := btnStylusClick;
  end;
+  UpdateVirtualKeyboardMode;
 {$ENDIF}
 //
  InstPoints := TInstPointsFrame.Create(instHost);
@@ -729,6 +732,20 @@ procedure TMainFormMouseObj.btnStylusClick(Sender: TObject);
 begin
  StylusTouchMode := btnStylus.IsPressed;
  GWriteInteger(Name + '_StylusTouch', Ord(StylusTouchMode));
+ UpdateVirtualKeyboardMode;
+end;
+
+procedure TMainFormMouseObj.UpdateVirtualKeyboardMode;
+var KeyboardService: IFMXVirtualKeyboardService;
+begin
+ if StylusTouchScreen and StylusTouchMode then
+  VKAutoShowMode := TVKAutoShowMode.Always
+ else begin
+  VKAutoShowMode := TVKAutoShowMode.DefinedBySystem;
+  if TPlatformServices.Current.SupportsPlatformService(
+   IFMXVirtualKeyboardService, KeyboardService) then
+   KeyboardService.HideVirtualKeyboard;
+ end;
 end;
 
 // щелчок по быстрому слою: слой - активный в списке слоев

@@ -160,9 +160,7 @@ var LayerFrame: TLayerFrame;
 // ОПЫТ: True - при открытии списка активный слой в нем не выделяется
     SkipSelectOnOpen: Boolean = False;
 
-implementation
-
-uses Writer, AppUI, System.Math;
+implementation uses Writer, AppUI, System.Math, newClassBuilder;
 
 // размер шрифта списка слоев и заголовка (имя активного слоя) - UI.Metrics.ListFontSize;
 // высота строки - по шрифту, не меньше 24 (флажок 20 + отступы)
@@ -1280,8 +1278,10 @@ var
 begin
  if Assigned(OnBeforeVisibilityClassBuild) then
   OnBeforeVisibilityClassBuild(Self);
- if FTwgForm <> nil then FTwgForm.ClassBuildII;
-
+ if FTwgForm <> nil then begin
+  ClassReBuildIndex := True;
+  FTwgForm.ClassBuildII;
+ end;
  F := nil;
  Obj := Self;
  while (Obj <> nil) and (F = nil) do

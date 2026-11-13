@@ -1507,7 +1507,7 @@ begin
             ScalePix := Self.Selector.GetScale;
             for I := 0 to TwgForm.Twigs.LotsCount - 1 do
             begin
-              Lot := TwgForm.Twigs.LAt(I);
+              Lot := TwgForm.Twigs.LAtIndex(I);
               try
                 if (Lot.TypeLot <> 254) {and (Lot.Closed = 1)} then
                 begin

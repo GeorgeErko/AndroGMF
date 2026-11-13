@@ -48,6 +48,38 @@ object GlobalOpenForm: TGlobalOpenForm
       OnClick = btnGoClick
     end
   end
+  object PasswordLay: TLayout
+    Align = Top
+    Margins.Left = 8.000000000000000000
+    Margins.Top = 6.000000000000000000
+    Margins.Right = 8.000000000000000000
+    Position.X = 8.000000000000000000
+    Position.Y = 40.000000000000000000
+    Size.Width = 504.000000000000000000
+    Size.Height = 26.000000000000000000
+    Size.PlatformDefault = False
+    Visible = False
+    TabOrder = 4
+    object lPassword: TLabel
+      Align = Left
+      HelpKeyword = 'ui:android:font-2'
+      Size.Width = 72.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+      Text = #1055#1072#1088#1086#1083#1100
+    end
+    object edPassword: TEdit
+      Touch.InteractiveGestures = [LongTap, DoubleTap]
+      Align = Client
+      TabOrder = 0
+      ReturnKeyType = Go
+      Password = True
+      HelpKeyword = 'ui:android:font-2'
+      Size.Width = 432.000000000000000000
+      Size.Height = 26.000000000000000000
+      Size.PlatformDefault = False
+    end
+  end
   object ListView1: TListView
     ItemAppearanceClassName = 'TImageListItemAppearance'
     ItemEditAppearanceClassName = 'TListItemShowCheckAppearance'

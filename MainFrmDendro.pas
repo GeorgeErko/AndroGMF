@@ -48,9 +48,11 @@ type
     btnSaveAs: TCornerButton;
     sbTrack: TSpeedButton;
     ImageListTrack: TImageList;
+    btnFit: TCornerButton;
     procedure btnSaveClick(Sender: TObject);
     procedure btnSaveAsClick(Sender: TObject);
     procedure ToolButtonClick(Sender: TObject);
+    procedure btnFitClick(Sender: TObject);
   private
     FLawnMenu: TPopupMenu;
     FAttractionMenu: TPopupMenu; // меню автопритягивания (PopUpAttraction)
@@ -253,6 +255,11 @@ procedure TMainFormDendro.MapOpened(const LocalPath: string; NewMap: Boolean);
 begin
  inherited;
  if NewMap then ResetMapModified;
+end;
+
+procedure TMainFormDendro.btnFitClick(Sender: TObject);
+begin
+ SkPainterDblClick(Sender);
 end;
 
 procedure TMainFormDendro.btnSaveAsClick(Sender: TObject);

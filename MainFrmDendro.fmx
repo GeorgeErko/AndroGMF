@@ -38,8 +38,9 @@ inherited MainFormDendro: TMainFormDendro
     end
     inherited Load: TButton
       CanFocus = False
-      Position.X = 781.000000000000000000
+      Position.X = 753.000000000000000000
       TabOrder = 75
+      Visible = False
     end
     inherited btnDoc: TButton
       TabOrder = 81
@@ -62,24 +63,83 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 80
     end
     inherited pnlView: TPanel
-      Position.X = 854.000000000000000000
+      Position.X = 826.000000000000000000
       TabOrder = 117
       inherited btnPlus1: TCornerButton
+        Align = Left
         Enabled = True
+        Margins.Left = 2.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 2.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Position.X = 31.000000000000000000
+        Position.Y = 3.000000000000000000
+        Size.Height = 27.000000000000000000
+        TabOrder = 19
       end
       inherited btnMinus1: TCornerButton
+        Align = Left
         Enabled = True
+        Margins.Left = 2.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 2.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Position.X = 60.000000000000000000
+        Position.Y = 3.000000000000000000
+        Size.Height = 27.000000000000000000
       end
       inherited btnFrag: TCornerButton
+        Align = Left
         Enabled = True
+        Margins.Left = 2.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 2.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Position.X = 89.000000000000000000
+        Position.Y = 3.000000000000000000
+        Size.Height = 27.000000000000000000
+        TabOrder = 97
       end
       inherited btnPan: TCornerButton
+        Align = Left
         Enabled = True
+        Margins.Left = 2.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 2.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Position.X = 2.000000000000000000
+        Position.Y = 3.000000000000000000
+        Size.Height = 27.000000000000000000
+        TabOrder = 96
+      end
+      object btnFit: TCornerButton
+        Tag = 1
+        Align = Left
+        Images = ImageList1
+        ImageIndex = 14
+        Margins.Left = 2.000000000000000000
+        Margins.Top = 3.000000000000000000
+        Margins.Right = 2.000000000000000000
+        Margins.Bottom = 3.000000000000000000
+        Position.X = 118.000000000000000000
+        Position.Y = 3.000000000000000000
+        Sides = [Top, Left, Bottom, Right]
+        Size.Width = 25.000000000000000000
+        Size.Height = 27.000000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 18
+        Text = 'btnPlus'
+        TextSettings.Trimming = None
+        XRadius = 3.000000000000000000
+        YRadius = 3.000000000000000000
+        OnClick = btnFitClick
+        OnMouseEnter = StatusButtonEnter
+        OnMouseLeave = StatusButtonLeave
       end
     end
     inherited LabelVer: TLabel
       Size.Width = 30.000000000000000000
-      TabOrder = 157
+      TabOrder = 158
     end
     inherited btnCloud: TCornerButton
       ImageIndex = 13
@@ -87,7 +147,7 @@ inherited MainFormDendro: TMainFormDendro
       TabOrder = 1
     end
     inherited lMas: TLabel
-      TabOrder = 156
+      TabOrder = 157
     end
     object btnSave: TCornerButton
       Align = Left
@@ -942,6 +1002,30 @@ inherited MainFormDendro: TMainFormDendro
             FileName = 'C:\D\!!!DZ\Delphi-Andro\BUTTONS\Cloud.png'
           end>
         Name = 'Cloud'
+      end
+      item
+        MultiResBitmap.LoadSize = 0
+        MultiResBitmap.TransparentColor = 536870912
+        MultiResBitmap = <
+          item
+            Width = 16
+            Height = 16
+            PNG = {
+              89504E470D0A1A0A0000000D49484452000000100000001008060000001FF3FF
+              610000000473424954080808087C0864880000013649444154388D9D93D16DE4
+              300C449F83EDC37395785249D849D4C9299DD0952C5389F3617B6DEFE23E2E03
+              081024F27140510380ED855F2833879BED2522A8AAFF0654D572DB36B4D69044
+              4400B9AD5D264B58A2F74E55611B80B73D44128EA0DDEF4FC9008955F4712422
+              90F4707C006CFAC7070EFDCB2E25D16173C91550D30412E756F4FB445B3EE9E3
+              E7011A476A730CB0F600A8EDA0A2D11A48A0254150057D3A413640551D808B5A
+              5BCF2A89AF7718A066C89C28C725F4ED39F72C551E7B41FC99D1FCF50A30C03C
+              BF001293C9A52F7AF2FB706080DEAFD136F9F7BE9667BD4A8C81CCD5DDED2897
+              C8A6321F097B45516B2309E23403174066121209D4F7F701C84647944C485045
+              EF1DDBC72BECDA2FC23E66D10D03DA8AECD65F1CECB3BD83CE3A75E5111711B4
+              D6180024FDEA3B57D5F00338C49D0330A4E1D90000000049454E44AE426082}
+            FileName = 'C:\!GEOMASTER\Office\EARTH4.BMP'
+          end>
+        Name = 'EARTH4'
       end>
     Destination = <
       item
@@ -1028,6 +1112,12 @@ inherited MainFormDendro: TMainFormDendro
             Name = 'Cloud'
             SourceRect.Right = 24.000000000000000000
             SourceRect.Bottom = 25.000000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'EARTH4'
           end>
       end>
     Left = 100
@@ -1527,8 +1617,8 @@ inherited MainFormDendro: TMainFormDendro
     Top = 142
   end
   inherited imgEsc: TImageList
-    Left = 480
-    Top = 143
+    Left = 481
+    Top = 144
   end
   inherited ImageListOZN: TImageList
     Left = 410

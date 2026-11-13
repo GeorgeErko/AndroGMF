@@ -9,8 +9,9 @@
 // перезаписью, как там же - OpenForm.ResolvePickedMap), в ACallback - локальный
 // путь карты. Ссылка
 // другого вида - адрес самого файла, он скачивается сразу.
-// Список папки - WebDAV общей ссылки (PROPFIND /public.php/webdav, логин -
-// токен ссылки, пароль пустой; иначе /public.php/dav/files/<токен>).
+// Список папки - WebDAV общей ссылки: старый /public.php/webdav (логин -
+// токен ссылки) или новый /public.php/dav/files/<токен> (для защищенной ссылки
+// логин anonymous); пароль общей ссылки запрашивается при 401/403.
 // Ссылка на папку открытого файла хранится в Registry.ini (GlobalOpenUrl) и
 // подставляется при следующем открытии; ссылка на сам файл - GlobalOpenFileUrl
 
@@ -40,6 +41,9 @@ type
     btnOpen: TButton;
     btnCancel: TButton;
     ImageList1: TImageList;
+    PasswordLay: TLayout;
+    lPassword: TLabel;
+    edPassword: TEdit;
     procedure btnOpenClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure btnGoClick(Sender: TObject);
@@ -49,12 +53,14 @@ type
   private
     FCallback: TPickGmfFileCallback;
     FLoading: Boolean;
+    FCancel: TObject;
    // общая папка: сервер (https://сервер), токен, текущая папка ('/', '/a/b')
-    FBase, FToken, FDir: string;
+    FBase, FToken, FDir, FDavRoot, FDavUser: string;
     procedure SetLoading(Value: Boolean);
     procedure Navigate(const Url: string);
     procedure ListDir(const Dir: string);
-    procedure ListDone(const Dir: string; const Items: TArray<TRemoteItem>; const Error: string);
+    procedure ListDone(const Dir: string; const Items: TArray<TRemoteItem>;
+     const Error: string; AuthRequired: Boolean);
     procedure Download(const FileUrl, Name: string);
     procedure DownloadDone(const LocalPath, Error: string);
     function DirUrl(const Dir: string): string;
@@ -73,19 +79,364 @@ var
 implementation
 
 uses
-  System.IOUtils, System.Threading, System.NetEncoding, System.Net.URLClient,
+  System.IOUtils, System.Threading, System.NetEncoding, System.Net.URLClient, System.Hash,
   System.Net.HttpClient, System.RegularExpressions, newProcs, OpenForm
+{$IFDEF MSWINDOWS}
+  , Winapi.Windows
+{$ENDIF}
 {$IFDEF ANDROID}
-  , Androidapi.JNIBridge, Androidapi.Helpers, Androidapi.JNI.JavaTypes, Androidapi.JNI.Java.Net
+  , Androidapi.JNIBridge, Androidapi.Helpers, Androidapi.JNI.JavaTypes, Androidapi.JNI.Java.Net,
+  Androidapi.JNI.Java.Security, Androidapi.JNI.Provider
 {$ENDIF};
 
 {$R *.fmx}
 
 const
   UrlKey = 'GlobalOpenUrl'; // ключ Registry.ini: ссылка на папку открытого файла
+  FixedUrlKey = 'GlobalOpenFixed'; // заданная для группы постоянная ссылка
+  AuthUrlKey = 'GlobalOpenAuthUrl'; // ссылка, для которой сохранен пароль
+  PasswordKey = 'GlobalOpenPassword';
+  PasswordSizeKey = 'GlobalOpenPasswordSize';
+  WindowsPasswordPrefix = 'win1:';
+  AndroidPasswordPrefix = 'and1:';
+  PasswordKeySalt = 'DlgGlobalOpen.Password.2026-11-13|';
  // первичная ссылка на облако: адрес не передан и в Registry.ini его еще нет
   DefaultCloudUrl = 'https://cloud.mggt.ru/s/z8EgYgx2N5WcW86';
-  PropfindBody = '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
+
+{$IFDEF MSWINDOWS}
+function CryptProtectData(DataIn: PDATA_BLOB; DataDescription: LPCWSTR;
+ OptionalEntropy: PDATA_BLOB; Reserved: Pointer; PromptStruct: Pointer;
+ Flags: DWORD; DataOut: PDATA_BLOB): BOOL; stdcall;
+ external 'crypt32.dll' name 'CryptProtectData';
+
+function CryptUnprotectData(DataIn: PDATA_BLOB; DataDescription: PPWideChar;
+ OptionalEntropy: PDATA_BLOB; Reserved: Pointer; PromptStruct: Pointer;
+ Flags: DWORD; DataOut: PDATA_BLOB): BOOL; stdcall;
+ external 'crypt32.dll' name 'CryptUnprotectData';
+{$ENDIF}
+
+function BytesEqual(const Left, Right: TBytes): Boolean;
+var I, Difference: Integer;
+begin
+ if Length(Left) <> Length(Right) then exit(False);
+ Difference := 0;
+ for I := 0 to High(Left) do Difference := Difference or (Left[I] xor Right[I]);
+ Result := Difference = 0;
+end;
+
+function JoinBytes(const Left, Right: TBytes): TBytes;
+begin
+ SetLength(Result, Length(Left) + Length(Right));
+ if Length(Left) > 0 then Move(Left[0], Result[0], Length(Left));
+ if Length(Right) > 0 then Move(Right[0], Result[Length(Left)], Length(Right));
+end;
+
+{$IFDEF ANDROID}
+function AndroidDeviceKey: TBytes;
+var DeviceId: string;
+begin
+ DeviceId := JStringToString(TJSettings_Secure.JavaClass.getString(
+  TAndroidHelper.Context.getContentResolver,
+  TJSettings_Secure.JavaClass.ANDROID_ID));
+ if DeviceId = '' then exit(nil);
+ Result := THashSHA2.GetHashBytes(PasswordKeySalt + DeviceId);
+end;
+
+function AndroidRandomBytes(Count: Integer): TBytes;
+var JavaBytes: TJavaArray<Byte>;
+    I: Integer;
+begin
+ SetLength(Result, Count);
+ JavaBytes := TJavaArray<Byte>.Create(Count);
+ try
+  TJSecureRandom.JavaClass.init.nextBytes(JavaBytes);
+  for I := 0 to Count - 1 do Result[I] := JavaBytes[I];
+ finally
+  JavaBytes.Free;
+ end;
+end;
+
+function AndroidCrypt(const Data, Key, Nonce: TBytes): TBytes;
+var BlockInput, KeyStream: TBytes;
+    Offset, Counter, I, Count: Integer;
+begin
+ SetLength(Result, Length(Data));
+ Offset := 0;
+ Counter := 0;
+ while Offset < Length(Data) do begin
+  SetLength(BlockInput, Length(Nonce) + 4);
+  if Length(Nonce) > 0 then Move(Nonce[0], BlockInput[0], Length(Nonce));
+  BlockInput[Length(Nonce)] := Byte(Counter shr 24);
+  BlockInput[Length(Nonce) + 1] := Byte(Counter shr 16);
+  BlockInput[Length(Nonce) + 2] := Byte(Counter shr 8);
+  BlockInput[Length(Nonce) + 3] := Byte(Counter);
+  KeyStream := THashSHA2.GetHMACAsBytes(BlockInput, Key);
+  Count := Length(KeyStream);
+  if Count > Length(Data) - Offset then Count := Length(Data) - Offset;
+  for I := 0 to Count - 1 do Result[Offset + I] := Data[Offset + I] xor KeyStream[I];
+  Inc(Offset, Count);
+  Inc(Counter);
+ end;
+end;
+
+function ProtectAndroidPassword(const Password: string): string;
+var Key, Nonce, PlainText, CipherText, MacData, Tag, Stored: TBytes;
+begin
+ Result := '';
+ Key := AndroidDeviceKey;
+ if Length(Key) = 0 then exit;
+ Nonce := AndroidRandomBytes(16);
+ PlainText := TEncoding.UTF8.GetBytes(Password);
+ CipherText := AndroidCrypt(PlainText, Key, Nonce);
+ MacData := JoinBytes(Nonce, CipherText);
+ Tag := THashSHA2.GetHMACAsBytes(MacData, Key);
+ SetLength(Stored, Length(MacData) + 16);
+ if Length(MacData) > 0 then Move(MacData[0], Stored[0], Length(MacData));
+ Move(Tag[0], Stored[Length(MacData)], 16);
+ Result := AndroidPasswordPrefix + TNetEncoding.Base64.EncodeBytesToString(Stored);
+ if Length(PlainText) > 0 then FillChar(PlainText[0], Length(PlainText), 0);
+end;
+
+function UnprotectAndroidPassword(const StoredPassword: string): string;
+var Key, Stored, Nonce, CipherText, MacData, SavedTag, Tag, PlainText: TBytes;
+    CipherLength: Integer;
+begin
+ Result := '';
+ try
+  Key := AndroidDeviceKey;
+  if Length(Key) = 0 then exit;
+  Stored := TNetEncoding.Base64.DecodeStringToBytes(
+   Copy(StoredPassword, Length(AndroidPasswordPrefix) + 1, MaxInt));
+  if Length(Stored) < 32 then exit;
+  CipherLength := Length(Stored) - 32;
+  SetLength(Nonce, 16);
+  Move(Stored[0], Nonce[0], 16);
+  SetLength(CipherText, CipherLength);
+  if CipherLength > 0 then Move(Stored[16], CipherText[0], CipherLength);
+  MacData := JoinBytes(Nonce, CipherText);
+  SetLength(SavedTag, 16);
+  Move(Stored[16 + CipherLength], SavedTag[0], 16);
+  Tag := THashSHA2.GetHMACAsBytes(MacData, Key);
+  SetLength(Tag, 16);
+  if not BytesEqual(SavedTag, Tag) then exit;
+  PlainText := AndroidCrypt(CipherText, Key, Nonce);
+  Result := TEncoding.UTF8.GetString(PlainText);
+  if Length(PlainText) > 0 then FillChar(PlainText[0], Length(PlainText), 0);
+ except
+  Result := '';
+ end;
+end;
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
+function ProtectWindowsPassword(const Password: string): string;
+const CryptProtectUiForbidden = $1;
+var PlainText, ProtectedData: TBytes;
+    DataIn, DataOut: DATA_BLOB;
+begin
+ Result := '';
+ PlainText := TEncoding.UTF8.GetBytes(Password);
+ if Length(PlainText) = 0 then exit;
+ DataIn.cbData := Length(PlainText);
+ DataIn.pbData := @PlainText[0];
+ DataOut.cbData := 0;
+ DataOut.pbData := nil;
+ if CryptProtectData(@DataIn, nil, nil, nil, nil, CryptProtectUiForbidden,
+  @DataOut) then
+  try
+   SetLength(ProtectedData, DataOut.cbData);
+   if DataOut.cbData > 0 then Move(DataOut.pbData^, ProtectedData[0], DataOut.cbData);
+   Result := WindowsPasswordPrefix +
+    TNetEncoding.Base64.EncodeBytesToString(ProtectedData);
+  finally
+   LocalFree(DataOut.pbData);
+  end;
+ FillChar(PlainText[0], Length(PlainText), 0);
+end;
+
+function UnprotectWindowsPassword(const StoredPassword: string): string;
+const CryptProtectUiForbidden = $1;
+var ProtectedData, PlainText: TBytes;
+    DataIn, DataOut: DATA_BLOB;
+begin
+ Result := '';
+ try
+  ProtectedData := TNetEncoding.Base64.DecodeStringToBytes(
+   Copy(StoredPassword, Length(WindowsPasswordPrefix) + 1, MaxInt));
+  if Length(ProtectedData) = 0 then exit;
+  DataIn.cbData := Length(ProtectedData);
+  DataIn.pbData := @ProtectedData[0];
+  DataOut.cbData := 0;
+  DataOut.pbData := nil;
+  if not CryptUnprotectData(@DataIn, nil, nil, nil, nil,
+   CryptProtectUiForbidden, @DataOut) then exit;
+  try
+   SetLength(PlainText, DataOut.cbData);
+   if DataOut.cbData > 0 then Move(DataOut.pbData^, PlainText[0], DataOut.cbData);
+   Result := TEncoding.UTF8.GetString(PlainText);
+   if Length(PlainText) > 0 then FillChar(PlainText[0], Length(PlainText), 0);
+  finally
+   LocalFree(DataOut.pbData);
+  end;
+ except
+  Result := '';
+ end;
+end;
+{$ENDIF}
+
+function ProtectPassword(const Password: string): string;
+begin
+{$IFDEF MSWINDOWS}
+ Result := ProtectWindowsPassword(Password);
+{$ELSEIF Defined(ANDROID)}
+ Result := ProtectAndroidPassword(Password);
+{$ELSE}
+ Result := '';
+{$ENDIF}
+end;
+
+function UnprotectPassword(const StoredPassword: string): string;
+begin
+ if StoredPassword.StartsWith(WindowsPasswordPrefix) then begin
+{$IFDEF MSWINDOWS}
+  Result := UnprotectWindowsPassword(StoredPassword);
+{$ELSE}
+  Result := '';
+{$ENDIF}
+ end else if StoredPassword.StartsWith(AndroidPasswordPrefix) then begin
+{$IFDEF ANDROID}
+  Result := UnprotectAndroidPassword(StoredPassword);
+{$ELSE}
+  Result := '';
+{$ENDIF}
+ end else Result := StoredPassword; // старое незашифрованное значение
+end;
+
+function ReadStoredPassword: string;
+const MaxStoredPasswordSize = 8192;
+var StoredBytes: TBytes;
+    StoredSize: Integer;
+begin
+ Result := '';
+ StoredSize := GReadInteger(PasswordSizeKey, 0);
+ if (StoredSize > 0) and (StoredSize <= MaxStoredPasswordSize) then begin
+  SetLength(StoredBytes, StoredSize);
+  if GReadBinary(PasswordKey, StoredBytes[0], StoredSize) then begin
+   Result := TEncoding.UTF8.GetString(StoredBytes);
+   exit;
+  end;
+ end;
+ Result := string(GReadString(PasswordKey, '')); // миграция со старого строкового формата
+end;
+
+function WriteStoredPassword(const StoredPassword: string): Boolean;
+var StoredBytes: TBytes;
+begin
+ Result := False;
+ StoredBytes := TEncoding.UTF8.GetBytes(StoredPassword);
+ if Length(StoredBytes) = 0 then exit;
+ if not GWriteBinary(PasswordKey, StoredBytes[0], Length(StoredBytes)) then exit;
+ Result := GWriteInteger(PasswordSizeKey, Length(StoredBytes));
+end;
+
+type
+  TRemoteCancel = class
+  private
+    FCancelled: Boolean;
+    FRequest: IURLRequest;
+{$IFDEF ANDROID}
+    FConnection: JHttpURLConnection;
+{$ENDIF}
+  public
+    procedure Cancel;
+    procedure SetRequest(const Request: IURLRequest);
+    procedure ClearRequest(const Request: IURLRequest);
+{$IFDEF ANDROID}
+    procedure SetConnection(const Connection: JHttpURLConnection);
+    procedure ClearConnection(const Connection: JHttpURLConnection);
+{$ENDIF}
+    function Cancelled: Boolean;
+  end;
+
+procedure TRemoteCancel.Cancel;
+var Request: IURLRequest;
+{$IFDEF ANDROID}
+    Connection: JHttpURLConnection;
+{$ENDIF}
+begin
+ TMonitor.Enter(Self);
+ try
+  FCancelled := True;
+  Request := FRequest;
+{$IFDEF ANDROID}
+  Connection := FConnection;
+{$ENDIF}
+ finally
+  TMonitor.Exit(Self);
+ end;
+ if Request <> nil then Request.Cancel;
+{$IFDEF ANDROID}
+ if Connection <> nil then Connection.disconnect;
+{$ENDIF}
+end;
+
+procedure TRemoteCancel.SetRequest(const Request: IURLRequest);
+var IsCancelled: Boolean;
+begin
+ TMonitor.Enter(Self);
+ try
+  FRequest := Request;
+  IsCancelled := FCancelled;
+ finally
+  TMonitor.Exit(Self);
+ end;
+ if IsCancelled and (Request <> nil) then Request.Cancel;
+end;
+
+procedure TRemoteCancel.ClearRequest(const Request: IURLRequest);
+begin
+ TMonitor.Enter(Self);
+ try
+  if FRequest = Request then FRequest := nil;
+ finally
+  TMonitor.Exit(Self);
+ end;
+end;
+
+{$IFDEF ANDROID}
+procedure TRemoteCancel.SetConnection(const Connection: JHttpURLConnection);
+var IsCancelled: Boolean;
+begin
+ TMonitor.Enter(Self);
+ try
+  FConnection := Connection;
+  IsCancelled := FCancelled;
+ finally
+  TMonitor.Exit(Self);
+ end;
+ if IsCancelled and (Connection <> nil) then Connection.disconnect;
+end;
+
+procedure TRemoteCancel.ClearConnection(const Connection: JHttpURLConnection);
+begin
+ TMonitor.Enter(Self);
+ try
+  if FConnection = Connection then FConnection := nil;
+ finally
+  TMonitor.Exit(Self);
+ end;
+end;
+{$ENDIF}
+
+function TRemoteCancel.Cancelled: Boolean;
+begin
+ TMonitor.Enter(Self);
+ try
+  Result := FCancelled;
+ finally
+  TMonitor.Exit(Self);
+ end;
+end;
 
 procedure OpenUrlPicker(const ACallback: TPickGmfFileCallback; const Url: string = '');
 var F: TGlobalOpenForm;
@@ -98,7 +449,11 @@ begin
 // освобождено
  F := TGlobalOpenForm.Create(nil);
  F.FCallback := ACallback;
- if Url <> '' then S := Url else S := string(GReadString(UrlKey, AnsiString(DefaultCloudUrl)));
+ S := string(GReadString(FixedUrlKey, ''));
+ if S = '' then begin
+  if Url <> '' then S := Url
+  else S := string(GReadString(UrlKey, AnsiString(DefaultCloudUrl)));
+ end;
  if S = '' then S := DefaultCloudUrl;
  F.edUrl.Text := S;
  F.lStatus.Text := '';
@@ -179,11 +534,13 @@ begin
  Result := True;
 end;
 
-function NewClient(const Token: string): THTTPClient;
+function NewClient(const User, Password: string): THTTPClient;
 begin
  Result := THTTPClient.Create;
  Result.HandleRedirects := True;
- if Token <> '' then Result.CustomHeaders['Authorization'] := 'Basic ' + TNetEncoding.Base64String.Encode(Token + ':');
+ if User <> '' then
+  Result.CustomHeaders['Authorization'] := 'Basic ' +
+   TNetEncoding.Base64String.Encode(User + ':' + Password);
 end;
 
 {$IFDEF ANDROID}
@@ -217,11 +574,11 @@ begin
  end;
 end;
 
-function PropfindRequest(const Url, Auth: string; out Status: Integer; out StatusText, Xml: string): Boolean;
+function PropfindRequest(const Url, Auth: string; Cancel: TRemoteCancel;
+ out Status: Integer; out StatusText, Xml: string): Boolean;
 var Conn: JHttpURLConnection;
-    OS: JOutputStream;
     InS: JInputStream;
-    Body, Buf: TJavaArray<Byte>;
+    Buf: TJavaArray<Byte>;
     Data: TBytes;
     Res: TBytesStream;
     N, I: Integer;
@@ -230,25 +587,16 @@ begin
  StatusText := '';
  Xml := '';
  Conn := TJHttpURLConnection.Wrap(JObjectToID(TJURL.JavaClass.init(StringToJString(Url)).openConnection));
+ Cancel.SetConnection(Conn);
  try
   Conn.setConnectTimeout(20000);
   Conn.setReadTimeout(30000);
   Conn.setInstanceFollowRedirects(True);
   ForceRequestMethod(Conn, 'PROPFIND');
   Conn.setRequestProperty(StringToJString('Depth'), StringToJString('1'));
-  Conn.setRequestProperty(StringToJString('Content-Type'), StringToJString('application/xml; charset=utf-8'));
+  Conn.setRequestProperty(StringToJString('X-Requested-With'),
+   StringToJString('XMLHttpRequest'));
   if Auth <> '' then Conn.setRequestProperty(StringToJString('Authorization'), StringToJString(Auth));
-  Data := TEncoding.UTF8.GetBytes(PropfindBody);
-  Body := TJavaArray<Byte>.Create(Length(Data));
-  try
-   for I := 0 to High(Data) do Body.Items[I] := Data[I];
-   Conn.setDoOutput(True);
-   OS := Conn.getOutputStream;
-   OS.write(Body);
-   OS.close;
-  finally
-   Body.Free;
-  end;
   Status := Conn.getResponseCode;
   if Conn.getResponseMessage <> nil then StatusText := JStringToString(Conn.getResponseMessage);
   if Status >= 400 then InS := Conn.getErrorStream else InS := Conn.getInputStream;
@@ -272,33 +620,38 @@ begin
    end;
   end;
  finally
+  Cancel.ClearConnection(Conn);
   Conn.disconnect;
  end;
  Result := Status = 207;
 end;
 {$ELSE}
-function PropfindRequest(const Url, Auth: string; out Status: Integer; out StatusText, Xml: string): Boolean;
+function PropfindRequest(const Url, Auth: string; Cancel: TRemoteCancel;
+ out Status: Integer; out StatusText, Xml: string): Boolean;
 var Http: THTTPClient;
     Req: IHTTPRequest;
     Resp: IHTTPResponse;
-    Body: TStringStream;
 begin
  Xml := '';
  Http := THTTPClient.Create;
- Body := TStringStream.Create(PropfindBody, TEncoding.UTF8);
  try
   Http.HandleRedirects := True;
+  Http.ConnectionTimeout := 20000;
+  Http.ResponseTimeout := 30000;
   Req := Http.GetRequest('PROPFIND', Url);
   Req.AddHeader('Depth', '1');
-  Req.AddHeader('Content-Type', 'application/xml; charset=utf-8');
+  Req.AddHeader('X-Requested-With', 'XMLHttpRequest');
   if Auth <> '' then Req.AddHeader('Authorization', Auth);
-  Req.SourceStream := Body;
-  Resp := Http.Execute(Req);
+  Cancel.SetRequest(Req);
+  try
+   Resp := Http.Execute(Req);
+  finally
+   Cancel.ClearRequest(Req);
+  end;
   Status := Resp.StatusCode;
   StatusText := Resp.StatusText;
   if Status = 207 then Xml := Resp.ContentAsString(TEncoding.UTF8);
  finally
-  Body.Free;
   Http.Free;
  end;
  Result := Status = 207;
@@ -306,8 +659,11 @@ end;
 {$ENDIF}
 
 // PROPFIND Depth 1: папки и файлы папки Dir (вызов в фоновом потоке)
-function ListRemote(const Base, Token, Dir: string; out Items: TArray<TRemoteItem>; out Error: string): Boolean;
-var Root, Auth, StatusText: string;
+function ListRemote(const Base, Token, Dir, Password: string;
+ Cancel: TRemoteCancel;
+ out Items: TArray<TRemoteItem>; out Error: string;
+ out AuthRequired: Boolean; out DavRoot, DavUser: string): Boolean;
+var Root, Auth, AuthUser, StatusText: string;
     Attempt, P, Status: Integer;
     Xml, Href, RelPath, Prefix: string;
     M: TMatch;
@@ -317,22 +673,41 @@ begin
  Result := False;
  Items := nil;
  Error := '';
+ AuthRequired := False;
+ DavRoot := '';
+ DavUser := '';
  for Attempt := 0 to 1 do begin
- // старый адрес WebDAV общих ссылок Nextcloud (логин - токен) и новый (без логина)
+  if Cancel.Cancelled then begin
+   Error := 'Прервано...';
+   exit;
+  end;
+ // старый адрес WebDAV общих ссылок Nextcloud (логин - токен) и новый
+ // (без пароля - без логина, с паролем - anonymous)
   if Attempt = 0 then begin
    Root := '/public.php/webdav';
-   Auth := 'Basic ' + TNetEncoding.Base64String.Encode(Token + ':');
+   AuthUser := Token;
   end else begin
    Root := '/public.php/dav/files/' + Token;
-   Auth := '';
+   if Password <> '' then AuthUser := 'anonymous'
+   else AuthUser := '';
   end;
+  if AuthUser <> '' then
+   Auth := 'Basic ' +
+    TNetEncoding.Base64String.Encode(AuthUser + ':' + Password)
+  else Auth := '';
   try
-   if not PropfindRequest(Base + Root + EncodePath(Dir) + '/', Auth, Status, StatusText, Xml) then begin
+   if not PropfindRequest(Base + Root + EncodePath(Dir) + '/', Auth, Cancel,
+    Status, StatusText, Xml) then begin
     Error := Format('Папка недоступна: %d %s', [Status, StatusText]);
+    if (Status = 401) or (Status = 403) then AuthRequired := True;
     continue;
    end;
   except
    on E: Exception do begin
+    if Cancel.Cancelled then begin
+     Error := 'Прервано...';
+     exit;
+    end;
     Error := 'Ошибка соединения: ' + E.Message;
     continue;
    end;
@@ -356,6 +731,9 @@ begin
   end;
   Items := List;
   Error := '';
+  AuthRequired := False;
+  DavRoot := Root;
+  DavUser := AuthUser;
   exit(True);
  end;
 end;
@@ -395,8 +773,12 @@ end;
 // карта .gmf - в GmfDir, остальные (.zip) - в OtherDir (рабочая папка), затем
 // ResolvePickedMap - архив распаковывается в рабочую папку с перезаписью
 // одноименных файлов, карта - первый .gmf архива
-function DownloadMap(const Urls: array of string; const Token, Name, GmfDir, OtherDir: string; out LocalPath, Error: string): Boolean;
+function DownloadMap(const Urls: array of string;
+ const User, Password, Name, GmfDir, OtherDir: string;
+ Cancel: TRemoteCancel;
+ out LocalPath, Error: string): Boolean;
 var Http: THTTPClient;
+    Req: IHTTPRequest;
     Resp: IHTTPResponse;
     FS: TFileStream;
     Tmp, FileName, Dst: string;
@@ -408,12 +790,23 @@ begin
  Tmp := TPath.Combine(OtherDir, 'download.tmp');
  Resp := nil;
  for I := 0 to High(Urls) do begin
-  if I = 0 then Http := NewClient(Token) else Http := NewClient('');
+  if Cancel.Cancelled then begin
+   Error := 'Прервано...';
+   break;
+  end;
+  if I = 0 then Http := NewClient(User, Password)
+  else Http := NewClient('', '');
   try
    try
     FS := TFileStream.Create(Tmp, fmCreate);
     try
-     Resp := Http.Get(Urls[I], FS);
+     Req := Http.GetRequest('GET', Urls[I]);
+     Cancel.SetRequest(Req);
+     try
+      Resp := Http.Execute(Req, FS);
+     finally
+      Cancel.ClearRequest(Req);
+     end;
     finally
      FS.Free;
     end;
@@ -422,13 +815,15 @@ begin
     Resp := nil;
    except
     on E: Exception do begin
-     Error := 'Ошибка загрузки: ' + E.Message;
+     if Cancel.Cancelled then Error := 'Прервано...'
+     else Error := 'Ошибка загрузки: ' + E.Message;
      Resp := nil;
     end;
    end;
   finally
    Http.Free;
   end;
+  if Cancel.Cancelled then break;
  end;
  try
   if Resp = nil then exit;
@@ -462,8 +857,9 @@ procedure TGlobalOpenForm.SetLoading(Value: Boolean);
 begin
  FLoading := Value;
  btnGo.Enabled := not Value;
- btnCancel.Enabled := not Value;
+ btnCancel.Enabled := True;
  ListView1.Enabled := not Value;
+ edPassword.Enabled := not Value;
  if Value then btnOpen.Enabled := False;
 end;
 
@@ -477,10 +873,19 @@ end;
 // ссылка на общую папку - ее содержимое; ссылка другого вида - адрес файла,
 // он скачивается сразу
 procedure TGlobalOpenForm.Navigate(const Url: string);
-var Base, Token, Dir: string;
+var Base, Token, Dir, AuthUrl, StoredPassword: string;
 begin
  if Trim(Url) = '' then exit;
  if ParseShareUrl(Trim(Url), Base, Token, Dir) then begin
+  if not SameText(FBase, Base) or (FToken <> Token) then begin
+   edPassword.Text := '';
+   PasswordLay.Visible := False;
+   AuthUrl := string(GReadString(AuthUrlKey, ''));
+   if SameText(AuthUrl, Base + '/s/' + Token) then begin
+    StoredPassword := ReadStoredPassword;
+    edPassword.Text := UnprotectPassword(StoredPassword);
+   end;
+  end;
   FBase := Base;
   FToken := Token;
   ListDir(Dir);
@@ -493,38 +898,76 @@ begin
 end;
 
 procedure TGlobalOpenForm.ListDir(const Dir: string);
-var Base, Token: string;
+var Base, Token, Password: string;
+    Cancel: TRemoteCancel;
 begin
  Base := FBase;
  Token := FToken;
+ Password := edPassword.Text;
+ Cancel := TRemoteCancel.Create;
+ FCancel := Cancel;
  SetLoading(True);
  lStatus.Text := 'Чтение папки...';
  TTask.Run(
   procedure
   var Items: TArray<TRemoteItem>;
-      Error: string;
+      Error, DavRoot, DavUser: string;
+      AuthRequired: Boolean;
   begin
-   ListRemote(Base, Token, Dir, Items, Error);
+   ListRemote(Base, Token, Dir, Password, Cancel, Items, Error, AuthRequired,
+    DavRoot, DavUser);
+   if Cancel.Cancelled then begin
+    Items := nil;
+    Error := 'Прервано...';
+    AuthRequired := False;
+   end;
    TThread.Queue(nil,
     procedure
     begin
-     ListDone(Dir, Items, Error);
+     if FCancel = Cancel then FCancel := nil;
+     try
+      if Error = '' then begin
+       FDavRoot := DavRoot;
+       FDavUser := DavUser;
+      end;
+      ListDone(Dir, Items, Error, AuthRequired);
+     finally
+      Cancel.Free;
+     end;
     end);
   end);
 end;
 
 // список папки: '..' (кроме корня), папки, карты
-procedure TGlobalOpenForm.ListDone(const Dir: string; const Items: TArray<TRemoteItem>; const Error: string);
+procedure TGlobalOpenForm.ListDone(const Dir: string;
+ const Items: TArray<TRemoteItem>; const Error: string;
+ AuthRequired: Boolean);
 var It: TRemoteItem;
     Item: TListViewItem;
     Pass: Integer;
+    EncryptedPassword: string;
 begin
  SetLoading(False);
  if Error <> '' then begin
-  lStatus.Text := Error;
+  if AuthRequired then begin
+   PasswordLay.Visible := True;
+   if edPassword.Text = '' then
+    lStatus.Text := 'Для доступа к папке введите пароль'
+   else
+    lStatus.Text := 'Неверный пароль';
+   edPassword.SetFocus;
+  end else
+   lStatus.Text := Error;
   exit;
  end;
  FDir := Dir;
+ if edPassword.Text <> '' then begin
+  EncryptedPassword := ProtectPassword(edPassword.Text);
+  if EncryptedPassword <> '' then begin
+   if WriteStoredPassword(EncryptedPassword) then
+    GWriteString(AuthUrlKey, AnsiString(FBase + '/s/' + FToken));
+  end;
+ end;
  edUrl.Text := DirUrl(Dir);
  lStatus.Text := Dir;
  ListView1.BeginUpdate;
@@ -583,32 +1026,50 @@ begin
  if (Item = nil) or (Item.Tag <> 0) then exit;
  Path := JoinPath(FDir, Item.TagString);
  GlobalOpenFileUrl := FBase + '/s/' + FToken + '/download?path=' + EncodePath(FDir) + '&files=' + EncodePath(Item.TagString);
- Download(FBase + '/public.php/webdav' + EncodePath(Path), Item.TagString);
+ Download(FBase + FDavRoot + EncodePath(Path), Item.TagString);
 end;
 
 // скачивание в фоновом потоке, окно не закрывается до его конца
 // (FormCloseQuery); папка карт - здесь, в главном потоке (JNI)
 procedure TGlobalOpenForm.Download(const FileUrl, Name: string);
-var GmfDir, OtherDir, Token, Fallback: string;
+var GmfDir, OtherDir, Token, User, Password, Fallback: string;
+    Cancel: TRemoteCancel;
 begin
 // папки - как у PickGmfFile (OpenForm.PickedFileDir)
  GmfDir := PickedFileDir('map.gmf');
  OtherDir := PickedFileDir('map.zip');
  Token := FToken;
+ User := FDavUser;
+ Password := edPassword.Text;
  Fallback := GlobalOpenFileUrl;
  if Token = '' then GlobalOpenFileUrl := FileUrl;
+ Cancel := TRemoteCancel.Create;
+ FCancel := Cancel;
  SetLoading(True);
  lStatus.Text := 'Загрузка ' + Name + '...';
  TTask.Run(
   procedure
   var LocalPath, Error: string;
   begin
-   if Token <> '' then DownloadMap([FileUrl, Fallback], Token, Name, GmfDir, OtherDir, LocalPath, Error)
-   else DownloadMap([FileUrl], '', Name, GmfDir, OtherDir, LocalPath, Error);
+   if Token <> '' then
+    DownloadMap([FileUrl, Fallback], User, Password, Name, GmfDir,
+     OtherDir, Cancel, LocalPath, Error)
+   else
+    DownloadMap([FileUrl], '', '', Name, GmfDir, OtherDir,
+     Cancel, LocalPath, Error);
+   if Cancel.Cancelled then begin
+    LocalPath := '';
+    Error := 'Прервано...';
+   end;
    TThread.Queue(nil,
     procedure
     begin
-     DownloadDone(LocalPath, Error);
+     if FCancel = Cancel then FCancel := nil;
+     try
+      DownloadDone(LocalPath, Error);
+     finally
+      Cancel.Free;
+     end;
     end);
   end);
 end;
@@ -634,6 +1095,12 @@ end;
 
 procedure TGlobalOpenForm.btnCancelClick(Sender: TObject);
 begin
+ if FLoading then begin
+  if FCancel is TRemoteCancel then TRemoteCancel(FCancel).Cancel;
+  btnCancel.Enabled := False;
+  lStatus.Text := 'Прервано...';
+  exit;
+ end;
  Close;
 end;
 

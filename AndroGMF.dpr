@@ -168,8 +168,6 @@ begin
  GlobalUseSkiaRasterWhenAvailable := False;
  GlobalUseVulkan := True;
 {$IFDEF WIN64}
-// FMX не включает автопоказ клавиатуры на современных Windows в режиме DefinedBySystem
- VKAutoShowMode := TVKAutoShowMode.Always;
  ProjSetSearchPath(IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + 'nad');
 {$ENDIF}
   Application.Initialize;

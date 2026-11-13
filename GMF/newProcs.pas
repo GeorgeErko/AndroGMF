@@ -399,9 +399,14 @@ end;
 function GWriteInteger(Name: AnsiString; S: Integer): boolean;
 var Ini:TIniFile;
 begin
+ Result:=False;
  Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
-  Ini.Writeinteger('Registry',Name,S);
- Ini.Free;
+ try
+  Ini.WriteInteger('Registry',Name,S);
+  Result:=True;
+ finally
+  Ini.Free;
+ end;
 end;
 
 function GWriteFloat(Name: AnsiString; S: Double): boolean;
@@ -416,12 +421,21 @@ end;
 function GWriteBinary(Name: AnsiString; var S; BufSize: Integer): boolean;
 var Ini:TIniFile;St:TBufStream;
 begin
- St:= TBufStream.Create;
- St.Write(S,BufSize);
- Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
-  Ini.WriteBinaryStream('Binary',Name,St.Stream);
- Ini.Free;
- St.Free;
+ Result:=False;
+ St:=TBufStream.Create;
+ try
+  St.Write(S,BufSize);
+  St.Position:=0;
+  Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
+  try
+   Ini.WriteBinaryStream('Binary',Name,St.Stream);
+   Result:=True;
+  finally
+   Ini.Free;
+  end;
+ finally
+  St.Free;
+ end;
 end;
 
 function GWriteObject(Name: AnsiString; obj: TTwgObject): boolean;
@@ -465,13 +479,23 @@ end;
 
 function GReadBinary(Name: AnsiString; var S; BufSize: Integer): boolean;
 var Ini:TIniFile;St:TStream;
+    ReadSize:Integer;
 begin
+ Result:=False;
  St:=TMemoryStream.Create;
- Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
-  Result:=Ini.ReadBinaryStream('Registry',Name,St) = BufSize;
-  St.Position:=0;St.Write(S,BufSize);
- Ini.Free;
- St.Free;
+ try
+  Ini:=TIniFile.Create(MainPath+Slash+etcIniName);
+  try
+   ReadSize:=Ini.ReadBinaryStream('Binary',Name,St);
+  finally
+   Ini.Free;
+  end;
+  if ReadSize<>BufSize then exit;
+  St.Position:=0;
+  Result:=St.Read(S,BufSize)=BufSize;
+ finally
+  St.Free;
+ end;
 end;
 
 function GReadObject(Name: AnsiString): TTwgObject;
