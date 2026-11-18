@@ -30,6 +30,33 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
   ppPointNames:Array[0..9] of AnsiString = ('Цвет','Знак','Масштаб','Угол','','','Шрифт','Размер','Стиль','Прозрачность');
   ppBlockNames:Array[0..4] of AnsiString = ('Блок','Угол','Растяжение','Коэф.X(мат)','Коэф.Y(мат)');
 
+ Type
+  TPointGabaritesProfile=record
+   SearchMS: Int64;
+   UpdateTextMS: Int64;
+   GeometryMS: Int64;
+   CalcSectMS: Int64;
+   RestoreMS: Int64;
+  end;
+
+  TPointDraw32Profile=record
+   BlockMS: Int64;
+   SearchMS: Int64;
+   UpdateTextMS: Int64;
+   SignMS: Int64;
+   RestoreMS: Int64;
+   GabaritesMS: Int64;
+   Calls: Int64;
+   Blocks: Int64;
+   Signs: Int64;
+   NoSigns: Int64;
+  end;
+
+ Procedure StartPointGabaritesProfile;
+ Function StopPointGabaritesProfile: TPointGabaritesProfile;
+ Procedure StartPointDraw32Profile;
+ Function StopPointDraw32Profile: TPointDraw32Profile;
+
  var
   bmpTrue,bmpFalse,bmpMiddle,bmpInactive,bmpFalsePlus:TBitmap;
 
@@ -82,7 +109,7 @@ Interface uses System.Classes, Collect, TwgDraw, Lib,
    X, Y: Double;
    Ugol, XKoef, YKoef, Koef, Stretch: Single;
    What: SmallInt;
-   UserObj, Props: Pointer;
+   UserObj, Props, PointCol: Pointer;
   end;
 
   TPointDot=class(TDot)
@@ -273,7 +300,75 @@ type
 var FTest:TextFile;
 {-----------------------------------------------------------------------}
 implementation uses newBlock, Polygons, WptForm2, ECText, WPTwigs, newForm0, dwgText,
-                    Writer, EcDot2;
+                     Writer, EcDot2, System.Diagnostics;
+
+var PointGabaritesProfileEnabled: Boolean;
+    PointGabaritesSearchTicks: Int64;
+    PointGabaritesUpdateTextTicks: Int64;
+    PointGabaritesGeometryTicks: Int64;
+    PointGabaritesCalcSectTicks: Int64;
+    PointGabaritesRestoreTicks: Int64;
+    PointDraw32ProfileEnabled: Boolean;
+    PointDraw32BlockTicks: Int64;
+    PointDraw32SearchTicks: Int64;
+    PointDraw32UpdateTextTicks: Int64;
+    PointDraw32SignTicks: Int64;
+    PointDraw32RestoreTicks: Int64;
+    PointDraw32GabaritesTicks: Int64;
+    PointDraw32Calls: Int64;
+    PointDraw32Blocks: Int64;
+    PointDraw32Signs: Int64;
+    PointDraw32NoSigns: Int64;
+
+Procedure StartPointGabaritesProfile;
+begin
+ PointGabaritesSearchTicks:=0;
+ PointGabaritesUpdateTextTicks:=0;
+ PointGabaritesGeometryTicks:=0;
+ PointGabaritesCalcSectTicks:=0;
+ PointGabaritesRestoreTicks:=0;
+ PointGabaritesProfileEnabled:=True;
+end;
+
+Function StopPointGabaritesProfile: TPointGabaritesProfile;
+begin
+ PointGabaritesProfileEnabled:=False;
+ Result.SearchMS:=Round(PointGabaritesSearchTicks*1000/TStopwatch.Frequency);
+ Result.UpdateTextMS:=Round(PointGabaritesUpdateTextTicks*1000/TStopwatch.Frequency);
+ Result.GeometryMS:=Round(PointGabaritesGeometryTicks*1000/TStopwatch.Frequency);
+ Result.CalcSectMS:=Round(PointGabaritesCalcSectTicks*1000/TStopwatch.Frequency);
+ Result.RestoreMS:=Round(PointGabaritesRestoreTicks*1000/TStopwatch.Frequency);
+end;
+
+Procedure StartPointDraw32Profile;
+begin
+ PointDraw32BlockTicks:=0;
+ PointDraw32SearchTicks:=0;
+ PointDraw32UpdateTextTicks:=0;
+ PointDraw32SignTicks:=0;
+ PointDraw32RestoreTicks:=0;
+ PointDraw32GabaritesTicks:=0;
+ PointDraw32Calls:=0;
+ PointDraw32Blocks:=0;
+ PointDraw32Signs:=0;
+ PointDraw32NoSigns:=0;
+ PointDraw32ProfileEnabled:=True;
+end;
+
+Function StopPointDraw32Profile: TPointDraw32Profile;
+begin
+ PointDraw32ProfileEnabled:=False;
+ Result.BlockMS:=Round(PointDraw32BlockTicks*1000/TStopwatch.Frequency);
+ Result.SearchMS:=Round(PointDraw32SearchTicks*1000/TStopwatch.Frequency);
+ Result.UpdateTextMS:=Round(PointDraw32UpdateTextTicks*1000/TStopwatch.Frequency);
+ Result.SignMS:=Round(PointDraw32SignTicks*1000/TStopwatch.Frequency);
+ Result.RestoreMS:=Round(PointDraw32RestoreTicks*1000/TStopwatch.Frequency);
+ Result.GabaritesMS:=Round(PointDraw32GabaritesTicks*1000/TStopwatch.Frequency);
+ Result.Calls:=PointDraw32Calls;
+ Result.Blocks:=PointDraw32Blocks;
+ Result.Signs:=PointDraw32Signs;
+ Result.NoSigns:=PointDraw32NoSigns;
+end;
 {----------------------------------------------------------------------}
 { TDot                                                                 }
 {----------------------------------------------------------------------}
@@ -640,7 +735,7 @@ end;
 
 function SameGabaritesKey(const A, B: TGabaritesKey): Boolean;
 begin
- Result := (A.X = B.X) and (A.Y = B.Y) and (A.Ugol = B.Ugol) and (A.XKoef = B.XKoef) and (A.YKoef = B.YKoef) and (A.Koef = B.Koef) and (A.Stretch = B.Stretch) and (A.What = B.What) and (A.UserObj = B.UserObj) and (A.Props = B.Props);
+ Result := (A.X = B.X) and (A.Y = B.Y) and (A.Ugol = B.Ugol) and (A.XKoef = B.XKoef) and (A.YKoef = B.YKoef) and (A.Koef = B.Koef) and (A.Stretch = B.Stretch) and (A.What = B.What) and (A.UserObj = B.UserObj) and (A.Props = B.Props) and (A.PointCol = B.PointCol);
 end;
 
 procedure TPointDot.Draw32(Drawer: TogsDrawer; PntZnk: TSortedCollection;
@@ -655,6 +750,7 @@ var
     Brush: TogsBrush;
     RS:Double;
     Props: Pointer;
+    ProfileTick: Int64;
 procedure GetGabaritesForDraw(MRect_: TMRect; Drawer_: TogsDrawer);
 var KXX, KYY: Double; Props: Pointer;
     mRect: TMRect;
@@ -730,14 +826,19 @@ begin
  FGabValid := True;
 exit;
  if BlockTextBitmaps<>nil then begin
-  BlockTextBitmaps.DrawSect(Drawer, $FFFF0000, $FF000000, 0.03);
-  BlockTextBitmaps.DrawBounds(Drawer, $FFFF0000, $FF000000, 0.03);
+ // BlockTextBitmaps.DrawSect(Drawer, $FFFF0000, $FF000000, 0.03);
+ // BlockTextBitmaps.DrawBounds(Drawer, $FFFF0000, $FF000000, 0.03);
  end;
 end;
 begin
-// If Closed then exit;              9
+ if PointDraw32ProfileEnabled then Inc(PointDraw32Calls);
+// If Closed then exit;
  If userObj<>nil then
    If userObj.objType = TWG_Block then begin
+   if PointDraw32ProfileEnabled then begin
+    Inc(PointDraw32Blocks);
+    ProfileTick:=TStopwatch.GetTimeStamp;
+   end;
 
 //   GetProperty('?anoy?aiea');
 //   TGeoBlock(userObj).XText:=1;
@@ -750,6 +851,8 @@ begin
    Props := TGeoBlock(userObj).txtProperties;
    If Properties <> nil then TGeoBlock(userObj).txtProperties := Properties;
     TGeoBlock(userObj).Draw32(Drawer,XDot,YDot,Ugol,XKoef,YKoef,Extrusion,Inv,BlockTextBitmaps);
+    if PointDraw32ProfileEnabled then
+     Inc(PointDraw32BlockTicks,TStopwatch.GetTimeStamp-ProfileTick);
    TGeoBlock(userObj).txtProperties := Props;
    What := 20;
    If Selector.PointVisible(XDot, YDot) then
@@ -760,7 +863,10 @@ begin
     //Bitmap.PenColor:=clRed32;
    // DrawLine32(XDot,YDot,Bind.XDot,Bind.YDot);
    end;
-  DrawGabariteSect;
+   if PointDraw32ProfileEnabled then ProfileTick:=TStopwatch.GetTimeStamp;
+   DrawGabariteSect;
+   if PointDraw32ProfileEnabled then
+    Inc(PointDraw32GabaritesTicks,TStopwatch.GetTimeStamp-ProfileTick);
   exit;
  end;// if UserObj<>nil
  If not ((Code<>-1) and (ClassHandle<>nil)) then exit;
@@ -771,12 +877,21 @@ begin
     exit;
    end;
  If ViewZnaks=1 then begin
-  If What=-1 then N:=-1 else N:=SearchThis(GPointCol,(abs(What)));
+   if PointDraw32ProfileEnabled then ProfileTick:=TStopwatch.GetTimeStamp;
+   If What=-1 then N:=-1 else N:=SearchThis(GPointCol,(abs(What)));
+   if PointDraw32ProfileEnabled then
+    Inc(PointDraw32SearchTicks,TStopwatch.GetTimeStamp-ProfileTick);
    If N<>-1 then PZ:=GPointCol.FList[N] else PZ:=nil;//ClassHandle.Point;
     If PZ<>nil then begin
+       if PointDraw32ProfileEnabled then Inc(PointDraw32Signs);
       //If not ZnakVisible then exit;
          // onoaiaaeeaaai cia?aiey aey ciaea
-        if TextManager<>nil then TextManager.UpdateText(GlassFont);
+         if PointDraw32ProfileEnabled then ProfileTick:=TStopwatch.GetTimeStamp;
+         if TextManager<>nil then TextManager.UpdateText(GlassFont);
+         if PointDraw32ProfileEnabled then begin
+          Inc(PointDraw32UpdateTextTicks,TStopwatch.GetTimeStamp-ProfileTick);
+          ProfileTick:=TStopwatch.GetTimeStamp;
+         end;
          PZ.X:=XDot;PZ.Y:=YDot;PZ.Ugol:=Ugol;
          With GlobalSettings do
          If CZ then
@@ -787,8 +902,17 @@ begin
                             g,b,0,GPrect,Koef{ClassHandle.ZnakKoef},(GGraphSet.ShowAttributes),(TextManager<>nil)or AlwaysShowAttr,GGraphSet.PointView=1) else
           PZ.Draw32(Drawer,Gms,Gms,255,
                             0,0,0,GPrect,Koef{ClassHandle.ZnakKoef},(GGraphSet.ShowAttributes),(TextManager<>nil)or AlwaysShowAttr,GGraphSet.PointView=1);
+         if PointDraw32ProfileEnabled then begin
+          Inc(PointDraw32SignTicks,TStopwatch.GetTimeStamp-ProfileTick);
+          ProfileTick:=TStopwatch.GetTimeStamp;
+         end;
          if TextManager<>nil then TextManager.Restore;
-     end else Goto 1;
+         if PointDraw32ProfileEnabled then
+          Inc(PointDraw32RestoreTicks,TStopwatch.GetTimeStamp-ProfileTick);
+     end else begin
+      if PointDraw32ProfileEnabled then Inc(PointDraw32NoSigns);
+      Goto 1;
+     end;
    end else Goto 1;
       If (Bind<>nil)and (GlobalSettings.Settings.gsBinds) then begin
        // ?????? ii?ao e iaai ioia?a?aou
@@ -810,7 +934,10 @@ begin
     // вставки (проверка по GRect): по ним строится BoundsWorld картинки и
     // отсекается выделение (ogsDrawPictureEffect). Пересчет кэширован по
     // положению, углу, масштабу и знаку (FGabValid), видимость на них не влияет
+    if PointDraw32ProfileEnabled then ProfileTick:=TStopwatch.GetTimeStamp;
     DrawGabariteSect;
+    if PointDraw32ProfileEnabled then
+     Inc(PointDraw32GabaritesTicks,TStopwatch.GetTimeStamp-ProfileTick);
     end;
 end;
 
@@ -1785,6 +1912,7 @@ var N:Integer; PZ:TPoint_Sign;
     KXX,KYY:Double; Transform:Boolean;
     TextBitmaps: TTwgBitmaps;
     Props: Pointer;
+    Tick: Int64;
 procedure InsertExternalDot(XX,YY:Double);
 var XX1,YY1:Double;
 begin
@@ -1812,9 +1940,18 @@ begin
    TGeoBlock(userObj).txtProperties := Props;
   end else
   if (Selector<>nil) and (Selector.GPointCol<>nil) then begin
+   if PointGabaritesProfileEnabled then Tick:=TStopwatch.GetTimeStamp;
    N:=SearchThis(Selector.GPointCol,(abs(What)));
+   if PointGabaritesProfileEnabled then begin
+    Inc(PointGabaritesSearchTicks,TStopwatch.GetTimeStamp-Tick);
+    Tick:=TStopwatch.GetTimeStamp;
+   end;
    If N<>-1 then begin
     if TextManager<>nil then TextManager.UpdateText(GlassFont);
+    if PointGabaritesProfileEnabled then begin
+     Inc(PointGabaritesUpdateTextTicks,TStopwatch.GetTimeStamp-Tick);
+     Tick:=TStopwatch.GetTimeStamp;
+    end;
     PZ:=Selector.GPointCol.At(N);
     if BlockTextBitmaps=nil then BlockTextBitmaps:=TTwgBitmaps.Create(1);
     if TextManager<>nil then TextBitmaps:=TextManager.FTextBitmaps else TextBitmaps:=nil;
@@ -1823,8 +1960,18 @@ begin
      except
       PZ.GetGabarites(mRect,XDot,YDot,Koef,Koef,Ugol,TextBitmaps,BlockTextBitmaps);
      end;
+    if PointGabaritesProfileEnabled then begin
+     Inc(PointGabaritesGeometryTicks,TStopwatch.GetTimeStamp-Tick);
+     Tick:=TStopwatch.GetTimeStamp;
+    end;
     BlockTextBitmaps.CalcSect;
+    if PointGabaritesProfileEnabled then begin
+     Inc(PointGabaritesCalcSectTicks,TStopwatch.GetTimeStamp-Tick);
+     Tick:=TStopwatch.GetTimeStamp;
+    end;
     if TextManager<>nil then TextManager.Restore;
+    if PointGabaritesProfileEnabled then
+     Inc(PointGabaritesRestoreTicks,TStopwatch.GetTimeStamp-Tick);
    end;
   end;
  //
@@ -2038,6 +2185,7 @@ begin
  Result.What := What;
  Result.UserObj := userObj;
  Result.Props := Properties;
+ if Selector<>nil then Result.PointCol:=Selector.GPointCol else Result.PointCol:=nil;
 end;
 
 procedure TPointDot.InvalidateGabarites;

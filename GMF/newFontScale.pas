@@ -41,6 +41,8 @@ type
   FontName:AnsiString;
   CharSet:byte;
   SkTypeface: ISkTypeface;
+  SkAscentRatio: Single;
+  SkFullHeightRatio: Single;
   begW:Integer;
   kUp,kUp2,KDown,TE,TI,TH,TD,Kline,kW:Double;
   Index:Integer;

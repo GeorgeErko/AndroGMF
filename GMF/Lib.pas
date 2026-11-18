@@ -179,11 +179,38 @@ TPoint_Sign=Class(TTD)
 end;
 {---------------------------------------------------------}
 
+TSignGabaritesProfile=record
+ SetupMS: Int64;
+ TextMS: Int64;
+ SourceMS: Int64;
+ TransformMS: Int64;
+ BitmapMS: Int64;
+ Calls: Int64;
+ Methods: Int64;
+ TextMethods: Int64;
+end;
+
+TSignDraw32Profile=record
+ SetupMS: Int64;
+ LineMS: Int64;
+ ArcMS: Int64;
+ PolyMS: Int64;
+ TextMS: Int64;
+ OtherMS: Int64;
+ Calls: Int64;
+ Methods: Int64;
+ TextMethods: Int64;
+end;
+
 PLIB=Class(TSortedCollection)
   function Compare(Key1,Key2:Pointer):Integer;Override;
   procedure CreateBitmaps;
 end;
 
+Procedure StartSignGabaritesProfile;
+Function StopSignGabaritesProfile: TSignGabaritesProfile;
+Procedure StartSignDraw32Profile;
+Function StopSignDraw32Profile: TSignDraw32Profile;
 function SearchThis(PC:TSortedCollection;Num:Integer):SmallInt;
 {==============================================================================}
 var Ar:Array[0..10000] of TPoint;
@@ -198,7 +225,82 @@ var
  GSignScale, GSignDX, GSignDY: Single;
 
  implementation Uses Types_Dimano, SysUtils, LConvEncoding, Writer, newProcs,
-                    ogcMathUtils, Math.Vectors, System.UITypes, ogcDrawerSkia;
+                    ogcMathUtils, Math.Vectors, System.UITypes, ogcDrawerSkia,
+                    System.Diagnostics;
+
+var SignGabaritesProfileEnabled: Boolean;
+    SignGabaritesSetupTicks: Int64;
+    SignGabaritesTextTicks: Int64;
+    SignGabaritesSourceTicks: Int64;
+    SignGabaritesTransformTicks: Int64;
+    SignGabaritesBitmapTicks: Int64;
+    SignGabaritesCalls: Int64;
+    SignGabaritesMethods: Int64;
+    SignGabaritesTextMethods: Int64;
+    SignDraw32ProfileEnabled: Boolean;
+    SignDraw32SetupTicks: Int64;
+    SignDraw32LineTicks: Int64;
+    SignDraw32ArcTicks: Int64;
+    SignDraw32PolyTicks: Int64;
+    SignDraw32TextTicks: Int64;
+    SignDraw32OtherTicks: Int64;
+    SignDraw32Calls: Int64;
+    SignDraw32Methods: Int64;
+    SignDraw32TextMethods: Int64;
+
+Procedure StartSignGabaritesProfile;
+begin
+ SignGabaritesSetupTicks:=0;
+ SignGabaritesTextTicks:=0;
+ SignGabaritesSourceTicks:=0;
+ SignGabaritesTransformTicks:=0;
+ SignGabaritesBitmapTicks:=0;
+ SignGabaritesCalls:=0;
+ SignGabaritesMethods:=0;
+ SignGabaritesTextMethods:=0;
+ SignGabaritesProfileEnabled:=True;
+end;
+
+Function StopSignGabaritesProfile: TSignGabaritesProfile;
+begin
+ SignGabaritesProfileEnabled:=False;
+ Result.SetupMS:=Round(SignGabaritesSetupTicks*1000/TStopwatch.Frequency);
+ Result.TextMS:=Round(SignGabaritesTextTicks*1000/TStopwatch.Frequency);
+ Result.SourceMS:=Round(SignGabaritesSourceTicks*1000/TStopwatch.Frequency);
+ Result.TransformMS:=Round(SignGabaritesTransformTicks*1000/TStopwatch.Frequency);
+ Result.BitmapMS:=Round(SignGabaritesBitmapTicks*1000/TStopwatch.Frequency);
+ Result.Calls:=SignGabaritesCalls;
+ Result.Methods:=SignGabaritesMethods;
+ Result.TextMethods:=SignGabaritesTextMethods;
+end;
+
+Procedure StartSignDraw32Profile;
+begin
+ SignDraw32SetupTicks:=0;
+ SignDraw32LineTicks:=0;
+ SignDraw32ArcTicks:=0;
+ SignDraw32PolyTicks:=0;
+ SignDraw32TextTicks:=0;
+ SignDraw32OtherTicks:=0;
+ SignDraw32Calls:=0;
+ SignDraw32Methods:=0;
+ SignDraw32TextMethods:=0;
+ SignDraw32ProfileEnabled:=True;
+end;
+
+Function StopSignDraw32Profile: TSignDraw32Profile;
+begin
+ SignDraw32ProfileEnabled:=False;
+ Result.SetupMS:=Round(SignDraw32SetupTicks*1000/TStopwatch.Frequency);
+ Result.LineMS:=Round(SignDraw32LineTicks*1000/TStopwatch.Frequency);
+ Result.ArcMS:=Round(SignDraw32ArcTicks*1000/TStopwatch.Frequency);
+ Result.PolyMS:=Round(SignDraw32PolyTicks*1000/TStopwatch.Frequency);
+ Result.TextMS:=Round(SignDraw32TextTicks*1000/TStopwatch.Frequency);
+ Result.OtherMS:=Round(SignDraw32OtherTicks*1000/TStopwatch.Frequency);
+ Result.Calls:=SignDraw32Calls;
+ Result.Methods:=SignDraw32Methods;
+ Result.TextMethods:=SignDraw32TextMethods;
+end;
 
 { TGeoPoint }
 
@@ -790,16 +892,28 @@ var I, TextIndex:Integer;PP:TMeth;
     mRect, mSource:TMRect;
     SourceSect:TSect;
     TextBitmap:TTwgBitmap;
+    Tick: Int64;
 begin
  Result:=0;
+ if SignGabaritesProfileEnabled then begin
+  Inc(SignGabaritesCalls);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  if Bitmaps<>nil then Bitmaps.DeleteAll;
  mRect:=TMRect.Create;
  mSource:=TMRect.Create;
+ if SignGabaritesProfileEnabled then
+  Inc(SignGabaritesSetupTicks,TStopwatch.GetTimeStamp-Tick);
  try
   TextIndex:=0;
   For I:=0 to MethodCol.Count-1 do begin
    PP:=MethodCol[I];
+   if SignGabaritesProfileEnabled then Inc(SignGabaritesMethods);
    if PP.mt=m_Text then begin
+    if SignGabaritesProfileEnabled then begin
+     Inc(SignGabaritesTextMethods);
+     Tick:=TStopwatch.GetTimeStamp;
+    end;
     TextBitmap:=nil;
     if TDWG_Text(PP.pt).IsTextVisible and (TextBitmaps<>nil) and (TextIndex<TextBitmaps.Count) then begin
      TextBitmap:=TTwgBitmap(TextBitmaps[TextIndex]);
@@ -810,15 +924,31 @@ begin
      if TextBitmap<>nil then Bitmaps.Insert(TextBitmap) else Bitmaps.Insert(Bitmaps);
     end;
     Inc(TextIndex);
+    if SignGabaritesProfileEnabled then
+     Inc(SignGabaritesTextTicks,TStopwatch.GetTimeStamp-Tick);
     Continue;
    end;
+   if SignGabaritesProfileEnabled then Tick:=TStopwatch.GetTimeStamp;
    TTD(PP.pt).SetGabarites(mSource);
+   if SignGabaritesProfileEnabled then begin
+    Inc(SignGabaritesSourceTicks,TStopwatch.GetTimeStamp-Tick);
+    Tick:=TStopwatch.GetTimeStamp;
+   end;
    TTD(PP.pt).SetGabaritesBlock(mRect, X_, Y_, kX, kY, Angle);
+   if SignGabaritesProfileEnabled then begin
+    Inc(SignGabaritesTransformTicks,TStopwatch.GetTimeStamp-Tick);
+    Tick:=TStopwatch.GetTimeStamp;
+   end;
    if Bitmaps<>nil then Bitmaps.Insert(Bitmaps);
+   if SignGabaritesProfileEnabled then
+    Inc(SignGabaritesBitmapTicks,TStopwatch.GetTimeStamp-Tick);
   end;
   if (Bitmaps<>nil) and (mSource.Iter<>0) then begin
+   if SignGabaritesProfileEnabled then Tick:=TStopwatch.GetTimeStamp;
    SourceSect:=mSource.Sect;
    Bitmaps.Bitmap.SetTransformedBounds(SourceSect, 0, 0, X_, Y_, kX, kY, Angle);
+   if SignGabaritesProfileEnabled then
+    Inc(SignGabaritesBitmapTicks,TStopwatch.GetTimeStamp-Tick);
   end;
   if mRect.Iter<>0 then begin
    Result:=1;
@@ -1086,6 +1216,7 @@ var
   W, H: Double;
   AnchorPix: TPointF; Dst: TRectF;
   WW,HH,OffX,OffY:Single;
+  ProfileTick: Int64;
  procedure DrawText(DT: TDWG_Text);
  begin
  ///!!! exit;
@@ -1097,6 +1228,10 @@ var
                        end;
  end;
 begin
+ if SignDraw32ProfileEnabled then begin
+  Inc(SignDraw32Calls);
+  ProfileTick:=TStopwatch.GetTimeStamp;
+ end;
 // if not Drawing then Exit;
 Ko2:=Ko;
 If Ko<0 then begin
@@ -1187,8 +1322,15 @@ If not Vis then Exit;
 //Drawer.Canvas.Stroke.Color:=RGBToCol(r,g,b);
 //Canvas.PenWidth:=round(Ko*Mxx*koefLine);
 // Mxx:=Mxx;Myy:=Myy;Ko:=Ko;
+if SignDraw32ProfileEnabled then
+ Inc(SignDraw32SetupTicks,TStopwatch.GetTimeStamp-ProfileTick);
 for i:=0 to Methodcol.Count-1 do With Selector do begin
  pp:=MethodCol.At(i);
+ if SignDraw32ProfileEnabled then begin
+  Inc(SignDraw32Methods);
+  if pp.mt=m_Text then Inc(SignDraw32TextMethods);
+  ProfileTick:=TStopwatch.GetTimeStamp;
+ end;
 	case pp.mt of
 		m_Line:
 			begin
@@ -1217,6 +1359,14 @@ for i:=0 to Methodcol.Count-1 do With Selector do begin
                  DrawText(p4);
                 end;
         end;
+ if SignDraw32ProfileEnabled then
+  case pp.mt of
+   m_Line: Inc(SignDraw32LineTicks,TStopwatch.GetTimeStamp-ProfileTick);
+   m_Arc: Inc(SignDraw32ArcTicks,TStopwatch.GetTimeStamp-ProfileTick);
+   m_Poly: Inc(SignDraw32PolyTicks,TStopwatch.GetTimeStamp-ProfileTick);
+   m_Text: Inc(SignDraw32TextTicks,TStopwatch.GetTimeStamp-ProfileTick);
+  else Inc(SignDraw32OtherTicks,TStopwatch.GetTimeStamp-ProfileTick);
+  end;
 		  end;
 {  If ShowDot then begin // ïîêàçûâàåì òî÷êó ïðèâÿçêè
    SetPixel(DC,Round(X),Round(Y),rgb(255,0,0));

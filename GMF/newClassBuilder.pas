@@ -12,7 +12,25 @@ var ClassRebuildIndex,ClassRebuildSbor,ClassRebuildBlock:Boolean;
 
 Implementation uses RPrims, Lib, TextManager,  SysUtils, newBlock, WPTForm2,
                     Classes, newProcs, DwgText, EcDot2, objBlockList,
-                    userObject, FMX.Graphics, newResource, newProperties, Writer;
+                    userObject, FMX.Graphics, newResource, newProperties, Writer,
+                    System.Diagnostics;
+
+var ProfileBuildPoint: Boolean;
+    ProfileBuildPointCount: Int64;
+    ProfilePointSearchTicks: Int64;
+    ProfilePointParamsTicks: Int64;
+    ProfilePointResetTicks: Int64;
+    ProfilePointBlocksTicks: Int64;
+    ProfilePointGabaritesTicks: Int64;
+    ProfilePointPropsTicks: Int64;
+    ProfilePointSignSearchTicks: Int64;
+    ProfilePointTextUpdateTicks: Int64;
+    ProfilePointUserParamsTicks: Int64;
+
+function ProfileTicksToMS(Ticks: Int64): Int64;
+begin
+ Result:=Round(Ticks*1000/TStopwatch.Frequency);
+end;
 
 Procedure BuildPoint1(View:TSelector;LayerTable:TLayerTable;TWF:TTwigsCollect;PP:TPointDot);
 var Res:TResource;UZnak:TPoint_Sign;P:PCollection;
@@ -26,16 +44,28 @@ var Res:TResource;UZnak:TPoint_Sign;P:PCollection;
     Color:Integer;
     propValue:TPropValue;
     BlockSect: TSect;
+    Tick: Int64;
+    DetailTick: Int64;
+    GabaritesKey: TGabaritesKey;
 begin
 // Writein(['cbp1']);
+ if ProfileBuildPoint then begin
+  Inc(ProfileBuildPointCount);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  Res:=LayerTable.SearchLayer(PP.Code);
  if Res=nil then Res:=LayerTable.NullLayer;
   PP.ClassHandle:=Res;
   wbRGB(View,PP.R,PP.G,PP.B);
   PP.SqlClosed:=Res.Check=0;
+ if ProfileBuildPoint then begin
+  Inc(ProfilePointSearchTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  // если не блок, устанавливаем параметры для текста
  If PP.userObj=nil then begin
  // установка свойств
+    if ProfileBuildPoint then DetailTick:=TStopwatch.GetTimeStamp;
     propValue:=PP.GetPropValue('Знак');
     If propValue<>nil then begin If propValue.isInteger then PP.What:=propValue.intValue else PP.What:=Res.ZnkInd.SPInd; end else PP.What:=Res.ZnkInd.SPInd;
     propValue:=PP.GetPropValue('Масштаб');
@@ -56,14 +86,24 @@ begin
      PP.G:=Res.Rgb.Argb[2];
      PP.B:=Res.Rgb.Argb[3];
     end;
+  if ProfileBuildPoint then
+   Inc(ProfilePointPropsTicks,TStopwatch.GetTimeStamp-DetailTick);
  // установка свойств для текста
+  if ProfileBuildPoint then DetailTick:=TStopwatch.GetTimeStamp;
   J:=SearchThis(LayerTable.MkLib.PSLib,(abs(PP.What)));
+  if ProfileBuildPoint then
+   Inc(ProfilePointSignSearchTicks,TStopwatch.GetTimeStamp-DetailTick);
   if J<>-1 then begin
     UZnak:=LayerTable.MkLib.PSLib[J];
     if PP.TextManager<>nil then begin
+      if ProfileBuildPoint then DetailTick:=TStopwatch.GetTimeStamp;
       P:=PCollection.Create(1);P.Insert(UZnak);
        PP.TextManager.Update(P);
       P.DeleteAll;P.Free;
+      if ProfileBuildPoint then begin
+       Inc(ProfilePointTextUpdateTicks,TStopwatch.GetTimeStamp-DetailTick);
+       DetailTick:=TStopwatch.GetTimeStamp;
+      end;
        FName:=PP.GetProperty('Шрифт');If (FName=byLayer)or(FName=byNone) then FName:='';
        propHFont:=PP.GetPropValue('Размер');If propHFont=nil then HFont:=0 else
                                              If propHFont.isFloat then HFont:=propHFont.floatValue else begin
@@ -71,12 +111,21 @@ begin
                                              end;
        propFStyle:=PP.GetPropValue('Стиль');If propFStyle=nil then FStyle:=-1 else begin If propFStyle.isInteger then FStyle:=propFStyle.intValue else FStyle:=-1; end;
        PP.TextManager.SetUserParams(FName,HFont,FStyle);
+      if ProfileBuildPoint then
+       Inc(ProfilePointUserParamsTicks,TStopwatch.GetTimeStamp-DetailTick);
      end;
     end;
  end;
+ if ProfileBuildPoint then begin
+  Inc(ProfilePointParamsTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
 //  Writein(['cbp2']);
  //
-  PP.ResetParams(0,nil); // TTextDot.What := 1;
+ if ProfileBuildPoint then begin
+  Inc(ProfilePointResetTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
   //  Writein(['cbp3']);
     If PP.userObj<>nil then begin
       Case PP.userObj.objType of
@@ -104,9 +153,20 @@ begin
                end;
       end;
    end;
+ if ProfileBuildPoint then begin
+  Inc(ProfilePointBlocksTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  If PP is TPointMessage then PP.What:=0;
  //  Writein(['cbp31']);
- PP.SetGabarites(nil);
+ GabaritesKey:=PP.GetGabaritesKey;
+ if not (PP.FGabValid and SameGabaritesKey(GabaritesKey,PP.FGabKey)) then begin
+  PP.SetGabarites(nil);
+  PP.FGabKey:=GabaritesKey;
+  PP.FGabValid:=True;
+ end;
+ if ProfileBuildPoint then
+  Inc(ProfilePointGabaritesTicks,TStopwatch.GetTimeStamp-Tick);
   // Writein(['cbp4']);
 end;
 
@@ -127,7 +187,59 @@ var I,J,Index:Integer;
     propValue:String;
     primLineWidth:Double;
     primLineCoor:Integer;
+    SWBuild: TStopwatch;
+    SWStage: TStopwatch;
+    TimeSetup: Int64;
+    TimeTwigs: Int64;
+    TimeAny: Int64;
+    TimeLots: Int64;
+    TimeBitmaps: Int64;
+    TimeIndexes: Int64;
+    TimeBlocks: Int64;
+    TimePointSearch: Int64;
+    TimePointParams: Int64;
+    TimePointReset: Int64;
+    TimePointBlocks: Int64;
+    TimePointGabarites: Int64;
+    TimePointOther: Int64;
+    PointCalls: Int64;
+    TimePointProps: Int64;
+    TimePointSignSearch: Int64;
+    TimePointTextUpdate: Int64;
+    TimePointUserParams: Int64;
+    TimePointParamsOther: Int64;
+    PointGabaritesProfile: TPointGabaritesProfile;
+    TimeGabaritesOther: Int64;
+    SignGabaritesProfile: TSignGabaritesProfile;
+    TimeSignGabaritesOther: Int64;
+    TextGabaritesProfile: TTextGabaritesProfile;
+    TimeTextGabaritesOther: Int64;
+    TextManagerUpdateProfile: TTextManagerUpdateProfile;
+    TimeTextManagerOther: Int64;
 begin
+ TimeSetup:=0;
+ TimeTwigs:=0;
+ TimeAny:=0;
+ TimeLots:=0;
+ TimeBitmaps:=0;
+ TimeIndexes:=0;
+ TimeBlocks:=0;
+ TimePointSearch:=0;
+ TimePointParams:=0;
+ TimePointReset:=0;
+ TimePointBlocks:=0;
+ TimePointGabarites:=0;
+ TimePointOther:=0;
+ PointCalls:=0;
+ TimePointProps:=0;
+ TimePointSignSearch:=0;
+ TimePointTextUpdate:=0;
+ TimePointUserParams:=0;
+ TimePointParamsOther:=0;
+ TimeGabaritesOther:=0;
+ TimeSignGabaritesOther:=0;
+ SWBuild:=TStopwatch.StartNew;
+ SWStage:=TStopwatch.StartNew;
 //  If MosLib=nil then Exit;
 // If not TForm2(TWF.TwgForm).MirrorObject then Screen.Cursor:=crHourGlass;
  With View do try
@@ -135,9 +247,12 @@ begin
  // устанавливаем параметры
   LayerTable:=MosLib.LayerTable;
   LayerTable.ShowLayerTable;
+  SWStage.Stop;
+  TimeSetup:=SWStage.ElapsedMilliseconds;
   if LayerTable=nil then exit;
   // проходим по веткам для установки начальных параметров
 //    WriteS(['Twigs']);
+    SWStage:=TStopwatch.StartNew;
     For I:=1 to TWF.TwigsCount-1 do
      begin
       Twig:=Twf.TAt(I);
@@ -160,29 +275,108 @@ begin
            end else MessageInform('CTW.Resource=nil');
          end;
      end;
+  SWStage.Stop;
+  TimeTwigs:=SWStage.ElapsedMilliseconds;
  // end of Twigs
 //    WriteS(['Twigsend']);
  For I:=0 to TWF.TextureList.Textures.Count-1 do TWF.TextureList.Texture[I].Used:=False;
  // проходим по точкам и шрифтам
 //    WriteS(['Any']);
- For I:=0 to TWF.AnyCount-1 do begin
-  PP:=Twf.AAT(I,B);
-   If B=TWG_Point then begin
-      try
-//    WriteS(['Any',I]);
-       BuildPoint1(View,LayerTable,TWF,PP);
-//    WriteS(['AnyE`',I]);
-      except
-     // BuildPoint1(LayerTable,TWF,PP);
-       MessageError('Except BuildPoint N='+IntToStr(I));
-      end;
-  // билдим точки в биогруппах/диапазонах (ОЗН)
-   If PP.Trees<>nil then For J:=0 to PP.Trees.Count-1 do BuildPoint1(View,LayerTable,TWF,PP.Trees[J]);
+  ProfileBuildPointCount:=0;
+  ProfilePointSearchTicks:=0;
+  ProfilePointParamsTicks:=0;
+  ProfilePointResetTicks:=0;
+  ProfilePointBlocksTicks:=0;
+  ProfilePointGabaritesTicks:=0;
+  ProfilePointPropsTicks:=0;
+  ProfilePointSignSearchTicks:=0;
+  ProfilePointTextUpdateTicks:=0;
+  ProfilePointUserParamsTicks:=0;
+  ProfileBuildPoint:=not MirrorObject;
+  if not MirrorObject then begin
+   StartPointGabaritesProfile;
+   StartSignGabaritesProfile;
+   StartTextGabaritesProfile;
+   StartTextManagerUpdateProfile;
   end;
+  SWStage:=TStopwatch.StartNew;
+  try
+   For I:=0 to TWF.AnyCount-1 do begin
+    PP:=Twf.AAT(I,B);
+    If B=TWG_Point then begin
+     try
+//    WriteS(['Any',I]);
+      BuildPoint1(View,LayerTable,TWF,PP);
+//    WriteS(['AnyE`',I]);
+     except
+     // BuildPoint1(LayerTable,TWF,PP);
+      MessageError('Except BuildPoint N='+IntToStr(I));
+     end;
+  // билдим точки в биогруппах/диапазонах (ОЗН)
+     If PP.Trees<>nil then For J:=0 to PP.Trees.Count-1 do BuildPoint1(View,LayerTable,TWF,PP.Trees[J]);
+    end;
+  end;
+  finally
+   ProfileBuildPoint:=False;
+   if not MirrorObject then begin
+    PointGabaritesProfile:=StopPointGabaritesProfile;
+    SignGabaritesProfile:=StopSignGabaritesProfile;
+    TextGabaritesProfile:=StopTextGabaritesProfile;
+    TextManagerUpdateProfile:=StopTextManagerUpdateProfile;
+   end;
  end;
+  SWStage.Stop;
+  TimeAny:=SWStage.ElapsedMilliseconds;
+  TimePointSearch:=ProfileTicksToMS(ProfilePointSearchTicks);
+  TimePointParams:=ProfileTicksToMS(ProfilePointParamsTicks);
+  TimePointReset:=ProfileTicksToMS(ProfilePointResetTicks);
+  TimePointBlocks:=ProfileTicksToMS(ProfilePointBlocksTicks);
+  TimePointGabarites:=ProfileTicksToMS(ProfilePointGabaritesTicks);
+  PointCalls:=ProfileBuildPointCount;
+  TimePointProps:=ProfileTicksToMS(ProfilePointPropsTicks);
+  TimePointSignSearch:=ProfileTicksToMS(ProfilePointSignSearchTicks);
+  TimePointTextUpdate:=ProfileTicksToMS(ProfilePointTextUpdateTicks);
+  TimePointUserParams:=ProfileTicksToMS(ProfilePointUserParamsTicks);
+  TimePointParamsOther:=TimePointParams-TimePointProps-TimePointSignSearch-
+                        TimePointTextUpdate-TimePointUserParams;
+  if TimePointParamsOther<0 then TimePointParamsOther:=0;
+  if not MirrorObject then begin
+   TimeGabaritesOther:=TimePointGabarites-PointGabaritesProfile.SearchMS-
+                       PointGabaritesProfile.UpdateTextMS-
+                       PointGabaritesProfile.GeometryMS-
+                       PointGabaritesProfile.CalcSectMS-
+                       PointGabaritesProfile.RestoreMS;
+   if TimeGabaritesOther<0 then TimeGabaritesOther:=0;
+   TimeSignGabaritesOther:=PointGabaritesProfile.GeometryMS-
+                           SignGabaritesProfile.SetupMS-
+                           SignGabaritesProfile.TextMS-
+                           SignGabaritesProfile.SourceMS-
+                           SignGabaritesProfile.TransformMS-
+                           SignGabaritesProfile.BitmapMS;
+   if TimeSignGabaritesOther<0 then TimeSignGabaritesOther:=0;
+   TimeTextGabaritesOther:=SignGabaritesProfile.TextMS-
+                           TextGabaritesProfile.ParamsMS-
+                           TextGabaritesProfile.SetupMS-
+                           TextGabaritesProfile.MeasureMS-
+                           TextGabaritesProfile.CorrectMS-
+                           TextGabaritesProfile.BoundsMS;
+   if TimeTextGabaritesOther<0 then TimeTextGabaritesOther:=0;
+   TimeTextManagerOther:=TimePointTextUpdate-
+                         TextManagerUpdateProfile.SchemaMS-
+                         TextManagerUpdateProfile.ReplaceMS-
+                         TextManagerUpdateProfile.CreateTextsMS-
+                         TextManagerUpdateProfile.BuildBitmapsMS-
+                         TextManagerUpdateProfile.AfterLoadMS-
+                         TextManagerUpdateProfile.RebuildMS;
+   if TimeTextManagerOther<0 then TimeTextManagerOther:=0;
+  end;
+  TimePointOther:=TimeAny-TimePointSearch-TimePointParams-TimePointReset-
+                  TimePointBlocks-TimePointGabarites;
+  if TimePointOther<0 then TimePointOther:=0;
  // end of Any
  // проходим по контурам
 //    WriteS(['Lots']);
+  SWStage:=TStopwatch.StartNew;
  For I:=0 to TWF.LotsCount-1 do begin
    Lot:=TWF.LAt(I);
      {}
@@ -233,9 +427,12 @@ begin
   end; // if Twig.Rang<
  end;// For J:=0 to Lot.Coord.Co..
 end; // For I:=0 t...
+  SWStage.Stop;
+  TimeLots:=SWStage.ElapsedMilliseconds;
 // end of Lots
 // растры
 //    WriteS(['LotsEnd']);
+  SWStage:=TStopwatch.StartNew;
   For I:=TWF.TextureList.Textures.Count-1 downTo 0 do If not TWF.TextureList.Texture[I].Used then TWF.TextureList.Textures.AtFree(I);
 //    WriteS(['Bitmaps']);
    With TWF.Bitmaps do
@@ -252,8 +449,14 @@ end; // For I:=0 t...
             Res.FColor:=GGraphSet.ColWin;}
         end else Bm.ClassHandle:=nil;
      end;
+  SWStage.Stop;
+  TimeBitmaps:=SWStage.ElapsedMilliseconds;
 //    Writeln('EndBitmap');
+  SWStage:=TStopwatch.StartNew;
   If ClassReBuildIndex then begin TWF.CreateIndexes;ClassRebuildIndex:=False;end;
+  SWStage.Stop;
+  TimeIndexes:=SWStage.ElapsedMilliseconds;
+  SWStage:=TStopwatch.StartNew;
   try
 //    WriteS(['Blocks']);
   If ClassRebuildBlock then
@@ -276,9 +479,67 @@ end; // For I:=0 t...
  except
   MessageError('Except BuildBlocks N='+IntToStr(I));
  end;
+  SWStage.Stop;
+  TimeBlocks:=SWStage.ElapsedMilliseconds;
   //
  finally
 //  If not TForm2(TWF.TwgForm).MirrorObject then Screen.Cursor:=crDefault;
+  SWBuild.Stop;
+  If not MirrorObject then
+   WriteIn(['Build1 ms: Total=',SWBuild.ElapsedMilliseconds,
+            '; Setup=',TimeSetup,'; Twigs=',TimeTwigs,'; Any=',TimeAny,
+            '; Lots=',TimeLots,'; Bitmaps=',TimeBitmaps,
+            '; Indexes=',TimeIndexes,'; Blocks=',TimeBlocks,
+            '; AnyCount=',TWF.AnyCount,'; LotsCount=',TWF.LotsCount]);
+  If not MirrorObject then
+   WriteIn(['BuildPoint1 ms: Search=',TimePointSearch,
+            '; ParamsText=',TimePointParams,'; Reset=',TimePointReset,
+            '; Blocks=',TimePointBlocks,'; Gabarites=',TimePointGabarites,
+            '; Other=',TimePointOther,'; Calls=',PointCalls]);
+  If not MirrorObject then
+   WriteIn(['ParamsText ms: Props=',TimePointProps,
+            '; SignSearch=',TimePointSignSearch,
+            '; TextUpdate=',TimePointTextUpdate,
+            '; UserParams=',TimePointUserParams,
+            '; Other=',TimePointParamsOther]);
+  If not MirrorObject then
+   WriteIn(['Gabarites ms: SignSearch=',PointGabaritesProfile.SearchMS,
+            '; UpdateText=',PointGabaritesProfile.UpdateTextMS,
+            '; Geometry=',PointGabaritesProfile.GeometryMS,
+            '; CalcSect=',PointGabaritesProfile.CalcSectMS,
+            '; Restore=',PointGabaritesProfile.RestoreMS,
+            '; Other=',TimeGabaritesOther]);
+  If not MirrorObject then
+   WriteIn(['SignGeometry ms: Setup=',SignGabaritesProfile.SetupMS,
+            '; Text=',SignGabaritesProfile.TextMS,
+            '; Source=',SignGabaritesProfile.SourceMS,
+            '; Transform=',SignGabaritesProfile.TransformMS,
+            '; Bitmap=',SignGabaritesProfile.BitmapMS,
+            '; Other=',TimeSignGabaritesOther,
+            '; Calls=',SignGabaritesProfile.Calls,
+            '; Methods=',SignGabaritesProfile.Methods,
+            '; TextMethods=',SignGabaritesProfile.TextMethods]);
+  If not MirrorObject then
+   WriteIn(['TextGeometry ms: Params=',TextGabaritesProfile.ParamsMS,
+            '; Setup=',TextGabaritesProfile.SetupMS,
+            '; Measure=',TextGabaritesProfile.MeasureMS,
+            '; Correct=',TextGabaritesProfile.CorrectMS,
+            '; Bounds=',TextGabaritesProfile.BoundsMS,
+            '; Other=',TimeTextGabaritesOther,
+            '; Calls=',TextGabaritesProfile.Calls,
+            '; CorrectCalls=',TextGabaritesProfile.CorrectCalls]);
+  If not MirrorObject then
+   WriteIn(['TextManager ms: Schema=',TextManagerUpdateProfile.SchemaMS,
+            '; Replace=',TextManagerUpdateProfile.ReplaceMS,
+            '; CreateTexts=',TextManagerUpdateProfile.CreateTextsMS,
+            '; BuildBitmaps=',TextManagerUpdateProfile.BuildBitmapsMS,
+            '; AfterLoad=',TextManagerUpdateProfile.AfterLoadMS,
+            '; Rebuild=',TextManagerUpdateProfile.RebuildMS,
+            '; Other=',TimeTextManagerOther,
+            '; Calls=',TextManagerUpdateProfile.Calls,
+            '; InitialCalls=',TextManagerUpdateProfile.InitialCalls,
+            '; FastCalls=',TextManagerUpdateProfile.FastCalls,
+            '; RebuildCalls=',TextManagerUpdateProfile.RebuildCalls]);
   ClassRebuildBlock:=False;
  end;
 end;

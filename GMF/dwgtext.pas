@@ -12,6 +12,19 @@ type
   TVarType = (ttString, ttInt, ttFloat, tt_Number, tt_Z, tt_X, tt_Y);
   TVarTypeSet = Set of TVarType;
 
+  TTextGabaritesProfile=record
+   ParamsMS: Int64;
+   SetupMS: Int64;
+   MeasureMS: Int64;
+   CorrectMS: Int64;
+   BoundsMS: Int64;
+   Calls: Int64;
+   CorrectCalls: Int64;
+  end;
+
+Procedure StartTextGabaritesProfile;
+Function StopTextGabaritesProfile: TTextGabaritesProfile;
+
 type
   TFontManager = class(PCollection)
     function AddFont(DC:hDc; fntName:AnsiString; H,W :Double; CharSet: Byte; bl1, it1, un1 :Integer; fS:Integer=10): integer;
@@ -85,8 +98,43 @@ type
 
 var FontCol: TFontManager;
 
-implementation uses Writer, FMX.Dialogs, ogcDrawerSkia, System.UITypes, newProcs, System.Skia;
+implementation uses Writer, FMX.Dialogs, ogcDrawerSkia, System.UITypes, newProcs, System.Skia,
+                    System.Diagnostics;
 //uses ptmainform;
+
+var
+ TextGabaritesProfileEnabled: Boolean;
+ TextGabaritesParamsTicks: Int64;
+ TextGabaritesSetupTicks: Int64;
+ TextGabaritesMeasureTicks: Int64;
+ TextGabaritesCorrectTicks: Int64;
+ TextGabaritesBoundsTicks: Int64;
+ TextGabaritesCalls: Int64;
+ TextGabaritesCorrectCalls: Int64;
+
+Procedure StartTextGabaritesProfile;
+begin
+ TextGabaritesParamsTicks:=0;
+ TextGabaritesSetupTicks:=0;
+ TextGabaritesMeasureTicks:=0;
+ TextGabaritesCorrectTicks:=0;
+ TextGabaritesBoundsTicks:=0;
+ TextGabaritesCalls:=0;
+ TextGabaritesCorrectCalls:=0;
+ TextGabaritesProfileEnabled:=True;
+end;
+
+Function StopTextGabaritesProfile: TTextGabaritesProfile;
+begin
+ TextGabaritesProfileEnabled:=False;
+ Result.ParamsMS:=Round(TextGabaritesParamsTicks*1000/TStopwatch.Frequency);
+ Result.SetupMS:=Round(TextGabaritesSetupTicks*1000/TStopwatch.Frequency);
+ Result.MeasureMS:=Round(TextGabaritesMeasureTicks*1000/TStopwatch.Frequency);
+ Result.CorrectMS:=Round(TextGabaritesCorrectTicks*1000/TStopwatch.Frequency);
+ Result.BoundsMS:=Round(TextGabaritesBoundsTicks*1000/TStopwatch.Frequency);
+ Result.Calls:=TextGabaritesCalls;
+ Result.CorrectCalls:=TextGabaritesCorrectCalls;
+end;
 
 // цвет текста: Windows COLORREF ($00BBGGRR - цвет надписи из файла) в
 // TAlphaColor ($AARRGGBB). Цвет с альфой - уже TAlphaColor (RGBToCol/MakeColor
@@ -319,7 +367,9 @@ begin
   // DrawTextAlignedPix expects Top->Baseline height, so convert.
   H := RealScaleLength(Selector.Drawer, FHeight, Ko);
   if H <= 0 then Exit;
-  HBaseline := SkiaBaselineFromFullHeight(string(fv.FontName), fv.Bl <> 0, fv.It <> 0, H);
+  if (fv.SkAscentRatio>0) and (fv.SkFullHeightRatio>0) then
+   HBaseline:=H*fv.SkAscentRatio/fv.SkFullHeightRatio
+  else HBaseline:=SkiaBaselineFromFullHeight(string(fv.FontName),fv.Bl<>0,fv.It<>0,H);
 
   Anchor := PointF(Single(XF), Single(YF));
   XP := FTextAlignX;
@@ -383,7 +433,7 @@ begin
 VectorText: begin
  // exit;
  // WriteIn(['dwgText=', fv.FontName]);
-  TogsDrawerSkia(Drawer).DebugDrawTextBounds := True;
+ // TogsDrawerSkia(Drawer).DebugDrawTextBounds := True;
   TogsDrawerSkia(Drawer).DrawTextAlignedPix(
     Anchor,
     S,
@@ -393,7 +443,7 @@ VectorText: begin
     XP, YP,
     1,
     fv, False, False);
-  TogsDrawerSkia(Drawer).DebugDrawTextBounds := False;
+ // TogsDrawerSkia(Drawer).DebugDrawTextBounds := False;
   end;
   Exit;
  end;
@@ -480,54 +530,59 @@ var GM:Double;FDx,fDy:Double;ko2:Double;
       Result := T;
   end;
 
-  procedure MeasureTextSkia(const AText: string; const AFontName: string;
-    const ABold, AItalic: Boolean; const AFontSizePix: Single;
-    out ADXPix, ADYPix: Double);
+  procedure MeasureTextSkia(const AText: string; const AFontView: TFontViewEx;
+   const AFontSizePix: Single; out ADXPix, ADYPix: Double);
   var
-    Paint: ISkPaint;
-    Typeface: ISkTypeface;
-    Font: ISkFont;
-    ProbeFont: ISkFont;
-    ProbeMetrics: TSkFontMetrics;
-    Metrics: TSkFontMetrics;
-    Bounds: TRectF;
-    ProbeSize: Single;
-    AscentRatio: Single;
-    Oversample: Single;
-    EffectiveFontSize: Single;
-    DrawerObj: TObject;
+   Paint: ISkPaint;
+   Typeface: ISkTypeface;
+   Font: ISkFont;
+   ProbeFont: ISkFont;
+   ProbeMetrics: TSkFontMetrics;
+   Metrics: TSkFontMetrics;
+   Bounds: TRectF;
+   ProbeSize: Single;
+   AscentRatio: Single;
+   FullHeightRatio: Single;
+   Oversample: Single;
+   EffectiveFontSize: Single;
+   DrawerObj: TObject;
   begin
-    ADXPix := 0;
-    ADYPix := 0;
-
-    if AText = '' then
-      Exit;
-
-    Oversample := 1;
-    DrawerObj := Selector.Drawer;
-    if (DrawerObj <> nil) and (DrawerObj is TogsDrawerSkia) and TogsDrawerSkia(DrawerObj).UseWorldCoords then
-      Oversample := 10;
-
-    Paint := TSkPaint.Create;
-   Paint.AntiAlias := True;
-
-    Typeface := newFontScale.ResolveSkiaTypeface(AFontName, ABold, AItalic);
-
-    ProbeSize := 100;
-    ProbeFont := TSkFont.Create(Typeface, ProbeSize);
+   ADXPix:=0;
+   ADYPix:=0;
+  //
+   if AText='' then Exit;
+  //
+   Oversample:=1;
+   DrawerObj:=Selector.Drawer;
+   if (DrawerObj<>nil) and (DrawerObj is TogsDrawerSkia) and
+      TogsDrawerSkia(DrawerObj).UseWorldCoords then Oversample:=10;
+  //
+   Paint:=TSkPaint.Create;
+   Paint.AntiAlias:=True;
+   Typeface:=newFontScale.ResolveSkiaTypefaceForView(AFontView);
+  //
+   AscentRatio:=AFontView.SkAscentRatio;
+   if AscentRatio<=0 then begin
+    ProbeSize:=100;
+    ProbeFont:=TSkFont.Create(Typeface,ProbeSize);
     ProbeFont.GetMetrics(ProbeMetrics);
-    if (-ProbeMetrics.Ascent) > 0.01 then
-      AscentRatio := (-ProbeMetrics.Ascent) / ProbeSize
-    else
-      AscentRatio := 1;
-
-    EffectiveFontSize := (AFontSizePix / AscentRatio) * Oversample;
-    Font := TSkFont.Create(Typeface, EffectiveFontSize);
-    Font.GetMetrics(Metrics);
-    Font.MeasureText(AText, Bounds, Paint);
-
-    ADXPix := Bounds.Width / Oversample;
-    ADYPix := (-Metrics.Ascent) / Oversample;
+    if (-ProbeMetrics.Ascent)>0.01 then
+     AscentRatio:=(-ProbeMetrics.Ascent)/ProbeSize
+    else AscentRatio:=1;
+    if ((-ProbeMetrics.Ascent)+ProbeMetrics.Descent)>0.01 then
+     FullHeightRatio:=((-ProbeMetrics.Ascent)+ProbeMetrics.Descent)/ProbeSize
+    else FullHeightRatio:=AscentRatio;
+    AFontView.SkAscentRatio:=AscentRatio;
+    AFontView.SkFullHeightRatio:=FullHeightRatio;
+   end;
+  //
+   EffectiveFontSize:=(AFontSizePix/AscentRatio)*Oversample;
+   Font:=TSkFont.Create(Typeface,EffectiveFontSize);
+   Font.GetMetrics(Metrics);
+   Font.MeasureText(AText,Bounds,Paint);
+  //
+   ADXPix:=Bounds.Width/Oversample;
+   ADYPix:=(-Metrics.Ascent)/Oversample;
   end;
 begin
  Result:=TFontViewEx(fontcol[FFontIndex]);
@@ -544,14 +599,11 @@ begin
 }
 // Writeln('KoefText=',Ko,' ',fText);
  GM:=Result.Scale/(RealScaleLength(Selector.Drawer, fHeight, Ko)*Myy);
-
- if (Selector.Drawer <> nil) and (Selector.Drawer is TogsDrawerSkia) then
- begin
-   MeasureTextSkia(GetS(string(fText)), string(Result.FontName), Result.Bl <> 0, Result.It <> 0,
-     RealScaleLength(Selector.Drawer, fHeight, Ko), fDX, fDY);
- end
- else
-   Result.GetTextLen(0,0,1/GM,0,fText, fDX, fDY);
+//
+ if (Selector.Drawer<>nil) and (Selector.Drawer is TogsDrawerSkia) then begin
+  MeasureTextSkia(GetS(string(fText)),Result,
+   RealScaleLength(Selector.Drawer,fHeight,Ko),fDX,fDY);
+ end else Result.GetTextLen(0,0,1/GM,0,fText,fDX,fDY);
  Dx:=fDx * GM;Dy:=fDy * GM;
  If (itsTest=0){or(itsTest=its_Test)} then begin DX:=Selector.GeoDist(fDX);DY:=Selector.GeoDist(fDY); end else
 {!!!}
@@ -758,18 +810,48 @@ end;
 
 procedure TDWG_Text.SetGabaritesBlock(MRect_: TMRect; X, Y, kX, kY,
  Angle: Double);
-var P0, P1, P2, P3: TPointF;
-    Ko, C, S, AnchorX, AnchorY: Double;
-    OldXF, OldYF, OldX2, OldY2, OldDX, OldDY, OldUgol1, OldXFOld, OldYFOld: Double;
-    FV: TFontViewEx;
-    Paint: ISkPaint;
-    Typeface: ISkTypeface;
-    Font, ProbeFont: ISkFont;
-    Metrics, ProbeMetrics: TSkFontMetrics;
-    Bounds, R: TRectF;
-    TextString: string;
-    ProbeSize, AscentRatio, EffectiveFontSize, FontSizePix, FullFontSizePix, Oversample: Single;
-    TightAscentAbs, ScaleCorr, DrawX, DrawY, AscentAlign: Single;
+var
+ P0: TPointF;
+ P1: TPointF;
+ P2: TPointF;
+ P3: TPointF;
+ Ko: Double;
+ C: Double;
+ S: Double;
+ AnchorX: Double;
+ AnchorY: Double;
+ OldXF: Double;
+ OldYF: Double;
+ OldX2: Double;
+ OldY2: Double;
+ OldDX: Double;
+ OldDY: Double;
+ OldUgol1: Double;
+ OldXFOld: Double;
+ OldYFOld: Double;
+ FV: TFontViewEx;
+ Paint: ISkPaint;
+ Typeface: ISkTypeface;
+ Font: ISkFont;
+ ProbeFont: ISkFont;
+ Metrics: TSkFontMetrics;
+ ProbeMetrics: TSkFontMetrics;
+ Bounds: TRectF;
+ R: TRectF;
+ TextString: string;
+ ProbeSize: Single;
+ AscentRatio: Single;
+ FullHeightRatio: Single;
+ EffectiveFontSize: Single;
+ FontSizePix: Single;
+ FullFontSizePix: Single;
+ Oversample: Single;
+ TightAscentAbs: Single;
+ ScaleCorr: Single;
+ DrawX: Single;
+ DrawY: Single;
+ AscentAlign: Single;
+ Tick: Int64;
  procedure InsertPoint(const P: TPointF);
  begin
   if MRect_<>nil then MRect_.Insert(P.X, P.Y);
@@ -789,6 +871,10 @@ var P0, P1, P2, P3: TPointF;
   Result.Y:=AnchorY+(P.X*S+P.Y*C);
  end;
 begin
+ if TextGabaritesProfileEnabled then begin
+  Inc(TextGabaritesCalls);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  if not FVisible then Exit;
  if (Selector=nil) or (FFontIndex=-1) or (FText='') then Exit;
  Ko:=kX;
@@ -802,9 +888,12 @@ begin
  finally
   XF:=OldXF;YF:=OldYF;X2:=OldX2;Y2:=OldY2;DX:=OldDX;DY:=OldDY;Ugol1:=OldUgol1;XFOld:=OldXFOld;YFOld:=OldYFOld;
  end;
+ if TextGabaritesProfileEnabled then begin
+  Inc(TextGabaritesParamsTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  FullFontSizePix:=Abs(RealScaleLength(Selector.Drawer, FHeight, Ko));
  if FullFontSizePix<=0 then Exit;
- FontSizePix:=SkiaBaselineFromFullHeight(string(FV.FontName), FV.Bl<>0, FV.It<>0, FullFontSizePix);
  TextString:=GetTextString(string(FText));
  Paint:=TSkPaint.Create;
  Paint.AntiAlias:=True;
@@ -812,24 +901,47 @@ begin
  Oversample:=1;
  if (Selector.Drawer<>nil) and (Selector.Drawer is TogsDrawerSkia) and TogsDrawerSkia(Selector.Drawer).UseWorldCoords then
   Oversample:=10;
- ProbeSize:=100;
- ProbeFont:=TSkFont.Create(Typeface, ProbeSize);
- ProbeFont.GetMetrics(ProbeMetrics);
- if (-ProbeMetrics.Ascent)>0.01 then AscentRatio:=(-ProbeMetrics.Ascent)/ProbeSize else AscentRatio:=1;
+ AscentRatio:=FV.SkAscentRatio;
+ FullHeightRatio:=FV.SkFullHeightRatio;
+ if (AscentRatio<=0) or (FullHeightRatio<=0) then begin
+   ProbeSize:=100;
+   ProbeFont:=TSkFont.Create(Typeface, ProbeSize);
+   ProbeFont.GetMetrics(ProbeMetrics);
+   if (-ProbeMetrics.Ascent)>0.01 then AscentRatio:=(-ProbeMetrics.Ascent)/ProbeSize else AscentRatio:=1;
+   if ((-ProbeMetrics.Ascent)+ProbeMetrics.Descent)>0.01 then
+    FullHeightRatio:=((-ProbeMetrics.Ascent)+ProbeMetrics.Descent)/ProbeSize
+   else FullHeightRatio:=AscentRatio;
+   FV.SkAscentRatio:=AscentRatio;
+   FV.SkFullHeightRatio:=FullHeightRatio;
+ end;
+ FontSizePix:=FullFontSizePix*AscentRatio/FullHeightRatio;
  EffectiveFontSize:=(FontSizePix/AscentRatio)*Oversample;
+ if TextGabaritesProfileEnabled then begin
+  Inc(TextGabaritesSetupTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  Font:=TSkFont.Create(Typeface, EffectiveFontSize);
  Font.GetMetrics(Metrics);
  Font.MeasureText(TextString, Bounds, Paint);
+ if TextGabaritesProfileEnabled then begin
+  Inc(TextGabaritesMeasureTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
  TightAscentAbs:=-Bounds.Top;
  if TightAscentAbs>0.01 then begin
   ScaleCorr:=(FontSizePix*Oversample)/TightAscentAbs;
   if Abs(ScaleCorr-1)>1e-4 then begin
+   if TextGabaritesProfileEnabled then Inc(TextGabaritesCorrectCalls);
    EffectiveFontSize:=EffectiveFontSize*ScaleCorr;
    Font:=TSkFont.Create(Typeface, EffectiveFontSize);
    Font.GetMetrics(Metrics);
    Font.MeasureText(TextString, Bounds, Paint);
    TightAscentAbs:=-Bounds.Top;
   end;
+ end;
+ if TextGabaritesProfileEnabled then begin
+  Inc(TextGabaritesCorrectTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
  end;
  DrawX:=-(Bounds.Left+FTextAlignX*Bounds.Width);
  if TightAscentAbs>0.01 then AscentAlign:=TightAscentAbs else AscentAlign:=FontSizePix*Oversample;
@@ -846,6 +958,8 @@ begin
  InsertPoint(P3);
  if TextBitmap<>nil then
   TextBitmap.SetBounds(P0.X, P0.Y, P1.X, P1.Y, P2.X, P2.Y, P3.X, P3.Y);
+ if TextGabaritesProfileEnabled then
+  Inc(TextGabaritesBoundsTicks,TStopwatch.GetTimeStamp-Tick);
 end;
 
 function TDWG_Text.TextAlign: Byte;

@@ -1,4 +1,4 @@
-Unit newForm0;
+п»їUnit newForm0;
 Interface
 uses Collect,Classes,
      SysUtils, newConsts, RPrims, WpTwigs,
@@ -10,13 +10,14 @@ Const
    Twg_Bitmap=52;
    Twg_Block=53;
 {}
-{ Коллекция графических примитивов }
+{ РљРѕР»Р»РµРєС†РёСЏ РіСЂР°С„РёС‡РµСЃРєРёС… РїСЂРёРјРёС‚РёРІРѕРІ }
 {}
 Type
   TSloyIndex=class(TSortedCollection)
     Selector:TSelector;
     Constructor Create(Selector_:TSelector);
     Function Compare(Key1,Key2:Pointer):Integer;override;
+     Procedure Rebuild(Source: PCollection);
    end;
 
   TPloIndex=class(TSortedCollection)
@@ -74,19 +75,19 @@ Type
 //         IndexPlo   :TPloIndex;
 //         IndexNum   :TNumIndex;
 //         IndexGUID  :TGUIDIndex;
-        {Тахеометрия}
+        {РўР°С…РµРѕРјРµС‚СЂРёСЏ}
         CountTaheo:Byte;
          TaheoNames:Array[0..10] of String[12];
          TaheoDots :Array[0..10] of PCollection;
          TaheoTwigs:Array[0..10] of PCollection;
          TaheoIndexes:TStrings;
-        {Таблица фонтов}
+        {РўР°Р±Р»РёС†Р° С„РѕРЅС‚РѕРІ}
          FontS    :PCollection;
          FontSet  :PCollection;
-        {Горизонтали}
+        {Р“РѕСЂРёР·РѕРЅС‚Р°Р»Рё}
          HPoly    :PCollection;
         {}
-         Bitmaps  :TBMPSet; // загружаемые растры
+         Bitmaps  :TBMPSet; // Р·Р°РіСЂСѓР¶Р°РµРјС‹Рµ СЂР°СЃС‚СЂС‹
         {}
          FontViewCollect:TFontViewCollect;
          TextManagerCollect:TTextManagerCollect;
@@ -106,6 +107,7 @@ Type
        {}
          Constructor Load(Stream:TBufStream);Override;
          Procedure  Store(Stream:TBufStream);Override;
+         Procedure  StoreSav(Stream:TBufStream);
          Function   TAt      (Index:Longint):Pointer;Virtual;
          Function   LAt      (Index:Longint):Pointer;Virtual;
          Function   LAtIndex (Index:Longint):Pointer;
@@ -128,11 +130,11 @@ Type
          Function FindTwigSpatial(Twig:TTwig):Integer;
        end;
 
- {  Указательный файл-содержит информацию о графических объектах  }
+ {  РЈРєР°Р·Р°С‚РµР»СЊРЅС‹Р№ С„Р°Р№Р»-СЃРѕРґРµСЂР¶РёС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РіСЂР°С„РёС‡РµСЃРєРёС… РѕР±СЉРµРєС‚Р°С…  }
 
 Type
   TFormMain=class(TTwgObject)
-    Filter   :Word;               { Флаги вывода на экран  }
+    Filter   :Word;               { Р¤Р»Р°РіРё РІС‹РІРѕРґР° РЅР° СЌРєСЂР°РЅ  }
     Twigs    :TTwigsCollect;
    end;
 
@@ -149,7 +151,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
   var I:SmallInt;
    begin
     Selector:=Selector_;
-   { Объявляем большую коллекцию }
+   { РћР±СЉСЏРІР»СЏРµРј Р±РѕР»СЊС€СѓСЋ РєРѕР»Р»РµРєС†РёСЋ }
      TwigsLarge:=PCollection.Create(1);
      LotsLarge:=PCollection.Create(1);
      AnyLarge:=PCollection.Create(1);
@@ -173,7 +175,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    {}
      HPoly:=PCollection.Create(1);
    {}
-     Bitmaps:=TBMPSet.Create;// создаем пустую коллекцию растров
+     Bitmaps:=TBMPSet.Create;// СЃРѕР·РґР°РµРј РїСѓСЃС‚СѓСЋ РєРѕР»Р»РµРєС†РёСЋ СЂР°СЃС‚СЂРѕРІ
    {}
     TwigsCount:=0;LotsCount:=0;AnyCount:=0;
     TaheoIndexes:=TStringList.Create;
@@ -193,7 +195,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    Selector:=Stream.Selector;
    TextureList:=nil;
    try
-   { Объявляем большую коллекцию }
+   { РћР±СЉСЏРІР»СЏРµРј Р±РѕР»СЊС€СѓСЋ РєРѕР»Р»РµРєС†РёСЋ }
      TwigsLarge:=PCollection.Create(1);
      LotsLarge:=PCollection.Create(1);
      AnyLarge:=PCollection.Create(1);
@@ -265,13 +267,13 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
      HPoly.Free;
      HPoly:=PCollection(Stream.Get);
     end;
-   // загрузка растра
+   // Р·Р°РіСЂСѓР·РєР° СЂР°СЃС‚СЂР°
    If Stream.GetPos<>Stream.GetSize then
      Bitmaps:=TBmpSet(Stream.Get) else
      Bitmaps:=TBmpSet.Create;
   // WriteIn(['Bitmap=', Stream.Position]);
 //     Bitmaps:=TBmpSet.Create;
-   // загрузка тахеометрии
+   // Р·Р°РіСЂСѓР·РєР° С‚Р°С…РµРѕРјРµС‚СЂРёРё
    TaheoIndexes:=TStringList.Create;
    If newConsts.Version>22 then
     begin
@@ -325,8 +327,8 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
  var I,Cnt:SmallInt;
   begin
    FromLarge;
-  // как в Load: AllCount - 10 байт (Extended старого формата), счетчики - по
-  // 4 байта (LongInt на Android64 - 8 байт)
+  // РєР°Рє РІ Load: AllCount - 10 Р±Р°Р№С‚ (Extended СЃС‚Р°СЂРѕРіРѕ С„РѕСЂРјР°С‚Р°), СЃС‡РµС‚С‡РёРєРё - РїРѕ
+  // 4 Р±Р°Р№С‚Р° (LongInt РЅР° Android64 - 8 Р±Р°Р№С‚)
    Stream.WriteExtended(AllCount);
    Stream.WriteInt32(TwigsCount);
    Stream.WriteInt32(LotsCount);
@@ -364,7 +366,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    DestroyOld;
   { Horiz }
    Stream.Put(HPoly);
-   // запись растра
+   // Р·Р°РїРёСЃСЊ СЂР°СЃС‚СЂР°
    Stream.Put(Bitmaps);
    Cnt:=TaheoIndexes.Count;
    Stream.Write(Cnt,SizeOf(Cnt));
@@ -374,6 +376,41 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
    Stream.Put(LinkFiles);
    Stream.Put(RasterFiles);
    Stream.Put(TextureList);
+ end;
+
+ Procedure TTwigsCollect.StoreSav(Stream: TBufStream);
+ const
+  Signature: array[0..7] of AnsiChar = ('G','M','F','S','A','V','0','1');
+  RecoveryVersion = 1;
+ var
+  I: Integer;
+ begin
+  if Stream = nil then
+   raise EStreamError.Create('StoreSav: stream is nil');
+  if (TwigsLarge = nil) or (LotsLarge = nil) or
+     (AnyLarge = nil) or (PAnyLarge = nil) then
+   raise EStreamError.Create('StoreSav: primitive collections are not initialized');
+  if AnyLarge.Count <> PAnyLarge.Count then
+   raise EStreamError.CreateFmt('StoreSav: Any/PAny count mismatch (%d/%d)',
+    [AnyLarge.Count, PAnyLarge.Count]);
+
+  Stream.Write(Signature, SizeOf(Signature));
+  Stream.WriteInt32(RecoveryVersion);
+  Stream.WriteInt32(newConsts.Version);
+
+  Stream.WriteInt32(TwigsLarge.Count);
+  for I := 0 to TwigsLarge.Count - 1 do
+   Stream.Put(TTwgObject(TwigsLarge[I]));
+
+  Stream.WriteInt32(LotsLarge.Count);
+  for I := 0 to LotsLarge.Count - 1 do
+   Stream.Put(TTwgObject(LotsLarge[I]));
+
+  Stream.WriteInt32(AnyLarge.Count);
+  for I := 0 to AnyLarge.Count - 1 do begin
+   Stream.Put(TTwgObject(PAnyLarge[I]));
+   Stream.Put(TTwgObject(AnyLarge[I]));
+  end;
  end;
 
  Function TTwigsCollect.IndexCount;
@@ -604,7 +641,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
  Function  TTwigsCollect.TAt;
   var ClIndex:SmallInt;                                      
   begin
-   if Abs(Index)>TwigsCount-1 then Exception.Create(Format('Выход за пределы диапазона при доступе к ветви [%d, %d, %d]',[Index,TwigsCount-1,TwigsLarge.Count-1]));
+   if Abs(Index)>TwigsCount-1 then Exception.Create(Format('Р’С‹С…РѕРґ Р·Р° РїСЂРµРґРµР»С‹ РґРёР°РїР°Р·РѕРЅР° РїСЂРё РґРѕСЃС‚СѓРїРµ Рє РІРµС‚РІРё [%d, %d, %d]',[Index,TwigsCount-1,TwigsLarge.Count-1]));
     Tat:=TwigsLarge[Abs(Index)];
   end;
 
@@ -645,7 +682,7 @@ Implementation uses EcLot, newResource, newProcs, ECText, TwgColle, ECDot,
 //        if IndexNum.Count<>0 then
 //         IndexNum.AtDelete(IndexNum.FList.IndexOf(P));
 {$ENDIF}
-      // нотификационные сообщения
+      // РЅРѕС‚РёС„РёРєР°С†РёРѕРЅРЅС‹Рµ СЃРѕРѕР±С‰РµРЅРёСЏ
 //         For I:=0 to LotsCount-1 do TLot(LotsLarge[I]).ZeroNotification(LAt(I));
          LotsLarge.AtFree(Index);
          Dec(LotsCount);
@@ -738,17 +775,11 @@ Function TTwigsCollect.HorizCount;
  end;
 {}                                                              
  Procedure TTwigsCollect.CreateIndexes;
-  var I:Integer;                                           
   begin
-   IndexLarge.DeleteAll;
+   IndexLarge.Rebuild(LotsLarge);
 //   IndexPlo.DeleteAll;
 //   IndexNum.DeleteAll;
 //   IndexGUID.DeleteAll;
-//  if GGraphSet.NotIndex=1 then
-   For I:=0 to LotsLarge.Count-1 do
-    begin
-     IndexLarge.Insert(LotsLarge[I]);
-    end;
   (*
    For I:=0 to LotsLarge.Count-1 do
     begin
@@ -771,7 +802,7 @@ Function TTwigsCollect.HorizCount;
     end; }
   end;
 {----------------------------------------------------------------------}
-// контура индексированные по слоям
+// РєРѕРЅС‚СѓСЂР° РёРЅРґРµРєСЃРёСЂРѕРІР°РЅРЅС‹Рµ РїРѕ СЃР»РѕСЏРј
 
 Constructor TSloyIndex.Create(Selector_:TSelector);
 begin
@@ -780,81 +811,98 @@ begin
 end;
 
 Function TSloyIndex.Compare;
-var Lot:TLot;P:TPointdot;
+var Lot1: TLot;
+    Lot2: TLot;
+    Rang1: Double;
+    Rang2: Double;
+    Plo1: Int64;
+    Plo2: Int64;
 begin
-{
-if not GGraphSet.IndexPlo then
- begin
-  Compare:=-1; exit;
- end;}
-With Selector do begin
-If GGraphSet.IndexPlo then begin
- If TLot(Key1).TypeLot<TLot(Key2).TypeLot then compare:=1 else
- If TLot(Key1).TypeLot=TLot(Key2).TypeLot then begin
-  If TLot(Key1).TypeLot = 1 then begin
-   If Frac(TLot(Key1).ClassHandle.Rang)<Frac(TLot(Key2).ClassHandle.Rang) then
-   Compare:=1 else Compare:=-1;
+ // IndexPlo: С‚РёРї РїРѕ СѓР±С‹РІР°РЅРёСЋ; Р»РёРЅРёРё - СЂР°РЅРі РїРѕ СѓР±С‹РІР°РЅРёСЋ;
+ // РѕСЃС‚Р°Р»СЊРЅС‹Рµ РєРѕРЅС‚СѓСЂС‹ - СЂР°РЅРі РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ, Р·Р°С‚РµРј РїР»РѕС‰Р°РґСЊ РїРѕ СѓР±С‹РІР°РЅРёСЋ.
+ // Р‘РµР· IndexPlo: РїР»РѕС‰Р°РґСЊ РїРѕ СѓР±С‹РІР°РЅРёСЋ, Р·Р°С‚РµРј СЂР°РЅРі РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ.
+ Result:=0;
+ if Key1=Key2 then exit;
+ Lot1:=TLot(Key1);
+ Lot2:=TLot(Key2);
+ Rang1:=Frac(Lot1.ClassHandle.Rang);
+ Rang2:=Frac(Lot2.ClassHandle.Rang);
+ Plo1:=Round(Lot1.Plo*Const_of_PrecCoord);
+ Plo2:=Round(Lot2.Plo*Const_of_PrecCoord);
+ if Selector.GGraphSet.IndexPlo then begin
+  if Lot1.TypeLot>Lot2.TypeLot then Result:=-1 else
+  if Lot1.TypeLot<Lot2.TypeLot then Result:=1 else
+  if Lot1.TypeLot=1 then begin
+   if Rang1>Rang2 then Result:=-1 else
+   if Rang1<Rang2 then Result:=1;
   end else begin
-  // if Round(TLot(Key1).Plo*Const_of_PrecCoord)<Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=1 else
-  // if Round(TLot(Key1).Plo*Const_of_PrecCoord)=Round(TLot(Key2).Plo*Const_of_PrecCoord) then begin
-    If Frac(TLot(Key1).ClassHandle.Rang)<Frac(TLot(Key2).ClassHandle.Rang) then Compare:=-1 else
-    If Frac(TLot(Key1).ClassHandle.Rang)=Frac(TLot(Key2).ClassHandle.Rang) then begin
-     If Round(TLot(Key1).Plo*Const_of_PrecCoord)<Round(TLot(Key2).Plo*Const_of_PrecCoord) then Compare:=1 else Compare:=-1;
-    end else
-    Compare:=1;
-  // end else compare:=-1;
+   if Rang1<Rang2 then Result:=-1 else
+   if Rang1>Rang2 then Result:=1 else
+   if Plo1>Plo2 then Result:=-1 else
+   if Plo1<Plo2 then Result:=1;
   end;
- end;
-exit;
-end else
-//
- try
-  if Round(TLot(Key1).Plo*Const_of_PrecCoord)<Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=1 else
-  if Round(TLot(Key1).Plo*Const_of_PrecCoord)=Round(TLot(Key2).Plo*Const_of_PrecCoord) then
-   begin
-    If Frac(TLot(Key1).ClassHandle.Rang)<Frac(TLot(Key2).ClassHandle.Rang) then
-    Compare:=-1 else Compare:=1;
-   end else Compare:=-1;
-  except
-   Lot:=Key1;P:=Key1;
-//   WriteOn(nil,['Except=',Lot=nil,' ',P=nil]);
-   raise;
-  end;
-  exit;
- if (not TLot(Key1).ClassHandle.Indexed) or (not GGraphSet.IndexPlo) then
- begin
-  If TLot(Key2).ClassHandle.Indexed then begin compare:=-1; Exit;end;
-  if Round(TLot(Key1).Plo*Const_of_PrecCoord)<Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=1;
-  if Round(TLot(Key1).Plo*Const_of_PrecCoord)=Round(TLot(Key2).Plo*Const_of_PrecCoord) then
-   begin
-//    wRITELN(11,'=');
-//    wRITELN(TLot(Key1).ClassHandle.rANG,' ',TLot(Key2).ClassHandle.rANG);
-    If Frac(TLot(Key1).ClassHandle.Rang)<Frac(TLot(Key2).ClassHandle.Rang) then
-    Compare:=-1 else Compare:=1;
-//    wRITELN(12,'=');
-   end;
-  if Round(TLot(Key1).Plo*Const_of_PrecCoord)>Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=-1;
- end else
- begin
-   If not TLot(Key2).ClassHandle.Indexed then begin compare:=1; Exit;end;
-   if TLot(Key1).ClassHandle.Index<TLot(Key2).ClassHandle.Index then compare:=1;
-   if TLot(Key1).ClassHandle.Index=TLot(Key2).ClassHandle.Index then
-    begin
-     if Round(TLot(Key1).Plo*Const_of_PrecCoord)<Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=1;
-     if Round(TLot(Key1).Plo*Const_of_PrecCoord)=Round(TLot(Key2).Plo*Const_of_PrecCoord) then
-      begin
-       If Frac(TLot(Key1).ClassHandle.Rang)<Frac(TLot(Key2).ClassHandle.Rang) then
-       Compare:=-1 else Compare:=1;
-      end;
-     if Round(TLot(Key1).Plo*Const_of_PrecCoord)>Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=-1;
-    end;
-   if TLot(Key1).ClassHandle.Index>TLot(Key2).ClassHandle.Index then Compare:=-1;
+ end else begin
+  if Plo1>Plo2 then Result:=-1 else
+  if Plo1<Plo2 then Result:=1 else
+  if Rang1<Rang2 then Result:=-1 else
+  if Rang1>Rang2 then Result:=1;
  end;
 end;
-// Writeln(22222);
+
+Procedure TSloyIndex.Rebuild(Source: PCollection);
+var Buffer: array of Pointer;
+    I: Integer;
+    J: Integer;
+    K: Integer;
+    Left: Integer;
+    Middle: Integer;
+    Right: Integer;
+    Width: Integer;
+    NextWidth: Integer;
+begin
+ // РЎС‚Р°Р±РёР»СЊРЅР°СЏ РїР°РєРµС‚РЅР°СЏ СЃРѕСЂС‚РёСЂРѕРІРєР° СѓРєР°Р·Р°С‚РµР»РµР№ Р±РµР· РёР·РјРµРЅРµРЅРёСЏ LotsLarge.
+ DeleteAll;
+ if Source=nil then exit;
+ if FList.Capacity<Source.Count then FList.Capacity:=Source.Count;
+ for I:=0 to Source.Count-1 do FList.Add(Source[I]);
+ if Count<2 then exit;
+ SetLength(Buffer,Count);
+ Width:=1;
+ while Width<Count do begin
+  Left:=0;
+  while Left<Count do begin
+   Middle:=Left+Width;
+   if Middle>Count then Middle:=Count;
+   Right:=Middle+Width;
+   if Right>Count then Right:=Count;
+   I:=Left;
+   J:=Middle;
+   for K:=Left to Right-1 do begin
+    if I>=Middle then begin
+     Buffer[K]:=FList[J];
+     Inc(J);
+    end else
+    if J>=Right then begin
+     Buffer[K]:=FList[I];
+     Inc(I);
+    end else
+    if Compare(FList[I],FList[J])<=0 then begin
+     Buffer[K]:=FList[I];
+     Inc(I);
+    end else begin
+     Buffer[K]:=FList[J];
+     Inc(J);
+    end;
+   end;
+   Left:=Right;
+  end;
+  for I:=0 to Count-1 do FList[I]:=Buffer[I];
+  NextWidth:=Width*2;
+  if NextWidth<=Width then Width:=Count else Width:=NextWidth;
+ end;
 end;
 {}
-// контура индексированные по площади
+// РєРѕРЅС‚СѓСЂР° РёРЅРґРµРєСЃРёСЂРѕРІР°РЅРЅС‹Рµ РїРѕ РїР»РѕС‰Р°РґРё
 Constructor TPloIndex.Create(Selector_:TSelector);
 begin
  inherited Create(1);
@@ -872,7 +920,7 @@ begin
   if Round(TLot(Key1).Plo*Const_of_PrecCoord)>Round(TLot(Key2).Plo*Const_of_PrecCoord) then compare:=-1;
 end;
 {}
-// контура индексированные по номерам
+// РєРѕРЅС‚СѓСЂР° РёРЅРґРµРєСЃРёСЂРѕРІР°РЅРЅС‹Рµ РїРѕ РЅРѕРјРµСЂР°Рј
 Constructor TNumIndex.Create(Selector_:TSelector);
 begin
  inherited Create(1);

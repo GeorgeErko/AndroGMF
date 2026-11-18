@@ -561,73 +561,86 @@ begin
 end;
 
 procedure TMainFormSkia.btnPDFClick(Sender: TObject);
-var
-  DefaultName: string;
+var DefaultName: string;
+    BaseDir: string;
+{$IFNDEF ANDROID}
+    D: TSaveDialog;
+{$ENDIF}
 begin
-  DefaultName := '/scene.pdf';
-
+ DefaultName := 'scene.pdf';
+ BaseDir := TPath.GetDocumentsPath;
+ if TwgForm <> nil then begin
+  if String(TwgForm.About.Path) <> '' then BaseDir := String(TwgForm.About.Path);
+  if String(TwgForm.About.MyName) <> '' then
+   DefaultName := ChangeFileExt(ExtractFileName(String(TwgForm.About.MyName)), '.pdf');
+ end;
+ //
 {$IFDEF ANDROID}
-  TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
-  TDialogService.InputQuery('Export PDF', ['File name (Documents)'], [DefaultName],
-    procedure(const AResult: TModalResult; const AValues: array of string)
-    begin
-      if AResult <> mrOk then
-        Exit;
-      if Length(AValues) < 1 then
-        Exit;
-      DoExportPdfWithName(AValues[0]);
-    end);
+ TDialogService.PreferredMode := TDialogService.TPreferredMode.Platform;
+ TDialogService.InputQuery('Экспорт PDF', ['Имя файла (' + BaseDir + ')'], [DefaultName],
+  procedure(const AResult: TModalResult; const AValues: array of string)
+  begin
+   if AResult <> mrOk then exit;
+   if Length(AValues) < 1 then exit;
+   DoExportPdfWithName(AValues[0]);
+  end);
 {$ELSE}
-  if InputQuery('Export PDF', 'File name (Documents)', DefaultName) then
-    DoExportPdfWithName(DefaultName);
+ D := TSaveDialog.Create(nil);
+ try
+  D.Title := 'Экспорт PDF';
+  D.InitialDir := BaseDir;
+  D.FileName := DefaultName;
+  D.DefaultExt := 'pdf';
+  D.Filter := 'PDF (*.pdf)|*.pdf';
+  D.Options := D.Options + [TOpenOption.ofOverwritePrompt];
+  if D.Execute then DoExportPdfWithName(D.FileName);
+ finally
+  D.Free;
+ end;
 {$ENDIF}
 end;
 
 procedure TMainFormSkia.DoExportPdfWithName(const AName: string);
-var
-  FileName: string;
-  FullPath: string;
-  SavedPath: string;
-  BaseDir: string;
+var FileName: string;
+    FullPath: string;
+    SavedPath: string;
+    BaseDir: string;
 begin
-  FileName := Trim(AName);
-  if FileName = '' then
-    Exit;
-  while (FileName <> '') and ((FileName[Low(string)] = '/') or (FileName[Low(string)] = '\\')) do
-    Delete(FileName, Low(string), 1);
-  FileName := StringReplace(FileName, '/', '_', [rfReplaceAll]);
+ FullPath := Trim(AName);
+ if FullPath = '' then exit;
+ if ExtractFilePath(FullPath) = '' then begin
+  FileName := StringReplace(FullPath, '/', '_', [rfReplaceAll]);
   FileName := StringReplace(FileName, '\\', '_', [rfReplaceAll]);
-  if ExtractFileExt(FileName) = '' then
-    FileName := FileName + '.pdf';
-
-{$IFDEF ANDROID}
+  if ExtractFileExt(FileName) = '' then FileName := FileName + '.pdf';
   BaseDir := '';
-  try
+  if TwgForm <> nil then BaseDir := String(TwgForm.About.Path);
+  //
+{$IFDEF ANDROID}
+  if BaseDir = '' then begin
+   try
     BaseDir := JStringToString(
-      TJEnvironment.JavaClass.getExternalStoragePublicDirectory(
-        TJEnvironment.JavaClass.DIRECTORY_DOWNLOADS).getAbsolutePath);
-  except
+     TJEnvironment.JavaClass.getExternalStoragePublicDirectory(
+      TJEnvironment.JavaClass.DIRECTORY_DOWNLOADS).getAbsolutePath);
+   except
     BaseDir := '';
+   end;
+   if (BaseDir <> '') and (BaseDir[Low(string)] <> '/') then BaseDir := '/' + BaseDir;
   end;
-  if (BaseDir <> '') and (BaseDir[Low(string)] <> '/') then
-    BaseDir := '/' + BaseDir;
-  if BaseDir = '' then
-    BaseDir := TPath.GetDocumentsPath;
-{$ELSE}
-  BaseDir := TPath.GetDocumentsPath;
 {$ENDIF}
-
+  if BaseDir = '' then BaseDir := TPath.GetDocumentsPath;
   FullPath := TPath.Combine(BaseDir, FileName);
-  try
-    SavedPath := ExportSceneToPdf(FullPath);
-    if SavedPath <> '' then
-      newProcs.ShowMessage(AnsiString('Saved: ' + FullPath))
-    else
-      newProcs.MessageError('PDF export failed');
-  except
-    on E: Exception do
-      newProcs.MessageError(AnsiString(E.Message));
-  end;
+ end else
+ if ExtractFileExt(FullPath) = '' then FullPath := FullPath + '.pdf';
+ //
+ try
+  SavedPath := ExportSceneToPdf(FullPath);
+  if SavedPath <> '' then
+   newProcs.ShowMessage(AnsiString('Saved: ' + FullPath))
+  else
+   newProcs.MessageError('PDF export failed');
+ except
+  on E: Exception do newProcs.MessageError(AnsiString(E.Message));
+ end;
 end;
 
 procedure TMainFormSkia.Loaded;
@@ -1014,9 +1027,7 @@ end;
 procedure TMainFormSkia.btnLocalOpenClickSkia(Sender: TObject);
 begin
   localOpenForm := TlocalOpenForm.Create(Self);
-{$IFDEF ANDROID}
-  localOpenForm.BaseDir := UserMapsDir; // папка карт исполнителя (Documents/подпапка)
-{$ENDIF}
+  localOpenForm.BaseDir := UserMapsDir; // папка последнего сохранения карты
   localOpenForm.FCallBack := OpenGmfFileSkia;
   ShowDialog(localOpenForm); // модально: Windows - окно, Android - панель поверх формы
 end;
@@ -1197,45 +1208,54 @@ end;
 // нескольких контуров, - один раз; при изменении карты пересобираются
 // (FSegPointsDirty, число контуров и ветвей)
 procedure TMainFormSkia.BuildSegmentPoints;
-var I, K, J, C: Integer;
-    Lot: TLot;
-    Tw: TTwig;
-    D: TDot;
-    Used: TBits;
-    Cnt: array[0..2] of Integer;
-    PD: TPointDot;
-    W: Byte;
-procedure Add(Kind: Integer);
+var
+ I: Integer;
+ K: Integer;
+ J: Integer;
+ C: Integer;
+ Lot: TLot;
+ Tw: TTwig;
+ D: TDot;
+ Used: TBits;
+ Cnt: array[0..2] of Integer;
+ PD: TPointDot;
+ W: Byte;
+ procedure Add(Kind: Integer);
+ begin
+  if Cnt[Kind]>=Length(FSegPoints[Kind]) then begin
+   SetLength(FSegPoints[Kind],Max(256,2*Length(FSegPoints[Kind])));
+  end;
+  FSegPoints[Kind][Cnt[Kind]]:=TPointF.Create(D.XDot,D.YDot);
+  Inc(Cnt[Kind]);
+ end;
 begin
- if Cnt[Kind] >= Length(FSegPoints[Kind]) then SetLength(FSegPoints[Kind], Max(256, 2 * Length(FSegPoints[Kind])));
- FSegPoints[Kind][Cnt[Kind]] := TPointF.Create(D.XDot, D.YDot);
- Inc(Cnt[Kind]);
-end;
-begin
- FSegPointsDirty := False;
- for K := 0 to 2 do begin FSegPoints[K] := nil; Cnt[K] := 0; end;
- FSegPointsLots := -1;
- FSegPointsTwigs := -1;
- FSegPointsAny := -1;
- if (TwgForm = nil) or (TwgForm.Twigs = nil) then exit;
- FSegPointsLots := TwgForm.Twigs.LotsCount;
- FSegPointsTwigs := TwgForm.Twigs.TwigsCount;
- FSegPointsAny := TwgForm.Twigs.AnyCount;
- Used := TBits.Create;
+ FSegPointsDirty:=False;
+ for K:=0 to 2 do begin
+  FSegPoints[K]:=nil;
+  Cnt[K]:=0;
+ end;
+ FSegPointsLots:=-1;
+ FSegPointsTwigs:=-1;
+ FSegPointsAny:=-1;
+ if (TwgForm=nil) or (TwgForm.Twigs=nil) then Exit;
+ FSegPointsLots:=TwgForm.Twigs.LotsCount;
+ FSegPointsTwigs:=TwgForm.Twigs.TwigsCount;
+ FSegPointsAny:=TwgForm.Twigs.AnyCount;
+ Used:=TBits.Create;
  try
-  Used.Size := TwgForm.Twigs.TwigsCount;
-  for I := 0 to TwgForm.Twigs.LotsCount - 1 do begin
-   Lot := TwgForm.Twigs.LAt(I);
-   if Lot.TypeLot = 254 then continue;
-   if (Lot.ClassHandle <> nil) and (Lot.ClassHandle.Check = 0) then continue;
-   for K := 0 to Lot.Coord.Count - 1 do begin
-    J := Abs(TLong(Lot.Coord[K]).Num);
-    if (J >= Used.Size) or Used[J] then continue;
-    Used[J] := True;
-    Tw := TwgForm.Twigs.TAt(J);
-    if (Tw = nil) or (Tw.Closed = 254) then continue;
-    for C := 0 to Tw.Coord.Count - 1 do begin
-     D := Tw.Coord[C];
+  Used.Size:=TwgForm.Twigs.TwigsCount;
+  for I:=0 to TwgForm.Twigs.LotsCount-1 do begin
+   Lot:=TwgForm.Twigs.LAt(I);
+   if Lot.TypeLot=254 then Continue;
+   if (Lot.ClassHandle<>nil) and (Lot.ClassHandle.Check=0) then Continue;
+   for K:=0 to Lot.Coord.Count-1 do begin
+    J:=Abs(TLong(Lot.Coord[K]).Num);
+    if (J>=Used.Size) or Used[J] then Continue;
+    Used[J]:=True;
+    Tw:=TwgForm.Twigs.TAt(J);
+    if (Tw=nil) or (Tw.Closed=254) then Continue;
+    for C:=0 to Tw.Coord.Count-1 do begin
+     D:=Tw.Coord[C];
      case D.What of
       0: Add(0);
       10: Add(1);
@@ -1249,15 +1269,15 @@ begin
  end;
 // твердые точки - каждый точечный примитив (знаки, блоки, подписи); удаленные
 // и выключенных слоев - нет
- for I := 0 to TwgForm.Twigs.AnyCount - 1 do begin
-  D := TwgForm.Twigs.AAt(I, W);
-  if W <> TWG_Point then continue;
-  PD := TPointDot(D);
-  if PD.Closed then continue;
-  if (PD.ClassHandle <> nil) and (PD.ClassHandle.Check = 0) then continue;
+ for I:=0 to TwgForm.Twigs.AnyCount-1 do begin
+  D:=TwgForm.Twigs.AAt(I,W);
+  if W<>TWG_Point then Continue;
+  PD:=TPointDot(D);
+  if PD.Closed then Continue;
+  if (PD.ClassHandle<>nil) and (PD.ClassHandle.Check=0) then Continue;
   Add(2);
  end;
- for K := 0 to 2 do SetLength(FSegPoints[K], Cnt[K]);
+ for K:=0 to 2 do SetLength(FSegPoints[K],Cnt[K]);
 end;
 
 // атлас и положения точек сегментов для текущего масштаба: квадрат вида K -
@@ -1443,7 +1463,20 @@ var
   SWDraw, SWRec: TStopwatch;
   VisR: TSect;
   ScalePix, SizePix: Double;
-  LotBounds: TRectF;
+  LotBounds, PointBounds: TRectF;
+  PointTick: Int64;
+  PointBoundsTicks: Int64;
+  PointBeginTicks: Int64;
+  PointDraw32Ticks: Int64;
+  PointEndTicks: Int64;
+  PointSetBoundsTicks: Int64;
+  PointDrawTicks: Int64;
+  nPointCached: Integer;
+  nPointRecorded: Integer;
+  nPointClosed: Integer;
+  nPointErrors: Integer;
+  PointDraw32Profile: TPointDraw32Profile;
+  SignDraw32Profile: TSignDraw32Profile;
   procedure CountLot(L: TLot);
   var K: Integer;
   begin
@@ -1464,6 +1497,34 @@ var
    Margin := MARGIN_PIX / Selector.GetScale + 0.1 * Size;
    Result := TRectF.Create(L.XMin - Margin, L.YMin - Margin,
     L.XMax + Margin, L.YMax + Margin);
+  end;
+  function GetPointBounds(P: TPointDot; out Bounds: TRectF): Boolean;
+  const MARGIN_POINT_MIN = 0.05;
+  var MRect: TMRect;
+      S: TSect;
+      XMin, YMin, XMax, YMax, Margin, Size: Double;
+  begin
+   Result := False;
+   if P = nil then exit;
+   MRect := TMRect.Create;
+   try
+    P.GetGabarites(MRect, 0, 0, 1, 1, 0);
+     P.FGabKey:=P.GetGabaritesKey;
+     P.FGabValid:=True;
+    if MRect.Iter = 0 then MRect.Insert(P.XDot, P.YDot);
+    S := MRect.Sect;
+    XMin := Min(S.Left, S.Right);
+    YMin := Min(S.Top, S.Bottom);
+    XMax := Max(S.Left, S.Right);
+    YMax := Max(S.Top, S.Bottom);
+    Size := Max(XMax - XMin, YMax - YMin);
+    Margin := 0.1 * Size;
+    if Margin < MARGIN_POINT_MIN then Margin := MARGIN_POINT_MIN;
+    Bounds := TRectF.Create(XMin - Margin, YMin - Margin, XMax + Margin, YMax + Margin);
+    Result := True;
+   finally
+    MRect.Free;
+   end;
   end;
 begin
   Error := 1;
@@ -1558,6 +1619,18 @@ begin
         ElapsedMs := TThread.GetTickCount64 - StartTick;
         StartTick :=TThread.GetTickCount64;
         WriteIn(['RenderSceneToBackbufferSkia lots s=', ElapsedMs / 1000]);
+         PointBoundsTicks:=0;
+         PointBeginTicks:=0;
+         PointDraw32Ticks:=0;
+         PointEndTicks:=0;
+         PointSetBoundsTicks:=0;
+         PointDrawTicks:=0;
+         nPointCached:=0;
+         nPointRecorded:=0;
+         nPointClosed:=0;
+         nPointErrors:=0;
+         StartPointDraw32Profile;
+         StartSignDraw32Profile;
         for I := 0 to TwgForm.Twigs.AnyCount - 1 do
         begin
           PP := TwgForm.Twigs.AAt(I, B);
@@ -1569,33 +1642,91 @@ begin
             try
               SkObj := PPoint.DrawerObject;
               if (not PPoint.Modified) and (SkObj is TogsSkiaObject) then begin
+                Inc(nPointCached);
                //If PPoint.BlockTextBitmaps <> nil then
                // if Self.Selector.SectVisible(PPoint.BlockTextBitmaps.Sect) then
-                PPoint.SkiaDraw(FDrawerSkia.SkCanvas)
+                 PointTick:=TStopwatch.GetTimeStamp;
+                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
+                 Inc(PointDrawTicks,TStopwatch.GetTimeStamp-PointTick);
                  // else
                  //  WriteIn(['nv', i]);
               end
               else
               If not False {PPoint.isCaptured} {((PPoint is TDotText) or (PPoint.userObj <> nil))} then  begin
-                FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
+                 Inc(nPointRecorded);
+                 PointTick:=TStopwatch.GetTimeStamp;
+                 if GetPointBounds(PPoint,PointBounds) then begin
+                  Inc(PointBoundsTicks,TStopwatch.GetTimeStamp-PointTick);
+                  PointTick:=TStopwatch.GetTimeStamp;
+                  FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint, PointBounds)
+                 end else begin
+                  Inc(PointBoundsTicks,TStopwatch.GetTimeStamp-PointTick);
+                  PointTick:=TStopwatch.GetTimeStamp;
+                  FDrawerSkia.BeginPrimitive(Int64(NativeInt(PPoint)), PPoint);
+                 end;
+                 Inc(PointBeginTicks,TStopwatch.GetTimeStamp-PointTick);
                 try
                 // WriteIn(['p1---',I]);
+                  PointTick:=TStopwatch.GetTimeStamp;
                  PPoint.Draw32(FDrawerSkia, TwgForm.MkLib.PSLib, TwgForm.FontColEx);
+                  Inc(PointDraw32Ticks,TStopwatch.GetTimeStamp-PointTick);
                 // WriteIn(['p2=',I]);
                 finally
+                   PointTick:=TStopwatch.GetTimeStamp;
                   FDrawerSkia.EndPrimitive;
+                   Inc(PointEndTicks,TStopwatch.GetTimeStamp-PointTick);
                 end;
               // LOD2 пока не используется, а TDotText.DrawSelected повторно выполняет Draw32
               //  PPoint.DrawSelected(FDrawerSkia);
-                if PPoint.Closed then  continue;
+                 if PPoint.Closed then begin
+                  Inc(nPointClosed);
+                  Continue;
+                 end;
+                 PointTick:=TStopwatch.GetTimeStamp;
                 SetPrimitiveBounds(PPoint);
+                 Inc(PointSetBoundsTicks,TStopwatch.GetTimeStamp-PointTick);
+                 PointTick:=TStopwatch.GetTimeStamp;
                 PPoint.SkiaDraw(FDrawerSkia.SkCanvas);
+                 Inc(PointDrawTicks,TStopwatch.GetTimeStamp-PointTick);
               end;
             except
+              Inc(nPointErrors);
             end;
           end;
           Prog := Prog + 1;
         end;
+         PointDraw32Profile:=StopPointDraw32Profile;
+         SignDraw32Profile:=StopSignDraw32Profile;
+         WriteIn(['Points: всего=',TwgForm.Twigs.AnyCount,
+                  ' cached=',nPointCached,
+                  ' recorded=',nPointRecorded,
+                  ' closed=',nPointClosed,
+                  ' errors=',nPointErrors,
+                  ' мс bounds=',Round(PointBoundsTicks*1000/TStopwatch.Frequency),
+                  ' мс begin=',Round(PointBeginTicks*1000/TStopwatch.Frequency),
+                  ' мс draw32=',Round(PointDraw32Ticks*1000/TStopwatch.Frequency),
+                  ' мс end=',Round(PointEndTicks*1000/TStopwatch.Frequency),
+                  ' мс setbounds=',Round(PointSetBoundsTicks*1000/TStopwatch.Frequency),
+                  ' мс draw=',Round(PointDrawTicks*1000/TStopwatch.Frequency)]);
+         WriteIn(['PointDraw32 ms: block=',PointDraw32Profile.BlockMS,
+                  '; search=',PointDraw32Profile.SearchMS,
+                  '; updateText=',PointDraw32Profile.UpdateTextMS,
+                  '; sign=',PointDraw32Profile.SignMS,
+                  '; restore=',PointDraw32Profile.RestoreMS,
+                  '; gabarites=',PointDraw32Profile.GabaritesMS,
+                  '; calls=',PointDraw32Profile.Calls,
+                  '; blocks=',PointDraw32Profile.Blocks,
+                  '; signs=',PointDraw32Profile.Signs,
+                  '; noSigns=',PointDraw32Profile.NoSigns]);
+         WriteIn(['SignDraw32 ms: setup=',SignDraw32Profile.SetupMS,
+                  '; line=',SignDraw32Profile.LineMS,
+                  '; arc=',SignDraw32Profile.ArcMS,
+                  '; poly=',SignDraw32Profile.PolyMS,
+                  '; text=',SignDraw32Profile.TextMS,
+                  '; other=',SignDraw32Profile.OtherMS,
+                  '; calls=',SignDraw32Profile.Calls,
+                  '; methods=',SignDraw32Profile.Methods,
+                  '; textMethods=',SignDraw32Profile.TextMethods]);
         Error := 16;
       finally
        GlobalRender := False;

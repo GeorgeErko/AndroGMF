@@ -11,6 +11,19 @@ const
 type
  hDc = Integer;
 
+ TTextManagerUpdateProfile=record
+  SchemaMS: Int64;
+  ReplaceMS: Int64;
+  CreateTextsMS: Int64;
+  BuildBitmapsMS: Int64;
+  AfterLoadMS: Int64;
+  RebuildMS: Int64;
+  Calls: Int64;
+  InitialCalls: Int64;
+  FastCalls: Int64;
+  RebuildCalls: Int64;
+ end;
+
   { TTextParams }
 
   TTextParams = class(TTwgObject)
@@ -98,11 +111,57 @@ type
     function UseAttr(V: AnsiString): boolean;
   end;
 
+Procedure StartTextManagerUpdateProfile;
+Function StopTextManagerUpdateProfile: TTextManagerUpdateProfile;
+
 // FMX.Forms, WptForm2, EcDot, VarSetForm - для диалогов SetTexts/SetTexts2; в начале
 // списка, чтобы не перекрывать идентификаторы следующих модулей
 // GMF_READER - сборка читателя GMF (библиотека gmfreader): без диалогов VarSetForm
 implementation uses FMX.Forms, WptForm2, EcDot, {$IFNDEF GMF_READER}VarSetForm, {$ENDIF}Lib, DwgText,
-     newConsts, Writer, LConvEncoding;
+     newConsts, Writer, LConvEncoding, System.Diagnostics;
+
+var
+ TextManagerUpdateProfileEnabled: Boolean;
+ TextManagerSchemaTicks: Int64;
+ TextManagerReplaceTicks: Int64;
+ TextManagerCreateTextsTicks: Int64;
+ TextManagerBuildBitmapsTicks: Int64;
+ TextManagerAfterLoadTicks: Int64;
+ TextManagerRebuildTicks: Int64;
+ TextManagerUpdateCalls: Int64;
+ TextManagerInitialCalls: Int64;
+ TextManagerFastCalls: Int64;
+ TextManagerRebuildCalls: Int64;
+
+Procedure StartTextManagerUpdateProfile;
+begin
+ TextManagerSchemaTicks:=0;
+ TextManagerReplaceTicks:=0;
+ TextManagerCreateTextsTicks:=0;
+ TextManagerBuildBitmapsTicks:=0;
+ TextManagerAfterLoadTicks:=0;
+ TextManagerRebuildTicks:=0;
+ TextManagerUpdateCalls:=0;
+ TextManagerInitialCalls:=0;
+ TextManagerFastCalls:=0;
+ TextManagerRebuildCalls:=0;
+ TextManagerUpdateProfileEnabled:=True;
+end;
+
+Function StopTextManagerUpdateProfile: TTextManagerUpdateProfile;
+begin
+ TextManagerUpdateProfileEnabled:=False;
+ Result.SchemaMS:=Round(TextManagerSchemaTicks*1000/TStopwatch.Frequency);
+ Result.ReplaceMS:=Round(TextManagerReplaceTicks*1000/TStopwatch.Frequency);
+ Result.CreateTextsMS:=Round(TextManagerCreateTextsTicks*1000/TStopwatch.Frequency);
+ Result.BuildBitmapsMS:=Round(TextManagerBuildBitmapsTicks*1000/TStopwatch.Frequency);
+ Result.AfterLoadMS:=Round(TextManagerAfterLoadTicks*1000/TStopwatch.Frequency);
+ Result.RebuildMS:=Round(TextManagerRebuildTicks*1000/TStopwatch.Frequency);
+ Result.Calls:=TextManagerUpdateCalls;
+ Result.InitialCalls:=TextManagerInitialCalls;
+ Result.FastCalls:=TextManagerFastCalls;
+ Result.RebuildCalls:=TextManagerRebuildCalls;
+end;
 
 { TTextManager }
 
@@ -249,13 +308,26 @@ begin
 end;
 
 procedure TTextManager.SetZnaks(znaks: PCollection);
+var
+ Tick: Int64;
 begin
+ if TextManagerUpdateProfileEnabled then Tick:=TStopwatch.GetTimeStamp;
   FTexts.DeleteAll;FTexts.Free;
   FTexts := CreateTexts(znaks);
+ if TextManagerUpdateProfileEnabled then begin
+  Inc(TextManagerCreateTextsTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
   BuildTextBitmaps;
+ if TextManagerUpdateProfileEnabled then begin
+  Inc(TextManagerBuildBitmapsTicks,TStopwatch.GetTimeStamp-Tick);
+  Tick:=TStopwatch.GetTimeStamp;
+ end;
   if FVars <> nil then
   begin
     AfterLoad(znaks);
+    if TextManagerUpdateProfileEnabled then
+     Inc(TextManagerAfterLoadTicks,TStopwatch.GetTimeStamp-Tick);
     exit;
   end;
 end;
@@ -263,6 +335,44 @@ end;
 procedure TTextManager.Update(znaks: PCollection);
 var col: PCollection;
     tmp: PCollection;
+          function SameTextSchema: boolean;
+          var I: Integer;
+              J: Integer;
+              TextIndex: Integer;
+              Sign: TPoint_Sign;
+              Meth: TMeth;
+          begin
+           Result:=False;
+           if FValues.Count<>FTexts.Count then exit;
+           TextIndex:=0;
+           for I:=0 to znaks.Count-1 do begin
+            Sign:=znaks[I];
+            for J:=0 to Sign.MethodCol.Count-1 do begin
+             Meth:=Sign.MethodCol[J];
+             if Meth.MT<>m_Text then continue;
+             if TextIndex>=FTexts.Count then exit;
+             if AnsiCompareText(TDWG_Text(FTexts[TextIndex]).FName,
+                                TDWG_Text(Meth.PT).FName)<>0 then exit;
+             Inc(TextIndex);
+            end;
+           end;
+           Result:=TextIndex=FTexts.Count;
+          end;
+          procedure ReplaceTexts;
+          var I: Integer;
+              J: Integer;
+              Sign: TPoint_Sign;
+              Meth: TMeth;
+          begin
+           FTexts.DeleteAll;
+           for I:=0 to znaks.Count-1 do begin
+            Sign:=znaks[I];
+            for J:=0 to Sign.MethodCol.Count-1 do begin
+             Meth:=Sign.MethodCol[J];
+             if Meth.MT=m_Text then FTexts.Insert(Meth.PT);
+            end;
+           end;
+          end;
           function xxx(const s: AnsiString): boolean;
           var j, i: integer;
           begin
@@ -283,10 +393,35 @@ var i, j, k: integer;
     oldvalcount: integer;
     indlist: TList;
     b: byte;
+    Tick: Int64;
+    SameSchema: Boolean;
 begin
+  if TextManagerUpdateProfileEnabled then Inc(TextManagerUpdateCalls);
+  if FTexts.Count>0 then begin
+   if TextManagerUpdateProfileEnabled then Tick:=TStopwatch.GetTimeStamp;
+   SameSchema:=SameTextSchema;
+   if TextManagerUpdateProfileEnabled then
+    Inc(TextManagerSchemaTicks,TStopwatch.GetTimeStamp-Tick);
+   if SameSchema then begin
+    if TextManagerUpdateProfileEnabled then begin
+     Inc(TextManagerFastCalls);
+     Tick:=TStopwatch.GetTimeStamp;
+    end;
+    ReplaceTexts;
+    if TextManagerUpdateProfileEnabled then
+     Inc(TextManagerReplaceTicks,TStopwatch.GetTimeStamp-Tick);
+    exit;
+   end;
+  end;
   if FTexts.Count = 0 then
   begin
+    if TextManagerUpdateProfileEnabled then Inc(TextManagerInitialCalls);
     SetZnaks(znaks);
+    exit;
+  end;
+  if TextManagerUpdateProfileEnabled then begin
+   Inc(TextManagerRebuildCalls);
+   Tick:=TStopwatch.GetTimeStamp;
   end;
   oldvalcount := FValues.count;
   tmp := CreateTexts(znaks);
@@ -343,6 +478,8 @@ begin
     tmp.deleteall;
     tmp.free;
   end;
+  if TextManagerUpdateProfileEnabled then
+   Inc(TextManagerRebuildTicks,TStopwatch.GetTimeStamp-Tick);
 end;
 
 
@@ -412,77 +549,82 @@ begin
 end;
 
 procedure TTextManager.AfterLoad(znaks: PCollection);
-var m: TMeth;
-  i, j, k: integer;
-  p: TPoint_Sign;
-  col: PCollection;
+var
+ I: Integer;
+ K: Integer;
+ Col: PCollection;
+ OldValues: PCollection;
+ Reused: array of Boolean;
 begin
-  col := PCollection.create(1);
-  try
-    for i := 0 to FTexts.Count - 1 do
-    begin
-      k := FVars.IndexOf(TDWG_Text(FTexts[i]).FName);
-      if k <> - 1 then
-      begin
-        col.Insert(FValues[k]);
-      end
-      else
-      begin
-        if i < FValues.Count then col.Insert(FValues[i])
-        else col.Insert(TTextParams.Create('', 0, 0, 0, -1, -1, 0,0,0,0,0,False));
-      end;
-    end;
-    i := 0;
-    while i < FValues.Count do
-    begin
-      if col.IndexOf(FValues[i]) <> - 1 then
-      begin
-        FValues.Delete(FValues[i]);
-        continue;
-      end;
-      inc(i);
-    end;
-  finally
-    FValues.free;
-    FValues := col;
-    FVars.free;
-    FVars := nil;
+ if (FVars.Count=FTexts.Count) and (FValues.Count=FTexts.Count) then begin
+  I:=0;
+  while (I<FTexts.Count) and
+        (AnsiCompareText(FVars[I],TDWG_Text(FTexts[I]).FName)=0) do Inc(I);
+  if I=FTexts.Count then begin
+   FVars.Free;
+   FVars:=nil;
+   Exit;
   end;
+ end;
+//
+ OldValues:=FValues;
+ SetLength(Reused,OldValues.Count);
+ Col:=PCollection.Create(1);
+ try
+  for I:=0 to FTexts.Count-1 do begin
+   if (I<FVars.Count) and
+      (AnsiCompareText(FVars[I],TDWG_Text(FTexts[I]).FName)=0) then K:=I
+   else K:=FVars.IndexOf(TDWG_Text(FTexts[I]).FName);
+   if (K>=0) and (K<OldValues.Count) then begin
+    Col.Insert(OldValues[K]);
+    Reused[K]:=True;
+   end else if I<OldValues.Count then begin
+    Col.Insert(OldValues[I]);
+    Reused[I]:=True;
+   end else
+    Col.Insert(TTextParams.Create('',0,0,0,-1,-1,0,0,0,0,0,False));
+  end;
+ finally
+  for I:=OldValues.Count-1 downto 0 do
+   if Reused[I] then OldValues.AtDelete(I);
+  OldValues.Free;
+  FValues:=Col;
+  FVars.Free;
+  FVars:=nil;
+ end;
 end;
 
 function TTextManager.CreateTexts(znaks: PCollection): PCollection;
-var i, j: integer;
-    p: TPoint_Sign;
-    m: TMeth;
-    b: byte;
+var
+ I: Integer;
+ J: Integer;
+ P: TPoint_Sign;
+ M: TMeth;
+ B: Byte;
 begin
-  result := PCollection.Create(1);
-  try
-    for i := 0 to znaks.count - 1 do
-    begin
-      p := znaks[i];
-      for j := 0 to p.MethodCol.Count - 1 do
-      begin
-        m := p.MethodCol[j];
-        if m.MT = m_text then
-        begin
-          result.Insert(m.pt);
-          with TDwg_Text(m.pt) do
-          begin
-            b := 0;
-            if FUn=1 then b := tpUnderline;
-            if Fit=1 then b := b or tpItalic;
-            if FBl=1 then b := b or tpBold;
-            FValues.Insert(TTextParams.Create(FText, fx, fy, fang, fheight, FWidth,
-              b,FTextAlignX,FTextAlignY, ShiftX,ShiftY,Fbg));
-          end;
-        end;
-      end;
+ Result:=PCollection.Create(1);
+ try
+  for I:=0 to znaks.Count-1 do begin
+   P:=znaks[I];
+   for J:=0 to P.MethodCol.Count-1 do begin
+    M:=P.MethodCol[J];
+    if M.MT=m_Text then begin
+     Result.Insert(M.PT);
+     if FVars=nil then with TDWG_Text(M.PT) do begin
+      B:=0;
+      if FUn=1 then B:=tpUnderline;
+      if Fit=1 then B:=B or tpItalic;
+      if FBl=1 then B:=B or tpBold;
+      FValues.Insert(TTextParams.Create(FText,FX,FY,FAng,FHeight,FWidth,
+       B,FTextAlignX,FTextAlignY,ShiftX,ShiftY,FBg));
+     end;
     end;
-  except
-    result.free;
-    raise;
+   end;
   end;
+ except
+  Result.Free;
+  raise;
+ end;
 end;
 
 procedure TTextManager.UpdateText;
@@ -533,12 +675,12 @@ begin
      If BackGround <>0 then begin
       FBg:=BackGround = 2;
      end;
-    UpdateTextBitmaps;
       // TextDirty := True;
 //     Writeln('ShiftXY=',ShiftX,' ',ShiftY);
      //Writeln('FI=',fFontIndex,' ',tp.tmFontIndex,' ',tp.FValue);
    end;
   end;
+ UpdateTextBitmaps;
 end;
 
 procedure TTextManager.Restore;
